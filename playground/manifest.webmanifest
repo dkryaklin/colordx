@@ -1,0 +1,9 @@
+{
+  "name": "colordx · Color Converter",
+  "short_name": "colordx",
+  "description": "Convert colors between OKLCH, OKLab, HEX, RGB, HSL and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0c0a",
+  "theme_color": "#0d0c0a"
+}
