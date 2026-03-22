@@ -93,6 +93,8 @@ jobs:
 
       - name: Version packages
         run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and push version bump
         run: |
