@@ -7,10 +7,13 @@ import { join } from 'node:path';
 const PACKAGE_NAME = '@colordx/core';
 const BASE_BRANCH = process.env.BASE_BRANCH ?? 'main';
 
+// SHA refs (direct push) don't need origin/ prefix; branch names do
+const baseRef = /^[0-9a-f]{7,40}$/.test(BASE_BRANCH) ? BASE_BRANCH : `origin/${BASE_BRANCH}`;
+
 function getGitDiff(): string {
   try {
     const diff = execSync(
-      `git diff origin/${BASE_BRANCH}...HEAD -- ':(exclude)*.lock' ':(exclude).yarn'`,
+      `git diff ${baseRef}...HEAD -- ':(exclude)*.lock' ':(exclude).yarn'`,
       { encoding: 'utf8' },
     );
     return diff.slice(0, 8000);
@@ -21,7 +24,7 @@ function getGitDiff(): string {
 
 function getCommits(): string {
   try {
-    return execSync(`git log origin/${BASE_BRANCH}...HEAD --pretty=format:"%s"`, { encoding: 'utf8' });
+    return execSync(`git log ${baseRef}...HEAD --pretty=format:"%s"`, { encoding: 'utf8' });
   } catch {
     return '';
   }

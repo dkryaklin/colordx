@@ -41,7 +41,7 @@ jobs:
         run: yarn tsx scripts/changeset.ts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BASE_BRANCH: ${{ github.base_ref || 'HEAD~1' }}
+          BASE_BRANCH: ${{ github.base_ref || github.event.before }}
 
       - name: Commit changeset
         run: |
