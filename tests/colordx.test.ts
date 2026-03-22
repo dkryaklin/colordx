@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colordx, extend, random, Colordx } from "../src/index.js";
+import { colordx, extend, random, Colordx, getFormat } from "../src/index.js";
 
 describe("parsing", () => {
   it("parses hex colors", () => {
@@ -181,6 +181,38 @@ describe("invalid input", () => {
 
   it("rejects invalid rgb object", () => {
     expect(colordx({ r: "x", g: 0, b: 0, a: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+  });
+});
+
+describe("getFormat", () => {
+  it("detects hex", () => {
+    expect(getFormat("#ff0000")).toBe("hex");
+    expect(getFormat("#fff")).toBe("hex");
+  });
+
+  it("detects rgb string", () => {
+    expect(getFormat("rgb(255, 0, 0)")).toBe("rgb");
+    expect(getFormat("rgba(255, 0, 0, 0.5)")).toBe("rgb");
+  });
+
+  it("detects hsl string", () => {
+    expect(getFormat("hsl(0, 100%, 50%)")).toBe("hsl");
+  });
+
+  it("detects rgb object", () => {
+    expect(getFormat({ r: 255, g: 0, b: 0, a: 1 })).toBe("rgb");
+  });
+
+  it("detects hsl object", () => {
+    expect(getFormat({ h: 0, s: 100, l: 50, a: 1 })).toBe("hsl");
+  });
+
+  it("detects hsv object", () => {
+    expect(getFormat({ h: 0, s: 100, v: 100, a: 1 })).toBe("hsv");
+  });
+
+  it("returns undefined for invalid input", () => {
+    expect(getFormat("notacolor")).toBeUndefined();
   });
 });
 

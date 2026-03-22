@@ -7,24 +7,26 @@ import { parseLabObject } from './colorModels/lab.js';
 import { parseLchObject, parseLchString } from './colorModels/lch.js';
 import { parseRgbObject, parseRgbString } from './colorModels/rgb.js';
 import { parseXyzObject } from './colorModels/xyz.js';
-import type { AnyColor, ColorParser, RgbColor } from './types.js';
+import type { AnyColor, ColorFormat, ColorParser, RgbColor } from './types.js';
 
-export const defaultParsers: ColorParser[] = [
-  parseHex,
-  parseRgbString,
-  parseHslString,
-  parseHwbString,
-  parseLchString,
-  parseCmykString,
-  parseRgbObject,
-  parseHslObject,
-  parseHsvObject,
-  parseHwbObject,
-  parseXyzObject,
-  parseLabObject,
-  parseLchObject,
-  parseCmykObject,
+const formatParsers: [ColorParser, ColorFormat][] = [
+  [parseHex, 'hex'],
+  [parseRgbString, 'rgb'],
+  [parseHslString, 'hsl'],
+  [parseHwbString, 'hwb'],
+  [parseLchString, 'lch'],
+  [parseCmykString, 'cmyk'],
+  [parseRgbObject, 'rgb'],
+  [parseHslObject, 'hsl'],
+  [parseHsvObject, 'hsv'],
+  [parseHwbObject, 'hwb'],
+  [parseXyzObject, 'xyz'],
+  [parseLabObject, 'lab'],
+  [parseLchObject, 'lch'],
+  [parseCmykObject, 'cmyk'],
 ];
+
+export const defaultParsers: ColorParser[] = formatParsers.map(([parser]) => parser);
 
 export const parsers: ColorParser[] = [...defaultParsers];
 
@@ -34,4 +36,15 @@ export const parse = (input: AnyColor): RgbColor | null => {
     if (result) return result;
   }
   return null;
+};
+
+export const getFormat = (input: AnyColor): ColorFormat | undefined => {
+  for (const [parser, format] of formatParsers) {
+    if (parser(input)) return format;
+  }
+  // Check parsers added by plugins (format unknown)
+  for (let i = defaultParsers.length; i < parsers.length; i++) {
+    if (parsers[i]!(input)) return 'name';
+  }
+  return undefined;
 };

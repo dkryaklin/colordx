@@ -97,3 +97,5 @@ export type AnyColor =
   | P3Color;
 
 export type ColorParser<T = AnyColor> = (input: T) => RgbColor | null;
+
+export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'hsv' | 'hwb' | 'lab' | 'lch' | 'xyz' | 'cmyk' | 'name';
