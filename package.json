@@ -71,6 +71,7 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "changeset": "changeset",
+    "changeset:ai": "tsx scripts/changeset.ts",
     "version": "changeset version",
     "release": "yarn build && publint && changeset publish",
     "prepare": "node --eval \"if (process.env.CI) process.exit(0)\" && husky || true"
@@ -82,6 +83,7 @@
     ]
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.30.0",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
@@ -95,6 +97,7 @@
     "prettier": "^3.8.1",
     "publint": "^0.3.18",
     "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1",
     "vitest": "^4.1.0"
