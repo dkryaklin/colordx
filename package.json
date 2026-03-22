@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dkryaklin/colordx"
+    "url": "git+https://github.com/dkryaklin/colordx.git"
   },
   "keywords": [
     "color",
@@ -33,14 +33,24 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./plugins/*": {
-      "import": "./dist/plugins/*.mjs",
-      "require": "./dist/plugins/*.cjs",
-      "types": "./dist/plugins/*.d.ts"
+      "import": {
+        "types": "./dist/plugins/*.d.ts",
+        "default": "./dist/plugins/*.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/*.d.cts",
+        "default": "./dist/plugins/*.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",

@@ -18,6 +18,9 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   outExtension({ format }) {
-    return { js: format === "esm" ? ".mjs" : ".cjs" };
+    return {
+      js: format === "esm" ? ".mjs" : ".cjs",
+      dts: format === "esm" ? ".d.ts" : ".d.cts",
+    };
   },
 });
