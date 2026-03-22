@@ -1,6 +1,7 @@
 export { Colordx, colordx, extend, random } from './colordx.js';
 export type { Plugin } from './colordx.js';
 export { getFormat } from './parse.js';
+export { inGamutSrgb, toGamutSrgb } from './gamut.js';
 export type {
   AnyColor,
   ColorFormat,

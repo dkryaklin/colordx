@@ -54,7 +54,7 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
-  if (!('alpha' in input) && 'a' in input && typeof (input).a === 'number') {
+  if (!('alpha' in input) && 'a' in input && typeof input.a === 'number') {
     // Check it's an OklabColor by requiring 'alpha' key or treating 'a' as the a-channel
     // OklabColor has 'alpha' for transparency; LabColor also has 'alpha'
     // We need to distinguish: OklabColor has l in [0,1], LabColor has l in [0,100]

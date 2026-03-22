@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Color Converter · colordx</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/playground/styles.css" />
+  </head>
+  <body>
+    <div class="hdr">
+      <span class="hdr-title">Color Converter</span>
+      <a class="hdr-link" href="https://colordx.dev">colordx.dev ↗</a>
+    </div>
+
+    <div class="layout">
+      <div class="card left">
+        <div id="swatch"></div>
+        <div class="left-body">
+          <div class="tabs">
+            <button class="tab on" data-mode="oklch">OKLCH</button>
+            <button class="tab" data-mode="oklab">OKLab</button>
+          </div>
+
+          <div class="row">
+            <span class="badge" id="prim-badge">OKLCH</span>
+            <input class="txt" id="prim-val" readonly />
+            <button class="ibtn" id="prim-copy">⎘</button>
+          </div>
+
+          <div class="row">
+            <span class="badge">→</span>
+            <input class="txt" id="any-in" placeholder="Paste any color…" />
+          </div>
+          <p class="hint">Accepts hex, rgb(), hsl(), oklch(), oklab()…</p>
+
+          <div class="gamut-row">
+            <span class="gamut-dot ok" id="gamut-dot"></span>
+            <span class="gamut-lbl" id="gamut-lbl">In sRGB gamut</span>
+            <button class="gamut-btn" id="gamut-map">Map to sRGB →</button>
+          </div>
+
+          <hr class="div" />
+          <div id="outputs"></div>
+        </div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <script type="module" src="/playground/app.js"></script>
+  </body>
+</html>

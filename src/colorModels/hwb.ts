@@ -1,9 +1,9 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hsvToRgb, rgbToHsv } from './hsv.js';
 
 export const clampHwb = (hwb: HwbColor): HwbColor => ({
-  h: ((hwb.h % 360) + 360) % 360,
+  h: normalizeHue(hwb.h),
   w: clamp(hwb.w, 0, 100),
   b: clamp(hwb.b, 0, 100),
   a: clamp(round(hwb.a, 2), 0, 1),

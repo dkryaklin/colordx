@@ -1,4 +1,4 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue } from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, rgbToOklab } from './oklab.js';
 
@@ -8,7 +8,7 @@ const oklabToOklch = ({ l, a, b, alpha }: OklabColor): OklchColor => {
   return {
     l,
     c: C,
-    h: ((H % 360) + 360) % 360,
+    h: normalizeHue(H),
     a: alpha,
   };
 };
@@ -35,7 +35,7 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   return oklchToRgb({
     l: l as number,
     c: c as number,
-    h: ((Number(h) % 360) + 360) % 360,
+    h: normalizeHue(Number(h)),
     a: clamp(a as number, 0, 1),
   });
 };
@@ -55,7 +55,7 @@ export const parseOklchString = (input: unknown): RgbColor | null => {
   return oklchToRgb({
     l: L,
     c: C,
-    h: ((H % 360) + 360) % 360,
+    h: normalizeHue(H),
     a: clamp(alpha, 0, 1),
   });
 };

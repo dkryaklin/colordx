@@ -1,11 +1,11 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, rgbToLab } from './lab.js';
 
 const clampLch = (lch: LchColor): LchColor => ({
   l: clamp(lch.l, 0, 100),
   c: lch.c,
-  h: ((lch.h % 360) + 360) % 360,
+  h: normalizeHue(lch.h),
   a: clamp(lch.a, 0, 1),
 });
 

@@ -1,16 +1,15 @@
 export const clamp = (n: number, min: number, max: number): number => Math.min(Math.max(n, min), max);
 
-const POW10 = [1, 10, 100, 1000, 10000];
-
-export const round = (n: number, d = 0): number => {
-  const p = POW10[d] ?? 10 ** d;
-  return Math.round(n * p) / p;
-};
+export const round = (n: number, d = 0): number => parseFloat(n.toFixed(d));
 
 export const floor = (n: number, d = 0): number => {
-  const p = POW10[d] ?? 10 ** d;
+  const p = 10 ** d;
   return Math.floor(n * p) / p;
 };
+
+// Normalize hue to [0, 360). Avoids (h + 360) % 360 which can lose precision
+// when h is already in [0, 360) due to binary floating-point subtraction.
+export const normalizeHue = (h: number): number => (h >= 0 && h < 360 ? h : ((h % 360) + 360) % 360);
 
 export const ANGLE_UNITS: Record<string, number> = { deg: 1, grad: 0.9, turn: 360, rad: 360 / (2 * Math.PI) };
 

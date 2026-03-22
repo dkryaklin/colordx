@@ -1,20 +1,15 @@
-/**
- * Tests for lab, lch, cmyk, and delta plugins.
- */
-import { beforeAll, describe, it, expect } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { colordx, extend } from '../src/index.js';
-import lab from '../src/plugins/lab.js';
-import lch from '../src/plugins/lch.js';
 import cmyk from '../src/plugins/cmyk.js';
 import delta from '../src/plugins/delta.js';
+import lab from '../src/plugins/lab.js';
+import lch from '../src/plugins/lch.js';
 
 beforeAll(() => {
   extend([lab, lch, cmyk, delta]);
 });
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
-
-// ─── Lab ─────────────────────────────────────────────────────────────────────
 
 describe('toLab round-trip', () => {
   it.each(inputs)('%s', (input) => {
@@ -35,8 +30,6 @@ describe('toXyz round-trip', () => {
     expect(result).toBe(colordx(input).toHex());
   });
 });
-
-// ─── LCH ─────────────────────────────────────────────────────────────────────
 
 describe('toLch round-trip', () => {
   it.each(inputs)('%s', (input) => {
@@ -64,8 +57,6 @@ describe('LCH string parsing', () => {
     expect(colordx('lch(50% 50 180 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
   });
 });
-
-// ─── CMYK ─────────────────────────────────────────────────────────────────────
 
 describe('toCmyk round-trip', () => {
   it.each(inputs)('%s', (input) => {
@@ -102,8 +93,6 @@ describe('CMYK string parsing', () => {
     expect(colordx((colordx('#ff0000') as any).toCmykString()).toHex()).toBe('#ff0000');
   });
 });
-
-// ─── delta (CIEDE2000) ────────────────────────────────────────────────────────
 
 describe('delta', () => {
   it('same color returns 0', () => {

@@ -216,3 +216,45 @@ describe("getFormat", () => {
   });
 });
 
+// Regression: double `% 360` in hue normalization caused binary FP artifacts
+// e.g. (209.81 + 360) % 360 = 209.80999999999995 instead of 209.81
+describe("string output precision", () => {
+  // Helper: assert no long floating-point tails (> 4 significant decimal digits)
+  const noFpArtifacts = (str: string) =>
+    expect(str).not.toMatch(/\d\.\d{5,}/);
+
+  it("toHslString has no floating-point artifacts", () => {
+    // oklab(0.746 -0.0469 -0.1278) → rgb(100, 178, 255), hue ≈ 209.81
+    noFpArtifacts(colordx("oklab(0.746 -0.0469 -0.1278)").toHslString());
+    noFpArtifacts(colordx("#ff0000").toHslString());
+    noFpArtifacts(colordx("#c06060").toHslString());
+  });
+
+  it("toHslString produces the exact expected value for the reported case", () => {
+    expect(colordx("oklab(0.746 -0.0469 -0.1278)").toHslString()).toBe(
+      "hsl(209.81, 100%, 69.61%)"
+    );
+  });
+
+  it("toHwbString has no floating-point artifacts", () => {
+    noFpArtifacts(colordx("oklab(0.746 -0.0469 -0.1278)").toHwbString());
+    noFpArtifacts(colordx("#c06060").toHwbString());
+  });
+
+  it("toOklchString has no floating-point artifacts", () => {
+    noFpArtifacts(colordx("#ff0000").toOklchString());
+    noFpArtifacts(colordx("#00ff00").toOklchString());
+    noFpArtifacts(colordx("#0000ff").toOklchString());
+    noFpArtifacts(colordx("#c06060").toOklchString());
+  });
+
+  it("hue is within [0, 360) for all outputs", () => {
+    const colors = ["#ff0000", "#00ff00", "#0000ff", "#c06060", "oklab(0.746 -0.0469 -0.1278)"];
+    for (const input of colors) {
+      const { h } = colordx(input).toHsl();
+      expect(h).toBeGreaterThanOrEqual(0);
+      expect(h).toBeLessThan(360);
+    }
+  });
+});
+

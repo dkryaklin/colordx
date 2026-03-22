@@ -1,8 +1,8 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 export const clampHsl = (hsl: HslColor): HslColor => ({
-  h: ((hsl.h % 360) + 360) % 360,
+  h: normalizeHue(hsl.h),
   s: clamp(hsl.s, 0, 100),
   l: clamp(hsl.l, 0, 100),
   a: clamp(round(hsl.a, 2), 0, 1),

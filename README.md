@@ -121,6 +121,26 @@ getFormat('notacolor')        // undefined
 random()  // random Colordx instance
 ```
 
+### Gamut
+
+OKLCH and OKLab can describe colors outside the sRGB gamut. colordx includes standalone utilities for checking and mapping:
+
+```ts
+import { inGamutSrgb, toGamutSrgb } from '@colordx/core';
+
+// Check: is this color displayable in sRGB?
+inGamutSrgb('#ff0000')                  // true  — hex is always sRGB
+inGamutSrgb('oklch(0.6279 0.2577 29.23)') // true  — red
+inGamutSrgb('oklch(0.5 0.4 180)')       // false — too much cyan chroma
+
+// Map: reduce chroma until in-gamut (preserves lightness and hue)
+toGamutSrgb('oklch(0.5 0.4 180)')  // → Colordx at the sRGB boundary
+toGamutSrgb('#ff0000')             // → unchanged, already in sRGB
+```
+
+`inGamutSrgb` is always `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb).
+`toGamutSrgb` uses a binary search on chroma following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
+
 ## Plugins
 
 Opt-in plugins for less common color spaces and utilities:

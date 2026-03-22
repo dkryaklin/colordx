@@ -1,12 +1,7 @@
-/**
- * Tests for OKLab and OKLch color models (core, no plugins needed).
- */
 import { describe, it, expect } from 'vitest';
 import { colordx } from '../src/index.js';
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
-
-// ─── HWB ─────────────────────────────────────────────────────────────────────
 
 describe('toHwb round-trip', () => {
   it.each(inputs)('%s', (input) => {
@@ -52,8 +47,6 @@ describe('HWB object parsing', () => {
     expect(colordx({ h: 0, w: 0, b: 100, a: 1 }).toHex()).toBe('#000000');
   });
 });
-
-// ─── OKLab ───────────────────────────────────────────────────────────────────
 
 describe('toOklab round-trip', () => {
   it.each(inputs)('%s', (input) => {
@@ -149,8 +142,6 @@ describe('OKLab object parsing', () => {
   });
 });
 
-// ─── OKLch ───────────────────────────────────────────────────────────────────
-
 describe('toOklch round-trip', () => {
   it.each(inputs)('%s', (input) => {
     const oklch = colordx(input).toOklch();
@@ -244,8 +235,6 @@ describe('OKLch object parsing', () => {
     expect(colordx(oklch).alpha()).toBe(0.5);
   });
 });
-
-// ─── OKLab L/a/b value sanity ─────────────────────────────────────────────────
 
 describe('OKLab value ranges', () => {
   it('black has L=0', () => {
