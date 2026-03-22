@@ -3,6 +3,7 @@
     { "source": "/styles.css", "destination": "/playground/styles.css" },
     { "source": "/app.js", "destination": "/playground/app.js" },
     { "source": "/manifest.webmanifest", "destination": "/playground/manifest.webmanifest" },
+    { "source": "/index.mjs", "destination": "/dist/index.mjs" },
     { "source": "/", "destination": "/playground/index.html" }
   ]
 }

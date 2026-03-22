@@ -1,4 +1,4 @@
-import { colordx, inGamutSrgb, toGamutSrgb } from '/dist/index.mjs';
+import { colordx, inGamutSrgb, toGamutSrgb } from '/index.mjs';
 
 // Always stored as OKLCH
 let S = { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 };

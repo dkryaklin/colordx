@@ -62,7 +62,7 @@
   ],
   "packageManager": "yarn@4.13.0",
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && cp dist/index.mjs playground/index.mjs",
     "dev": "tsup --watch",
     "playground": "npx serve . -p 3000 --config serve.json",
     "test": "vitest run",
