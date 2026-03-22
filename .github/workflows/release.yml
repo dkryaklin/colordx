@@ -43,10 +43,8 @@ jobs:
 
       - uses: changesets/action@v1
         with:
-          publish: yarn changeset publish
+          publish: yarn changeset publish --provenance
           title: "chore: release"
           commit: "chore: release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

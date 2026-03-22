@@ -1,5 +1,5 @@
 {
-  "name": "colordx",
+  "name": "@colordx/core",
   "version": "0.1.0",
   "description": "A high-performance color library with extended support for modern color spaces including OKLCH, OKLAB, Display-P3, and more",
   "author": "",
