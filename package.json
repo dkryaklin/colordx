@@ -60,7 +60,9 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "release": "yarn build && npm publish",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "yarn build && publint && changeset publish",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -70,6 +72,8 @@
     ]
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^8.57.1",
     "@typescript-eslint/parser": "^8.57.1",
@@ -79,6 +83,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
+    "publint": "^0.3.18",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1",
