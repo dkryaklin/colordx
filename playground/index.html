@@ -3,56 +3,207 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Color Converter · colordx</title>
+    <title>colordx · Modern Color Conversion Library for JavaScript</title>
+    <meta
+      name="description"
+      content="Convert colors between OKLCH, OKLab, HEX, RGB, HSL and more. colordx is a zero-dependency, fully-typed JavaScript color library with gamut checking and CSS Color 4 support."
+    />
+    <meta
+      name="keywords"
+      content="color converter, oklch, oklab, hex, rgb, hsl, color picker, gamut, css colors, javascript color library, color conversion"
+    />
+    <meta name="author" content="dkryaklin" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://colordx.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://colordx.dev/" />
+    <meta property="og:title" content="colordx · Modern Color Conversion Library" />
+    <meta
+      property="og:description"
+      content="Convert colors between OKLCH, OKLab, HEX, RGB, HSL and more. Zero dependencies, fully typed, tree-shakeable."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="colordx · Modern Color Conversion Library" />
+    <meta
+      name="twitter:description"
+      content="Convert colors between OKLCH, OKLab, HEX, RGB, HSL and more. Zero dependencies, fully typed, tree-shakeable."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/playground/styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="hdr">
-      <span class="hdr-title">Color Converter</span>
-      <a class="hdr-link" href="https://colordx.dev">colordx.dev ↗</a>
-    </div>
+    <section class="hero">
+      <div class="hero-inner">
+        <h1 class="hero-title">colordx</h1>
+        <div class="hero-links">
+          <a class="hero-link" href="https://www.npmjs.com/package/@colordx/core" target="_blank" rel="noopener noreferrer">npm ↗</a>
+          <a class="hero-link" href="https://github.com/dkryaklin/colordx" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+        </div>
+        <p class="hero-desc">
+          Convert between OKLCH, OKLab, HEX, RGB, HSL and more.<br />
+          Zero dependencies, fully typed, tree-shakeable.
+        </p>
+      </div>
+    </section>
 
-    <div class="layout">
-      <div class="card left">
-        <div id="swatch"></div>
-        <div class="left-body">
-          <div class="tabs">
-            <button class="tab on" data-mode="oklch">OKLCH</button>
-            <button class="tab" data-mode="oklab">OKLab</button>
+    <section class="app-section">
+      <div class="app-wrap">
+        <div class="card left">
+          <div id="swatch"></div>
+          <div class="left-body">
+            <div class="tabs">
+              <button class="tab on" data-mode="oklch">OKLCH</button>
+              <button class="tab" data-mode="oklab">OKLab</button>
+            </div>
+
+            <div class="row">
+              <span class="badge" id="prim-badge">OKLCH</span>
+              <input class="txt" id="prim-val" readonly />
+              <button class="ibtn" id="prim-copy">⎘</button>
+            </div>
+
+            <div class="row">
+              <span class="badge">→</span>
+              <input class="txt" id="any-in" placeholder="Paste any color…" />
+            </div>
+            <p class="hint">Accepts hex, rgb(), hsl(), oklch(), oklab()…</p>
+
+            <div class="gamut-row">
+              <span class="gamut-dot ok" id="gamut-dot"></span>
+              <span class="gamut-lbl" id="gamut-lbl">In sRGB gamut</span>
+              <button class="gamut-btn" id="gamut-map">Map to sRGB →</button>
+            </div>
+
+            <hr class="div" />
+            <div id="outputs"></div>
+          </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+      </div>
+    </section>
+
+    <section class="gs-section">
+      <div class="section-wrap">
+        <h2 class="section-title">Getting Started</h2>
+        <div class="gs-steps">
+          <div class="gs-step">
+            <div class="gs-step-label">Install</div>
+            <div class="code-block">
+              <pre><code>npm install @colordx/core</code></pre>
+              <button class="code-copy" data-code="npm install @colordx/core">⎘</button>
+            </div>
           </div>
 
-          <div class="row">
-            <span class="badge" id="prim-badge">OKLCH</span>
-            <input class="txt" id="prim-val" readonly />
-            <button class="ibtn" id="prim-copy">⎘</button>
+          <div class="gs-step">
+            <div class="gs-step-label">Convert colors</div>
+            <div class="code-block">
+              <pre><code>import { colordx } from '@colordx/core';
+
+const color = colordx('#ff6b35');
+color.toHex()           // '#ff6b35'
+color.toRgbString()     // 'rgb(255, 107, 53)'
+color.toHslString()     // 'hsl(19.2, 100%, 60%)'
+color.toOklch()         // { l: 0.68, c: 0.19, h: 38.18 }
+color.toOklchString()   // 'oklch(0.6827 0.1946 38.18)'
+color.toOklab()         // { l: 0.68, a: 0.149, b: 0.118 }</code></pre>
+              <button class="code-copy" data-code="import { colordx } from '@colordx/core';">⎘</button>
+            </div>
           </div>
 
-          <div class="row">
-            <span class="badge">→</span>
-            <input class="txt" id="any-in" placeholder="Paste any color…" />
-          </div>
-          <p class="hint">Accepts hex, rgb(), hsl(), oklch(), oklab()…</p>
+          <div class="gs-step">
+            <div class="gs-step-label">Gamut checking &amp; mapping</div>
+            <div class="code-block">
+              <pre><code>import { inGamutSrgb, toGamutSrgb } from '@colordx/core';
 
-          <div class="gamut-row">
-            <span class="gamut-dot ok" id="gamut-dot"></span>
-            <span class="gamut-lbl" id="gamut-lbl">In sRGB gamut</span>
-            <button class="gamut-btn" id="gamut-map">Map to sRGB →</button>
-          </div>
+inGamutSrgb('oklch(0.5 0.4 180)')   // false — out of sRGB
+inGamutSrgb('oklch(0.5 0.1 180)')   // true  — in sRGB
 
-          <hr class="div" />
-          <div id="outputs"></div>
+// Map out-of-gamut color to nearest sRGB boundary
+const mapped = toGamutSrgb('oklch(0.5 0.4 180)');
+mapped.toHex()  // '#00866e'</code></pre>
+              <button class="code-copy" data-code="import { inGamutSrgb, toGamutSrgb } from '@colordx/core';">⎘</button>
+            </div>
+          </div>
         </div>
       </div>
+    </section>
 
-      <div class="grid" id="grid"></div>
-    </div>
+    <section class="faq-section">
+      <div class="section-wrap">
+        <h2 class="section-title">Why OKLCH?</h2>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3 class="faq-q">What is OKLCH?</h3>
+            <p class="faq-a">
+              OKLCH is a perceptually uniform color space derived from OKLab. It represents colors using Lightness (L),
+              Chroma (C), and Hue (H). Unlike sRGB or HSL, equal steps in OKLCH correspond to equal perceived
+              differences — making it far more predictable when building color palettes and design systems.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">Why use OKLCH in CSS?</h3>
+            <p class="faq-a">
+              Modern browsers support OKLCH natively via CSS Color Level 4. OKLCH lets you adjust lightness and chroma
+              independently without the perceptual distortions that come with HSL. It's especially powerful for design
+              tokens, accessible color systems, and dynamic theming.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">OKLab vs OKLCH — what's the difference?</h3>
+            <p class="faq-a">
+              OKLab uses Cartesian coordinates (L, a, b) where <em>a</em> is the green–red axis and <em>b</em> is the
+              blue–yellow axis. OKLCH is OKLab converted to polar coordinates — the same color described by Lightness,
+              Chroma (distance from neutral), and Hue (angle). OKLCH is more intuitive; OKLab is better for
+              programmatic color math.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">Does colordx support gamut mapping?</h3>
+            <p class="faq-a">
+              Yes. colordx exports <code>inGamutSrgb()</code> to check whether a color is within the sRGB gamut, and
+              <code>toGamutSrgb()</code> to map an out-of-gamut color to the nearest sRGB boundary via chroma-reduction
+              binary search — the approach recommended by the CSS Color 4 specification.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">What color formats are supported?</h3>
+            <p class="faq-a">
+              Core: HEX, RGB, HSL, HWB, OKLab, OKLCH. Optional plugins add CIE Lab, CIE LCH, XYZ, CMYK, color delta
+              (ΔE), and named CSS colors. The plugin system keeps the core bundle small — import only what you need.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">Is colordx compatible with colord?</h3>
+            <p class="faq-a">
+              colordx is API-compatible with colord and designed as a drop-in upgrade. It adds first-class OKLCH/OKLab
+              support, gamut utilities, and a fully-typed plugin system. Most colord usage can be migrated by replacing
+              the import.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <script type="module" src="/playground/app.js"></script>
+    <footer class="footer">
+      <p>Made by <a href="https://dkryaklin.com" target="_blank" rel="noopener noreferrer">dkryaklin.com</a></p>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+    <script>
+      document.querySelectorAll('.code-copy').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          navigator.clipboard?.writeText(btn.dataset.code);
+          const was = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(() => (btn.textContent = was), 1400);
+        });
+      });
+    </script>
   </body>
 </html>

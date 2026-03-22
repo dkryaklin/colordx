@@ -64,7 +64,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "playground": "npx serve . -p 3000",
+    "playground": "npx serve . -p 3000 --config serve.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

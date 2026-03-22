@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/styles.css", "destination": "/playground/styles.css" },
+    { "source": "/app.js", "destination": "/playground/app.js" },
+    { "source": "/", "destination": "/playground/index.html" }
+  ]
+}
