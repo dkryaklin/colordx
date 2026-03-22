@@ -4,18 +4,21 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize]
+  push:
+    branches: [main]
 
 jobs:
   changeset:
     name: Generate Changeset
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
@@ -38,7 +41,7 @@ jobs:
         run: yarn tsx scripts/changeset.ts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BASE_BRANCH: ${{ github.base_ref }}
+          BASE_BRANCH: ${{ github.base_ref || 'HEAD~1' }}
 
       - name: Commit changeset
         run: |
