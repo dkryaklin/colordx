@@ -1,8 +1,6 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, rgbToLab } from './lab.js';
-
-const ANGLE_UNITS: Record<string, number> = { deg: 1, grad: 0.9, turn: 360, rad: 360 / (2 * Math.PI) };
 
 const clampLch = (lch: LchColor): LchColor => ({
   l: clamp(lch.l, 0, 100),

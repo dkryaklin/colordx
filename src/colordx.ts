@@ -1,25 +1,12 @@
-import { rgbToCmyk } from './colorModels/cmyk.js';
 import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHsl } from './colorModels/hsl.js';
 import { rgbToHsv } from './colorModels/hsv.js';
 import { rgbToHwb, roundHwb } from './colorModels/hwb.js';
-import { deltaE2000, rgbToLab } from './colorModels/lab.js';
-import { rgbToLch } from './colorModels/lch.js';
-import { rgbToXyz } from './colorModels/xyz.js';
+import { rgbToOklab } from './colorModels/oklab.js';
+import { rgbToOklch } from './colorModels/oklch.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers } from './parse.js';
-import type {
-  AnyColor,
-  CmykColor,
-  ColorParser,
-  HslColor,
-  HsvColor,
-  HwbColor,
-  LabColor,
-  LchColor,
-  RgbColor,
-  XyzColor,
-} from './types.js';
+import type { AnyColor, ColorParser, HslColor, HsvColor, HwbColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 export class Colordx {
   private readonly _rgb: RgbColor;
@@ -71,30 +58,28 @@ export class Colordx {
     return a < 1 ? `hwb(${h} ${w}% ${b}% / ${a})` : `hwb(${h} ${w}% ${b}%)`;
   }
 
-  toXyz(): XyzColor {
-    return rgbToXyz(this._rgb);
+  toOklab(): OklabColor {
+    return rgbToOklab(this._rgb);
   }
 
-  toLab(): LabColor {
-    return rgbToLab(this._rgb);
+  toOklabString(): string {
+    const { l, a, b, alpha } = this.toOklab();
+    const L = round(l, 4);
+    const A = round(a, 4);
+    const B = round(b, 4);
+    return alpha < 1 ? `oklab(${L} ${A} ${B} / ${alpha})` : `oklab(${L} ${A} ${B})`;
   }
 
-  toLch(): LchColor {
-    return rgbToLch(this._rgb);
+  toOklch(): OklchColor {
+    return rgbToOklch(this._rgb);
   }
 
-  toLchString(): string {
-    const { l, c, h, a } = this.toLch();
-    return a < 1 ? `lch(${l}% ${c} ${h} / ${a})` : `lch(${l}% ${c} ${h})`;
-  }
-
-  toCmyk(): CmykColor {
-    return rgbToCmyk(this._rgb);
-  }
-
-  toCmykString(): string {
-    const { c, m, y, k, a } = this.toCmyk();
-    return a < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${a})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`;
+  toOklchString(): string {
+    const { l, c, h, a } = this.toOklch();
+    const L = round(l, 4);
+    const C = round(c, 4);
+    const H = round(h, 2);
+    return a < 1 ? `oklch(${L} ${C} ${H} / ${a})` : `oklch(${L} ${C} ${H})`;
   }
 
   // Getters
@@ -177,10 +162,6 @@ export class Colordx {
       b: round(self.b * (1 - w) + other.b * w),
       a: round(self.a * (1 - w) + other.a * w, 2),
     });
-  }
-
-  delta(color: AnyColor = '#fff'): number {
-    return round(deltaE2000(this.toLab(), new Colordx(color).toLab()) / 100, 3);
   }
 
   contrast(color: AnyColor = '#fff'): number {

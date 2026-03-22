@@ -4,9 +4,10 @@ import names from "../src/plugins/names.js";
 import a11y from "../src/plugins/a11y.js";
 import harmonies from "../src/plugins/harmonies.js";
 import mix from "../src/plugins/mix.js";
+import minify from "../src/plugins/minify.js";
 
 beforeAll(() => {
-  extend([names, a11y, harmonies, mix]);
+  extend([names, a11y, harmonies, mix, minify]);
 });
 
 describe("names plugin", () => {
@@ -85,6 +86,33 @@ describe("harmonies plugin", () => {
   it("defaults to complementary", () => {
     const colors = (colordx("#ff0000") as any).harmonies();
     expect(colors).toHaveLength(2);
+  });
+});
+
+describe("minify plugin", () => {
+  it("returns shortest hex for shortable colors", () => {
+    expect((colordx("#ff0000") as any).minify()).toBe("#f00");
+    expect((colordx("#ffffff") as any).minify()).toBe("#fff");
+    expect((colordx("#000000") as any).minify()).toBe("#000");
+  });
+
+  it("returns shortest representation", () => {
+    const result = (colordx("#c06060") as any).minify();
+    expect(result.length).toBeLessThanOrEqual("#c06060".length);
+  });
+
+  it("uses name when names plugin is loaded and name option is set", () => {
+    expect((colordx("#ff0000") as any).minify({ name: true })).toBe("red");
+    expect((colordx("#ffffff") as any).minify({ name: true })).toBe("#fff");
+  });
+
+  it("handles transparent option", () => {
+    expect((colordx({ r: 0, g: 0, b: 0, a: 0 }) as any).minify({ transparent: true })).toBe("transparent");
+  });
+
+  it("handles alphaHex option", () => {
+    const result = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).minify({ alphaHex: true });
+    expect(result.length).toBeLessThanOrEqual("rgba(255,0,0,.5)".length);
   });
 });
 

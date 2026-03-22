@@ -1,8 +1,6 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hsvToRgb, rgbToHsv } from './hsv.js';
-
-const ANGLE_UNITS: Record<string, number> = { deg: 1, grad: 0.9, turn: 360, rad: 360 / (2 * Math.PI) };
 
 export const clampHwb = (hwb: HwbColor): HwbColor => ({
   h: ((hwb.h % 360) + 360) % 360,

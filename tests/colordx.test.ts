@@ -216,16 +216,3 @@ describe("getFormat", () => {
   });
 });
 
-describe("delta", () => {
-  it("same color returns 0", () => {
-    expect(colordx("#ff0000").delta("#ff0000")).toBe(0);
-  });
-
-  it("defaults to white", () => {
-    expect(colordx("#000000").delta()).toBeCloseTo(colordx("#000000").delta("#fff"), 5);
-  });
-
-  it("black vs white is max distance", () => {
-    expect(colordx("#000000").delta("#ffffff")).toBeGreaterThan(0.9);
-  });
-});

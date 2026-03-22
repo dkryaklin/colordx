@@ -4,6 +4,7 @@
   "description": "A high-performance color library with extended support for modern color spaces including OKLCH, OKLAB, Display-P3, and more",
   "author": "",
   "license": "MIT",
+  "homepage": "https://colordx.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dkryaklin/colordx.git"

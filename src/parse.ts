@@ -1,30 +1,31 @@
-import { parseCmykObject, parseCmykString } from './colorModels/cmyk.js';
 import { parseHex } from './colorModels/hex.js';
 import { parseHslObject, parseHslString } from './colorModels/hsl.js';
 import { parseHsvObject } from './colorModels/hsv.js';
 import { parseHwbObject, parseHwbString } from './colorModels/hwb.js';
-import { parseLabObject } from './colorModels/lab.js';
-import { parseLchObject, parseLchString } from './colorModels/lch.js';
+import { parseOklabObject, parseOklabString } from './colorModels/oklab.js';
+import { parseOklchObject, parseOklchString } from './colorModels/oklch.js';
 import { parseRgbObject, parseRgbString } from './colorModels/rgb.js';
-import { parseXyzObject } from './colorModels/xyz.js';
 import type { AnyColor, ColorFormat, ColorParser, RgbColor } from './types.js';
 
-const formatParsers: [ColorParser, ColorFormat][] = [
+const stringFormatParsers: [ColorParser, ColorFormat][] = [
   [parseHex, 'hex'],
   [parseRgbString, 'rgb'],
   [parseHslString, 'hsl'],
   [parseHwbString, 'hwb'],
-  [parseLchString, 'lch'],
-  [parseCmykString, 'cmyk'],
+  [parseOklchString, 'lch'],
+  [parseOklabString, 'lab'],
+];
+
+const objectFormatParsers: [ColorParser, ColorFormat][] = [
   [parseRgbObject, 'rgb'],
   [parseHslObject, 'hsl'],
   [parseHsvObject, 'hsv'],
   [parseHwbObject, 'hwb'],
-  [parseXyzObject, 'xyz'],
-  [parseLabObject, 'lab'],
-  [parseLchObject, 'lch'],
-  [parseCmykObject, 'cmyk'],
+  [parseOklabObject, 'lab'],
+  [parseOklchObject, 'lch'],
 ];
+
+const formatParsers: [ColorParser, ColorFormat][] = [...stringFormatParsers, ...objectFormatParsers];
 
 export const defaultParsers: ColorParser[] = formatParsers.map(([parser]) => parser);
 
@@ -39,7 +40,8 @@ export const parse = (input: AnyColor): RgbColor | null => {
 };
 
 export const getFormat = (input: AnyColor): ColorFormat | undefined => {
-  for (const [parser, format] of formatParsers) {
+  const typed = typeof input === 'string' ? stringFormatParsers : objectFormatParsers;
+  for (const [parser, format] of typed) {
     if (parser(input)) return format;
   }
   // Check parsers added by plugins (format unknown)
