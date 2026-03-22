@@ -1,6 +1,9 @@
-name: Release
+name: Changeset & Release
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
   push:
     branches: [main]
 
@@ -9,9 +12,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  auto-changeset:
+    name: Generate Changeset
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache yarn global cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn/berry/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
+
+      - run: yarn install --immutable
+
+      - name: Generate changeset
+        run: yarn tsx scripts/changeset.ts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_BRANCH: ${{ github.base_ref || github.event.before }}
+
+      - name: Commit changeset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .changeset/
+          git diff --staged --quiet || git commit -m "chore: add auto-generated changeset"
+          git push
+
   release:
     name: Release
     runs-on: ubuntu-latest
+    needs: [auto-changeset]
+    # always() lets this run even when auto-changeset is skipped (bot push)
+    if: always() && github.event_name == 'push'
     permissions:
       contents: write
       pull-requests: write
