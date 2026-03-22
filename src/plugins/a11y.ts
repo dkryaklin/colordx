@@ -24,7 +24,7 @@ const a11y: Plugin = (ColordClass) => {
   ColordClass.prototype.minReadable = function (this: Colordx, background: AnyColor = '#fff'): Colordx {
     let color: Colordx = new Colordx(this.toRgb());
     const bgLuminance = new Colordx(background).luminance();
-    const darken = this.luminance() > bgLuminance;
+    const darken = this.luminance() < bgLuminance;
 
     for (let i = 0; i < 100; i++) {
       if (color.contrast(background) >= 4.5) break;

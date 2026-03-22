@@ -46,9 +46,9 @@ export const hsvToRgb = ({ h, s, v, a }: HsvColor): RgbColor => {
   const t = vn * (1 - (1 - f) * sn);
 
   const [r, g, b] = [
-    [vn, t, p, p, q, vn],
-    [q, vn, vn, t, p, p],
-    [p, p, q, vn, vn, t],
+    [vn, q, p, p, t, vn],
+    [t, vn, vn, q, p, p],
+    [p, p, t, vn, vn, q],
   ].map((channel) => round(channel[i]! * 255));
 
   return { r: r!, g: g!, b: b!, a };

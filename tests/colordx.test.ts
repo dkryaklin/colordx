@@ -152,3 +152,48 @@ describe("random", () => {
     expect(c.isValid()).toBe(true);
   });
 });
+
+describe("toString", () => {
+  it("returns hex string", () => {
+    expect(String(colordx("#ff0000"))).toBe("#ff0000");
+    expect(`${colordx("#ffffff")}`).toBe("#ffffff");
+  });
+});
+
+describe("hsv object parsing", () => {
+  it("parses HSV object", () => {
+    expect(colordx({ h: 0, s: 100, v: 100, a: 1 }).toHex()).toBe("#ff0000");
+    expect(colordx({ h: 120, s: 100, v: 100, a: 1 }).toHex()).toBe("#00ff00");
+    expect(colordx({ h: 240, s: 100, v: 100, a: 1 }).toHex()).toBe("#0000ff");
+    expect(colordx({ h: 0, s: 0, v: 0, a: 1 }).toHex()).toBe("#000000");
+  });
+});
+
+describe("invalid input", () => {
+  it("falls back to black for invalid color", () => {
+    expect(colordx("notacolor").toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(colordx("notacolor").isValid()).toBe(false);
+  });
+
+  it("returns null from parse for invalid input", () => {
+    expect(colordx({} as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+  });
+
+  it("rejects invalid rgb object", () => {
+    expect(colordx({ r: "x", g: 0, b: 0, a: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+  });
+});
+
+describe("delta", () => {
+  it("same color returns 0", () => {
+    expect(colordx("#ff0000").delta("#ff0000")).toBe(0);
+  });
+
+  it("defaults to white", () => {
+    expect(colordx("#000000").delta()).toBeCloseTo(colordx("#000000").delta("#fff"), 5);
+  });
+
+  it("black vs white is max distance", () => {
+    expect(colordx("#000000").delta("#ffffff")).toBeGreaterThan(0.9);
+  });
+});

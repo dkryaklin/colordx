@@ -90,6 +90,7 @@
     "@typescript-eslint/eslint-plugin": "^8.57.1",
     "@typescript-eslint/parser": "^8.57.1",
     "@vitest/coverage-v8": "^4.1.0",
+    "colord": "^2.9.3",
     "eslint": "^9.39.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",

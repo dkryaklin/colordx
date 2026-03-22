@@ -1,19 +1,38 @@
+import { rgbToCmyk } from './colorModels/cmyk.js';
 import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHsl } from './colorModels/hsl.js';
 import { rgbToHsv } from './colorModels/hsv.js';
+import { rgbToHwb, roundHwb } from './colorModels/hwb.js';
+import { deltaE2000, rgbToLab } from './colorModels/lab.js';
+import { rgbToLch } from './colorModels/lch.js';
+import { rgbToXyz } from './colorModels/xyz.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers } from './parse.js';
-import type { AnyColor, ColorParser, HslColor, HsvColor, RgbColor } from './types.js';
+import type {
+  AnyColor,
+  CmykColor,
+  ColorParser,
+  HslColor,
+  HsvColor,
+  HwbColor,
+  LabColor,
+  LchColor,
+  RgbColor,
+  XyzColor,
+} from './types.js';
 
 export class Colordx {
   private readonly _rgb: RgbColor;
+  private readonly _valid: boolean;
 
   constructor(input: AnyColor) {
-    this._rgb = parse(input) ?? { r: 0, g: 0, b: 0, a: 1 };
+    const parsed = parse(input);
+    this._valid = parsed !== null;
+    this._rgb = parsed ?? { r: 0, g: 0, b: 0, a: 1 };
   }
 
   isValid(): boolean {
-    return parse(this._rgb) !== null;
+    return this._valid;
   }
 
   // Converters
@@ -41,6 +60,41 @@ export class Colordx {
 
   toHsv(): HsvColor {
     return rgbToHsv(this._rgb);
+  }
+
+  toHwb(): HwbColor {
+    return roundHwb(rgbToHwb(this._rgb));
+  }
+
+  toHwbString(): string {
+    const { h, w, b, a } = this.toHwb();
+    return a < 1 ? `hwb(${h} ${w}% ${b}% / ${a})` : `hwb(${h} ${w}% ${b}%)`;
+  }
+
+  toXyz(): XyzColor {
+    return rgbToXyz(this._rgb);
+  }
+
+  toLab(): LabColor {
+    return rgbToLab(this._rgb);
+  }
+
+  toLch(): LchColor {
+    return rgbToLch(this._rgb);
+  }
+
+  toLchString(): string {
+    const { l, c, h, a } = this.toLch();
+    return a < 1 ? `lch(${l}% ${c} ${h} / ${a})` : `lch(${l}% ${c} ${h})`;
+  }
+
+  toCmyk(): CmykColor {
+    return rgbToCmyk(this._rgb);
+  }
+
+  toCmykString(): string {
+    const { c, m, y, k, a } = this.toCmyk();
+    return a < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${a})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`;
   }
 
   // Getters
@@ -123,6 +177,10 @@ export class Colordx {
       b: round(self.b * (1 - w) + other.b * w),
       a: round(self.a * (1 - w) + other.a * w, 2),
     });
+  }
+
+  delta(color: AnyColor = '#fff'): number {
+    return round(deltaE2000(this.toLab(), new Colordx(color).toLab()) / 100, 3);
   }
 
   contrast(color: AnyColor = '#fff'): number {
