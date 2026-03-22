@@ -91,12 +91,20 @@ jobs:
       - run: yarn build
       - run: yarn publint
 
+      - name: Check for changesets
+        id: check
+        run: |
+          COUNT=$(find .changeset -name '*.md' ! -name 'README.md' | wc -l)
+          echo "has_changesets=$([ $COUNT -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
       - name: Version packages
+        if: steps.check.outputs.has_changesets == 'true'
         run: yarn changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and push version bump
+        if: steps.check.outputs.has_changesets == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -104,9 +112,11 @@ jobs:
           git diff --staged --quiet || (git commit -m "chore: release" && git push)
 
       - name: Publish to npm
+        if: steps.check.outputs.has_changesets == 'true'
         run: yarn changeset publish --provenance
 
       - name: Create GitHub releases
+        if: steps.check.outputs.has_changesets == 'true'
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="@colordx/core@${VERSION}"
