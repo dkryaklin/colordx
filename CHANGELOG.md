@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.5.0
+
+### Minor Changes
+
+- [`c8ad23f`](https://github.com/dkryaklin/colordx/commit/c8ad23f1b4648f86c4213c24ecea3c991d88e5ff) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added `readableScore()` method to the a11y plugin, returning a WCAG 2.x compliance tier ('AAA', 'AA', 'AA large', or 'fail') for a given background color.
+
 ## 1.4.0
 
 ### Minor Changes
