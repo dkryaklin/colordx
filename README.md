@@ -62,6 +62,7 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 .toHslString()     // 'hsl(0, 100%, 50%)'
 .toHslString(4)    // 'hsl(0, 100%, 50%)'                   — higher precision string
 .toHsv()           // { h: 0, s: 100, v: 100, a: 1 }
+.toHsvString()     // 'hsv(0, 100%, 100%)'
 .toHwb()           // { h: 0, w: 0, b: 0, a: 1 }            — default precision: 0
 .toHwb(2)          // { h: 0, w: 0, b: 0, a: 1 }            — up to 2 decimal places
 .toHwbString()     // 'hwb(0 0% 0%)'

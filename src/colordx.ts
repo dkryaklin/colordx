@@ -50,6 +50,11 @@ export class Colordx {
     return rgbToHsv(this._rgb);
   }
 
+  toHsvString(): string {
+    const { h, s, v, a } = this.toHsv();
+    return a < 1 ? `hsva(${h}, ${s}%, ${v}%, ${a})` : `hsv(${h}, ${s}%, ${v}%)`;
+  }
+
   toHwb(precision = 0): HwbColor {
     const { h, w, b, a } = rgbToHwb(this._rgb);
     return { h: round(h, precision), w: round(w, precision), b: round(b, precision), a: round(a, 3) };

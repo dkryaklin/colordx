@@ -54,6 +54,11 @@ describe("conversion", () => {
     expect(hsv.s).toBe(100);
     expect(hsv.v).toBe(100);
   });
+
+  it("converts to hsv string", () => {
+    expect(colordx("#ff0000").toHsvString()).toBe("hsv(0, 100%, 100%)");
+    expect(colordx("rgba(255, 0, 0, 0.5)").toHsvString()).toBe("hsva(0, 100%, 100%, 0.5)");
+  });
 });
 
 describe("manipulation", () => {
