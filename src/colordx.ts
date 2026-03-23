@@ -188,7 +188,7 @@ export class Colordx {
       r: round(self.r * (1 - w) + other.r * w),
       g: round(self.g * (1 - w) + other.g * w),
       b: round(self.b * (1 - w) + other.b * w),
-      a: round(self.a * (1 - w) + other.a * w, 2),
+      a: round(self.a * (1 - w) + other.a * w, 3),
     });
   }
 

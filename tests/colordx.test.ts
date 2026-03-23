@@ -5,7 +5,10 @@ describe("parsing", () => {
   it("parses hex colors", () => {
     expect(colordx("#fff").toRgb()).toEqual({ r: 255, g: 255, b: 255, a: 1 });
     expect(colordx("#ff0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
-    expect(colordx("#ff000080").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    // Alpha is stored at 3dp — the minimum precision for all 256 hex byte values (n/255)
+    // to survive a round-trip without corruption. 128/255 = 0.50196… → 0.502, not 0.5.
+    // Values set directly (e.g. alpha(0.5)) are unaffected: round(0.5, 3) = 0.5.
+    expect(colordx("#ff000080").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.502 });
   });
 
   it("parses rgb strings", () => {
@@ -273,6 +276,12 @@ describe("invalid input", () => {
 
   it("rejects 5-char hex as invalid", () => {
     expect(colordx("#fffff").isValid()).toBe(false);
+  });
+
+  it("round-trips 4-digit hex with alpha through rgb string", () => {
+    // regression: 2dp alpha caused #cc88 → rgba(..., 0.53) → #cccc8887 (wrong byte)
+    expect(colordx(colordx("#cc88").toRgbString()).toHex()).toBe("#cccc8888");
+    expect(colordx(colordx("#f008").toRgbString()).toHex()).toBe("#ff000088");
   });
 
   it("rejects HWB object with NaN alpha", () => {

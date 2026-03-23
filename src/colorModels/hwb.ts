@@ -6,7 +6,7 @@ export const clampHwb = (hwb: HwbColor): HwbColor => ({
   h: normalizeHue(hwb.h),
   w: clamp(hwb.w, 0, 100),
   b: clamp(hwb.b, 0, 100),
-  a: clamp(round(hwb.a, 2), 0, 1),
+  a: clamp(round(hwb.a, 3), 0, 1),
 });
 
 export const roundHwb = (hwb: HwbColor): HwbColor => ({

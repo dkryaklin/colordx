@@ -5,7 +5,7 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
   r: clamp(round(rgb.r), 0, 255),
   g: clamp(round(rgb.g), 0, 255),
   b: clamp(round(rgb.b), 0, 255),
-  a: clamp(round(rgb.a, 2), 0, 1),
+  a: clamp(round(rgb.a, 3), 0, 1),
 });
 
 export const parseRgbObject = (input: unknown): RgbColor | null => {

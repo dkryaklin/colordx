@@ -5,7 +5,7 @@ export const clampHsv = (hsv: HsvColor): HsvColor => ({
   h: normalizeHue(hsv.h),
   s: clamp(hsv.s, 0, 100),
   v: clamp(hsv.v, 0, 100),
-  a: clamp(round(hsv.a, 2), 0, 1),
+  a: clamp(round(hsv.a, 3), 0, 1),
 });
 
 export const rgbToHsv = ({ r, g, b, a }: RgbColor): HsvColor => {

@@ -10,6 +10,19 @@ import { colordx } from '../src/index.js';
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#ff000080', '#c06060'];
 
+// colordx uses 3dp for hex alpha (e.g. 0x80/255 = 0.502) vs colord's 2dp (0.5).
+// This is an intentional improvement for round-trip accuracy.
+// Use toBeCloseTo(x, 1) for alpha comparisons on hex-alpha inputs.
+const approxRgbEqual = (
+  dx: { r: number; g: number; b: number; a: number },
+  d: { r: number; g: number; b: number; a: number }
+) => {
+  expect(dx.r).toBe(d.r);
+  expect(dx.g).toBe(d.g);
+  expect(dx.b).toBe(d.b);
+  expect(dx.a).toBeCloseTo(d.a, 1);
+};
+
 describe('isValid', () => {
   it.each(inputs)('%s', (input) => {
     expect(colordx(input).isValid()).toBe(colord(input).isValid());
@@ -24,13 +37,14 @@ describe('toHex', () => {
 
 describe('toRgb', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).toRgb()).toEqual(colord(input).toRgb());
+    approxRgbEqual(colordx(input).toRgb(), colord(input).toRgb());
   });
 });
 
 describe('toRgbString', () => {
+  // colordx may output higher-precision alpha (e.g. 0.502 vs 0.5); compare parsed values
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).toRgbString()).toBe(colord(input).toRgbString());
+    approxRgbEqual(colordx(colordx(input).toRgbString()).toRgb(), colord(colord(input).toRgbString()).toRgb());
   });
 });
 
@@ -42,7 +56,7 @@ describe('toHsl', () => {
     expect(dx.h).toBeCloseTo(d.h, 0);
     expect(dx.s).toBeCloseTo(d.s, 0);
     expect(dx.l).toBeCloseTo(d.l, 0);
-    expect(dx.a).toBe(d.a);
+    expect(dx.a).toBeCloseTo(d.a, 1);
   });
 });
 
@@ -65,7 +79,7 @@ describe('toHsv', () => {
     expect(dx.h).toBeCloseTo(d.h, 0);
     expect(dx.s).toBeCloseTo(d.s, 0);
     expect(dx.v).toBeCloseTo(d.v, 0);
-    expect(dx.a).toBe(d.a);
+    expect(dx.a).toBeCloseTo(d.a, 1);
   });
 });
 
@@ -89,7 +103,7 @@ describe('isLight', () => {
 
 describe('alpha (get)', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).alpha()).toBe(colord(input).alpha());
+    expect(colordx(input).alpha()).toBeCloseTo(colord(input).alpha(), 1);
   });
 });
 
@@ -107,43 +121,43 @@ describe('hue (get)', () => {
 
 describe('hue (set)', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).hue(120).toRgb()).toEqual(colord(input).hue(120).toRgb());
+    approxRgbEqual(colordx(input).hue(120).toRgb(), colord(input).hue(120).toRgb());
   });
 });
 
 describe('lighten', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).lighten(0.1).toRgb()).toEqual(colord(input).lighten(0.1).toRgb());
+    approxRgbEqual(colordx(input).lighten(0.1).toRgb(), colord(input).lighten(0.1).toRgb());
   });
 });
 
 describe('darken', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).darken(0.1).toRgb()).toEqual(colord(input).darken(0.1).toRgb());
+    approxRgbEqual(colordx(input).darken(0.1).toRgb(), colord(input).darken(0.1).toRgb());
   });
 });
 
 describe('saturate', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).saturate(0.1).toRgb()).toEqual(colord(input).saturate(0.1).toRgb());
+    approxRgbEqual(colordx(input).saturate(0.1).toRgb(), colord(input).saturate(0.1).toRgb());
   });
 });
 
 describe('desaturate', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).desaturate(0.1).toRgb()).toEqual(colord(input).desaturate(0.1).toRgb());
+    approxRgbEqual(colordx(input).desaturate(0.1).toRgb(), colord(input).desaturate(0.1).toRgb());
   });
 });
 
 describe('grayscale', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).grayscale().toRgb()).toEqual(colord(input).grayscale().toRgb());
+    approxRgbEqual(colordx(input).grayscale().toRgb(), colord(input).grayscale().toRgb());
   });
 });
 
 describe('invert', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).invert().toRgb()).toEqual(colord(input).invert().toRgb());
+    approxRgbEqual(colordx(input).invert().toRgb(), colord(input).invert().toRgb());
   });
 });
 
@@ -155,7 +169,7 @@ describe('rotate', () => {
     expect(Math.abs(dx.r - d.r)).toBeLessThanOrEqual(1);
     expect(Math.abs(dx.g - d.g)).toBeLessThanOrEqual(1);
     expect(Math.abs(dx.b - d.b)).toBeLessThanOrEqual(1);
-    expect(dx.a).toBe(d.a);
+    expect(dx.a).toBeCloseTo(d.a, 1);
   });
 });
 
@@ -171,3 +185,13 @@ describe('isEqual', () => {
 
 // mix is a plugin in colord (not core) — no parity comparison possible
 // delta() parity is tested in color-models.test.ts (requires colord lab plugin)
+
+describe('hex alpha precision (intentional divergence from colord)', () => {
+  it('colordx uses 3dp for hex alpha — more accurate round-trip than colord 2dp', () => {
+    // 0x80/255 = 0.50196… → colord rounds to 0.5, colordx rounds to 0.502
+    expect(colordx('#ff000080').alpha()).toBeCloseTo(0.5, 1);
+    expect(colordx('#ff000080').alpha()).toBe(0.502);
+    // Round-trip: hex → rgb string → hex — colordx preserves the correct alpha byte
+    expect(colordx(colordx('#cc88').toRgbString()).toHex()).toBe('#cccc8888');
+  });
+});

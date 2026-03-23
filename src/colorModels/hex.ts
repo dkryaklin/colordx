@@ -14,7 +14,7 @@ export const parseHex = (input: unknown): RgbColor | null => {
       r: parseHexChannel(r!),
       g: parseHexChannel(g!),
       b: parseHexChannel(b!),
-      a: round(parseHexChannel(a) / 255, 2),
+      a: round(parseHexChannel(a) / 255, 3),
     };
   }
 
@@ -23,7 +23,7 @@ export const parseHex = (input: unknown): RgbColor | null => {
       r: parseInt(clean.slice(0, 2), 16),
       g: parseInt(clean.slice(2, 4), 16),
       b: parseInt(clean.slice(4, 6), 16),
-      a: clean.length === 8 ? round(parseInt(clean.slice(6, 8), 16) / 255, 2) : 1,
+      a: clean.length === 8 ? round(parseInt(clean.slice(6, 8), 16) / 255, 3) : 1,
     };
   }
 
