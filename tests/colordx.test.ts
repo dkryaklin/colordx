@@ -158,6 +158,19 @@ describe("getters", () => {
     expect(colordx("#ffffff").contrast("#ffffff")).toBe(1);
   });
 
+  it("composites semi-transparent foreground over background for contrast", () => {
+    // Fully transparent black over white = white → contrast 1:1 (not 21:1)
+    expect(colordx("#00000000").contrast("#ffffff")).toBe(1);
+    // Fully opaque black is unchanged
+    expect(colordx("#000000ff").contrast("#ffffff")).toBe(21);
+    // Transparent black over black = black → still 21:1
+    expect(colordx("#00000000").contrast("#000000")).toBe(1);
+    // 50% transparent black over white composites to ~mid-gray, contrast < 21
+    const halfTransparent = colordx("#000000").alpha(0.5).contrast("#ffffff");
+    expect(halfTransparent).toBeLessThan(21);
+    expect(halfTransparent).toBeGreaterThan(1);
+  });
+
   it("gets/sets alpha", () => {
     expect(colordx("#ff0000").alpha()).toBe(1);
     expect(colordx("#ff0000").alpha(0.5).alpha()).toBe(0.5);

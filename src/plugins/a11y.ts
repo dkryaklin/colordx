@@ -48,9 +48,18 @@ function calcApca(textRgb: { r: number; g: number; b: number }, bgRgb: { r: numb
 
 const a11y: Plugin = (ColordClass) => {
   ColordClass.prototype.apcaContrast = function (this: Colordx, background: AnyColor = '#fff'): number {
-    const textRgb = this.toRgb();
     const bgRgb = new Colordx(background).toRgb();
-    return Math.round(calcApca(textRgb, bgRgb) * 10) / 10;
+    const fgRgb = this.toRgb();
+    // Composite semi-transparent foreground over background before APCA calculation.
+    const effectiveFg =
+      fgRgb.a < 1
+        ? {
+            r: Math.round(fgRgb.a * fgRgb.r + (1 - fgRgb.a) * bgRgb.r),
+            g: Math.round(fgRgb.a * fgRgb.g + (1 - fgRgb.a) * bgRgb.g),
+            b: Math.round(fgRgb.a * fgRgb.b + (1 - fgRgb.a) * bgRgb.b),
+          }
+        : fgRgb;
+    return Math.round(calcApca(effectiveFg, bgRgb) * 10) / 10;
   };
 
   ColordClass.prototype.isReadableApca = function (

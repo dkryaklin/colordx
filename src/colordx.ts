@@ -193,8 +193,22 @@ export class Colordx {
   }
 
   contrast(color: AnyColor = '#fff'): number {
-    const l1 = this.luminance();
-    const l2 = new Colordx(color).luminance();
+    const bg = new Colordx(color);
+    const bgRgb = bg._rgb;
+    const fgRgb = this._rgb;
+    // Composite semi-transparent foreground over the background before measuring contrast.
+    // A fully-transparent color has zero contrast with any background, not the contrast of its base color.
+    const effectiveFg =
+      fgRgb.a < 1
+        ? new Colordx({
+            r: round(fgRgb.a * fgRgb.r + (1 - fgRgb.a) * bgRgb.r),
+            g: round(fgRgb.a * fgRgb.g + (1 - fgRgb.a) * bgRgb.g),
+            b: round(fgRgb.a * fgRgb.b + (1 - fgRgb.a) * bgRgb.b),
+            a: 1,
+          })
+        : this;
+    const l1 = effectiveFg.luminance();
+    const l2 = bg.luminance();
     const lighter = Math.max(l1, l2);
     const darker = Math.min(l1, l2);
     return round((lighter + 0.05) / (darker + 0.05), 2);

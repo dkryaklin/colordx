@@ -88,6 +88,13 @@ describe("a11y plugin", () => {
     expect((colordx("#ffffff") as any).apcaContrast("#fefefe")).toBe(0);
   });
 
+  it("composites semi-transparent foreground over background for APCA", () => {
+    // Fully transparent black over white composites to white → ~0 contrast
+    expect((colordx("#00000000") as any).apcaContrast("#ffffff")).toBe(0);
+    // Opaque black on white: max APCA ~106 (unchanged)
+    expect((colordx("#000000ff") as any).apcaContrast("#ffffff")).toBeCloseTo(106, 0);
+  });
+
   it("APCA matches known reference values from the issue", () => {
     // From the GitHub issue: APCA gives 37.2 for dark text on orange bg
     expect((colordx("#202122") as any).apcaContrast("#cf674a")).toBeCloseTo(37.2, 0);
