@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.2.0
+
+### Minor Changes
+
+- [`61f393a`](https://github.com/dkryaklin/colordx/commit/61f393a7ea9a65830f67eba3be2bcf8e949495c2) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added APCA contrast support to the a11y plugin with new `apcaContrast()` and `isReadableApca()` methods, and updated the playground to demonstrate both WCAG and APCA accessibility checks.
+
 ## 1.1.0
 
 ### Minor Changes
