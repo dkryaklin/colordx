@@ -8,18 +8,6 @@ A modern color manipulation library built for the CSS Color 4 era. Drop-in upgra
 
 [colord](https://github.com/omgovich/colord) is a great library, but it was designed around CSS Color 3. Modern CSS uses `oklch()` and `oklab()` — color spaces that are perceptually uniform and supported natively in all modern browsers. With colord, you need plugins for those. With colordx, they're built in.
 
-| Feature | colord | colordx |
-|---|---|---|
-| `hex`, `rgb`, `hsl`, `hsv`, `hwb` | ✅ core | ✅ core |
-| `oklch`, `oklab` | ❌ not available | ✅ core |
-| `lab` (CIE), `lch` (CIE), `xyz`, `cmyk` | plugin | plugin |
-| `delta()` (CIEDE2000) | plugin | plugin |
-| `names`, `a11y`, `harmonies`, `mix`, `minify` | plugin | plugin |
-| Bundle size (gzipped) | ~2.1 KB | ~3.4 KB |
-| `getFormat()` | ✅ | ✅ |
-
-The extra ~1.3 KB buys you OKLab + OKLCH math in core — no plugin import needed for the color spaces that modern CSS actually uses.
-
 ## Install
 
 ```bash
@@ -68,11 +56,16 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 .toRgb()           // { r: 255, g: 0, b: 0, a: 1 }
 .toRgbString()     // 'rgb(255, 0, 0)'
 .toHex()           // '#ff0000'
-.toHsl()           // { h: 0, s: 100, l: 50, a: 1 }
+.toHsl()           // { h: 0, s: 100, l: 50, a: 1 }         — default precision: 2
+.toHsl(4)          // { h: 0, s: 100, l: 50, a: 1 }         — up to 4 decimal places
+.toHsl(0)          // { h: 0, s: 100, l: 50, a: 1 }         — rounded to integers
 .toHslString()     // 'hsl(0, 100%, 50%)'
+.toHslString(4)    // 'hsl(0, 100%, 50%)'                   — higher precision string
 .toHsv()           // { h: 0, s: 100, v: 100, a: 1 }
-.toHwb()           // { h: 0, w: 0, b: 0, a: 1 }
+.toHwb()           // { h: 0, w: 0, b: 0, a: 1 }            — default precision: 0
+.toHwb(2)          // { h: 0, w: 0, b: 0, a: 1 }            — up to 2 decimal places
 .toHwbString()     // 'hwb(0 0% 0%)'
+.toHwbString(2)    // 'hwb(0 0% 0%)'                        — higher precision string
 .toOklab()         // { l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }
 .toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
 .toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, a: 1 }
@@ -234,9 +227,22 @@ import { getFormat } from 'colord';
 import { getFormat } from '@colordx/core';
 ```
 
-### HSL/HSV precision
+### HSL/HWB precision
 
 colordx returns higher precision HSL/HSV values than colord. If your code does exact equality checks on `.toHsl()` output, use `toBeCloseTo` or round the values.
+
+`toHsl()` and `toHwb()` now accept an optional `precision` argument to control decimal places:
+
+```ts
+colordx('#3d7a9f').toHsl()     // { h: 205.71, s: 43.24, l: 43.33, a: 1 }  — default (2)
+colordx('#3d7a9f').toHsl(4)    // { h: 205.7143, s: 43.2432, l: 43.3333, a: 1 }
+colordx('#3d7a9f').toHsl(0)    // { h: 206, s: 43, l: 43, a: 1 }
+
+colordx('#3d7a9f').toHwb()     // { h: 206, w: 24, b: 38, a: 1 }            — default (0)
+colordx('#3d7a9f').toHwb(2)    // { h: 205.71, w: 23.92, b: 37.65, a: 1 }
+```
+
+The `minify()` plugin preserves full HSL precision when building candidates, so minification is now lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
 
 ## License
 
