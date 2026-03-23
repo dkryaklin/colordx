@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.6.0
+
+### Minor Changes
+
+- [`b2667da`](https://github.com/dkryaklin/colordx/commit/b2667dab1c0e1f08fbe6e71caf56d19a02e1a2ba) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Add `lightness()` and `chroma()` getter/setter methods for OKLCH color space manipulation.
+
 ## 1.5.0
 
 ### Minor Changes
