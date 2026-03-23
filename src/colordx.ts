@@ -36,6 +36,11 @@ export class Colordx {
     return rgbToHex(this._rgb);
   }
 
+  toNumber(): number {
+    const { r, g, b } = this._rgb;
+    return (r << 16) | (g << 8) | b;
+  }
+
   toHsl(precision = 2): HslColor {
     const { h, s, l, a } = rgbToHslRaw(this._rgb);
     return { h: round(h, precision), s: round(s, precision), l: round(l, precision), a };

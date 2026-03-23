@@ -56,6 +56,7 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 .toRgb()           // { r: 255, g: 0, b: 0, a: 1 }
 .toRgbString()     // 'rgb(255, 0, 0)'
 .toHex()           // '#ff0000'
+.toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
 .toHsl()           // { h: 0, s: 100, l: 50, a: 1 }         — default precision: 2
 .toHsl(4)          // { h: 0, s: 100, l: 50, a: 1 }         — up to 4 decimal places
 .toHsl(0)          // { h: 0, s: 100, l: 50, a: 1 }         — rounded to integers

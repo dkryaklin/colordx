@@ -31,6 +31,13 @@ describe("conversion", () => {
     expect(colordx("rgb(255, 0, 0)").toHex()).toBe("#ff0000");
   });
 
+  it("converts to number", () => {
+    expect(colordx("#ff0000").toNumber()).toBe(0xff0000);
+    expect(colordx("#ffffff").toNumber()).toBe(0xffffff);
+    expect(colordx("#000000").toNumber()).toBe(0);
+    expect(colordx("#3b82f6").toNumber()).toBe(0x3b82f6);
+  });
+
   it("converts to rgb string", () => {
     expect(colordx("#ff0000").toRgbString()).toBe("rgb(255, 0, 0)");
     expect(colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toRgbString()).toBe("rgba(255, 0, 0, 0.5)");
