@@ -149,22 +149,24 @@ export class Colordx {
   }
 
   // Manipulators
-  lighten(amount = 0.1): Colordx {
+  lighten(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
     const hsl = this.toHsl();
-    return new Colordx(hslToRgb({ ...hsl, l: clamp(hsl.l + amount * 100, 0, 100) }));
+    const l = options.relative ? hsl.l * (1 + amount) : hsl.l + amount * 100;
+    return new Colordx(hslToRgb({ ...hsl, l: clamp(l, 0, 100) }));
   }
 
-  darken(amount = 0.1): Colordx {
-    return this.lighten(-amount);
+  darken(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
+    return this.lighten(-amount, options);
   }
 
-  saturate(amount = 0.1): Colordx {
+  saturate(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
     const hsl = this.toHsl();
-    return new Colordx(hslToRgb({ ...hsl, s: clamp(hsl.s + amount * 100, 0, 100) }));
+    const s = options.relative ? hsl.s * (1 + amount) : hsl.s + amount * 100;
+    return new Colordx(hslToRgb({ ...hsl, s: clamp(s, 0, 100) }));
   }
 
-  desaturate(amount = 0.1): Colordx {
-    return this.saturate(-amount);
+  desaturate(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
+    return this.saturate(-amount, options);
   }
 
   grayscale(): Colordx {

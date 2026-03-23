@@ -77,10 +77,14 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 ### Manipulation
 
 ```ts
-.lighten(0.1)      // increase lightness by 10%
-.darken(0.1)       // decrease lightness by 10%
-.saturate(0.1)     // increase saturation by 10%
-.desaturate(0.1)   // decrease saturation by 10%
+.lighten(0.1)                        // increase lightness by 10 percentage points
+.lighten(0.1, { relative: true })    // increase lightness by 10% of current value
+.darken(0.1)                         // decrease lightness by 10 percentage points
+.darken(0.1, { relative: true })     // decrease lightness by 10% of current value
+.saturate(0.1)                       // increase saturation by 10 percentage points
+.saturate(0.1, { relative: true })   // increase saturation by 10% of current value
+.desaturate(0.1)                     // decrease saturation by 10 percentage points
+.desaturate(0.1, { relative: true }) // decrease saturation by 10% of current value
 .grayscale()       // fully desaturate
 .invert()          // invert RGB channels
 .rotate(30)        // rotate hue by 30°
@@ -213,6 +217,8 @@ const c = colordx('#ff0000');
 All core manipulation and conversion methods have identical signatures:
 `.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.toHsv()`, `.toHwb()`, `.toHwbString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.mix()`, `.alpha()`, `.hue()`, `.brightness()`, `.luminance()`, `.isDark()`, `.isLight()`, `.contrast()`, `.isEqual()`, `getFormat()`, `random()`
 
+`.lighten()`, `.darken()`, `.saturate()`, and `.desaturate()` accept an optional `{ relative: true }` flag not present in colord — see [Relative lighten/darken](#relative-lightendarken) below.
+
 ### What changed
 
 **OKLCH and OKLab are now core** — no plugin needed:
@@ -305,6 +311,22 @@ colordx('#3d7a9f').toHwb(2)    // { h: 205.71, w: 23.92, b: 37.65, a: 1 }
 ```
 
 The `minify()` plugin preserves full HSL precision when building candidates, so minification is now lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
+
+## Relative lighten/darken
+
+By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points (same as colord). Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
+
+```ts
+// Color with l=10%
+colordx('#1a0000').lighten(0.1)                     // l = 10 + 10 = 20%  (absolute)
+colordx('#1a0000').lighten(0.1, { relative: true })  // l = 10 * 1.1 = 11% (relative)
+
+// Color with s=40%
+colordx('#a35050').saturate(0.1)                     // s = 40 + 10 = 50%  (absolute)
+colordx('#a35050').saturate(0.1, { relative: true })  // s = 40 * 1.1 = 44% (relative)
+```
+
+The same flag works on `.darken()` and `.desaturate()`.
 
 ## License
 

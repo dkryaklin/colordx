@@ -111,6 +111,25 @@ describe("manipulation", () => {
     expect(s2).toBeLessThan(s1);
   });
 
+  it("lightens/darkens relatively", () => {
+    // #ff0000 = hsl(0, 100%, 50%) — round-trips exactly
+    // absolute lighten(0.1): l = 50 + 10 = 60
+    // relative lighten(0.1): l = 50 * 1.1 = 55 (smaller step from the same amount)
+    expect(colordx("#ff0000").lighten(0.1).toHsl().l).toBe(60);
+    expect(colordx("#ff0000").lighten(0.1, { relative: true }).toHsl().l).toBeCloseTo(55, 0);
+    expect(colordx("#ff0000").darken(0.1, { relative: true }).toHsl().l).toBeCloseTo(45, 0);
+  });
+
+  it("saturates/desaturates relatively", () => {
+    // hsl(0, 50%, 50%) — construct via hex that round-trips, check relative < absolute
+    const base = colordx({ h: 0, s: 50, l: 50, a: 1 });
+    const absS = base.saturate(0.1).toHsl().s;
+    const relS = base.saturate(0.1, { relative: true }).toHsl().s;
+    // relative step is smaller than absolute step for same amount
+    expect(relS).toBeLessThan(absS);
+    expect(base.desaturate(0.1, { relative: true }).toHsl().s).toBeLessThan(base.toHsl().s);
+  });
+
   it("inverts", () => {
     expect(colordx("#ff0000").invert().toHex()).toBe("#00ffff");
     expect(colordx("#ffffff").invert().toHex()).toBe("#000000");
