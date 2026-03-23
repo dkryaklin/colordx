@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.9.0
+
+### Minor Changes
+
+- [`46ee089`](https://github.com/dkryaklin/colordx/commit/46ee089ab6381f26968f8bc0b60fdff7982e5757) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added optional `{ relative: true }` flag to `lighten`, `darken`, `saturate`, and `desaturate` for proportional adjustments based on the current value.
+
 ## 1.8.2
 
 ### Patch Changes
