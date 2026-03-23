@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.1.0
+
+### Minor Changes
+
+- [`bcde9e2`](https://github.com/dkryaklin/colordx/commit/bcde9e25fea220ec515565f96c74261ff173274f) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added optional `precision` parameter to `toHsl`, `toHslString`, `toHwb`, and `toHwbString` methods, and fixed lossy HSL minification in the minify plugin.
+
 ## 1.0.0
 
 ### Major Changes
