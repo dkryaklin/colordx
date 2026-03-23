@@ -56,6 +56,13 @@ describe("a11y plugin", () => {
     expect(result.contrast("#000000")).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("returns readable score", () => {
+    expect((colordx("#000000") as any).readableScore("#ffffff")).toBe("AAA");
+    expect((colordx("#e60000") as any).readableScore("#ffff47")).toBe("AA");
+    expect((colordx("#949494") as any).readableScore("#ffffff")).toBe("AA large");
+    expect((colordx("#aaaaaa") as any).readableScore("#ffffff")).toBe("fail");
+  });
+
   it("calculates APCA contrast (positive = dark text on light bg)", () => {
     // Black on white: max positive contrast ~106
     expect((colordx("#000000") as any).apcaContrast("#ffffff")).toBeCloseTo(106, 0);

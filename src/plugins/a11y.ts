@@ -5,6 +5,7 @@ import type { AnyColor } from '../types.js';
 declare module '../colordx.js' {
   interface Colordx {
     isReadable(background?: AnyColor, options?: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' }): boolean;
+    readableScore(background?: AnyColor): 'AAA' | 'AA' | 'AA large' | 'fail';
     minReadable(background?: AnyColor): Colordx;
     apcaContrast(background?: AnyColor): number;
     isReadableApca(background?: AnyColor, options?: { size?: 'normal' | 'large' }): boolean;
@@ -60,6 +61,17 @@ const a11y: Plugin = (ColordClass) => {
     const { size = 'normal' } = options;
     const lc = Math.abs(this.apcaContrast(background));
     return size === 'large' ? lc >= 60 : lc >= 75;
+  };
+
+  ColordClass.prototype.readableScore = function (
+    this: Colordx,
+    background: AnyColor = '#fff'
+  ): 'AAA' | 'AA' | 'AA large' | 'fail' {
+    const ratio = this.contrast(background);
+    if (ratio >= 7) return 'AAA';
+    if (ratio >= 4.5) return 'AA';
+    if (ratio >= 3) return 'AA large';
+    return 'fail';
   };
 
   ColordClass.prototype.isReadable = function (

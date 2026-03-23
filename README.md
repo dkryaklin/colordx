@@ -165,6 +165,10 @@ WCAG 2.x contrast (uses `.contrast()` from core):
 colordx('#000').isReadable('#fff')                          // true  — AA normal (ratio >= 4.5)
 colordx('#000').isReadable('#fff', { level: 'AAA' })        // true  — AAA normal (ratio >= 7)
 colordx('#000').isReadable('#fff', { size: 'large' })       // true  — AA large (ratio >= 3)
+colordx('#000').readableScore('#fff')                       // 'AAA'
+colordx('#e60000').readableScore('#ffff47')                 // 'AA'
+colordx('#949494').readableScore('#fff')                    // 'AA large'
+colordx('#aaa').readableScore('#fff')                       // 'fail'
 colordx('#777').minReadable('#fff')                         // darkened/lightened to reach 4.5
 ```
 
