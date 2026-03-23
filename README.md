@@ -255,6 +255,27 @@ import { getFormat } from 'colord';
 import { getFormat } from '@colordx/core';
 ```
 
+### `mix()` uses RGB instead of Lab
+
+colord's `mix` plugin interpolates in **CIE Lab** space. colordx interpolates in **linear RGB**, which matches how browsers composite a semi-transparent layer over a background (CSS `opacity`, Figma elevation layers, etc.).
+
+```ts
+// Background: #f0f3f1, overlay: #007d40 at 14% opacity
+colord('#f0f3f1').mix('#007d40', 0.14)   // '#d3e2d6'  ← Lab interpolation
+colordx('#f0f3f1').mix('#007d40', 0.14)  // '#cee2d8'  ← RGB interpolation (matches browser)
+```
+
+The same applies to `tint()`, `shade()`, and `tone()` from the mix plugin, which all call `.mix()` internally. If you have hardcoded expected hex values from colord's mix output, update them — the new values are more accurate for UI work.
+
+### `contrast()` rounding
+
+colord uses `Math.floor` when rounding the WCAG contrast ratio to 2 decimal places; colordx uses standard rounding (`Math.round`). This affects values that fall exactly at .xxx5:
+
+```ts
+colord('#ff0000').contrast('#ffffff')   // 3.99  (floor)
+colordx('#ff0000').contrast('#ffffff')  // 4     (round)
+```
+
 ### HSL/HWB precision
 
 colordx returns higher precision HSL/HSV values than colord. If your code does exact equality checks on `.toHsl()` output, use `toBeCloseTo` or round the values.
