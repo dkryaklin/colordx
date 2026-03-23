@@ -120,11 +120,9 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="@colordx/core@${VERSION}"
-          if git ls-remote --tags origin | grep -q "refs/tags/${TAG}$"; then
-            gh release create "${TAG}" \
-              --title "v${VERSION}" \
-              --generate-notes \
-              2>/dev/null || true
-          fi
+          gh release create "${TAG}" \
+            --title "v${VERSION}" \
+            --generate-notes \
+            2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
