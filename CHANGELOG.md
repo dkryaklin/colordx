@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.4.0
+
+### Minor Changes
+
+- [`1a5b078`](https://github.com/dkryaklin/colordx/commit/1a5b0781d88a1c385fb11d80905d88d2dfeff139) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Add `nearest()` utility for finding the perceptually closest color from a palette using OKLab distance.
+
 ## 1.3.0
 
 ### Minor Changes
