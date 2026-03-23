@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.8.1
+
+### Patch Changes
+
+- [`83fe1c7`](https://github.com/dkryaklin/colordx/commit/83fe1c7fd0002cf75c3880220ffe97fc61eaa27b) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Increased alpha channel precision from 2 to 3 decimal places to ensure lossless hex round-trips across all color models.
+
 ## 1.8.0
 
 ### Minor Changes
