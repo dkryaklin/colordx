@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.0.0
+
+### Major Changes
+
+- [`73d0b9d`](https://github.com/dkryaklin/colordx/commit/73d0b9d600e1c0ca7331d5f37dd41016e6847af3) Thanks [@dkryaklin](https://github.com/dkryaklin)! - Stable release
+
 ## 0.2.0
 
 ### Minor Changes
