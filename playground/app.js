@@ -1,4 +1,7 @@
-import { colordx, inGamutSrgb, toGamutSrgb } from '/index.mjs';
+import { colordx, extend, inGamutSrgb, toGamutSrgb } from '/index.mjs';
+import a11y from '/plugins/a11y.mjs';
+
+extend([a11y]);
 
 // Always stored as OKLCH
 let S = { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 };
@@ -298,3 +301,64 @@ document.getElementById('gamut-map').addEventListener('click', () => {
 });
 
 render();
+
+// ── A11y section ──
+
+function updateA11y() {
+  const txtHex = document.getElementById('a11y-txt-hex').value.trim();
+  const bgHex = document.getElementById('a11y-bg-hex').value.trim();
+  const txt = colordx(txtHex);
+  const bg = colordx(bgHex);
+  if (!txt.isValid() || !bg.isValid()) return;
+
+  const preview = document.getElementById('a11y-preview');
+  preview.style.backgroundColor = bg.toHex();
+  document.getElementById('a11y-sample').style.color = txt.toHex();
+  document.getElementById('a11y-sample-sm').style.color = txt.toHex();
+  document.getElementById('a11y-txt-picker').value = txt.toHex();
+  document.getElementById('a11y-bg-picker').value = bg.toHex();
+
+  const wcag = txt.contrast(bgHex);
+  document.getElementById('wcag-val').textContent = wcag.toFixed(2) + ' : 1';
+
+  const apca = txt.apcaContrast(bgHex);
+  document.getElementById('apca-val').textContent = 'Lc ' + apca.toFixed(1);
+
+  const wcagBadges = [
+    { label: 'AA Normal', pass: txt.isReadable(bgHex) },
+    { label: 'AA Large', pass: txt.isReadable(bgHex, { size: 'large' }) },
+    { label: 'AAA Normal', pass: txt.isReadable(bgHex, { level: 'AAA' }) },
+    { label: 'AAA Large', pass: txt.isReadable(bgHex, { level: 'AAA', size: 'large' }) },
+  ];
+  document.getElementById('wcag-badges').innerHTML = wcagBadges
+    .map((b) => `<span class="a11y-badge ${b.pass ? 'pass' : 'fail'}">${b.label}</span>`)
+    .join('');
+
+  const apcaBadges = [
+    { label: 'Body text (≥75)', pass: txt.isReadableApca(bgHex) },
+    { label: 'Large text (≥60)', pass: txt.isReadableApca(bgHex, { size: 'large' }) },
+  ];
+  document.getElementById('apca-badges').innerHTML = apcaBadges
+    .map((b) => `<span class="a11y-badge ${b.pass ? 'pass' : 'fail'}">${b.label}</span>`)
+    .join('');
+}
+
+function syncPicker(pickerId, hexId) {
+  document.getElementById(pickerId).addEventListener('input', (e) => {
+    document.getElementById(hexId).value = e.target.value;
+    updateA11y();
+  });
+  document.getElementById(hexId).addEventListener('input', () => updateA11y());
+}
+
+syncPicker('a11y-txt-picker', 'a11y-txt-hex');
+syncPicker('a11y-bg-picker', 'a11y-bg-hex');
+
+document.getElementById('a11y-swap').addEventListener('click', () => {
+  const txtHex = document.getElementById('a11y-txt-hex');
+  const bgHex = document.getElementById('a11y-bg-hex');
+  [txtHex.value, bgHex.value] = [bgHex.value, txtHex.value];
+  updateA11y();
+});
+
+updateA11y();

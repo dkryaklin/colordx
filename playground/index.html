@@ -89,6 +89,55 @@
       </div>
     </section>
 
+    <section class="a11y-section">
+      <div class="section-wrap">
+        <h2 class="section-title">Accessibility</h2>
+        <div class="a11y-wrap">
+          <div class="card a11y-left">
+            <div class="a11y-preview" id="a11y-preview">
+              <span class="a11y-sample" id="a11y-sample">Sample Text</span>
+              <span class="a11y-sample sm" id="a11y-sample-sm">Small body text for reading</span>
+            </div>
+            <div class="a11y-controls">
+              <div class="a11y-pair">
+                <label class="a11y-label">Text</label>
+                <div class="a11y-color-row">
+                  <input type="color" class="a11y-picker" id="a11y-txt-picker" value="#202122" />
+                  <input type="text" class="txt a11y-hex" id="a11y-txt-hex" value="#202122" spellcheck="false" />
+                </div>
+              </div>
+              <button class="a11y-swap" id="a11y-swap" title="Swap colors">⇅</button>
+              <div class="a11y-pair">
+                <label class="a11y-label">Background</label>
+                <div class="a11y-color-row">
+                  <input type="color" class="a11y-picker" id="a11y-bg-picker" value="#cf674a" />
+                  <input type="text" class="txt a11y-hex" id="a11y-bg-hex" value="#cf674a" spellcheck="false" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="a11y-metrics">
+            <div class="card a11y-metric-card">
+              <div class="a11y-metric-header">
+                <span class="a11y-metric-title">WCAG 2.x</span>
+                <span class="a11y-metric-val" id="wcag-val">—</span>
+              </div>
+              <div class="a11y-badge-row" id="wcag-badges"></div>
+            </div>
+            <div class="card a11y-metric-card">
+              <div class="a11y-metric-header">
+                <span class="a11y-metric-title">APCA</span>
+                <a class="a11y-metric-link" href="https://git.apcacontrast.com/documentation/APCAeasyIntro" target="_blank" rel="noopener noreferrer">WCAG 3.0 candidate ↗</a>
+                <span class="a11y-metric-val" id="apca-val">—</span>
+              </div>
+              <div class="a11y-badge-row" id="apca-badges"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="gs-section">
       <div class="section-wrap">
         <h2 class="section-title">Getting Started</h2>
@@ -130,6 +179,50 @@ const mapped = toGamutSrgb('oklch(0.5 0.4 180)');
 mapped.toHex()  // '#00866e'</code></pre>
               <button class="code-copy" data-code="import { inGamutSrgb, toGamutSrgb } from '@colordx/core';">⎘</button>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section">
+      <div class="section-wrap">
+        <h2 class="section-title">Accessibility</h2>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3 class="faq-q">What is APCA?</h3>
+            <p class="faq-a">
+              APCA (Accessible Perceptual Contrast Algorithm) is the contrast model proposed for WCAG 3.0. Unlike the
+              WCAG 2.x ratio, it accounts for polarity (dark-on-light vs light-on-dark), spatial frequency, and human
+              contrast sensitivity — producing results that align much more closely with how people actually perceive
+              text readability.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">Why is WCAG 2.x contrast not enough?</h3>
+            <p class="faq-a">
+              WCAG 2.x uses a simple luminance ratio that treats dark-on-light and light-on-dark pairs symmetrically,
+              which does not reflect human vision. It is known to fail on mid-tone and dark backgrounds — sometimes
+              rating a barely visible combination as passing, or a clearly readable one as failing. APCA fixes this
+              with a polarity-aware model.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">How do I use APCA in colordx?</h3>
+            <p class="faq-a">
+              Load the <code>a11y</code> plugin and call <code>apcaContrast(background)</code> to get the signed Lc
+              value, or <code>isReadableApca(background)</code> to check against APCA thresholds — Lc&nbsp;75 for body
+              text, Lc&nbsp;60 for large text. The existing <code>contrast()</code> and <code>isReadable()</code>
+              methods continue to use WCAG 2.x.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">What do positive and negative Lc values mean?</h3>
+            <p class="faq-a">
+              A positive Lc value means dark text on a light background; negative means light text on a dark
+              background. The absolute value is what determines readability — Lc&nbsp;−75 and Lc&nbsp;75 are equally
+              readable. The sign only indicates polarity, which APCA uses internally to apply different contrast
+              curves for each direction.
+            </p>
           </div>
         </div>
       </div>

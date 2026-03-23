@@ -6,10 +6,62 @@ declare module '../colordx.js' {
   interface Colordx {
     isReadable(background?: AnyColor, options?: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' }): boolean;
     minReadable(background?: AnyColor): Colordx;
+    apcaContrast(background?: AnyColor): number;
+    isReadableApca(background?: AnyColor, options?: { size?: 'normal' | 'large' }): boolean;
+  }
+}
+
+// APCA 0.0.98G-4g-W3 constants
+const SA98G = { Rsco: 0.2126729, Gsco: 0.7151522, Bsco: 0.072175 };
+const APCA = {
+  normBG: 0.56,
+  normTXT: 0.57,
+  revBG: 0.65,
+  revTXT: 0.62,
+  scale: 1.14,
+  loClip: 0.1,
+  offset: 0.027,
+  blkThrs: 0.022,
+  blkClmp: 1.414,
+  deltaYmin: 0.0005,
+};
+
+function apcaLuminance(r: number, g: number, b: number): number {
+  const lin = (c: number) => (c / 255) ** 2.4;
+  const Y = SA98G.Rsco * lin(r) + SA98G.Gsco * lin(g) + SA98G.Bsco * lin(b);
+  return Y > APCA.blkThrs ? Y : Y + (APCA.blkThrs - Y) ** APCA.blkClmp;
+}
+
+function calcApca(textRgb: { r: number; g: number; b: number }, bgRgb: { r: number; g: number; b: number }): number {
+  const Yt = apcaLuminance(textRgb.r, textRgb.g, textRgb.b);
+  const Ys = apcaLuminance(bgRgb.r, bgRgb.g, bgRgb.b);
+  if (Math.abs(Ys - Yt) < APCA.deltaYmin) return 0;
+  if (Ys > Yt) {
+    const c = (Ys ** APCA.normBG - Yt ** APCA.normTXT) * APCA.scale;
+    return c < APCA.loClip ? 0 : (c - APCA.offset) * 100;
+  } else {
+    const c = (Ys ** APCA.revBG - Yt ** APCA.revTXT) * APCA.scale;
+    return c > -APCA.loClip ? 0 : (c + APCA.offset) * 100;
   }
 }
 
 const a11y: Plugin = (ColordClass) => {
+  ColordClass.prototype.apcaContrast = function (this: Colordx, background: AnyColor = '#fff'): number {
+    const textRgb = this.toRgb();
+    const bgRgb = new Colordx(background).toRgb();
+    return Math.round(calcApca(textRgb, bgRgb) * 10) / 10;
+  };
+
+  ColordClass.prototype.isReadableApca = function (
+    this: Colordx,
+    background: AnyColor = '#fff',
+    options: { size?: 'normal' | 'large' } = {}
+  ): boolean {
+    const { size = 'normal' } = options;
+    const lc = Math.abs(this.apcaContrast(background));
+    return size === 'large' ? lc >= 60 : lc >= 75;
+  };
+
   ColordClass.prototype.isReadable = function (
     this: Colordx,
     background: AnyColor = '#fff',

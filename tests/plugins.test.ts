@@ -55,6 +55,34 @@ describe("a11y plugin", () => {
     const result = (colordx("#aaaaaa") as any).minReadable("#000000");
     expect(result.contrast("#000000")).toBeGreaterThanOrEqual(4.5);
   });
+
+  it("calculates APCA contrast (positive = dark text on light bg)", () => {
+    // Black on white: max positive contrast ~106
+    expect((colordx("#000000") as any).apcaContrast("#ffffff")).toBeCloseTo(106, 0);
+    // White on black: max negative contrast ~-108
+    expect((colordx("#ffffff") as any).apcaContrast("#000000")).toBeCloseTo(-108, 0);
+    // Same color: near zero
+    expect((colordx("#ffffff") as any).apcaContrast("#ffffff")).toBe(0);
+  });
+
+  it("APCA matches known reference values from the issue", () => {
+    // From the GitHub issue: APCA gives 37.2 for dark text on orange bg
+    expect((colordx("#202122") as any).apcaContrast("#cf674a")).toBeCloseTo(37.2, 0);
+    // White on same orange bg: -69.5 (light text on darker bg)
+    expect((colordx("#ffffff") as any).apcaContrast("#cf674a")).toBeCloseTo(-69.5, 0);
+  });
+
+  it("checks APCA readability (|Lc| >= 75 for normal, >= 60 for large)", () => {
+    // Black on white Lc ~106: readable at both levels
+    expect((colordx("#000000") as any).isReadableApca("#ffffff")).toBe(true);
+    expect((colordx("#000000") as any).isReadableApca("#ffffff", { size: "large" })).toBe(true);
+    // Mid-gray on white: Lc ~58 — not readable for normal, readable for large
+    expect((colordx("#777777") as any).isReadableApca("#ffffff")).toBe(false);
+    expect((colordx("#777777") as any).isReadableApca("#ffffff", { size: "large" })).toBe(true);
+    // Very light gray on white: not readable at any size
+    expect((colordx("#cccccc") as any).isReadableApca("#ffffff")).toBe(false);
+    expect((colordx("#cccccc") as any).isReadableApca("#ffffff", { size: "large" })).toBe(false);
+  });
 });
 
 describe("harmonies plugin", () => {

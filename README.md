@@ -97,7 +97,7 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 .luminance()       // relative luminance (0–1, WCAG)
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
-.contrast('#fff')  // WCAG contrast ratio
+.contrast('#fff')  // WCAG 2.x contrast ratio (1–21)
 .isEqual('#f00')   // exact RGB equality
 ```
 
@@ -145,13 +145,41 @@ import lch   from '@colordx/core/plugins/lch';   // toLch(), toLchString()
 import cmyk  from '@colordx/core/plugins/cmyk';  // toCmyk(), toCmykString()
 import delta from '@colordx/core/plugins/delta'; // delta() — CIEDE2000
 import names from '@colordx/core/plugins/names'; // toName(), parse CSS color names
-import a11y  from '@colordx/core/plugins/a11y';  // isReadable(), minReadable()
+import a11y  from '@colordx/core/plugins/a11y';  // isReadable(), minReadable(), apcaContrast(), isReadableApca()
 import harmonies from '@colordx/core/plugins/harmonies'; // harmonies()
 import mix   from '@colordx/core/plugins/mix';   // tint(), shade(), tone(), palette()
 import minify from '@colordx/core/plugins/minify'; // minify()
 
 extend([lab, lch, cmyk, delta, names, a11y, harmonies, mix, minify]);
 ```
+
+### a11y plugin
+
+WCAG 2.x contrast (uses `.contrast()` from core):
+
+```ts
+colordx('#000').isReadable('#fff')                          // true  — AA normal (ratio >= 4.5)
+colordx('#000').isReadable('#fff', { level: 'AAA' })        // true  — AAA normal (ratio >= 7)
+colordx('#000').isReadable('#fff', { size: 'large' })       // true  — AA large (ratio >= 3)
+colordx('#777').minReadable('#fff')                         // darkened/lightened to reach 4.5
+```
+
+APCA (Accessible Perceptual Contrast Algorithm) — the projected replacement for WCAG 2.x in WCAG 3.0:
+
+```ts
+// Returns a signed Lc value: positive = dark text on light bg, negative = light text on dark bg
+colordx('#000').apcaContrast('#fff')     //  106.0
+colordx('#fff').apcaContrast('#000')     // -107.9
+colordx('#202122').apcaContrast('#cf674a')  //  37.2  ← dark text on orange
+colordx('#ffffff').apcaContrast('#cf674a')  // -69.5  ← white text on orange
+
+// Checks readability using |Lc| thresholds: >= 75 for normal text, >= 60 for large text/headings
+colordx('#000').isReadableApca('#fff')                       // true
+colordx('#777').isReadableApca('#fff')                       // false
+colordx('#777').isReadableApca('#fff', { size: 'large' })    // true
+```
+
+APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.
 
 ## Migrating from colord
 
