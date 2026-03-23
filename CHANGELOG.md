@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.8.0
+
+### Minor Changes
+
+- [`04a6102`](https://github.com/dkryaklin/colordx/commit/04a61021c8d4918faf7bf056513d830d41d63598) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added support for modern CSS space syntax (e.g., `hsl(0 100% 50%)`, `rgb(255 0 0 / 0.5)`) in HSL and RGB string parsing, including angle units and percentage alpha values.
+
 ## 1.7.0
 
 ### Minor Changes
