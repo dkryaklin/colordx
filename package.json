@@ -1,6 +1,6 @@
 {
   "name": "@colordx/core",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "A high-performance color library with extended support for modern color spaces including OKLCH, OKLAB, Display-P3, and more",
   "author": "",
   "license": "MIT",

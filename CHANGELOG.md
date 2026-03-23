@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.8.2
+
+### Patch Changes
+
+- [`de29141`](https://github.com/dkryaklin/colordx/commit/de29141465b786e60b9f90f9291e01eea1800ab7) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Fix contrast and APCA calculations to correctly composite semi-transparent foreground colors over the background before measuring contrast.
+
 ## 1.8.1
 
 ### Patch Changes
