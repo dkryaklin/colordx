@@ -52,9 +52,9 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     }
 
     if (opts.hsl) {
-      const ha = shortenLeadingZero(Math.round(h)),
-        sa = shortenLeadingZero(Math.round(s)),
-        la = shortenLeadingZero(Math.round(l)),
+      const ha = shortenLeadingZero(h),
+        sa = shortenLeadingZero(s),
+        la = shortenLeadingZero(l),
         aa = shortenLeadingZero(alpha);
       candidates.push(alpha === 1 ? `hsl(${ha},${sa}%,${la}%)` : `hsla(${ha},${sa}%,${la}%,${aa})`);
     }

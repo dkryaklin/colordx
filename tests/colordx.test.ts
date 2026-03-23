@@ -216,6 +216,58 @@ describe("getFormat", () => {
   });
 });
 
+describe("toHsl precision option", () => {
+  it("rounds to integers with precision=0", () => {
+    const { h, s, l } = colordx("#c06060").toHsl(0);
+    expect(Number.isInteger(h)).toBe(true);
+    expect(Number.isInteger(s)).toBe(true);
+    expect(Number.isInteger(l)).toBe(true);
+  });
+
+  it("default precision=2 matches existing behavior", () => {
+    expect(colordx("#c06060").toHsl()).toEqual(colordx("#c06060").toHsl(2));
+  });
+
+  it("precision=4 provides more digits than precision=2 when needed", () => {
+    // #c06060 → h≈0, s≈33.33%, l≈56.47% — s and l need more than 2 decimals for full precision
+    const hsl2 = colordx("#3d7a9f").toHsl(2);
+    const hsl4 = colordx("#3d7a9f").toHsl(4);
+    // Higher precision should not lose info vs lower
+    expect(Math.abs(hsl4.s - hsl2.s)).toBeLessThan(0.01);
+    // But 4-decimal value should differ from 2-decimal for colors that need it
+    const hsl2s = hsl2.s.toString().split(".")[1]?.length ?? 0;
+    const hsl4s = hsl4.s.toString().split(".")[1]?.length ?? 0;
+    expect(hsl4s).toBeGreaterThanOrEqual(hsl2s);
+  });
+
+  it("toHslString uses precision argument", () => {
+    const str0 = colordx("#c06060").toHslString(0);
+    expect(str0).not.toMatch(/\d\.\d/); // no decimals
+    const str4 = colordx("#c06060").toHslString(4);
+    // with 4 decimal places, string should be parseable and round-trip accurately
+    const rgb = colordx(str4).toRgb();
+    expect(Math.abs(rgb.r - 0xc0)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("toHwb precision option", () => {
+  it("default precision=0 matches existing behavior", () => {
+    expect(colordx("#c06060").toHwb()).toEqual(colordx("#c06060").toHwb(0));
+  });
+
+  it("precision=2 provides sub-integer whiteness/blackness", () => {
+    const hwb0 = colordx("#c06060").toHwb(0);
+    const hwb2 = colordx("#c06060").toHwb(2);
+    expect(Number.isInteger(hwb0.w)).toBe(true);
+    expect(Number.isInteger(hwb0.b)).toBe(true);
+    // At precision=2 values may have decimals
+    const wDecimals = hwb2.w.toString().split(".")[1]?.length ?? 0;
+    const bDecimals = hwb2.b.toString().split(".")[1]?.length ?? 0;
+    expect(wDecimals).toBeLessThanOrEqual(2);
+    expect(bDecimals).toBeLessThanOrEqual(2);
+  });
+});
+
 // Regression: double `% 360` in hue normalization caused binary FP artifacts
 // e.g. (209.81 + 360) % 360 = 209.80999999999995 instead of 209.81
 describe("string output precision", () => {

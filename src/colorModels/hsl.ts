@@ -8,7 +8,7 @@ export const clampHsl = (hsl: HslColor): HslColor => ({
   a: clamp(round(hsl.a, 2), 0, 1),
 });
 
-export const rgbToHsl = ({ r, g, b, a }: RgbColor): HslColor => {
+export const rgbToHslRaw = ({ r, g, b, a }: RgbColor): HslColor => {
   const rn = r / 255,
     gn = g / 255,
     bn = b / 255;
@@ -34,7 +34,12 @@ export const rgbToHsl = ({ r, g, b, a }: RgbColor): HslColor => {
     }
   }
 
-  return clampHsl({ h: round(h * 360, 2), s: round(s * 100, 2), l: round(l * 100, 2), a });
+  return clampHsl({ h: h * 360, s: s * 100, l: l * 100, a });
+};
+
+export const rgbToHsl = (rgb: RgbColor): HslColor => {
+  const { h, s, l, a } = rgbToHslRaw(rgb);
+  return { h: round(h, 2), s: round(s, 2), l: round(l, 2), a };
 };
 
 export const hslToRgb = ({ h, s, l, a }: HslColor): RgbColor => {

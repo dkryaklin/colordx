@@ -114,6 +114,34 @@ describe("minify plugin", () => {
     const result = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).minify({ alphaHex: true });
     expect(result.length).toBeLessThanOrEqual("rgba(255,0,0,.5)".length);
   });
+
+  it("minified output round-trips to the same RGB (lossless)", () => {
+    // cssnano#1515: integer HSL rounding caused lossy minification
+    // e.g. rgb(143,101,98) → hsla(4,19%,47%) → rgb(143,100,97) — off by 1
+    const colors = [
+      { r: 143, g: 101, b: 98, a: 0.43 },
+      { r: 14, g: 14, b: 14, a: 0.5 },  // colord#130: becomes hsl(0,0%,5%) → rgb(13,13,13)
+      { r: 100, g: 150, b: 200, a: 1 },
+      { r: 64, g: 128, b: 192, a: 1 },
+    ];
+    for (const rgb of colors) {
+      const minified = (colordx(rgb) as any).minify();
+      const result = colordx(minified).toRgb();
+      expect(result.r).toBe(rgb.r);
+      expect(result.g).toBe(rgb.g);
+      expect(result.b).toBe(rgb.b);
+    }
+  });
+
+  it("does not produce lossy HSL when rgb option is disabled", () => {
+    // When HSL is shorter it should still be lossless
+    const color = colordx({ r: 255, g: 0, b: 0, a: 1 }); // pure red — exact in HSL
+    const minified = (color as any).minify({ rgb: false });
+    const result = colordx(minified).toRgb();
+    expect(result.r).toBe(255);
+    expect(result.g).toBe(0);
+    expect(result.b).toBe(0);
+  });
 });
 
 describe("mix plugin", () => {

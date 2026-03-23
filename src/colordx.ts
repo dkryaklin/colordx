@@ -1,7 +1,7 @@
 import { rgbToHex } from './colorModels/hex.js';
-import { hslToRgb, rgbToHsl } from './colorModels/hsl.js';
+import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { rgbToHsv } from './colorModels/hsv.js';
-import { rgbToHwb, roundHwb } from './colorModels/hwb.js';
+import { rgbToHwb } from './colorModels/hwb.js';
 import { rgbToOklab } from './colorModels/oklab.js';
 import { rgbToOklch } from './colorModels/oklch.js';
 import { clamp, round } from './helpers.js';
@@ -36,12 +36,13 @@ export class Colordx {
     return rgbToHex(this._rgb);
   }
 
-  toHsl(): HslColor {
-    return rgbToHsl(this._rgb);
+  toHsl(precision = 2): HslColor {
+    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    return { h: round(h, precision), s: round(s, precision), l: round(l, precision), a };
   }
 
-  toHslString(): string {
-    const { h, s, l, a } = this.toHsl();
+  toHslString(precision = 2): string {
+    const { h, s, l, a } = this.toHsl(precision);
     return a < 1 ? `hsla(${h}, ${s}%, ${l}%, ${a})` : `hsl(${h}, ${s}%, ${l}%)`;
   }
 
@@ -49,12 +50,13 @@ export class Colordx {
     return rgbToHsv(this._rgb);
   }
 
-  toHwb(): HwbColor {
-    return roundHwb(rgbToHwb(this._rgb));
+  toHwb(precision = 0): HwbColor {
+    const { h, w, b, a } = rgbToHwb(this._rgb);
+    return { h: round(h, precision), w: round(w, precision), b: round(b, precision), a: round(a, 3) };
   }
 
-  toHwbString(): string {
-    const { h, w, b, a } = this.toHwb();
+  toHwbString(precision = 0): string {
+    const { h, w, b, a } = this.toHwb(precision);
     return a < 1 ? `hwb(${h} ${w}% ${b}% / ${a})` : `hwb(${h} ${w}% ${b}%)`;
   }
 
