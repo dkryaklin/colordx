@@ -143,6 +143,23 @@ describe("getters", () => {
     expect(colordx("#ff0000").hue(240).toHex()).toBe("#0000ff");
   });
 
+  it("gets/sets lightness (OKLCH)", () => {
+    const c = colordx("#ff0000");
+    expect(c.lightness()).toBeCloseTo(0.6279, 3);
+    // setting lightness on a low-chroma color round-trips cleanly
+    expect(colordx("#3b82f6").lightness(0.5).lightness()).toBeCloseTo(0.5, 2);
+    // achromatic colors round-trip exactly
+    expect(colordx("#777777").lightness(0).toHex()).toBe("#000000");
+    expect(colordx("#777777").lightness(1).toHex()).toBe("#ffffff");
+  });
+
+  it("gets/sets chroma (OKLCH)", () => {
+    const c = colordx("#ff0000");
+    expect(c.chroma()).toBeGreaterThan(0);
+    // chroma(0) produces a gray at the same lightness
+    expect(c.chroma(0).chroma()).toBeCloseTo(0, 2);
+  });
+
   it("checks equality", () => {
     expect(colordx("#ff0000").isEqual("#ff0000")).toBe(true);
     expect(colordx("#ff0000").isEqual("rgb(255, 0, 0)")).toBe(true);

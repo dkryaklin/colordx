@@ -3,7 +3,7 @@ import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { rgbToHsv } from './colorModels/hsv.js';
 import { rgbToHwb } from './colorModels/hwb.js';
 import { rgbToOklab } from './colorModels/oklab.js';
-import { rgbToOklch } from './colorModels/oklch.js';
+import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers } from './parse.js';
 import type { AnyColor, ColorParser, HslColor, HsvColor, HwbColor, OklabColor, OklchColor, RgbColor } from './types.js';
@@ -125,6 +125,22 @@ export class Colordx {
     const hsl = this.toHsl();
     if (value === undefined) return hsl.h;
     return new Colordx(hslToRgb({ ...hsl, h: value }));
+  }
+
+  lightness(): number;
+  lightness(value: number): Colordx;
+  lightness(value?: number): number | Colordx {
+    const oklch = this.toOklch();
+    if (value === undefined) return oklch.l;
+    return new Colordx(oklchToRgb({ ...oklch, l: clamp(value, 0, 1) }));
+  }
+
+  chroma(): number;
+  chroma(value: number): Colordx;
+  chroma(value?: number): number | Colordx {
+    const oklch = this.toOklch();
+    if (value === undefined) return oklch.c;
+    return new Colordx(oklchToRgb({ ...oklch, c: clamp(value, 0, 0.4) }));
   }
 
   // Manipulators

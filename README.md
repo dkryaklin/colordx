@@ -85,7 +85,9 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 .rotate(30)        // rotate hue by 30°
 .mix('#0000ff', 0.5)  // mix with another color
 .alpha(0.5)        // set alpha
-.hue(120)          // set hue
+.hue(120)          // set hue (HSL)
+.lightness(0.5)    // set lightness (OKLCH, 0–1)
+.chroma(0.1)       // set chroma (OKLCH, 0–0.4)
 ```
 
 ### Getters
@@ -94,6 +96,8 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 .isValid()         // true if input was parseable
 .alpha()           // get alpha (0–1)
 .hue()             // get hue (0–360)
+.lightness()       // get OKLCH lightness (0–1)
+.chroma()          // get OKLCH chroma (0–0.4)
 .brightness()      // perceived brightness (0–1)
 .luminance()       // relative luminance (0–1, WCAG)
 .isDark()          // brightness < 0.5
