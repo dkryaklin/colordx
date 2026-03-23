@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.3.0
+
+### Minor Changes
+
+- [`ef45f43`](https://github.com/dkryaklin/colordx/commit/ef45f4388ce18a04be3d6e284ac7836448746f98) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added toHsvString() method to convert colors to HSV/HSVA string representation.
+
 ## 1.2.1
 
 ### Patch Changes
