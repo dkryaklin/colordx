@@ -1,4 +1,4 @@
-export { Colordx, colordx, extend, random } from './colordx.js';
+export { Colordx, colordx, extend, nearest, random } from './colordx.js';
 export type { Plugin } from './colordx.js';
 export { getFormat } from './parse.js';
 export { inGamutSrgb, toGamutSrgb } from './gamut.js';

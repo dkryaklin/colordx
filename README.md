@@ -105,12 +105,15 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 })       // OKLch
 ### Utilities
 
 ```ts
-import { getFormat, random } from '@colordx/core';
+import { getFormat, nearest, random } from '@colordx/core';
 
 getFormat('#ff0000')          // 'hex'
 getFormat('oklch(0.5 0.2 240)') // 'lch'
 getFormat({ r: 255, g: 0, b: 0, a: 1 }) // 'rgb'
 getFormat('notacolor')        // undefined
+
+nearest('#800', ['#f00', '#ff0', '#00f'])  // '#f00' — perceptual distance via OKLab
+nearest('#ffe', ['#f00', '#ff0', '#00f'])  // '#ff0'
 
 random()  // random Colordx instance
 ```

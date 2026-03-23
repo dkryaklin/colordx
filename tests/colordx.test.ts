@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colordx, extend, random, Colordx, getFormat } from "../src/index.js";
+import { colordx, extend, nearest, random, Colordx, getFormat } from "../src/index.js";
 
 describe("parsing", () => {
   it("parses hex colors", () => {
@@ -147,6 +147,30 @@ describe("getters", () => {
     expect(colordx("#ff0000").isEqual("#ff0000")).toBe(true);
     expect(colordx("#ff0000").isEqual("rgb(255, 0, 0)")).toBe(true);
     expect(colordx("#ff0000").isEqual("#00ff00")).toBe(false);
+  });
+});
+
+describe("nearest", () => {
+  const palette = ['#f00', '#ff0', '#00f'];
+
+  it("finds the nearest color from a palette", () => {
+    expect(nearest('#800', palette)).toBe('#f00');
+    expect(nearest('#ffe', palette)).toBe('#ff0');
+    expect(nearest('#0000cc', palette)).toBe('#00f');
+  });
+
+  it("returns the exact color if it is in the palette", () => {
+    expect(nearest('#ff0000', palette)).toBe('#f00');
+  });
+
+  it("works with hex, rgb, and object inputs", () => {
+    expect(nearest('rgb(200, 0, 0)', palette)).toBe('#f00');
+    expect(nearest({ r: 0, g: 0, b: 200, a: 1 }, palette)).toBe('#00f');
+  });
+
+  it("preserves candidate type", () => {
+    const objects = [{ r: 255, g: 0, b: 0, a: 1 }, { r: 0, g: 0, b: 255, a: 1 }];
+    expect(nearest('#800', objects)).toEqual({ r: 255, g: 0, b: 0, a: 1 });
   });
 });
 

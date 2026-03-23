@@ -198,6 +198,21 @@ export const extend = (plugins: Plugin[]): void => {
   plugins.forEach((plugin) => plugin(Colordx, parsers));
 };
 
+export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {
+  const { l: l1, a: a1, b: b1 } = new Colordx(color).toOklab();
+  let minDist = Infinity;
+  let result = candidates[0] as T;
+  for (const candidate of candidates) {
+    const { l: l2, a: a2, b: b2 } = new Colordx(candidate).toOklab();
+    const dist = (l2 - l1) ** 2 + (a2 - a1) ** 2 + (b2 - b1) ** 2;
+    if (dist < minDist) {
+      minDist = dist;
+      result = candidate;
+    }
+  }
+  return result;
+};
+
 export const random = (): Colordx =>
   new Colordx({
     r: Math.round(Math.random() * 255),
