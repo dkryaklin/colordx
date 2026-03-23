@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 export const clampHsl = (hsl: HslColor): HslColor => ({
@@ -74,16 +74,22 @@ export const parseHslObject = (input: unknown): RgbColor | null => {
   return hslToRgb(clampHsl({ h: h, s: s, l: l, a: a as number }));
 };
 
+// Matches both legacy comma syntax: hsl(0, 0%, 0%) / hsla(0, 0%, 0%, 0.5)
+// and modern space syntax: hsl(0 0% 0%) / hsl(0 0% 0% / 0.5)
+const HSL_RE =
+  /^hsla?\(\s*([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:,\s*([+-]?\d*\.?\d+)%\s*,\s*([+-]?\d*\.?\d+)%(?:\s*,\s*([+-]?\d*\.?\d+)(%)?)?\s*|\s+([+-]?\d*\.?\d+)%\s+([+-]?\d*\.?\d+)%(?:\s*\/\s*([+-]?\d*\.?\d+)(%)?)?\s*)\)$/i;
+
 export const parseHslString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const match = input.match(/^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%(?:\s*,\s*([\d.]+))?\s*\)$/i);
-  if (!match) return null;
-  return hslToRgb(
-    clampHsl({
-      h: parseFloat(match[1]!),
-      s: parseFloat(match[2]!),
-      l: parseFloat(match[3]!),
-      a: match[4] !== undefined ? parseFloat(match[4]) : 1,
-    })
-  );
+  const m = HSL_RE.exec(input);
+  if (!m) return null;
+  const unit = m[2]?.toLowerCase() ?? 'deg';
+  const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);
+  // m[3]/m[4]/m[5]/m[6] = comma branch; m[7]/m[8]/m[9]/m[10] = space branch
+  const s = Number(m[3] ?? m[7]);
+  const l = Number(m[4] ?? m[8]);
+  const rawA = m[5] ?? m[9];
+  const isPercent = !!(m[6] ?? m[10]);
+  const a = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
+  return hslToRgb(clampHsl({ h, s, l, a }));
 };

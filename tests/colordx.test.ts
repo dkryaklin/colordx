@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colordx, extend, nearest, random, Colordx, getFormat } from "../src/index.js";
+import { colordx, nearest, random, Colordx, getFormat } from "../src/index.js";
 
 describe("parsing", () => {
   it("parses hex colors", () => {
@@ -13,8 +13,22 @@ describe("parsing", () => {
     expect(colordx("rgba(255, 0, 0, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
   });
 
+  it("parses modern rgb space syntax", () => {
+    expect(colordx("rgb(255 0 0)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+    expect(colordx("rgb(255 0 0 / 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("rgb(255 0 0 / 50%)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+  });
+
   it("parses hsl strings", () => {
     expect(colordx("hsl(0, 100%, 50%)").toHex()).toBe("#ff0000");
+  });
+
+  it("parses modern hsl space syntax", () => {
+    expect(colordx("hsl(0 100% 50%)").toHex()).toBe("#ff0000");
+    expect(colordx("hsl(0 100% 50% / 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("hsl(0 100% 50% / 50%)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("hsl(120deg 100% 50%)").toHex()).toBe("#00ff00");
+    expect(colordx("hsl(240deg 100% 50%)").toHex()).toBe("#0000ff");
   });
 
   it("parses rgb objects", () => {
@@ -53,6 +67,7 @@ describe("conversion", () => {
 
   it("converts to hsl string", () => {
     expect(colordx("#ff0000").toHslString()).toBe("hsl(0, 100%, 50%)");
+    expect(colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toHslString()).toBe("hsla(0, 100%, 50%, 0.5)");
   });
 
   it("converts to hsv", () => {
@@ -220,6 +235,17 @@ describe("hsv object parsing", () => {
     expect(colordx({ h: 240, s: 100, v: 100, a: 1 }).toHex()).toBe("#0000ff");
     expect(colordx({ h: 0, s: 0, v: 0, a: 1 }).toHex()).toBe("#000000");
   });
+
+  it("covers gn < bn branch in rgbToHsv (red-dominant, g < b)", () => {
+    // #ff0055: r=255, g=0, b=85 — red is max, green < blue → hits the +6 hue branch
+    const hsv = colordx("#ff0055").toHsv();
+    expect(hsv.h).toBeGreaterThan(330);
+    expect(hsv.h).toBeLessThan(360);
+  });
+
+  it("rejects HSV object with NaN alpha", () => {
+    expect(colordx({ h: 0, s: 100, v: 100, a: NaN } as any).isValid()).toBe(false);
+  });
 });
 
 describe("transparent", () => {
@@ -243,6 +269,18 @@ describe("invalid input", () => {
 
   it("rejects invalid rgb object", () => {
     expect(colordx({ r: "x", g: 0, b: 0, a: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+  });
+
+  it("rejects 5-char hex as invalid", () => {
+    expect(colordx("#fffff").isValid()).toBe(false);
+  });
+
+  it("rejects HWB object with NaN alpha", () => {
+    expect(colordx({ h: 0, w: 0, b: 0, a: NaN } as any).isValid()).toBe(false);
+  });
+
+  it("rejects OKLCH object with l > 1 (disambiguates from CIE LCH)", () => {
+    expect(colordx({ l: 50, c: 0.2, h: 180 } as any).isValid()).toBe(false);
   });
 });
 

@@ -16,16 +16,21 @@ export const parseRgbObject = (input: unknown): RgbColor | null => {
   return clampRgb({ r: r, g: g, b: b, a: a as number });
 };
 
+// Matches both legacy comma syntax: rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
+// and modern space syntax: rgb(255 0 0) / rgb(255 0 0 / 0.5)
+const RGB_RE =
+  /^rgba?\(\s*([+-]?\d*\.?\d+)\s*(?:,\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)(?:\s*,\s*([+-]?\d*\.?\d+)(%)?)?\s*|\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)(?:\s*\/\s*([+-]?\d*\.?\d+)(%)?)?\s*)\)$/i;
+
 export const parseRgbString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const match = input.match(
-    /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)(?:\s*,\s*([\d.]+))?\s*\)$/i
-  );
-  if (!match) return null;
-  return clampRgb({
-    r: parseFloat(match[1]!),
-    g: parseFloat(match[2]!),
-    b: parseFloat(match[3]!),
-    a: match[4] !== undefined ? parseFloat(match[4]) : 1,
-  });
+  const m = RGB_RE.exec(input);
+  if (!m) return null;
+  // m[2]/m[3]/m[4]/m[5] = comma branch; m[6]/m[7]/m[8]/m[9] = space branch
+  const r = Number(m[1]);
+  const g = Number(m[2] ?? m[6]);
+  const b = Number(m[3] ?? m[7]);
+  const rawA = m[4] ?? m[8];
+  const isPercent = !!(m[5] ?? m[9]);
+  const a = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
+  return clampRgb({ r, g, b, a });
 };

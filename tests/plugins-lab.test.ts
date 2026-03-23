@@ -115,4 +115,50 @@ describe('delta', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((colordx('#ff0000') as any).delta('#0000ff')).toBeGreaterThan(0);
   });
+
+  it('achromatic color1 covers h1p=0 branch (a1p=0 && b1=0)', () => {
+    // Gray has a=0, b=0 in Lab → h1p short-circuits to 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#808080') as any).delta('#ff0000')).toBeGreaterThan(0);
+  });
+
+  it('blue color1 covers negative hue angle branch', () => {
+    // Blue has negative Lab b → atan2 returns negative angle → h1p < 0 → h1p + 360
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#0000ff') as any).delta('#ff0000')).toBeGreaterThan(0);
+  });
+
+  it('blue vs yellow covers absDh > 180 && h2 <= h1 branch', () => {
+    // Blue h≈306°, yellow h≈100° → |306-100|=206>180, h2(100)<=h1(306) → dhp+=360
+    // Also h1+h2=406>=360 → Hm-360 branch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#0000ff') as any).delta('#ffff00')).toBeGreaterThan(0);
+  });
+});
+
+describe('Lab object parsing edge cases', () => {
+  it('rejects Lab object when "r" key is present (avoids RGB collision)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx({ l: 50, a: 25, b: -10, alpha: 1, r: 255 } as any).isValid()).toBe(false);
+  });
+
+  it('rejects Lab object when alpha is NaN', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx({ l: 50, a: 25, b: -10, alpha: NaN } as any).isValid()).toBe(false);
+  });
+});
+
+describe('LCH object parsing edge cases', () => {
+  it('rejects LCH object with NaN alpha', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx({ l: 50, c: 30, h: 180, a: NaN } as any).isValid()).toBe(false);
+  });
+});
+
+describe('toCmykString with alpha', () => {
+  it('includes alpha in output when color has alpha < 1', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const str = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).toCmykString();
+    expect(str).toMatch(/\/ 0\.5/);
+  });
 });

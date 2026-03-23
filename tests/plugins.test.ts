@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { colordx, extend } from "../src/index.js";
+import { colordx, extend, getFormat } from "../src/index.js";
 import names from "../src/plugins/names.js";
 import a11y from "../src/plugins/a11y.js";
 import harmonies from "../src/plugins/harmonies.js";
@@ -24,6 +24,16 @@ describe("names plugin", () => {
   it("converts to name", () => {
     expect((colordx("#ff0000") as any).toName()).toBe("red");
     expect((colordx("#ffffff") as any).toName()).toBe("white");
+  });
+
+  it("getFormat returns 'name' for CSS color names when names plugin is loaded", () => {
+    expect(getFormat("red")).toBe("name");
+    expect(getFormat("blue")).toBe("name");
+  });
+
+  it("getFormat returns undefined for unknown strings even when plugin parsers are present", () => {
+    // exercises the plugin parser loop returning null (false branch of the if inside the loop)
+    expect(getFormat("notacolor")).toBeUndefined();
   });
 });
 
@@ -70,6 +80,12 @@ describe("a11y plugin", () => {
     expect((colordx("#ffffff") as any).apcaContrast("#000000")).toBeCloseTo(-108, 0);
     // Same color: near zero
     expect((colordx("#ffffff") as any).apcaContrast("#ffffff")).toBe(0);
+  });
+
+  it("APCA returns 0 when contrast is below noise floor (loClip)", () => {
+    // Very similar light colors: raw Sapc below loClip threshold → clamped to 0
+    expect((colordx("#fefefe") as any).apcaContrast("#ffffff")).toBe(0);
+    expect((colordx("#ffffff") as any).apcaContrast("#fefefe")).toBe(0);
   });
 
   it("APCA matches known reference values from the issue", () => {
@@ -148,6 +164,12 @@ describe("minify plugin", () => {
   it("handles alphaHex option", () => {
     const result = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).minify({ alphaHex: true });
     expect(result.length).toBeLessThanOrEqual("rgba(255,0,0,.5)".length);
+  });
+
+  it("produces short 4-digit alphaHex when all channel pairs match", () => {
+    // r=255=ff, g=0=00, b=0=00, a=0.4→102=0x66 → #ff000066 → #f006
+    const result = (colordx({ r: 255, g: 0, b: 0, a: 0.4 }) as any).minify({ alphaHex: true });
+    expect(result).toBe("#f006");
   });
 
   it("minified output round-trips to the same RGB (lossless)", () => {
