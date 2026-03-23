@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.2.1
+
+### Patch Changes
+
+- [`f6ed8ae`](https://github.com/dkryaklin/colordx/commit/f6ed8aeaef746c56d0a0f56213e2347d5ee41b4b) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Fixed parsing of the 'transparent' CSS keyword, now correctly resolving to rgba(0,0,0,0).
+
 ## 1.2.0
 
 ### Minor Changes
