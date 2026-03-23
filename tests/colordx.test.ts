@@ -169,6 +169,15 @@ describe("hsv object parsing", () => {
   });
 });
 
+describe("transparent", () => {
+  it("parses transparent as rgba(0,0,0,0)", () => {
+    expect(colordx("transparent").toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 0 });
+    expect(colordx("transparent").isValid()).toBe(true);
+    expect(colordx("transparent").isEqual("rgba(0,0,0,0)")).toBe(true);
+    expect(colordx("transparent").isEqual("#000")).toBe(false);
+  });
+});
+
 describe("invalid input", () => {
   it("falls back to black for invalid color", () => {
     expect(colordx("notacolor").toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });

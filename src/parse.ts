@@ -32,6 +32,7 @@ export const defaultParsers: ColorParser[] = formatParsers.map(([parser]) => par
 export const parsers: ColorParser[] = [...defaultParsers];
 
 export const parse = (input: AnyColor): RgbColor | null => {
+  if (input === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
   for (const parser of parsers) {
     const result = parser(input);
     if (result) return result;
