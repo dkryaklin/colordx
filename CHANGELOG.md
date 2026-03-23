@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.7.0
+
+### Minor Changes
+
+- [`c05bbaf`](https://github.com/dkryaklin/colordx/commit/c05bbafff27c2a79feb2c4a4863f40a5729c861c) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Added `toNumber()` method to convert colors to integer format compatible with PixiJS and Discord.
+
 ## 1.6.0
 
 ### Minor Changes
