@@ -162,3 +162,153 @@ describe('toCmykString with alpha', () => {
     expect(str).toMatch(/\/ 0\.5/);
   });
 });
+
+const extendedInputs = ['#ff8800', '#8800ff', '#00ffff', '#ff00ff', '#808080'];
+
+describe('toLab: extended inputs round-trip', () => {
+  it.each(extendedInputs)('%s', (input) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lab = (colordx(input) as any).toLab();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx(lab) as any).toHex()).toBe(colordx(input).toHex());
+  });
+});
+
+describe('Lab value properties', () => {
+  it('L* for white is near 100', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ffffff') as any).toLab().l).toBeCloseTo(100, 0);
+  });
+
+  it('L* for black is near 0', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#000000') as any).toLab().l).toBeCloseTo(0, 0);
+  });
+
+  it('L* increases from dark to light grays', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lDark = (colordx('#333333') as any).toLab().l;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lMid = (colordx('#808080') as any).toLab().l;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lLight = (colordx('#cccccc') as any).toLab().l;
+    expect(lMid).toBeGreaterThan(lDark);
+    expect(lLight).toBeGreaterThan(lMid);
+  });
+
+  it('a* and b* are near 0 for achromatic colors', () => {
+    for (const c of ['#000000', '#808080', '#ffffff']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lab = (colordx(c) as any).toLab();
+      expect(Math.abs(lab.a)).toBeLessThan(1);
+      expect(Math.abs(lab.b)).toBeLessThan(1);
+    }
+  });
+});
+
+describe('toLch: extended inputs round-trip', () => {
+  it.each(extendedInputs)('%s', (input) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lch = (colordx(input) as any).toLch();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx(lch) as any).toHex()).toBe(colordx(input).toHex());
+  });
+});
+
+describe('LCH value properties', () => {
+  it('C* for achromatic grays is near 0', () => {
+    for (const c of ['#000000', '#808080', '#ffffff']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((colordx(c) as any).toLch().c).toBeCloseTo(0, 0);
+    }
+  });
+
+  it('H for LCH is in [0, 360) for chromatic colors', () => {
+    for (const c of [...inputs, ...extendedInputs]) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lch = (colordx(c) as any).toLch();
+      if (lch.c > 1) {
+        expect(lch.h).toBeGreaterThanOrEqual(0);
+        expect(lch.h).toBeLessThan(360);
+      }
+    }
+  });
+});
+
+describe('CMYK: extended inputs round-trip', () => {
+  it.each(extendedInputs)('%s', (input) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx((colordx(input) as any).toCmyk()).toHex()).toBe(colordx(input).toHex());
+  });
+});
+
+describe('CMYK: known primary values', () => {
+  it('white has c=m=y=k=0', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmyk = (colordx('#ffffff') as any).toCmyk();
+    expect(cmyk.c).toBe(0);
+    expect(cmyk.m).toBe(0);
+    expect(cmyk.y).toBe(0);
+    expect(cmyk.k).toBe(0);
+  });
+
+  it('pure red is c=0, m=100, y=100, k=0', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmyk = (colordx('#ff0000') as any).toCmyk();
+    expect(cmyk.c).toBe(0);
+    expect(cmyk.m).toBe(100);
+    expect(cmyk.y).toBe(100);
+    expect(cmyk.k).toBe(0);
+  });
+
+  it('pure green (#00ff00) is c=100, m=0, y=100, k=0', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmyk = (colordx('#00ff00') as any).toCmyk();
+    expect(cmyk.c).toBe(100);
+    expect(cmyk.m).toBe(0);
+    expect(cmyk.y).toBe(100);
+    expect(cmyk.k).toBe(0);
+  });
+
+  it('pure blue is c=100, m=100, y=0, k=0', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmyk = (colordx('#0000ff') as any).toCmyk();
+    expect(cmyk.c).toBe(100);
+    expect(cmyk.m).toBe(100);
+    expect(cmyk.y).toBe(0);
+    expect(cmyk.k).toBe(0);
+  });
+});
+
+describe('delta: additional cases', () => {
+  it('is approximately symmetric (delta(a,b) ≈ delta(b,a))', () => {
+    const ab = (colordx('#ff0000') as any).delta('#0000ff');
+    const ba = (colordx('#0000ff') as any).delta('#ff0000');
+    expect(Math.abs(ab - ba)).toBeLessThan(0.01);
+  });
+
+  it('returns 0 for same color', () => {
+    expect((colordx('#00ff00') as any).delta('#00ff00')).toBe(0);
+    expect((colordx('#808080') as any).delta('#808080')).toBe(0);
+  });
+
+  it('is very small for barely-different colors', () => {
+    expect((colordx('#ff0000') as any).delta('#fe0000')).toBeLessThan(0.05);
+  });
+
+  it('is large for black vs white', () => {
+    expect((colordx('#ffffff') as any).delta('#000000')).toBeGreaterThan(0.5);
+  });
+
+  it('delta is non-negative for all color pairs', () => {
+    const pairs: [string, string][] = [
+      ['#ff0000', '#0000ff'],
+      ['#ffffff', '#000000'],
+      ['#808080', '#ffffff'],
+      ['#ff8800', '#0000ff'],
+    ];
+    for (const [a, b] of pairs) {
+      expect((colordx(a) as any).delta(b)).toBeGreaterThanOrEqual(0);
+    }
+  });
+});

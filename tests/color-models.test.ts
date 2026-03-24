@@ -283,3 +283,160 @@ describe('OKLch value ranges', () => {
     }
   });
 });
+
+// Extended inputs: midtones and saturated colors beyond the basic 6
+const extendedInputs = ['#ff8800', '#8800ff', '#00ffff', '#ff00ff', '#808080', '#3b82f6'];
+
+describe('toHwb: extended inputs round-trip', () => {
+  it.each(extendedInputs)('%s', (input) => {
+    expect(colordx(input).toHwb()).toEqual(colordx(colordx(input).toHwb()).toHwb());
+  });
+});
+
+describe('HWB: additional edge cases', () => {
+  it('w=50%, b=0% gives halfway-to-white tint (pink for red hue)', () => {
+    const result = colordx('hwb(0 50% 0%)').toRgb();
+    expect(result.r).toBe(255);
+    expect(result.g).toBeCloseTo(128, 0);
+    expect(result.b).toBeCloseTo(128, 0);
+  });
+
+  it('w=0%, b=50% gives halfway-to-black shade (dark red)', () => {
+    const result = colordx('hwb(0 0% 50%)').toRgb();
+    expect(result.r).toBeCloseTo(128, 0);
+    expect(result.g).toBe(0);
+    expect(result.b).toBe(0);
+  });
+
+  it('green hue (120) in hwb', () => {
+    expect(colordx('hwb(120 0% 0%)').toHex()).toBe('#00ff00');
+  });
+
+  it('blue hue (240) in hwb', () => {
+    expect(colordx('hwb(240 0% 0%)').toHex()).toBe('#0000ff');
+  });
+
+  it('cyan hue (180) in hwb', () => {
+    expect(colordx('hwb(180 0% 0%)').toHex()).toBe('#00ffff');
+  });
+
+  it('magenta hue (300) in hwb', () => {
+    expect(colordx('hwb(300 0% 0%)').toHex()).toBe('#ff00ff');
+  });
+
+  it('w=100% at any hue produces white', () => {
+    expect(colordx('hwb(120 100% 0%)').toHex()).toBe('#ffffff');
+    expect(colordx('hwb(240 100% 0%)').toHex()).toBe('#ffffff');
+  });
+
+  it('b=100% at any hue produces black', () => {
+    expect(colordx('hwb(120 0% 100%)').toHex()).toBe('#000000');
+    expect(colordx('hwb(240 0% 100%)').toHex()).toBe('#000000');
+  });
+
+  it('toHwbString round-trips for midtone colors within ±1 per channel', () => {
+    // HWB default precision=0 (integer W/B) may lose sub-integer precision → allow ±1
+    for (const c of extendedInputs) {
+      const back = colordx(colordx(c).toHwbString()).toRgb();
+      const orig = colordx(c).toRgb();
+      expect(Math.abs(back.r - orig.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(back.g - orig.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(back.b - orig.b)).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe('OKLab: extended inputs round-trip', () => {
+  it.each(extendedInputs)('%s', (input) => {
+    const oklab = colordx(input).toOklab();
+    const rgb = colordx(oklab).toRgb();
+    const orig = colordx(input).toRgb();
+    expect(Math.abs(rgb.r - orig.r)).toBeLessThanOrEqual(1);
+    expect(Math.abs(rgb.g - orig.g)).toBeLessThanOrEqual(1);
+    expect(Math.abs(rgb.b - orig.b)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('OKLab: axis directions', () => {
+  it('red has positive a (reddish direction)', () => {
+    expect(colordx('#ff0000').toOklab().a).toBeGreaterThan(0);
+  });
+
+  it('green has negative a (greenish direction)', () => {
+    expect(colordx('#00ff00').toOklab().a).toBeLessThan(0);
+  });
+
+  it('blue has negative b (bluish direction)', () => {
+    expect(colordx('#0000ff').toOklab().b).toBeLessThan(0);
+  });
+
+  it('yellow has positive b (yellowish direction)', () => {
+    expect(colordx('#ffff00').toOklab().b).toBeGreaterThan(0);
+  });
+
+  it('achromatic colors have a and b near 0', () => {
+    for (const c of ['#000000', '#808080', '#ffffff']) {
+      const { a, b } = colordx(c).toOklab();
+      expect(Math.abs(a)).toBeLessThan(0.01);
+      expect(Math.abs(b)).toBeLessThan(0.01);
+    }
+  });
+
+  it('all extended inputs have L in [0, 1]', () => {
+    for (const c of extendedInputs) {
+      const { l } = colordx(c).toOklab();
+      expect(l).toBeGreaterThanOrEqual(0);
+      expect(l).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe('OKLch: extended inputs round-trip', () => {
+  it.each(extendedInputs)('%s', (input) => {
+    const oklch = colordx(input).toOklch();
+    const rgb = colordx(oklch).toRgb();
+    const orig = colordx(input).toRgb();
+    expect(Math.abs(rgb.r - orig.r)).toBeLessThanOrEqual(1);
+    expect(Math.abs(rgb.g - orig.g)).toBeLessThanOrEqual(1);
+    expect(Math.abs(rgb.b - orig.b)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('OKLch: chroma and hue properties', () => {
+  it('achromatic grays have C near 0', () => {
+    for (const c of ['#808080', '#444444', '#cccccc']) {
+      expect(colordx(c).toOklch().c).toBeCloseTo(0, 2);
+    }
+  });
+
+  it('chromatic colors have higher C than gray', () => {
+    const chromaGray = colordx('#808080').toOklch().c;
+    for (const c of ['#ff0000', '#00ff00', '#0000ff']) {
+      expect(colordx(c).toOklch().c).toBeGreaterThan(chromaGray + 0.1);
+    }
+  });
+
+  it('oklch hue=0 and hue=360 produce same color', () => {
+    const a = colordx('oklch(0.6279 0.2577 0)').toRgb();
+    const b = colordx('oklch(0.6279 0.2577 360)').toRgb();
+    expect(Math.abs(a.r - b.r)).toBeLessThanOrEqual(1);
+    expect(Math.abs(a.g - b.g)).toBeLessThanOrEqual(1);
+    expect(Math.abs(a.b - b.b)).toBeLessThanOrEqual(1);
+  });
+
+  it('C=0 produces an achromatic (gray) color', () => {
+    const result = colordx('oklch(0.5 0 0)').toRgb();
+    expect(Math.abs(result.r - result.g)).toBeLessThanOrEqual(2);
+    expect(Math.abs(result.g - result.b)).toBeLessThanOrEqual(2);
+  });
+
+  it('H is in [0, 360) for extended chromatic inputs', () => {
+    for (const c of extendedInputs) {
+      const { h, c: chroma } = colordx(c).toOklch();
+      if (chroma > 0.01) {
+        expect(h).toBeGreaterThanOrEqual(0);
+        expect(h).toBeLessThan(360);
+      }
+    }
+  });
+});

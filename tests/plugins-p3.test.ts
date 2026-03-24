@@ -113,3 +113,73 @@ describe('P3 string parsing', () => {
     }
   });
 });
+
+const extendedP3Inputs = ['#ff8800', '#8800ff', '#00ffff', '#ff00ff', '#808080', '#3b82f6'];
+
+describe('toP3: extended round-trips', () => {
+  it.each(extendedP3Inputs)('%s', (input) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const str = (colordx(input) as any).toP3String();
+    expect(colordx(str).toHex()).toBe(colordx(input).toHex());
+  });
+});
+
+describe('toP3: channel value properties', () => {
+  it('sRGB green r channel is less than sRGB red r channel in P3', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p3Green = (colordx('#00ff00') as any).toP3();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p3Red = (colordx('#ff0000') as any).toP3();
+    // Green-dominant color should have much lower r than a red-dominant color
+    expect(p3Green.r).toBeLessThan(p3Red.r);
+  });
+
+  it('sRGB blue b channel is less than 1 in P3', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p3 = (colordx('#0000ff') as any).toP3();
+    expect(p3.b).toBeLessThan(1);
+    expect(p3.b).toBeGreaterThan(0.5);
+  });
+
+  it('mid-gray maps to equal r=g=b in P3', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p3 = (colordx('#808080') as any).toP3();
+    expect(Math.abs(p3.r - p3.g)).toBeLessThan(0.01);
+    expect(Math.abs(p3.g - p3.b)).toBeLessThan(0.01);
+  });
+
+  it('alpha 0 in P3 is fully transparent', () => {
+    expect(colordx('color(display-p3 1 0 0 / 0)').alpha()).toBe(0);
+  });
+
+  it('alpha 1 in P3 is fully opaque', () => {
+    expect(colordx('color(display-p3 1 0 0 / 1)').alpha()).toBe(1);
+  });
+
+  it('P3 green (0 1 0) maps to full green in sRGB', () => {
+    expect(colordx('color(display-p3 0 1 0)').toRgb().g).toBe(255);
+  });
+
+  it('P3 blue (0 0 1) maps to full blue in sRGB', () => {
+    expect(colordx('color(display-p3 0 0 1)').toRgb().b).toBe(255);
+  });
+});
+
+describe('toP3String: format verification', () => {
+  it('opaque color string has no slash', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const str = (colordx('#3b82f6') as any).toP3String();
+    expect(str).not.toContain('/');
+    expect(str).toMatch(/^color\(display-p3 /);
+  });
+
+  it('semi-transparent color string has slash and alpha', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const str = (colordx({ r: 100, g: 150, b: 200, a: 0.7 }) as any).toP3String();
+    expect(str).toContain('/ 0.7');
+  });
+
+  it('P3 (0.5 0.5 0.5) is a valid parseable color', () => {
+    expect(colordx('color(display-p3 0.5 0.5 0.5)').isValid()).toBe(true);
+  });
+});

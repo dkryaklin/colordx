@@ -451,3 +451,477 @@ describe("string output precision", () => {
   });
 });
 
+describe("parsing: hex variations", () => {
+  it("parses 4-digit hex (3 rgb + alpha)", () => {
+    const result = colordx("#f00a").toRgb();
+    expect(result.r).toBe(255);
+    expect(result.g).toBe(0);
+    expect(result.b).toBe(0);
+    expect(result.a).toBeCloseTo(0.667, 2);
+  });
+
+  it("parses uppercase hex", () => {
+    expect(colordx("#FF0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+    expect(colordx("#FFF").toRgb()).toEqual({ r: 255, g: 255, b: 255, a: 1 });
+  });
+
+  it("parses mixed-case hex", () => {
+    expect(colordx("#Ff0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+  });
+
+  it("parses green and blue hex", () => {
+    expect(colordx("#00ff00").toRgb()).toEqual({ r: 0, g: 255, b: 0, a: 1 });
+    expect(colordx("#0000ff").toRgb()).toEqual({ r: 0, g: 0, b: 255, a: 1 });
+  });
+
+  it("parses 8-digit hex with full opacity", () => {
+    expect(colordx("#ff0000ff").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+  });
+});
+
+describe("parsing: hsl edge cases", () => {
+  it("parses hsl with negative hue (normalizes to positive)", () => {
+    expect(colordx("hsl(-120, 100%, 50%)").toHex()).toBe("#0000ff");
+  });
+
+  it("parses hsl with hue > 360 (wraps around)", () => {
+    expect(colordx("hsl(480, 100%, 50%)").toHex()).toBe("#00ff00");
+  });
+
+  it("parses hsl with turn units", () => {
+    expect(colordx("hsl(0.5turn 100% 50%)").toHex()).toBe("#00ffff");
+  });
+
+  it("parses hsla string", () => {
+    expect(colordx("hsla(0, 100%, 50%, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+  });
+
+  it("parses hsla with 0% alpha", () => {
+    expect(colordx("hsla(0, 100%, 50%, 0%)").alpha()).toBe(0);
+  });
+});
+
+describe("parsing: rgb edge cases", () => {
+  it("parses rgb with fractional values (rounds)", () => {
+    expect(colordx("rgb(254.6, 0, 0)").toRgb().r).toBe(255);
+  });
+
+  it("parses rgba with percentage alpha", () => {
+    expect(colordx("rgba(255, 0, 0, 100%)").alpha()).toBe(1);
+    expect(colordx("rgba(255, 0, 0, 0%)").alpha()).toBe(0);
+  });
+
+  it("parses rgb with out-of-range values (clamps)", () => {
+    expect(colordx("rgb(300, 0, 0)").toRgb().r).toBe(255);
+    expect(colordx("rgb(-10, 0, 0)").toRgb().r).toBe(0);
+  });
+});
+
+describe("conversion: comprehensive", () => {
+  it("toHex includes alpha for semi-transparent colors", () => {
+    expect(colordx("#ff000080").toHex()).toBe("#ff000080");
+  });
+
+  it("toHex for fully transparent black", () => {
+    expect(colordx({ r: 0, g: 0, b: 0, a: 0 }).toHex()).toBe("#00000000");
+  });
+
+  it("toHsl for green gives h=120, s=100, l=50", () => {
+    const hsl = colordx("#00ff00").toHsl();
+    expect(hsl.h).toBe(120);
+    expect(hsl.s).toBe(100);
+    expect(hsl.l).toBe(50);
+  });
+
+  it("toHsl for blue gives h=240", () => {
+    expect(colordx("#0000ff").toHsl().h).toBe(240);
+  });
+
+  it("toHsl for black: s=0, l=0", () => {
+    const hsl = colordx("#000000").toHsl();
+    expect(hsl.l).toBe(0);
+    expect(hsl.s).toBe(0);
+  });
+
+  it("toHsl for white: s=0, l=100", () => {
+    const hsl = colordx("#ffffff").toHsl();
+    expect(hsl.l).toBe(100);
+    expect(hsl.s).toBe(0);
+  });
+
+  it("toHslString for green", () => {
+    expect(colordx("#00ff00").toHslString()).toBe("hsl(120, 100%, 50%)");
+  });
+
+  it("toHslString for blue", () => {
+    expect(colordx("#0000ff").toHslString()).toBe("hsl(240, 100%, 50%)");
+  });
+
+  it("toHsv for green", () => {
+    const hsv = colordx("#00ff00").toHsv();
+    expect(hsv.h).toBe(120);
+    expect(hsv.s).toBe(100);
+    expect(hsv.v).toBe(100);
+  });
+
+  it("toHsv for black", () => {
+    expect(colordx("#000000").toHsv().v).toBe(0);
+    expect(colordx("#000000").toHsv().s).toBe(0);
+  });
+
+  it("toHsv for white", () => {
+    expect(colordx("#ffffff").toHsv().v).toBe(100);
+    expect(colordx("#ffffff").toHsv().s).toBe(0);
+  });
+
+  it("toHsv for blue", () => {
+    const hsv = colordx("#0000ff").toHsv();
+    expect(hsv.h).toBe(240);
+    expect(hsv.s).toBe(100);
+    expect(hsv.v).toBe(100);
+  });
+
+  it("toNumber for blue", () => {
+    expect(colordx("#0000ff").toNumber()).toBe(0x0000ff);
+  });
+
+  it("toNumber for green", () => {
+    expect(colordx("#00ff00").toNumber()).toBe(0x00ff00);
+  });
+
+  it("toNumber ignores alpha channel", () => {
+    expect(colordx("#ff000080").toNumber()).toBe(0xff0000);
+  });
+
+  it("toRgbString for opaque colors omits alpha", () => {
+    expect(colordx("#00ff00").toRgbString()).toBe("rgb(0, 255, 0)");
+    expect(colordx("#0000ff").toRgbString()).toBe("rgb(0, 0, 255)");
+  });
+
+  it("toRgbString for transparent uses rgba", () => {
+    expect(colordx({ r: 0, g: 128, b: 255, a: 0.5 }).toRgbString()).toBe("rgba(0, 128, 255, 0.5)");
+  });
+
+  it("toHsvString for blue", () => {
+    expect(colordx("#0000ff").toHsvString()).toBe("hsv(240, 100%, 100%)");
+  });
+
+  it("toHwb for primary colors", () => {
+    expect(colordx("#ff0000").toHwb()).toEqual({ h: 0, w: 0, b: 0, a: 1 });
+    expect(colordx("#ffffff").toHwb()).toEqual({ h: 0, w: 100, b: 0, a: 1 });
+    expect(colordx("#000000").toHwb()).toEqual({ h: 0, w: 0, b: 100, a: 1 });
+  });
+});
+
+describe("manipulation: boundary conditions", () => {
+  it("lighten clamps at l=100", () => {
+    expect(colordx("#ffffff").lighten(0.5).toHsl().l).toBe(100);
+  });
+
+  it("darken clamps at l=0", () => {
+    expect(colordx("#000000").darken(0.5).toHsl().l).toBe(0);
+  });
+
+  it("saturate clamps at s=100", () => {
+    expect(colordx("#ff0000").saturate(1.0).toHsl().s).toBe(100);
+  });
+
+  it("desaturate clamps at s=0", () => {
+    expect(colordx("#ff0000").desaturate(1.0).toHsl().s).toBe(0);
+  });
+
+  it("mix at weight=0 returns original color", () => {
+    const result = colordx("#ff0000").mix("#0000ff", 0).toRgb();
+    expect(result.r).toBe(255);
+    expect(result.g).toBe(0);
+    expect(result.b).toBe(0);
+  });
+
+  it("mix at weight=1 returns target color", () => {
+    const result = colordx("#ff0000").mix("#0000ff", 1).toRgb();
+    expect(result.r).toBe(0);
+    expect(result.b).toBe(255);
+  });
+
+  it("mix blends alpha channels", () => {
+    const mixed = colordx({ r: 255, g: 0, b: 0, a: 1 }).mix({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
+    expect(mixed.alpha()).toBe(0.5);
+  });
+
+  it("rotate 360 returns same color as original", () => {
+    expect(colordx("#ff0000").rotate(360).toHex()).toBe("#ff0000");
+    expect(colordx("#3b82f6").rotate(360).toHex()).toBe(colordx("#3b82f6").toHex());
+  });
+
+  it("rotate negative angle mirrors positive", () => {
+    expect(colordx("#ff0000").rotate(-180).toHex()).toBe(colordx("#ff0000").rotate(180).toHex());
+  });
+
+  it("rotate 0 is identity", () => {
+    expect(colordx("#ff0000").rotate(0).toHex()).toBe("#ff0000");
+  });
+
+  it("invert preserves alpha", () => {
+    const inverted = colordx({ r: 255, g: 0, b: 0, a: 0.5 }).invert();
+    expect(inverted.alpha()).toBe(0.5);
+    expect(inverted.toRgb().r).toBe(0);
+    expect(inverted.toRgb().g).toBe(255);
+    expect(inverted.toRgb().b).toBe(255);
+  });
+
+  it("invert of black is white and vice versa", () => {
+    expect(colordx("#000000").invert().toHex()).toBe("#ffffff");
+    expect(colordx("#ffffff").invert().toHex()).toBe("#000000");
+  });
+
+  it("grayscale of already-gray color is unchanged", () => {
+    expect(colordx("#808080").grayscale().toHex()).toBe("#808080");
+  });
+
+  it("lighten default amount is 10 percentage points", () => {
+    const l1 = colordx("#ff0000").toHsl().l;
+    const l2 = colordx("#ff0000").lighten().toHsl().l;
+    expect(l2 - l1).toBeCloseTo(10, 0);
+  });
+
+  it("darken default amount is 10 percentage points", () => {
+    const l1 = colordx("#ff0000").toHsl().l;
+    const l2 = colordx("#ff0000").darken().toHsl().l;
+    expect(l1 - l2).toBeCloseTo(10, 0);
+  });
+
+  it("saturate on achromatic color does not throw", () => {
+    expect(() => colordx("#808080").saturate(0.1)).not.toThrow();
+    expect(colordx("#808080").saturate(0.1)).toBeInstanceOf(Colordx);
+  });
+});
+
+describe("getters: comprehensive", () => {
+  it("brightness for mid-gray is near 0.5", () => {
+    const b = colordx("#808080").brightness();
+    expect(b).toBeGreaterThan(0.45);
+    expect(b).toBeLessThan(0.55);
+  });
+
+  it("luminance ordering: green > red > blue", () => {
+    expect(colordx("#00ff00").luminance()).toBeGreaterThan(colordx("#ff0000").luminance());
+    expect(colordx("#ff0000").luminance()).toBeGreaterThan(colordx("#0000ff").luminance());
+  });
+
+  it("contrast between black and each primary is greater than 1", () => {
+    expect(colordx("#ff0000").contrast("#000000")).toBeGreaterThan(1);
+    expect(colordx("#00ff00").contrast("#000000")).toBeGreaterThan(1);
+    expect(colordx("#0000ff").contrast("#000000")).toBeGreaterThan(1);
+  });
+
+  it("contrast is symmetric", () => {
+    expect(colordx("#ff0000").contrast("#000000")).toBe(colordx("#000000").contrast("#ff0000"));
+  });
+
+  it("isDark for dark colors", () => {
+    expect(colordx("#111111").isDark()).toBe(true);
+    expect(colordx("#333333").isDark()).toBe(true);
+  });
+
+  it("isLight for light colors", () => {
+    expect(colordx("#eeeeee").isLight()).toBe(true);
+    expect(colordx("#cccccc").isLight()).toBe(true);
+  });
+
+  it("hue() wraps at 360 when setting", () => {
+    expect(colordx("#ff0000").hue(360).toHex()).toBe(colordx("#ff0000").hue(0).toHex());
+  });
+
+  it("hue() of achromatic colors is 0", () => {
+    expect(colordx("#000000").hue()).toBe(0);
+    expect(colordx("#ffffff").hue()).toBe(0);
+    expect(colordx("#808080").hue()).toBe(0);
+  });
+
+  it("chroma of achromatic colors is near 0", () => {
+    expect(colordx("#000000").chroma()).toBeCloseTo(0, 2);
+    expect(colordx("#ffffff").chroma()).toBeCloseTo(0, 2);
+    expect(colordx("#808080").chroma()).toBeCloseTo(0, 2);
+  });
+
+  it("chroma of chromatic primary colors is greater than 0.1", () => {
+    expect(colordx("#ff0000").chroma()).toBeGreaterThan(0.1);
+    expect(colordx("#00ff00").chroma()).toBeGreaterThan(0.1);
+    expect(colordx("#0000ff").chroma()).toBeGreaterThan(0.1);
+  });
+
+  it("lightness of primaries is strictly between 0 and 1", () => {
+    for (const c of ["#ff0000", "#00ff00", "#0000ff", "#c06060"]) {
+      const l = colordx(c).lightness();
+      expect(l).toBeGreaterThan(0);
+      expect(l).toBeLessThan(1);
+    }
+  });
+
+  it("isEqual is false for different alpha at same RGB", () => {
+    expect(colordx("#ff0000").isEqual({ r: 255, g: 0, b: 0, a: 0.5 })).toBe(false);
+  });
+
+  it("isEqual with different formats for green", () => {
+    expect(colordx("#00ff00").isEqual("rgb(0, 255, 0)")).toBe(true);
+    expect(colordx("#00ff00").isEqual("hsl(120, 100%, 50%)")).toBe(true);
+    expect(colordx("#00ff00").isEqual("#0f0")).toBe(true);
+  });
+
+  it("alpha clamps to [0, 1]", () => {
+    expect(colordx("#ff0000").alpha(2).alpha()).toBe(1);
+    expect(colordx("#ff0000").alpha(-1).alpha()).toBe(0);
+  });
+});
+
+describe("invalid input: comprehensive", () => {
+  it("rejects empty string", () => {
+    expect(colordx("").isValid()).toBe(false);
+  });
+
+  it("rejects number input", () => {
+    expect(colordx(42 as any).isValid()).toBe(false);
+  });
+
+  it("rejects null input", () => {
+    expect(colordx(null as any).isValid()).toBe(false);
+  });
+
+  it("rejects undefined input", () => {
+    expect(colordx(undefined as any).isValid()).toBe(false);
+  });
+
+  it("rejects object with only partial rgb fields", () => {
+    expect(colordx({ r: 255 } as any).isValid()).toBe(false);
+    expect(colordx({ r: 255, g: 0 } as any).isValid()).toBe(false);
+  });
+
+  it("rejects hex with non-hex characters", () => {
+    expect(colordx("#gggggg").isValid()).toBe(false);
+    expect(colordx("#xyz").isValid()).toBe(false);
+  });
+
+  it("rejects 7-char hex as invalid length", () => {
+    expect(colordx("#1234567").isValid()).toBe(false);
+  });
+
+  it("falls back to opaque black (not transparent) for invalid input", () => {
+    const rgb = colordx("totally-invalid").toRgb();
+    expect(rgb.r).toBe(0);
+    expect(rgb.g).toBe(0);
+    expect(rgb.b).toBe(0);
+    expect(rgb.a).toBe(1);
+  });
+
+  it("rejects array input", () => {
+    expect(colordx([255, 0, 0] as any).isValid()).toBe(false);
+  });
+});
+
+describe("getFormat: extended", () => {
+  it("detects 8-char hex with alpha", () => {
+    expect(getFormat("#ff000080")).toBe("hex");
+    expect(getFormat("#ff0000ff")).toBe("hex");
+  });
+
+  it("detects hwb string", () => {
+    expect(getFormat("hwb(0 0% 0%)")).toBe("hwb");
+    expect(getFormat("hwb(120 50% 20%)")).toBe("hwb");
+  });
+
+  it("detects oklch string as 'lch'", () => {
+    expect(getFormat("oklch(0.5 0.2 240)")).toBe("lch");
+  });
+
+  it("detects oklab string as 'lab'", () => {
+    expect(getFormat("oklab(0.5 0.1 0.1)")).toBe("lab");
+  });
+
+  it("detects hwb object", () => {
+    expect(getFormat({ h: 0, w: 0, b: 0, a: 1 })).toBe("hwb");
+  });
+
+  it("detects oklch object as 'lch'", () => {
+    expect(getFormat({ l: 0.5, c: 0.2, h: 240, a: 1 })).toBe("lch");
+  });
+
+  it("detects oklab object as 'lab'", () => {
+    expect(getFormat({ l: 0.5, a: 0.1, b: 0.1, alpha: 1 })).toBe("lab");
+  });
+
+  it("returns undefined for number input", () => {
+    expect(getFormat(42 as any)).toBeUndefined();
+  });
+
+  it("returns undefined for null input", () => {
+    expect(getFormat(null as any)).toBeUndefined();
+  });
+});
+
+describe("nearest: edge cases", () => {
+  it("returns the only candidate for a single-element palette", () => {
+    expect(nearest("#ff0000", ["#ff0000"])).toBe("#ff0000");
+    expect(nearest("#0000cc", ["#ff0000"])).toBe("#ff0000");
+  });
+
+  it("finds the visually nearest color across lightness dimension", () => {
+    expect(nearest("#111111", ["#000000", "#ffffff"])).toBe("#000000");
+    expect(nearest("#eeeeee", ["#000000", "#ffffff"])).toBe("#ffffff");
+  });
+
+  it("finds nearest when palette contains the exact color", () => {
+    const palette = ["#ff0000", "#00ff00", "#0000ff"];
+    expect(nearest("#00ff00", palette)).toBe("#00ff00");
+  });
+});
+
+describe("string output: round-trips", () => {
+  const primaries = ["#ff0000", "#00ff00", "#0000ff", "#ffffff", "#000000"];
+
+  it("toHslString → parse → toHex round-trips for primaries", () => {
+    for (const c of primaries) {
+      expect(colordx(colordx(c).toHslString()).toHex()).toBe(c);
+    }
+  });
+
+  it("toRgbString → parse → toHex round-trips for primaries", () => {
+    for (const c of primaries) {
+      expect(colordx(colordx(c).toRgbString()).toHex()).toBe(c);
+    }
+  });
+
+  it("toHwbString → parse → toHex round-trips for primaries", () => {
+    for (const c of primaries) {
+      expect(colordx(colordx(c).toHwbString()).toHex()).toBe(c);
+    }
+  });
+
+  it("toOklabString → parse → toHex round-trips for primaries", () => {
+    for (const c of primaries) {
+      const str = colordx(c).toOklabString();
+      const rgb = colordx(str).toRgb();
+      const orig = colordx(c).toRgb();
+      expect(Math.abs(rgb.r - orig.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rgb.g - orig.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rgb.b - orig.b)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("toOklchString → parse → toHex round-trips for primaries", () => {
+    for (const c of primaries) {
+      const str = colordx(c).toOklchString();
+      const rgb = colordx(str).toRgb();
+      const orig = colordx(c).toRgb();
+      expect(Math.abs(rgb.r - orig.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rgb.g - orig.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rgb.b - orig.b)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("hue within [0, 360) for edge-case colors", () => {
+    const { h } = colordx("#ff0055").toHsl();
+    expect(h).toBeGreaterThanOrEqual(0);
+    expect(h).toBeLessThan(360);
+  });
+});
+

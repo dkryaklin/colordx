@@ -344,3 +344,162 @@ describe('toGamutRec2020', () => {
     expect(result.toRgb().a).toBeCloseTo(0.7, 2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Extended corner cases
+// ---------------------------------------------------------------------------
+
+describe('inGamutSrgb: additional hue and lightness coverage', () => {
+  it('returns true for low chroma at all cardinal hue angles', () => {
+    expect(inGamutSrgb('oklch(0.5 0.05 0)')).toBe(true);
+    expect(inGamutSrgb('oklch(0.5 0.05 90)')).toBe(true);
+    expect(inGamutSrgb('oklch(0.5 0.05 180)')).toBe(true);
+    expect(inGamutSrgb('oklch(0.5 0.05 270)')).toBe(true);
+  });
+
+  it('returns true for very low chroma across a range of lightnesses', () => {
+    expect(inGamutSrgb('oklch(0.1 0.01 90)')).toBe(true);
+    expect(inGamutSrgb('oklch(0.5 0.01 90)')).toBe(true);
+    expect(inGamutSrgb('oklch(0.9 0.01 90)')).toBe(true);
+  });
+
+  it('returns false for high chroma in the yellow-green direction', () => {
+    expect(inGamutSrgb('oklch(0.5 0.4 90)')).toBe(false);
+  });
+
+  it('returns false for high chroma in the blue direction', () => {
+    expect(inGamutSrgb('oklch(0.5 0.4 270)')).toBe(false);
+  });
+});
+
+describe('toGamutSrgb: additional coverage', () => {
+  it('passes through black and white unchanged', () => {
+    expect(toGamutSrgb('#000000').toHex()).toBe('#000000');
+    expect(toGamutSrgb('#ffffff').toHex()).toBe('#ffffff');
+  });
+
+  it('maps out-of-gamut colors at L=0.3 while preserving lightness', () => {
+    const outOfGamut = { l: 0.3, c: 0.4, h: 200, a: 1 };
+    if (!inGamutSrgb(outOfGamut)) {
+      const mapped = toGamutSrgb(outOfGamut);
+      expect(mapped.toOklch().l).toBeCloseTo(0.3, 1);
+    }
+  });
+
+  it('maps out-of-gamut colors at L=0.9 while preserving lightness', () => {
+    const outOfGamut = { l: 0.9, c: 0.4, h: 145, a: 1 };
+    if (!inGamutSrgb(outOfGamut)) {
+      const mapped = toGamutSrgb(outOfGamut);
+      expect(mapped.toOklch().l).toBeCloseTo(0.9, 1);
+    }
+  });
+
+  it('all mapped colors have valid RGB channels', () => {
+    const testColors = [
+      'oklch(0.3 0.5 30)', 'oklch(0.5 0.4 145)',
+      'oklch(0.7 0.45 210)', 'oklch(0.4 0.5 270)',
+    ];
+    for (const c of testColors) {
+      if (!inGamutSrgb(c)) {
+        const { r, g, b } = toGamutSrgb(c).toRgb();
+        expect(r).toBeGreaterThanOrEqual(0);
+        expect(r).toBeLessThanOrEqual(255);
+        expect(g).toBeGreaterThanOrEqual(0);
+        expect(g).toBeLessThanOrEqual(255);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThanOrEqual(255);
+      }
+    }
+  });
+});
+
+describe('inGamutP3: additional coverage', () => {
+  it('returns true for low chroma at all cardinal hue angles', () => {
+    expect(inGamutP3('oklch(0.5 0.08 0)')).toBe(true);
+    expect(inGamutP3('oklch(0.5 0.08 90)')).toBe(true);
+    expect(inGamutP3('oklch(0.5 0.08 180)')).toBe(true);
+    expect(inGamutP3('oklch(0.5 0.08 270)')).toBe(true);
+  });
+
+  it('P3 allows more chroma than sRGB at same hue (red direction)', () => {
+    // sRGB red primary ≈ oklch(0.628 0.258 29), P3 red ≈ oklch(0.649 0.299 29)
+    const outOfSrgbInP3 = 'oklch(0.628 0.270 29)';
+    expect(inGamutSrgb(outOfSrgbInP3)).toBe(false);
+    expect(inGamutP3(outOfSrgbInP3)).toBe(true);
+  });
+});
+
+describe('toGamutP3: additional coverage', () => {
+  it('passes through all standard sRGB colors unchanged', () => {
+    for (const c of ['#ff0000', '#00ff00', '#0000ff', '#808080', '#c06060']) {
+      expect(toGamutP3(c).toHex()).toBe(c);
+    }
+  });
+
+  it('reduces chroma when mapping from out-of-P3 to P3', () => {
+    const outOfGamut = 'oklch(0.7 0.45 145)';
+    if (!inGamutP3(outOfGamut)) {
+      const mapped = toGamutP3(outOfGamut);
+      expect(mapped.toOklch().c).toBeLessThan(0.45);
+    }
+  });
+});
+
+describe('inGamutRec2020: additional coverage', () => {
+  it('returns true for low chroma at all cardinal hue angles', () => {
+    expect(inGamutRec2020('oklch(0.5 0.1 0)')).toBe(true);
+    expect(inGamutRec2020('oklch(0.5 0.1 90)')).toBe(true);
+    expect(inGamutRec2020('oklch(0.5 0.1 180)')).toBe(true);
+    expect(inGamutRec2020('oklch(0.5 0.1 270)')).toBe(true);
+  });
+});
+
+describe('toGamutRec2020: additional coverage', () => {
+  it('passes through all standard sRGB colors unchanged', () => {
+    for (const c of ['#ff0000', '#00ff00', '#0000ff', '#808080']) {
+      expect(toGamutRec2020(c).toHex()).toBe(c);
+    }
+  });
+
+  it('all extreme out-of-gamut colors produce valid results', () => {
+    const testColors = ['oklch(0.5 0.9 0)', 'oklch(0.7 0.9 145)', 'oklch(0.3 0.8 270)'];
+    for (const c of testColors) {
+      expect(toGamutRec2020(c).isValid()).toBe(true);
+    }
+  });
+
+  it('Rec.2020 allows at least as much chroma as sRGB for same hue', () => {
+    const outOfSrgb = 'oklch(0.7 0.35 145)';
+    if (!inGamutSrgb(outOfSrgb)) {
+      const srgbMapped = toGamutSrgb(outOfSrgb);
+      const rec2020Mapped = toGamutRec2020(outOfSrgb);
+      expect(rec2020Mapped.toOklch().c).toBeGreaterThanOrEqual(srgbMapped.toOklch().c - 0.01);
+    }
+  });
+});
+
+describe('gamut subset transitivity', () => {
+  it('all standard sRGB colors are in P3 and Rec.2020', () => {
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060', '#808080'];
+    for (const c of colors) {
+      expect(inGamutP3(c)).toBe(true);
+      expect(inGamutRec2020(c)).toBe(true);
+    }
+  });
+
+  it('any color in P3 is also in Rec.2020', () => {
+    const inP3Colors = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', 'oklch(0.64 0.27 29)'];
+    for (const c of inP3Colors) {
+      if (inGamutP3(c)) {
+        expect(inGamutRec2020(c)).toBe(true);
+      }
+    }
+  });
+
+  it('any color in sRGB is also in P3', () => {
+    const srgbColors = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
+    for (const c of srgbColors) {
+      expect(inGamutP3(c)).toBe(true);
+    }
+  });
+});

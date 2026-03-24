@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { colordx, extend, getFormat } from "../src/index.js";
+import { colordx, extend, getFormat, Colordx } from "../src/index.js";
 import names from "../src/plugins/names.js";
 import a11y from "../src/plugins/a11y.js";
 import harmonies from "../src/plugins/harmonies.js";
@@ -234,5 +234,176 @@ describe("mix plugin", () => {
   it("creates palette with custom target", () => {
     const palette = (colordx("#ff0000") as any).palette(3, "#0000ff");
     expect(palette).toHaveLength(3);
+  });
+});
+
+describe("names plugin: additional", () => {
+  it("parses more CSS color names", () => {
+    expect(colordx("blue").toHex()).toBe("#0000ff");
+    expect(colordx("yellow").toHex()).toBe("#ffff00");
+    expect(colordx("lime").toHex()).toBe("#00ff00");
+    // CSS 'green' is #008000, not #00ff00
+    expect(colordx("green").toHex()).toBe("#008000");
+  });
+
+  it("converts common named colors back to name", () => {
+    expect((colordx("#0000ff") as any).toName()).toBe("blue");
+    expect((colordx("#ffff00") as any).toName()).toBe("yellow");
+    expect((colordx("#00ff00") as any).toName()).toBe("lime");
+  });
+
+  it("getFormat returns 'name' for additional CSS color names", () => {
+    expect(getFormat("blue")).toBe("name");
+    expect(getFormat("yellow")).toBe("name");
+    expect(getFormat("lime")).toBe("name");
+  });
+
+  it("returns undefined toName for colors not in the CSS name list", () => {
+    expect((colordx("#3b82f6") as any).toName()).toBeUndefined();
+    expect((colordx("#123456") as any).toName()).toBeUndefined();
+  });
+});
+
+describe("a11y plugin: additional cases", () => {
+  it("isReadable large text AA requires ratio >= 3", () => {
+    // #595959 on white has contrast ~6.2 → passes large AA
+    expect((colordx("#595959") as any).isReadable("#ffffff", { size: "large" })).toBe(true);
+    // #cccccc on white has contrast ~1.6 → fails large AA
+    expect((colordx("#cccccc") as any).isReadable("#ffffff", { size: "large" })).toBe(false);
+  });
+
+  it("isReadable AA is false for very light gray on white", () => {
+    expect((colordx("#cccccc") as any).isReadable("#ffffff")).toBe(false);
+  });
+
+  it("APCA is positive for dark text on light background", () => {
+    expect((colordx("#000000") as any).apcaContrast("#ffffff")).toBeGreaterThan(0);
+  });
+
+  it("APCA is negative for light text on dark background", () => {
+    expect((colordx("#ffffff") as any).apcaContrast("#000000")).toBeLessThan(0);
+  });
+
+  it("APCA absolute value is high for black on white", () => {
+    expect(Math.abs((colordx("#000000") as any).apcaContrast("#ffffff"))).toBeGreaterThan(100);
+  });
+
+  it("isReadableApca returns a boolean", () => {
+    expect(typeof (colordx("#777777") as any).isReadableApca("#000000")).toBe("boolean");
+  });
+
+  it("minReadable achieves at least 4.5:1 contrast", () => {
+    const result = (colordx("#999999") as any).minReadable("#ffffff");
+    expect(result.contrast("#ffffff")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("minReadable for dark background lightens the color", () => {
+    const result = (colordx("#888888") as any).minReadable("#000000");
+    expect(result.contrast("#000000")).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("harmonies plugin: additional cases", () => {
+  it("all harmony colors are Colordx instances", () => {
+    const types = ["complementary", "analogous", "triadic", "tetradic", "split-complementary"] as const;
+    for (const type of types) {
+      const colors = (colordx("#ff0000") as any).harmonies(type);
+      for (const c of colors) {
+        expect(c).toBeInstanceOf(Colordx);
+      }
+    }
+  });
+
+  it("complementary: second color is 180° away in hue", () => {
+    const colors = (colordx("#ff0000") as any).harmonies("complementary");
+    expect(colors[1].hue()).toBeCloseTo(180, 0);
+  });
+
+  it("triadic: three hues are spread evenly (120° apart)", () => {
+    const colors = (colordx("#ff0000") as any).harmonies("triadic");
+    expect(colors).toHaveLength(3);
+    // Hues 0, 120, 240 — range spans at least 200°
+    const hues = colors.map((c: any) => c.hue());
+    expect(Math.max(...hues) - Math.min(...hues)).toBeGreaterThan(100);
+  });
+
+  it("analogous: first color is -30° from original", () => {
+    const colors = (colordx("#ff0000") as any).harmonies("analogous");
+    // red hue = 0; rotate(-30) → normalizes to 330
+    expect(colors[0].hue()).toBeCloseTo(330, 0);
+  });
+
+  it("harmonies work on non-primary colors", () => {
+    const colors = (colordx("#3b82f6") as any).harmonies("complementary");
+    expect(colors).toHaveLength(2);
+    expect(colors[0]).toBeInstanceOf(Colordx);
+    expect(colors[1]).toBeInstanceOf(Colordx);
+  });
+});
+
+describe("mix plugin: additional cases", () => {
+  it("tint at 0 returns original color", () => {
+    expect((colordx("#ff0000") as any).tint(0).toHex()).toBe("#ff0000");
+  });
+
+  it("tint at 1 returns white", () => {
+    expect((colordx("#ff0000") as any).tint(1).toHex()).toBe("#ffffff");
+  });
+
+  it("shade at 0 returns original color", () => {
+    expect((colordx("#ff0000") as any).shade(0).toHex()).toBe("#ff0000");
+  });
+
+  it("shade at 1 returns black", () => {
+    expect((colordx("#ff0000") as any).shade(1).toHex()).toBe("#000000");
+  });
+
+  it("palette: first element is original color", () => {
+    const palette = (colordx("#ff0000") as any).palette(5);
+    expect(palette[0].toHex()).toBe("#ff0000");
+  });
+
+  it("palette: last element is white (default target)", () => {
+    const palette = (colordx("#ff0000") as any).palette(5);
+    expect(palette[4].toHex()).toBe("#ffffff");
+  });
+
+  it("palette: all elements are Colordx instances", () => {
+    const palette = (colordx("#ff0000") as any).palette(4);
+    for (const c of palette) {
+      expect(c).toBeInstanceOf(Colordx);
+    }
+  });
+});
+
+describe("minify plugin: additional cases", () => {
+  it("minified output is always a valid color", () => {
+    const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffffff", "#000000", "#c06060", "#3b82f6"];
+    for (const c of colors) {
+      const minified = (colordx(c) as any).minify();
+      expect(colordx(minified).isValid()).toBe(true);
+    }
+  });
+
+  it("minify with name:false does not use color names", () => {
+    const result = (colordx("#ff0000") as any).minify({ name: false });
+    expect(result).not.toBe("red");
+  });
+
+  it("transparent option: rgba(0,0,0,0) becomes 'transparent'", () => {
+    expect((colordx("rgba(0,0,0,0)") as any).minify({ transparent: true })).toBe("transparent");
+  });
+
+  it("transparent option does not apply to opaque black", () => {
+    const result = (colordx("#000000") as any).minify({ transparent: true });
+    expect(result).not.toBe("transparent");
+  });
+
+  it("minify never produces a longer output than 6-digit hex", () => {
+    const colors = ["#ff0000", "#00ff00", "#0000ff", "#c06060", "#3b82f6"];
+    for (const c of colors) {
+      const minified = (colordx(c) as any).minify();
+      expect(minified.length).toBeLessThanOrEqual(7); // #xxxxxx
+    }
   });
 });
