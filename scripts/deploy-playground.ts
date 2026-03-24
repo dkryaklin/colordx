@@ -27,6 +27,9 @@ const indexHashed = `index.${sha8(indexMjs)}.mjs`;
 const a11yMjs = readFileSync(join(ROOT, 'dist/plugins/a11y.mjs'));
 const a11yHashed = `plugins/a11y.${sha8(a11yMjs)}.mjs`;
 
+const harmoniesMjs = readFileSync(join(ROOT, 'dist/plugins/harmonies.mjs'));
+const harmoniesHashed = `plugins/harmonies.${sha8(harmoniesMjs)}.mjs`;
+
 const stylesCss = readFileSync(join(ROOT, 'playground/styles.css'));
 const stylesHashed = `styles.${sha8(stylesCss)}.css`;
 
@@ -38,6 +41,7 @@ const manifestHashed = `manifest.${sha8(manifest)}.webmanifest`;
 let appJs = readFileSync(join(ROOT, 'playground/app.js'), 'utf-8');
 appJs = appJs.replace("'/index.mjs'", `'/${indexHashed}'`);
 appJs = appJs.replace("'/plugins/a11y.mjs'", `'/${a11yHashed}'`);
+appJs = appJs.replace("'/plugins/harmonies.mjs'", `'/${harmoniesHashed}'`);
 const appHashed = `app.${sha8(appJs)}.js`;
 
 // ── Step 3: Rewrite index.html asset references ──
@@ -52,10 +56,11 @@ html = html.replace('src="/app.js"', `src="/${appHashed}"`);
 write(join(OUT, 'index.html'), html);
 write(join(OUT, indexHashed), indexMjs);
 write(join(OUT, a11yHashed), a11yMjs);
+write(join(OUT, harmoniesHashed), harmoniesMjs);
 write(join(OUT, stylesHashed), stylesCss);
 write(join(OUT, manifestHashed), manifest);
 write(join(OUT, appHashed), appJs);
 
-const files = [indexHashed, a11yHashed, stylesHashed, manifestHashed, appHashed];
+const files = [indexHashed, a11yHashed, harmoniesHashed, stylesHashed, manifestHashed, appHashed];
 console.log(`Built playground → dist-playground/`);
 files.forEach((f) => console.log(`  ${f}`));

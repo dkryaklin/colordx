@@ -5,6 +5,7 @@
     { "source": "/manifest.webmanifest", "destination": "/playground/manifest.webmanifest" },
     { "source": "/index.mjs", "destination": "/dist/index.mjs" },
     { "source": "/plugins/a11y.mjs", "destination": "/dist/plugins/a11y.mjs" },
+    { "source": "/plugins/harmonies.mjs", "destination": "/dist/plugins/harmonies.mjs" },
     { "source": "/", "destination": "/playground/index.html" }
   ]
 }
