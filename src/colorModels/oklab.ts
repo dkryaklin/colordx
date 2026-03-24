@@ -50,15 +50,25 @@ export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
   };
 };
 
+/** Unclamped linear sRGB channels from OKLab values. Channels may exceed [0, 1] for out-of-gamut colors. */
+export const oklabToLinear = (l: number, a: number, b: number): [number, number, number] => {
+  const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = l - 0.0894841775 * a - 1.291485548 * b;
+  const lv = l_ ** 3,
+    mv = m_ ** 3,
+    sv = s_ ** 3;
+  return [
+    4.0767416613 * lv - 3.3077115904 * mv + 0.2309699287 * sv,
+    -1.2684380041 * lv + 2.6097574007 * mv - 0.3413193963 * sv,
+    -0.0041960865 * lv - 0.7034186145 * mv + 1.7076147009 * sv,
+  ];
+};
+
 export const parseOklabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
-  if (!('alpha' in input) && 'a' in input && typeof input.a === 'number') {
-    // Check it's an OklabColor by requiring 'alpha' key or treating 'a' as the a-channel
-    // OklabColor has 'alpha' for transparency; LabColor also has 'alpha'
-    // We need to distinguish: OklabColor has l in [0,1], LabColor has l in [0,100]
-  }
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isNumeric(l as number) || !isNumeric(a as number) || !isNumeric(b as number) || !isNumeric(alpha as number))
     return null;

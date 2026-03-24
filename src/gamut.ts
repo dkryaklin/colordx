@@ -1,21 +1,9 @@
+import { oklabToLinear } from './colorModels/oklab.js';
+import { oklabToLinearP3 } from './colorModels/p3.js';
+import { oklabToLinearRec2020 } from './colorModels/rec2020.js';
 import { Colordx } from './colordx.js';
 import { ANGLE_UNITS, clamp } from './helpers.js';
 import type { AnyColor, OklabColor, OklchColor } from './types.js';
-
-/** Unclamped linear sRGB channels from OKLab values. */
-const oklabToLinear = (l: number, a: number, b: number): [number, number, number] => {
-  const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
-  const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
-  const s_ = l - 0.0894841775 * a - 1.291485548 * b;
-  const lv = l_ ** 3,
-    mv = m_ ** 3,
-    sv = s_ ** 3;
-  return [
-    4.0767416613 * lv - 3.3077115904 * mv + 0.2309699287 * sv,
-    -1.2684380041 * lv + 2.6097574007 * mv - 0.3413193963 * sv,
-    -0.0041960865 * lv - 0.7034186145 * mv + 1.7076147009 * sv,
-  ];
-};
 
 const OKLCH_RE =
   /^oklch\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
@@ -129,3 +117,80 @@ export const toGamutSrgb = (input: AnyColor): Colordx => {
   const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, a: clamp(alpha, 0, 1) };
   return new Colordx(oklch);
 };
+
+// ---------------------------------------------------------------------------
+// Generic helpers shared by P3 and Rec.2020 gamut functions
+// ---------------------------------------------------------------------------
+
+type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
+
+const isLinearInGamutCustom = (r: number, g: number, b: number): boolean =>
+  r >= -EPS && r <= 1 + EPS && g >= -EPS && g <= 1 + EPS && b >= -EPS && b <= 1 + EPS;
+
+const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
+  const raw = getRawOklab(input);
+  // sRGB-bounded inputs (hex, rgb, hsl, etc.) are always inside the wider P3/Rec.2020 gamut
+  if (raw === null) return true;
+  const [r, g, b] = toLinear(raw.l, raw.a, raw.b);
+  return isLinearInGamutCustom(r, g, b);
+};
+
+const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
+  const raw = getRawOklab(input);
+  if (raw === null) return new Colordx(input);
+
+  const { l, a, b, alpha } = raw;
+  const [r, g, bv] = toLinear(l, a, b);
+  if (isLinearInGamutCustom(r, g, bv)) return new Colordx(input);
+
+  const hRad = Math.atan2(b, a);
+  let lo = 0;
+  let hi = Math.sqrt(a ** 2 + b ** 2);
+
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    const [lr, lg, lb] = toLinear(l, mid * Math.cos(hRad), mid * Math.sin(hRad));
+    if (isLinearInGamutCustom(lr, lg, lb)) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  const cFinal = (lo + hi) / 2;
+  const hDeg = ((hRad * 180) / Math.PI + 360) % 360;
+  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, a: clamp(alpha, 0, 1) };
+  return new Colordx(oklch);
+};
+
+// ---------------------------------------------------------------------------
+// Display-P3 gamut
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the color is within the Display-P3 gamut.
+ * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ P3).
+ */
+export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearP3);
+
+/**
+ * Maps an out-of-P3-gamut color into Display-P3 by reducing chroma (constant lightness and hue).
+ * Colors already in P3 gamut are returned as-is. sRGB inputs are passed through.
+ */
+export const toGamutP3 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearP3);
+
+// ---------------------------------------------------------------------------
+// Rec.2020 gamut
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the color is within the Rec.2020 gamut.
+ * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ Rec.2020).
+ */
+export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020);
+
+/**
+ * Maps an out-of-Rec.2020-gamut color into Rec.2020 by reducing chroma (constant lightness and hue).
+ * Colors already in Rec.2020 gamut are returned as-is. sRGB inputs are passed through.
+ */
+export const toGamutRec2020 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearRec2020);

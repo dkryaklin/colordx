@@ -82,6 +82,14 @@ export interface P3Color {
   a: number;
 }
 
+/** CSS Color 4 Rec.2020 */
+export interface Rec2020Color {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
 export type AnyColor =
   | string
   | RgbColor
@@ -94,7 +102,8 @@ export type AnyColor =
   | CmykColor
   | OklabColor
   | OklchColor
-  | P3Color;
+  | P3Color
+  | Rec2020Color;
 
 export type ColorParser<T = AnyColor> = (input: T) => RgbColor | null;
 
