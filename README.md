@@ -60,17 +60,22 @@ colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
 .toRgbString()     // 'rgb(255, 0, 0)'
 .toHex()           // '#ff0000'
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
-.toHsl()           // { h: 0, s: 100, l: 50, a: 1 }         — default precision: 2
-.toHsl(4)          // { h: 0, s: 100, l: 50, a: 1 }         — up to 4 decimal places
-.toHsl(0)          // { h: 0, s: 100, l: 50, a: 1 }         — rounded to integers
+.toHsl()           // { h: 0, s: 100, l: 50, a: 1 }
 .toHslString()     // 'hsl(0, 100%, 50%)'
-.toHslString(4)    // 'hsl(0, 100%, 50%)'                   — higher precision string
 .toHsv()           // { h: 0, s: 100, v: 100, a: 1 }
 .toHsvString()     // 'hsv(0, 100%, 100%)'
-.toHwb()           // { h: 0, w: 0, b: 0, a: 1 }            — default precision: 0
-.toHwb(2)          // { h: 0, w: 0, b: 0, a: 1 }            — up to 2 decimal places
+.toHwb()           // { h: 0, w: 0, b: 0, a: 1 }
 .toHwbString()     // 'hwb(0 0% 0%)'
-.toHwbString(2)    // 'hwb(0 0% 0%)'                        — higher precision string
+// toHsl/toHwb accept an optional precision argument (decimal places):
+colordx('#3d7a9f').toHsl()         // { h: 205.71, s: 43.24, l: 43.33, a: 1 }      — default (2)
+colordx('#3d7a9f').toHsl(4)        // { h: 205.7143, s: 43.2432, l: 43.3333, a: 1 }
+colordx('#3d7a9f').toHsl(0)        // { h: 206, s: 43, l: 43, a: 1 }               — integers
+colordx('#3d7a9f').toHslString()   // 'hsl(205.71, 43.24%, 43.33%)'
+colordx('#3d7a9f').toHslString(4)  // 'hsl(205.7143, 43.2432%, 43.3333%)'
+colordx('#3d7a9f').toHwb()         // { h: 206, w: 24, b: 38, a: 1 }               — default (0)
+colordx('#3d7a9f').toHwb(2)        // { h: 205.71, w: 23.92, b: 37.65, a: 1 }
+colordx('#3d7a9f').toHwbString()   // 'hwb(206 24% 38%)'
+colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .toOklab()         // { l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }
 .toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
 .toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, a: 1 }
