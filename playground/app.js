@@ -1,7 +1,8 @@
 import { colordx, extend, inGamutSrgb, toGamutSrgb } from '/index.mjs';
 import a11y from '/plugins/a11y.mjs';
+import harmoniesPlugin from '/plugins/harmonies.mjs';
 
-extend([a11y]);
+extend([a11y, harmoniesPlugin]);
 
 // Always stored as OKLCH
 let S = { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 };
@@ -220,6 +221,8 @@ function updateLeft() {
     { lbl: 'HEX', val: c.toHex() },
     { lbl: 'RGB', val: c.toRgbString() },
     { lbl: 'HSL', val: c.toHslString() },
+    { lbl: 'HSV', val: c.toHsvString() },
+    { lbl: 'HWB', val: c.toHwbString() },
   ];
 
   document.getElementById('outputs').innerHTML = rows
@@ -236,6 +239,9 @@ function updateLeft() {
   document.querySelectorAll('.out-row').forEach((row) => {
     row.addEventListener('click', () => copy(row.dataset.v, row.querySelector('.out-cp')));
   });
+
+  updateManip();
+  updateHarmonies();
 }
 
 function render() {
@@ -243,6 +249,99 @@ function render() {
   updateGrid();
   updateLeft();
 }
+
+// ── Manipulation section ──
+
+function setColorFromHex(hex) {
+  const p = colordx(hex);
+  if (!p.isValid()) return;
+  const ok = p.toOklch();
+  S = { l: ok.l, c: ok.c, h: ok.h, alpha: S.alpha };
+  updateGrid();
+  updateLeft();
+}
+
+function makeSwatches(containerId, items) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = items
+    .map(
+      (item) => `
+    <div class="ms${item.current ? ' ms-current' : ''}" style="background:${item.bg}" data-hex="${item.hex}" title="${item.label}: ${item.hex}">
+      <span class="ms-lbl">${item.label}</span>
+    </div>`
+    )
+    .join('');
+  el.querySelectorAll('.ms:not(.ms-current)').forEach((s) => {
+    s.addEventListener('click', () => setColorFromHex(s.dataset.hex));
+  });
+}
+
+function swatchItem(color, label, isCurrent = false) {
+  const rgb = color.toRgb();
+  return { label, current: isCurrent, bg: `rgb(${rgb.r},${rgb.g},${rgb.b})`, hex: color.toHex() };
+}
+
+function updateManip() {
+  const c = cx();
+  makeSwatches('ms-light', [
+    swatchItem(c.darken(0.2), '−20%'),
+    swatchItem(c.darken(0.1), '−10%'),
+    swatchItem(c, 'base', true),
+    swatchItem(c.lighten(0.1), '+10%'),
+    swatchItem(c.lighten(0.2), '+20%'),
+  ]);
+  makeSwatches('ms-chroma', [
+    swatchItem(c.desaturate(0.2), '−0.2'),
+    swatchItem(c.desaturate(0.1), '−0.1'),
+    swatchItem(c, 'base', true),
+    swatchItem(c.saturate(0.1), '+0.1'),
+    swatchItem(c.saturate(0.2), '+0.2'),
+  ]);
+  makeSwatches('ms-hue', [
+    swatchItem(c.rotate(-60), '−60°'),
+    swatchItem(c.rotate(-30), '−30°'),
+    swatchItem(c, 'base', true),
+    swatchItem(c.rotate(30), '+30°'),
+    swatchItem(c.rotate(60), '+60°'),
+  ]);
+  makeSwatches('ms-effects', [
+    swatchItem(c.grayscale(), 'grayscale'),
+    swatchItem(c.invert(), 'invert'),
+    swatchItem(c.mix('#000000', 0.3), '×black'),
+    swatchItem(c.mix('#ffffff', 0.3), '×white'),
+  ]);
+}
+
+// ── Harmonies section ──
+
+let harmMode = 'complementary';
+
+function updateHarmonies() {
+  const colors = cx().harmonies(harmMode);
+  const el = document.getElementById('harm-swatches');
+  if (!el) return;
+  el.innerHTML = colors
+    .map((h) => {
+      const rgb = h.toRgb();
+      const hex = h.toHex();
+      return `<div class="hs" style="background:rgb(${rgb.r},${rgb.g},${rgb.b})" data-hex="${hex}">
+        <span class="hs-hex">${hex}</span>
+      </div>`;
+    })
+    .join('');
+  el.querySelectorAll('.hs').forEach((s) => {
+    s.addEventListener('click', () => setColorFromHex(s.dataset.hex));
+  });
+}
+
+document.querySelectorAll('.harm-tab').forEach((t) =>
+  t.addEventListener('click', () => {
+    harmMode = t.dataset.harm;
+    document.querySelectorAll('.harm-tab').forEach((x) => x.classList.toggle('on', x.dataset.harm === harmMode));
+    updateHarmonies();
+  })
+);
 
 function copy(text, btn) {
   navigator.clipboard?.writeText(text);
