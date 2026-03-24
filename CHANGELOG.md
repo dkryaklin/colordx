@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.10.0
+
+### Minor Changes
+
+- [`0ba00a0`](https://github.com/dkryaklin/colordx/commit/0ba00a0238caea820d2a2309046033ef41e7c483) Thanks [@github-actions[bot]](https://github.com/github-actions%5Bbot%5D)! - Add Display-P3 and Rec.2020 gamut support with new inGamutP3, inGamutRec2020, toGamutP3, toGamutRec2020 utilities and p3/rec2020 plugins.
+
 ## 1.9.0
 
 ### Minor Changes
