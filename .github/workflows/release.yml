@@ -123,12 +123,13 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="@colordx/core@${VERSION}"
-          NOTES=$(node -e "
-            const fs = require('fs');
-            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
-            const match = changelog.match(/## ${VERSION.replace(/\./g, '\\\\.')}\\n([\\s\\S]*?)(?=\\n## |$)/);
-            process.stdout.write(match ? match[1].trim() : '');
-          ")
+          NOTES=$(VERSION="$VERSION" node -e '
+            const fs = require("fs");
+            const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+            const version = process.env.VERSION;
+            const match = changelog.match(new RegExp("## " + version.replace(/\./g, "\\.") + "\\n([\\s\\S]*?)(?=\\n## |$)"));
+            process.stdout.write(match ? match[1].trim() : "");
+          ')
           gh release create "${TAG}" \
             --title "v${VERSION}" \
             --notes "${NOTES}" \
