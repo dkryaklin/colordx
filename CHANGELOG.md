@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.10.2
+
+### Patch Changes
+
+- e2cc330: Update README.md
+
 ## 1.10.1
 
 ### Patch Changes
