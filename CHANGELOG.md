@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.10.1
+
+### Patch Changes
+
+- f03df33: Docs updated
+
 ## 1.10.0
 
 ### Minor Changes
