@@ -1,3 +1,19 @@
+@property --gh1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 29;
+}
+@property --gh2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 179;
+}
+@property --gh3 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 239;
+}
+
 *,
 *::before,
 *::after {
@@ -26,9 +42,9 @@ body {
   font-family: var(--sans);
   background-color: #0d0c0a;
   background-image:
-    radial-gradient(ellipse 70% 50% at 8% 20%, oklch(0.44 0.22 28 / 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 40% at 92% 12%, oklch(0.47 0.22 258 / 0.48) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 40% at 42% 72%, oklch(0.5 0.18 162 / 0.32) 0%, transparent 48%);
+    radial-gradient(ellipse 70% 50% at 8% 20%, oklch(0.44 0.22 var(--gh1) / 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 40% at 92% 12%, oklch(0.47 0.22 var(--gh2) / 0.48) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 42% 72%, oklch(0.5 0.18 var(--gh3) / 0.32) 0%, transparent 48%);
   background-attachment: fixed;
   color: var(--t1);
   min-height: 100vh;
@@ -84,6 +100,34 @@ body {
   color: rgba(255, 255, 255, 0.42);
   max-width: 480px;
   text-align: center;
+}
+
+.random-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 8px 0;
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+  width: 100%;
+}
+
+.random-btn:hover {
+  background: var(--border);
+  color: var(--t1);
+}
+
+.random-btn:active {
+  transform: scale(0.98);
+}
+
+body.bg-anim {
+  transition: --gh1 0.8s ease, --gh2 0.8s ease, --gh3 0.8s ease;
 }
 
 

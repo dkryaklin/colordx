@@ -194,7 +194,7 @@ function updateGrid() {
   });
 }
 
-function updateLeft() {
+function updateLeft({ skipBg = false } = {}) {
   const c = cx();
   const rgb = c.toRgb();
   const ob = oklab();
@@ -242,6 +242,49 @@ function updateLeft() {
 
   updateManip();
   updateHarmonies();
+  if (!skipBg) updateBodyBackground(false);
+}
+
+// Accumulated hue values — never reset to 0 to avoid wrap-around sparks
+let bgH1 = S.h;
+let bgH2 = (S.h + 150) % 360;
+let bgH3 = (S.h + 210) % 360;
+
+function shortestArc(from, to) {
+  const delta = ((to - from) % 360 + 540) % 360 - 180;
+  return from + delta;
+}
+
+function updateBodyBackground(animate = false) {
+  bgH1 = shortestArc(bgH1, S.h);
+  bgH2 = shortestArc(bgH2, (S.h + 150) % 360);
+  bgH3 = shortestArc(bgH3, (S.h + 210) % 360);
+
+  if (animate) document.body.classList.add('bg-anim');
+  document.body.style.setProperty('--gh1', f(bgH1, 1));
+  document.body.style.setProperty('--gh2', f(bgH2, 1));
+  document.body.style.setProperty('--gh3', f(bgH3, 1));
+  if (animate) {
+    const onEnd = () => { document.body.classList.remove('bg-anim'); document.body.removeEventListener('transitionend', onEnd); };
+    document.body.addEventListener('transitionend', onEnd);
+  }
+}
+
+function randomOklch() {
+  const h = Math.random() * 360;
+  const c = 0.08 + Math.random() * 0.22;
+  const l = 0.38 + Math.random() * 0.42;
+  return { l: parseFloat(l.toFixed(4)), c: parseFloat(c.toFixed(4)), h: parseFloat(h.toFixed(2)), alpha: 1 };
+}
+
+function updateA11yFromColor() {
+  const bgHex = cx().toHex();
+  const darkContrast = colordx('#1c1a16').contrast(bgHex);
+  const lightContrast = colordx('#f5f2ec').contrast(bgHex);
+  const txtHex = darkContrast >= lightContrast ? '#1c1a16' : '#f5f2ec';
+  document.getElementById('a11y-txt-hex').value = txtHex;
+  document.getElementById('a11y-bg-hex').value = bgHex;
+  updateA11y();
 }
 
 function render() {
@@ -461,3 +504,11 @@ document.getElementById('a11y-swap').addEventListener('click', () => {
 });
 
 updateA11y();
+
+document.getElementById('random-btn').addEventListener('click', () => {
+  S = randomOklch();
+  updateGrid();
+  updateBodyBackground(true);
+  updateLeft({ skipBg: true });
+  updateA11yFromColor();
+});
