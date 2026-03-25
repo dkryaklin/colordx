@@ -41,17 +41,19 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
 };
 
 const OKLCH_RE =
-  /^oklch\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+  /^oklch\(\s*(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*(none|[+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+
+const val = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
 
 export const parseOklchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const m = OKLCH_RE.exec(input);
   if (!m) return null;
-  const L = m[2] ? Number(m[1]) / 100 : Number(m[1]);
-  const C = m[4] ? Number(m[3]) * 0.004 : Number(m[3]);
+  const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
+  const C = m[4] ? val(m[3]!) * 0.004 : val(m[3]!);
   const unit = m[6]?.toLowerCase() ?? 'deg';
-  const H = Number(m[5]) * (ANGLE_UNITS[unit] ?? 1);
-  const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
+  const H = val(m[5]!) * (ANGLE_UNITS[unit] ?? 1);
+  const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
   return oklchToRgb({
     l: L,
     c: C,

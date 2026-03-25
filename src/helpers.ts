@@ -1,6 +1,9 @@
 export const clamp = (n: number, min: number, max: number): number => Math.min(Math.max(n, min), max);
 
-export const round = (n: number, d = 0): number => parseFloat(n.toFixed(d));
+export const round = (n: number, d = 0): number => {
+  const p = 10 ** d;
+  return Math.round(p * n) / p;
+};
 
 export const floor = (n: number, d = 0): number => {
   const p = 10 ** d;

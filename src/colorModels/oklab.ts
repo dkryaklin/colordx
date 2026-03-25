@@ -84,15 +84,17 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
 };
 
 const OKLAB_RE =
-  /^oklab\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+  /^oklab\(\s*(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(%?)\s*(?:\/\s*(none|[+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+
+const val = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
 
 export const parseOklabString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const m = OKLAB_RE.exec(input);
   if (!m) return null;
-  const L = m[2] ? Number(m[1]) / 100 : Number(m[1]);
-  const a = m[4] ? Number(m[3]) * 0.004 : Number(m[3]);
-  const b = m[6] ? Number(m[5]) * 0.004 : Number(m[5]);
-  const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
+  const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
+  const a = m[4] ? val(m[3]!) * 0.004 : val(m[3]!);
+  const b = m[6] ? val(m[5]!) * 0.004 : val(m[5]!);
+  const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
   return oklabToRgb({ l: L, a, b, alpha: clamp(alpha, 0, 1) });
 };

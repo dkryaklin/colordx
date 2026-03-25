@@ -591,6 +591,100 @@ describe('hsvToRgb deferred-rounding precision', () => {
   });
 });
 
+describe('CSS Color 4 none keyword — oklch', () => {
+  it('none in chroma is treated as 0 (achromatic)', () => {
+    const withNone = colordx('oklch(0.5 none 200)').toRgb();
+    const withZero = colordx('oklch(0.5 0 200)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+
+  it('none in lightness is treated as 0 (black)', () => {
+    const withNone = colordx('oklch(none 0.2 200)').toRgb();
+    const withZero = colordx('oklch(0 0.2 200)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+
+  it('none in hue is treated as 0', () => {
+    const withNone = colordx('oklch(0.5 0.2 none)').toRgb();
+    const withZero = colordx('oklch(0.5 0.2 0)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+
+  it('none in alpha is treated as 0 (fully transparent)', () => {
+    const result = colordx('oklch(0.5 0.2 200 / none)');
+    expect(result.isValid()).toBe(true);
+    expect(result.alpha()).toBe(0);
+  });
+
+  it('none is case-insensitive (NONE, None)', () => {
+    expect(colordx('oklch(0.5 NONE 200)').isValid()).toBe(true);
+    expect(colordx('oklch(0.5 None 200)').isValid()).toBe(true);
+  });
+
+  it('all channels none is valid and produces black', () => {
+    const result = colordx('oklch(none none none)');
+    expect(result.isValid()).toBe(true);
+    expect(result.toRgb()).toMatchObject({ r: 0, g: 0, b: 0 });
+  });
+
+  it('none with percentage L still resolves correctly', () => {
+    const withNone = colordx('oklch(50% none 200)').toRgb();
+    const withZero = colordx('oklch(50% 0 200)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+});
+
+describe('CSS Color 4 none keyword — oklab', () => {
+  it('none in a channel is treated as 0', () => {
+    const withNone = colordx('oklab(0.5 none 0)').toRgb();
+    const withZero = colordx('oklab(0.5 0 0)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+
+  it('none in b channel is treated as 0', () => {
+    const withNone = colordx('oklab(0.5 0 none)').toRgb();
+    const withZero = colordx('oklab(0.5 0 0)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+
+  it('none in lightness is treated as 0 (black)', () => {
+    const withNone = colordx('oklab(none 0 0)').toRgb();
+    const withZero = colordx('oklab(0 0 0)').toRgb();
+    expect(withNone.r).toBe(withZero.r);
+    expect(withNone.g).toBe(withZero.g);
+    expect(withNone.b).toBe(withZero.b);
+  });
+
+  it('none in alpha is treated as 0 (fully transparent)', () => {
+    const result = colordx('oklab(0.5 0 0 / none)');
+    expect(result.isValid()).toBe(true);
+    expect(result.alpha()).toBe(0);
+  });
+
+  it('none is case-insensitive (NONE, None)', () => {
+    expect(colordx('oklab(0.5 NONE 0)').isValid()).toBe(true);
+    expect(colordx('oklab(0.5 None 0)').isValid()).toBe(true);
+  });
+
+  it('all channels none produces black', () => {
+    const result = colordx('oklab(none none none)');
+    expect(result.isValid()).toBe(true);
+    expect(result.toRgb()).toMatchObject({ r: 0, g: 0, b: 0 });
+  });
+});
+
 describe('oklabToRgb deferred-rounding precision', () => {
   it('oklab achromatic → toRgb returns integers', () => {
     const { r, g, b } = colordx('oklab(0.5 0 0)').toRgb();
