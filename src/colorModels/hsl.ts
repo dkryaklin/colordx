@@ -1,5 +1,6 @@
 import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
+import { clampRgb } from './rgb.js';
 
 export const clampHsl = (hsl: HslColor): HslColor => ({
   h: normalizeHue(hsl.h),
@@ -58,12 +59,12 @@ export const hslToRgb = ({ h, s, l, a }: HslColor): RgbColor => {
     return p;
   };
 
-  return {
-    r: round(hueToRgb(hue + 1 / 3) * 255),
-    g: round(hueToRgb(hue) * 255),
-    b: round(hueToRgb(hue - 1 / 3) * 255),
+  return clampRgb({
+    r: hueToRgb(hue + 1 / 3) * 255,
+    g: hueToRgb(hue) * 255,
+    b: hueToRgb(hue - 1 / 3) * 255,
     a,
-  };
+  });
 };
 
 export const parseHslObject = (input: unknown): RgbColor | null => {

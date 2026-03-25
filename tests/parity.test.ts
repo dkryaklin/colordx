@@ -186,6 +186,46 @@ describe('isEqual', () => {
 // mix is a plugin in colord (not core) — no parity comparison possible
 // delta() parity is tested in color-models.test.ts (requires colord lab plugin)
 
+describe('HSL string precision: colordx now agrees with colord', () => {
+  // colord rounds HSL output to integers; old colordx (hslToRgb rounded to integer RGB
+  // before storing) would return 50.2 / 30.12 / 49.8 at 2dp precision — diverging from
+  // colord. With deferred rounding colordx stores 127.5 / 63.75 etc. and the math gives
+  // the exact value, so both libraries now agree.
+
+  it('hsl(0, 0%, 50%) toHsl.l — both return 50 exactly', () => {
+    // old colordx: 50%→round(127.5)=128→50.196%→round(2dp)=50.2 (diverged from colord)
+    // new colordx: 50%→store 127.5→127.5/255=50%→round(2dp)=50 (matches colord)
+    expect(colordx('hsl(0, 0%, 50%)').toHsl().l).toBe(50);
+    expect(colord('hsl(0, 0%, 50%)').toHsl().l).toBe(50);
+  });
+
+  it('hsl(30, 100%, 50%) toHsl.h — both return 30 exactly', () => {
+    // old colordx: g=round(127.5)=128 → hue=30.12° → round(2dp)=30.12 (diverged)
+    // new colordx: g=127.5 → gn=0.5 → hue=30° exactly
+    expect(colordx('hsl(30, 100%, 50%)').toHsl().h).toBe(30);
+    expect(colord('hsl(30, 100%, 50%)').toHsl().h).toBe(30);
+  });
+
+  it('hsl(120, 50%, 50%) toHsl.s — both return 50 exactly', () => {
+    // old colordx: r=b=round(63.75)=64 → sat=49.8% → round(2dp)=49.8 (diverged)
+    // new colordx: r=b=63.75 → exact fractions cancel → sat=50%
+    expect(colordx('hsl(120, 50%, 50%)').toHsl().s).toBe(50);
+    expect(colord('hsl(120, 50%, 50%)').toHsl().s).toBe(50);
+  });
+
+  it('hsl(0, 0%, 50%) toRgb — both return same integers', () => {
+    approxRgbEqual(colordx('hsl(0, 0%, 50%)').toRgb(), colord('hsl(0, 0%, 50%)').toRgb());
+  });
+
+  it('hsl(30, 100%, 50%) toRgb — matches colord', () => {
+    approxRgbEqual(colordx('hsl(30, 100%, 50%)').toRgb(), colord('hsl(30, 100%, 50%)').toRgb());
+  });
+
+  it('hsl(200, 40%, 30%) toRgb — matches colord', () => {
+    approxRgbEqual(colordx('hsl(200, 40%, 30%)').toRgb(), colord('hsl(200, 40%, 30%)').toRgb());
+  });
+});
+
 describe('percentage RGB precision (intentional divergence from colord)', () => {
   it('rgba(50%, 50%, 50%) toRgb matches colord — both return integers', () => {
     approxRgbEqual(colordx('rgba(50%, 50%, 50%)').toRgb(), colord('rgba(50%, 50%, 50%)').toRgb());

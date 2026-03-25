@@ -1,5 +1,6 @@
 import { clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
+import { clampRgb } from './rgb.js';
 
 export const clampHsv = (hsv: HsvColor): HsvColor => ({
   h: normalizeHue(hsv.h),
@@ -49,9 +50,9 @@ export const hsvToRgb = ({ h, s, v, a }: HsvColor): RgbColor => {
     [vn, q, p, p, t, vn],
     [t, vn, vn, q, p, p],
     [p, p, t, vn, vn, q],
-  ].map((channel) => round(channel[i]! * 255));
+  ].map((channel) => channel[i]! * 255);
 
-  return { r: r!, g: g!, b: b!, a };
+  return clampRgb({ r: r!, g: g!, b: b!, a });
 };
 
 export const parseHsvObject = (input: unknown): RgbColor | null => {

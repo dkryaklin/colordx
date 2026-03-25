@@ -545,3 +545,72 @@ describe('rgb() percentage channels', () => {
     expect(c.toRgb()).toMatchObject({ r: 143, g: 101, b: 98, a: 0.43 });
   });
 });
+
+// Deferred-rounding precision: channels are stored as floats internally and
+// rounded only at output (toRgb/toRgbString/toNumber). Tests below verify:
+//   1. toHsl/toHsv values are exact when the input maps to a clean percentage
+//   2. toRgb() still returns integers regardless of the conversion path
+
+describe('hslToRgb deferred-rounding precision', () => {
+  it('hsl(0, 0%, 50%) → toHsl gives l=50 exactly (no 128/255 drift)', () => {
+    // 50% → 127.5 stored → 127.5/255 = 0.5 → l=50 exactly
+    expect(colordx('hsl(0, 0%, 50%)').toHsl().l).toBe(50);
+  });
+
+  it('hsl(30, 100%, 50%) → toHsl gives h=30 exactly', () => {
+    // g = 127.5 stored → gn = 0.5 exactly → hue math gives 30° exactly
+    expect(colordx('hsl(30, 100%, 50%)').toHsl().h).toBe(30);
+  });
+
+  it('hsl(120, 50%, 50%) → toHsl gives all three channels exactly', () => {
+    const { h, s, l } = colordx('hsl(120, 50%, 50%)').toHsl();
+    expect(h).toBe(120);
+    expect(s).toBe(50);
+    expect(l).toBe(50);
+  });
+
+  it('hsl(0, 0%, 50%) → toRgb still returns integers', () => {
+    const { r, g, b } = colordx('hsl(0, 0%, 50%)').toRgb();
+    expect(Number.isInteger(r)).toBe(true);
+    expect(Number.isInteger(g)).toBe(true);
+    expect(Number.isInteger(b)).toBe(true);
+  });
+});
+
+describe('hsvToRgb deferred-rounding precision', () => {
+  it('hsv(0, 0%, 50%) → toHsv gives v=50 exactly', () => {
+    // vn=0.5 → r=g=b=127.5 stored → v = max/255 = 0.5 → v=50 exactly
+    expect(colordx({ h: 0, s: 0, v: 50 }).toHsv().v).toBe(50);
+  });
+
+  it('hsv(180, 50%, 80%) → toRgb returns integers', () => {
+    const { r, g, b } = colordx({ h: 180, s: 50, v: 80 }).toRgb();
+    expect(Number.isInteger(r)).toBe(true);
+    expect(Number.isInteger(g)).toBe(true);
+    expect(Number.isInteger(b)).toBe(true);
+  });
+});
+
+describe('oklabToRgb deferred-rounding precision', () => {
+  it('oklab achromatic → toRgb returns integers', () => {
+    const { r, g, b } = colordx('oklab(0.5 0 0)').toRgb();
+    expect(Number.isInteger(r)).toBe(true);
+    expect(Number.isInteger(g)).toBe(true);
+    expect(Number.isInteger(b)).toBe(true);
+  });
+
+  it('oklab round-trip through toHsl loses no extra precision vs hex path', () => {
+    // hex #808080 → toHsl should give same result as oklab-parsed equivalent
+    const fromHex = colordx('#808080').toHsl();
+    const fromOklab = colordx(colordx('#808080').toOklab()).toHsl();
+    expect(Math.abs(fromOklab.l - fromHex.l)).toBeLessThanOrEqual(0.5);
+  });
+
+  it('oklabToRgb → toOklab round-trip stays within floating-point tolerance', () => {
+    const original = colordx('#3b82f6').toOklab();
+    const roundtripped = colordx(original).toOklab();
+    expect(Math.abs(roundtripped.l - original.l)).toBeLessThan(0.001);
+    expect(Math.abs(roundtripped.a - original.a)).toBeLessThan(0.001);
+    expect(Math.abs(roundtripped.b - original.b)).toBeLessThan(0.001);
+  });
+});

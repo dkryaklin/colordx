@@ -1,5 +1,6 @@
 import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
 import type { CmykColor, RgbColor } from '../types.js';
+import { clampRgb } from './rgb.js';
 
 const clampCmyk = (cmyk: CmykColor): CmykColor => ({
   c: clamp(cmyk.c, 0, 100),
@@ -24,12 +25,13 @@ export const rgbToCmyk = ({ r, g, b, a }: RgbColor): CmykColor => {
   };
 };
 
-export const cmykToRgb = ({ c, m, y, k, a }: CmykColor): RgbColor => ({
-  r: round(255 * (1 - c / 100) * (1 - k / 100)),
-  g: round(255 * (1 - m / 100) * (1 - k / 100)),
-  b: round(255 * (1 - y / 100) * (1 - k / 100)),
-  a,
-});
+export const cmykToRgb = ({ c, m, y, k, a }: CmykColor): RgbColor =>
+  clampRgb({
+    r: 255 * (1 - c / 100) * (1 - k / 100),
+    g: 255 * (1 - m / 100) * (1 - k / 100),
+    b: 255 * (1 - y / 100) * (1 - k / 100),
+    a,
+  });
 
 export const parseCmykObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;

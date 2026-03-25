@@ -1,5 +1,6 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { clamp, hasKeys, isNumeric, isObject } from '../helpers.js';
 import type { OklabColor, RgbColor } from '../types.js';
+import { clampRgb } from './rgb.js';
 
 const toLinear = (c: number): number => {
   const n = c / 255;
@@ -42,12 +43,12 @@ export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
   const g = -1.2684380041 * lv + 2.6097574007 * mv - 0.3413193963 * sv;
   const bv = -0.0041960865 * lv - 0.7034186145 * mv + 1.7076147009 * sv;
 
-  return {
-    r: clamp(round(fromLinear(clamp(r, 0, 1)) * 255), 0, 255),
-    g: clamp(round(fromLinear(clamp(g, 0, 1)) * 255), 0, 255),
-    b: clamp(round(fromLinear(clamp(bv, 0, 1)) * 255), 0, 255),
-    a: clamp(alpha, 0, 1),
-  };
+  return clampRgb({
+    r: fromLinear(clamp(r, 0, 1)) * 255,
+    g: fromLinear(clamp(g, 0, 1)) * 255,
+    b: fromLinear(clamp(bv, 0, 1)) * 255,
+    a: alpha,
+  });
 };
 
 /** Unclamped linear sRGB channels from OKLab values. Channels may exceed [0, 1] for out-of-gamut colors. */

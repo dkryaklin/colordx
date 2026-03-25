@@ -1,5 +1,6 @@
 import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
 import type { RgbColor, XyzColor } from '../types.js';
+import { clampRgb } from './rgb.js';
 
 // D50 white point
 const WX = 96.422,
@@ -35,12 +36,12 @@ export const xyzToRgb = ({ x, y, z, a }: XyzColor): RgbColor => {
   const xd65 = 0.9555766 * x - 0.0230393 * y + 0.0631636 * z;
   const yd65 = -0.0282895 * x + 1.0099416 * y + 0.0210077 * z;
   const zd65 = 0.0122982 * x - 0.020483 * y + 1.3299098 * z;
-  return {
-    r: clamp(round(fromLinear(0.032404542 * xd65 - 0.015371385 * yd65 - 0.004985314 * zd65)), 0, 255),
-    g: clamp(round(fromLinear(-0.00969266 * xd65 + 0.018760108 * yd65 + 0.00041556 * zd65)), 0, 255),
-    b: clamp(round(fromLinear(0.000556434 * xd65 - 0.002040259 * yd65 + 0.010572252 * zd65)), 0, 255),
-    a: clamp(a, 0, 1),
-  };
+  return clampRgb({
+    r: fromLinear(0.032404542 * xd65 - 0.015371385 * yd65 - 0.004985314 * zd65),
+    g: fromLinear(-0.00969266 * xd65 + 0.018760108 * yd65 + 0.00041556 * zd65),
+    b: fromLinear(0.000556434 * xd65 - 0.002040259 * yd65 + 0.010572252 * zd65),
+    a,
+  });
 };
 
 export const parseXyzObject = (input: unknown): RgbColor | null => {

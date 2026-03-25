@@ -1,6 +1,7 @@
 import { clamp, round } from '../helpers.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
+import { clampRgb } from './rgb.js';
 
 // Display-P3 uses the same transfer function as sRGB
 const toLinear = (c: number): number => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -27,12 +28,12 @@ export const rgbToP3 = ({ r, g, b, a }: RgbColor): P3Color => {
 
 export const p3ToRgb = ({ r, g, b, a }: P3Color): RgbColor => {
   const [sr, sg, sb] = linearP3ToSrgb(toLinear(r), toLinear(g), toLinear(b));
-  return {
-    r: clamp(round(fromLinear(clamp(sr, 0, 1)) * 255), 0, 255),
-    g: clamp(round(fromLinear(clamp(sg, 0, 1)) * 255), 0, 255),
-    b: clamp(round(fromLinear(clamp(sb, 0, 1)) * 255), 0, 255),
-    a: clamp(a, 0, 1),
-  };
+  return clampRgb({
+    r: fromLinear(clamp(sr, 0, 1)) * 255,
+    g: fromLinear(clamp(sg, 0, 1)) * 255,
+    b: fromLinear(clamp(sb, 0, 1)) * 255,
+    a,
+  });
 };
 
 const P3_RE =

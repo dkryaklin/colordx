@@ -1,6 +1,7 @@
 import { clamp, round } from '../helpers.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
+import { clampRgb } from './rgb.js';
 
 // Rec.2020 / BT.2020 transfer function
 const REC2020_ALPHA = 1.09929682680944;
@@ -42,12 +43,12 @@ export const rgbToRec2020 = ({ r, g, b, a }: RgbColor): Rec2020Color => {
 
 export const rec2020ToRgb = ({ r, g, b, a }: Rec2020Color): RgbColor => {
   const [sr, sg, sb] = linearRec2020ToSrgb(toLinear(r), toLinear(g), toLinear(b));
-  return {
-    r: clamp(round(srgbFromLinear(clamp(sr, 0, 1)) * 255), 0, 255),
-    g: clamp(round(srgbFromLinear(clamp(sg, 0, 1)) * 255), 0, 255),
-    b: clamp(round(srgbFromLinear(clamp(sb, 0, 1)) * 255), 0, 255),
-    a: clamp(a, 0, 1),
-  };
+  return clampRgb({
+    r: srgbFromLinear(clamp(sr, 0, 1)) * 255,
+    g: srgbFromLinear(clamp(sg, 0, 1)) * 255,
+    b: srgbFromLinear(clamp(sb, 0, 1)) * 255,
+    a,
+  });
 };
 
 const REC2020_RE =
