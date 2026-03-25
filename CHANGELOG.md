@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.10.5
+
+### Patch Changes
+
+- d33919e: Fixed minify plugin to skip lossy HSL candidates that don't round-trip back to the original RGB values, ensuring color accuracy.
+
 ## 1.10.4
 
 ### Patch Changes
