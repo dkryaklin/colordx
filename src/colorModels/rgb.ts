@@ -2,9 +2,9 @@ import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
 import type { RgbColor } from '../types.js';
 
 export const clampRgb = (rgb: RgbColor): RgbColor => ({
-  r: clamp(round(rgb.r), 0, 255),
-  g: clamp(round(rgb.g), 0, 255),
-  b: clamp(round(rgb.b), 0, 255),
+  r: clamp(rgb.r, 0, 255),
+  g: clamp(rgb.g, 0, 255),
+  b: clamp(rgb.b, 0, 255),
   a: clamp(round(rgb.a, 3), 0, 1),
 });
 

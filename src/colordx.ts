@@ -24,12 +24,16 @@ export class Colordx {
 
   // Converters
   toRgb(): RgbColor {
-    return { ...this._rgb };
+    const { r, g, b, a } = this._rgb;
+    return { r: round(r), g: round(g), b: round(b), a };
   }
 
   toRgbString(): string {
     const { r, g, b, a } = this._rgb;
-    return a < 1 ? `rgba(${r}, ${g}, ${b}, ${a})` : `rgb(${r}, ${g}, ${b})`;
+    const ri = round(r),
+      gi = round(g),
+      bi = round(b);
+    return a < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${a})` : `rgb(${ri}, ${gi}, ${bi})`;
   }
 
   toHex(): string {
@@ -38,7 +42,7 @@ export class Colordx {
 
   toNumber(): number {
     const { r, g, b } = this._rgb;
-    return (r << 16) | (g << 8) | b;
+    return (round(r) << 16) | (round(g) << 8) | round(b);
   }
 
   toHsl(precision = 2): HslColor {
@@ -218,7 +222,7 @@ export class Colordx {
 
   isEqual(color: AnyColor): boolean {
     const other = new Colordx(color).toRgb();
-    const self = this._rgb;
+    const self = this.toRgb();
     return self.r === other.r && self.g === other.g && self.b === other.b && self.a === other.a;
   }
 

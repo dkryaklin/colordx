@@ -61,10 +61,10 @@ describe('toHsl', () => {
 });
 
 describe('toHslString', () => {
-  // colordx returns higher-precision strings; compare parsed values instead
+  // colordx returns higher-precision strings; round-trip parse back to HSL to compare
   it.each(inputs)('%s', (input) => {
-    const dx = colordx(input).toHsl();
-    const d = colord(input).toHsl();
+    const dx = colordx(colordx(input).toHslString()).toHsl();
+    const d = colord(colord(input).toHslString()).toHsl();
     expect(dx.h).toBeCloseTo(d.h, 0);
     expect(dx.s).toBeCloseTo(d.s, 0);
     expect(dx.l).toBeCloseTo(d.l, 0);
@@ -186,12 +186,47 @@ describe('isEqual', () => {
 // mix is a plugin in colord (not core) — no parity comparison possible
 // delta() parity is tested in color-models.test.ts (requires colord lab plugin)
 
+describe('percentage RGB precision (intentional divergence from colord)', () => {
+  it('rgba(50%, 50%, 50%) toRgb matches colord — both return integers', () => {
+    approxRgbEqual(colordx('rgba(50%, 50%, 50%)').toRgb(), colord('rgba(50%, 50%, 50%)').toRgb());
+  });
+
+  it('rgba(50%, 50%, 50%) toRgbString round-trips to same rgb as colord', () => {
+    approxRgbEqual(
+      colordx(colordx('rgba(50%, 50%, 50%)').toRgbString()).toRgb(),
+      colord(colord('rgba(50%, 50%, 50%)').toRgbString()).toRgb()
+    );
+  });
+
+  it('rgba(50%, 50%, 50%) isEqual rgb(128,128,128) — same as colord', () => {
+    expect(colordx('rgba(50%, 50%, 50%)').isEqual('rgb(128, 128, 128)')).toBe(
+      colord('rgba(50%, 50%, 50%)').isEqual('rgb(128, 128, 128)')
+    );
+  });
+
+  it('rgba(50%, 50%, 50%) toHsl — colordx returns 50% exactly, colord drifts to 50.2%', () => {
+    // colord: 50% → round(127.5) = 128 → 128/255 = 50.196% (data loss)
+    // colordx: 50% → store 127.5 → 127.5/255 = 50% exactly (deferred rounding)
+    expect(colordx('rgba(50%, 50%, 50%)').toHsl().l).toBe(50);
+    expect(colord('rgba(50%, 50%, 50%)').toHsl().l).toBeCloseTo(50.2, 0);
+  });
+
+  it('rgba(20%, 40%, 60%) toRgb matches colord', () => {
+    approxRgbEqual(colordx('rgba(20%, 40%, 60%)').toRgb(), colord('rgba(20%, 40%, 60%)').toRgb());
+  });
+});
+
 describe('hex alpha precision (intentional divergence from colord)', () => {
   it('colordx uses 3dp for hex alpha — more accurate round-trip than colord 2dp', () => {
     // 0x80/255 = 0.50196… → colord rounds to 0.5, colordx rounds to 0.502
-    expect(colordx('#ff000080').alpha()).toBeCloseTo(0.5, 1);
     expect(colordx('#ff000080').alpha()).toBe(0.502);
-    // Round-trip: hex → rgb string → hex — colordx preserves the correct alpha byte
+    expect(colord('#ff000080').alpha()).toBe(0.5);
+  });
+
+  it('colordx round-trips hex alpha losslessly, colord does not', () => {
+    // colordx: #cc88 → rgba string → back to hex preserves alpha byte 0x88
     expect(colordx(colordx('#cc88').toRgbString()).toHex()).toBe('#cccc8888');
+    // colord: loses precision — alpha 0x88/255 rounds to 0.5 → 0x80 on the way back
+    expect(colord(colord('#cc88').toRgbString()).toHex()).not.toBe('#cccc8888');
   });
 });
