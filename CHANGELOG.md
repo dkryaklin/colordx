@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.10.4
+
+### Patch Changes
+
+- 1953129: Fixed incorrect alpha=0 exclusion and lossy alpha handling in the minify plugin's hex shortening logic.
+
 ## 1.10.3
 
 ### Patch Changes
