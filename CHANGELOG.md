@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.11.0
+
+### Minor Changes
+
+- 96c0e81: Defer RGB channel rounding to output methods, preserving sub-integer precision internally for more accurate color space conversions.
+
 ## 1.10.5
 
 ### Patch Changes
