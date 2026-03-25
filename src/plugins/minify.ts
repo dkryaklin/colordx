@@ -19,7 +19,7 @@ const shortenLeadingZero = (n: number): string => (n > 0 && n < 1 ? n.toString()
 
 const tryShortHex = (hex: string, alpha: number): string | null => {
   const chars = hex.split('');
-  if (alpha > 0 && alpha < 1) {
+  if (alpha !== 1) {
     if (chars[1] === chars[2] && chars[3] === chars[4] && chars[5] === chars[6] && chars[7] === chars[8]) {
       return `#${chars[1]}${chars[3]}${chars[5]}${chars[7]}`;
     }
@@ -30,6 +30,13 @@ const tryShortHex = (hex: string, alpha: number): string | null => {
   return null;
 };
 
+// Returns true if alpha (0–1) can be represented as an 8-bit hex byte without perceptible loss.
+// Uses 2-decimal-place comparison to match browser rounding behaviour.
+const isAlphaHexLossless = (alpha: number): boolean => {
+  const byte = Math.round(alpha * 255);
+  return Math.round((byte / 255) * 100) === Math.round(alpha * 100);
+};
+
 const minifyPlugin: Plugin = (ColordxClass) => {
   ColordxClass.prototype.minify = function (this: Colordx, options: MinifyOptions = {}) {
     const opts = { hex: true, rgb: true, hsl: true, ...options };
@@ -38,7 +45,7 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     const alpha = this.alpha();
     const candidates: string[] = [];
 
-    if (opts.hex && (alpha === 1 || opts.alphaHex)) {
+    if (opts.hex && (alpha === 1 || (opts.alphaHex && isAlphaHexLossless(alpha)))) {
       const short = tryShortHex(this.toHex(), alpha);
       candidates.push(short ?? this.toHex());
     }

@@ -179,6 +179,19 @@ describe("minify plugin", () => {
     expect(result).toBe("#f006");
   });
 
+  it("alphaHex falls back to rgb() when alpha is lossy in 8-bit hex", () => {
+    // a=0.005 → round(0.005*255)=1=0x01 → 1/255=0.004 → rounds to 0.00 ≠ 0.01 → lossy
+    const result = (colordx({ r: 255, g: 0, b: 0, a: 0.005 }) as any).minify({ alphaHex: true });
+    expect(result).not.toMatch(/^#/);
+  });
+
+  it("alphaHex includes fully transparent (alpha=0) in short hex", () => {
+    // alpha=0 → 0x00, #rgba short form: all pairs must match
+    // r=0=00, g=0=00, b=0=00, a=0=00 → #00000000 → #0000
+    const result = (colordx({ r: 0, g: 0, b: 0, a: 0 }) as any).minify({ alphaHex: true });
+    expect(result).toBe("#0000");
+  });
+
   it("minified output round-trips to the same RGB (lossless)", () => {
     // cssnano#1515: integer HSL rounding caused lossy minification
     // e.g. rgb(143,101,98) → hsla(4,19%,47%) → rgb(143,100,97) — off by 1
@@ -406,4 +419,64 @@ describe("minify plugin: additional cases", () => {
       expect(minified.length).toBeLessThanOrEqual(7); // #xxxxxx
     }
   });
+});
+
+// Deterministic LCG so results are reproducible across runs
+const lcg = (seed: number) => {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+};
+
+describe("minify fuzz: 10k random colors", () => {
+  const rand = lcg(42);
+  const N = 10_000;
+
+  // Generate colors with uniform r/g/b (0-255) and alpha covering full 0-1
+  // including extremes: 0, 1, and fine-grained steps near 0 and 1
+  const colors: { r: number; g: number; b: number; a: number }[] = [];
+  for (let i = 0; i < N; i++) {
+    colors.push({
+      r: Math.floor(rand() * 256),
+      g: Math.floor(rand() * 256),
+      b: Math.floor(rand() * 256),
+      a: Math.round(rand() * 1000) / 1000, // 3dp precision, covers 0.000–1.000
+    });
+  }
+
+  it("minified output is always a valid color", () => {
+    for (const c of colors) {
+      const minified = (colordx(c) as any).minify();
+      expect(colordx(minified).isValid()).toBe(true);
+    }
+  });
+
+  it("minified output round-trips r/g/b within ±1", () => {
+    for (const c of colors) {
+      const minified = (colordx(c) as any).minify();
+      const rt = colordx(minified).toRgb();
+      expect(Math.abs(rt.r - c.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rt.g - c.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rt.b - c.b)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("minified output round-trips alpha within ±0.01", () => {
+    for (const c of colors) {
+      const minified = (colordx(c) as any).minify();
+      const rt = colordx(minified).toRgb();
+      expect(Math.abs(rt.a - c.a)).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  it("alphaHex minified output round-trips alpha within ±0.01", () => {
+    for (const c of colors) {
+      const minified = (colordx(c) as any).minify({ alphaHex: true });
+      const rt = colordx(minified).toRgb();
+      expect(Math.abs(rt.a - c.a)).toBeLessThanOrEqual(0.01);
+    }
+  });
+
 });
