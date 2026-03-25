@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.11.2
+
+### Patch Changes
+
+- ec89d22: Fixed HSL minification to always include HSL candidates by removing the overly strict lossless round-trip guard.
+
 ## 1.11.1
 
 ### Patch Changes
