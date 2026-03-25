@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.10.3
+
+### Patch Changes
+
+- e00de2f: Fixed hex parsing to require leading '#', added RGB percentage channel support, allowed unitless s/l in HSL modern space syntax, and normalized HWB overflow per CSS Color 4 spec.
+
 ## 1.10.2
 
 ### Patch Changes
