@@ -440,3 +440,108 @@ describe('OKLch: chroma and hue properties', () => {
     }
   });
 });
+
+describe('hsl() space-syntax without % on s/l (CSS Color 4)', () => {
+  // CSS Color 4 modern space syntax allows bare numbers (0-100) for s and l
+  it('parses hsl with bare numbers for s and l', () => {
+    expect(colordx('hsl(0 100 50)').isValid()).toBe(true);
+    expect(colordx('hsl(0 100 50)').toHex()).toBe('#ff0000');
+  });
+
+  it('parses hsl space-syntax bare numbers with alpha', () => {
+    expect(colordx('hsl(0 100 50 / 0.5)').isValid()).toBe(true);
+    expect(colordx('hsl(0 100 50 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
+  });
+
+  it('still requires % in legacy comma syntax', () => {
+    expect(colordx('hsl(0, 100, 50)').isValid()).toBe(false);
+  });
+
+  it('bare numbers produce same result as % equivalents', () => {
+    const withPct = colordx('hsl(120 50% 25%)').toRgb();
+    const withNum = colordx('hsl(120 50 25)').toRgb();
+    expect(withNum).toEqual(withPct);
+  });
+});
+
+describe('hwb() w+b overflow normalization (CSS spec)', () => {
+  // When w + b >= 100, CSS spec says normalize proportionally to sum to 100%
+  it('normalizes when w + b > 100 — produces grey', () => {
+    // hwb(0 70% 70%) → normalized to hwb(0 50% 50%) → rgb(128, 128, 128)
+    const c = colordx('hwb(0 70% 70%)');
+    expect(c.isValid()).toBe(true);
+    const { r, g, b } = c.toRgb();
+    expect(r).toBe(g);
+    expect(g).toBe(b);
+  });
+
+  it('hwb(0 70% 70%) normalizes to same as hwb(0 50% 50%)', () => {
+    const normalized = colordx('hwb(0 50% 50%)').toRgb();
+    const overflow = colordx('hwb(0 70% 70%)').toRgb();
+    expect(overflow.r).toBe(normalized.r);
+    expect(overflow.g).toBe(normalized.g);
+    expect(overflow.b).toBe(normalized.b);
+  });
+
+  it('hwb(0 100% 100%) → grey (equal proportions)', () => {
+    const { r, g, b } = colordx('hwb(0 100% 100%)').toRgb();
+    expect(r).toBe(g);
+    expect(g).toBe(b);
+  });
+
+  it('hwb with unequal overflow preserves ratio', () => {
+    // hwb(0 25% 75%) sum=100 — no normalization needed, is pure black
+    // hwb(0 50% 150%) sum=200 — normalized to hwb(0 25% 75%) → same result
+    const base = colordx('hwb(0 25% 75%)').toRgb();
+    const overflow = colordx('hwb(0 50% 150%)').toRgb();
+    expect(overflow.r).toBe(base.r);
+    expect(overflow.g).toBe(base.g);
+    expect(overflow.b).toBe(base.b);
+  });
+});
+
+describe('hex parsing', () => {
+  it('requires # prefix — bare 3-digit hex is not a valid color', () => {
+    expect(colordx('999').isValid()).toBe(false);
+    expect(colordx('fff').isValid()).toBe(false);
+    expect(colordx('abc').isValid()).toBe(false);
+    expect(colordx('0a1b2c').isValid()).toBe(false);
+  });
+
+  it('accepts # prefix', () => {
+    expect(colordx('#999').isValid()).toBe(true);
+    expect(colordx('#fff').isValid()).toBe(true);
+    expect(colordx('#ff0000').isValid()).toBe(true);
+  });
+});
+
+describe('rgb() percentage channels', () => {
+  it('parses all-percentage rgb', () => {
+    const c = colordx('rgb(100%,100%,100%)');
+    expect(c.isValid()).toBe(true);
+    expect(c.toHex()).toBe('#ffffff');
+  });
+
+  it('parses all-percentage rgba with alpha', () => {
+    const c = colordx('rgba(100%, 64.7%, 0%, .5)');
+    expect(c.isValid()).toBe(true);
+    expect(c.toRgb()).toMatchObject({ r: 255, g: 165, b: 0, a: 0.5 });
+  });
+
+  it('parses space-syntax percentage rgb', () => {
+    const c = colordx('rgb(100% 0% 0%)');
+    expect(c.isValid()).toBe(true);
+    expect(c.toHex()).toBe('#ff0000');
+  });
+
+  it('rejects mixed percentage and number channels', () => {
+    expect(colordx('rgb(50%,23,54)').isValid()).toBe(false);
+    expect(colordx('rgb(255,50%,0)').isValid()).toBe(false);
+  });
+
+  it('parses modern space-syntax with percentage alpha', () => {
+    const c = colordx('rgb(143 101 98 / 43%)');
+    expect(c.isValid()).toBe(true);
+    expect(c.toRgb()).toMatchObject({ r: 143, g: 101, b: 98, a: 0.43 });
+  });
+});

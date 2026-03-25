@@ -5,7 +5,9 @@ const parseHexChannel = (hex: string): number => parseInt(hex.padEnd(2, hex), 16
 
 export const parseHex = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const clean = input.trim().replace(/^#/, '');
+  const trimmed = input.trim();
+  if (!trimmed.startsWith('#')) return null;
+  const clean = trimmed.slice(1);
   if (!/^[0-9a-f]{3,8}$/i.test(clean)) return null;
 
   if (clean.length === 3 || clean.length === 4) {

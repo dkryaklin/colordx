@@ -76,8 +76,18 @@ export const parseHslObject = (input: unknown): RgbColor | null => {
 
 // Matches both legacy comma syntax: hsl(0, 0%, 0%) / hsla(0, 0%, 0%, 0.5)
 // and modern space syntax: hsl(0 0% 0%) / hsl(0 0% 0% / 0.5)
-const HSL_RE =
-  /^hsla?\(\s*([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:,\s*([+-]?\d*\.?\d+)%\s*,\s*([+-]?\d*\.?\d+)%(?:\s*,\s*([+-]?\d*\.?\d+)(%)?)?\s*|\s+([+-]?\d*\.?\d+)%\s+([+-]?\d*\.?\d+)%(?:\s*\/\s*([+-]?\d*\.?\d+)(%)?)?\s*)\)$/i;
+// CSS Color 4: in modern space syntax, s and l may be bare numbers (0-100) without %
+const N = '[+-]?\\d*\\.?\\d+';
+const HSL_RE = new RegExp(
+  `^hsla?\\(\\s*(${N})(deg|rad|grad|turn)?\\s*(?:` +
+    // legacy comma branch: % required for s and l
+    `,\\s*(${N})%\\s*,\\s*(${N})%(?:\\s*,\\s*(${N})(%?)?\\s*)?` +
+    `|` +
+    // modern space branch: % optional for s and l
+    `\\s+(${N})(%?)\\s+(${N})(%?)(?:\\s*/\\s*(${N})(%?)?\\s*)?` +
+    `)\\)$`,
+  'i'
+);
 
 export const parseHslString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
@@ -85,11 +95,12 @@ export const parseHslString = (input: unknown): RgbColor | null => {
   if (!m) return null;
   const unit = m[2]?.toLowerCase() ?? 'deg';
   const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);
-  // m[3]/m[4]/m[5]/m[6] = comma branch; m[7]/m[8]/m[9]/m[10] = space branch
+  // comma branch: m[3]=s m[4]=l m[5]=a m[6]=a%
+  // space branch:  m[7]=s m[8]=s% m[9]=l m[10]=l% m[11]=a m[12]=a%
   const s = Number(m[3] ?? m[7]);
-  const l = Number(m[4] ?? m[8]);
-  const rawA = m[5] ?? m[9];
-  const isPercent = !!(m[6] ?? m[10]);
+  const l = Number(m[4] ?? m[9]);
+  const rawA = m[5] ?? m[11];
+  const isPercent = !!(m[6] ?? m[12]);
   const a = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
   return hslToRgb(clampHsl({ h, s, l, a }));
 };
