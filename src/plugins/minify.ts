@@ -59,11 +59,16 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     }
 
     if (opts.hsl) {
-      const ha = shortenLeadingZero(h),
-        sa = shortenLeadingZero(s),
-        la = shortenLeadingZero(l),
-        aa = shortenLeadingZero(alpha);
-      candidates.push(alpha === 1 ? `hsl(${ha},${sa}%,${la}%)` : `hsla(${ha},${sa}%,${la}%,${aa})`);
+      // Only add HSL candidate if it round-trips losslessly back to the original r,g,b integers.
+      const back = new ColordxClass({ h, s, l, a: alpha });
+      const { r: r2, g: g2, b: b2 } = back.toRgb();
+      if (r2 === r && g2 === g && b2 === b) {
+        const ha = shortenLeadingZero(h),
+          sa = shortenLeadingZero(s),
+          la = shortenLeadingZero(l),
+          aa = shortenLeadingZero(alpha);
+        candidates.push(alpha === 1 ? `hsl(${ha},${sa}%,${la}%)` : `hsla(${ha},${sa}%,${la}%,${aa})`);
+      }
     }
 
     if (opts.transparent && r === 0 && g === 0 && b === 0 && alpha === 0) {

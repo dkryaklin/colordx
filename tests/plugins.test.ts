@@ -219,6 +219,36 @@ describe("minify plugin", () => {
     expect(result.g).toBe(0);
     expect(result.b).toBe(0);
   });
+
+  it("skips HSL candidate when it would be lossy, falls back to rgb()", () => {
+    // rgb(143,101,98) → hsl rounds to values that don't convert back exactly
+    const result = (colordx({ r: 143, g: 101, b: 98, a: 1 }) as any).minify();
+    const rt = colordx(result).toRgb();
+    expect(rt.r).toBe(143);
+    expect(rt.g).toBe(101);
+    expect(rt.b).toBe(98);
+    expect(result).not.toMatch(/^hsl/);
+  });
+
+  it("uses HSL when it round-trips exactly", () => {
+    // Pure hues round-trip exactly through HSL
+    const result = (colordx({ r: 255, g: 0, b: 0, a: 1 }) as any).minify();
+    expect(result).toMatch(/^hsl|^#f00|^red/);
+    const rt = colordx(result).toRgb();
+    expect(rt.r).toBe(255);
+    expect(rt.g).toBe(0);
+    expect(rt.b).toBe(0);
+  });
+
+  it("HSL candidate is skipped even when rgb is disabled if lossy", () => {
+    // With rgb:false, a lossy HSL should not appear — hex wins instead
+    const result = (colordx({ r: 143, g: 101, b: 98, a: 1 }) as any).minify({ rgb: false });
+    const rt = colordx(result).toRgb();
+    expect(rt.r).toBe(143);
+    expect(rt.g).toBe(101);
+    expect(rt.b).toBe(98);
+    expect(result).not.toMatch(/^hsl/);
+  });
 });
 
 describe("mix plugin", () => {
