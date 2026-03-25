@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.12.0
+
+### Minor Changes
+
+- 4639b12: Add support for the CSS Color 4 `none` keyword in `oklch` and `oklab` string parsing, treating it as 0 for each channel.
+
 ## 1.11.2
 
 ### Patch Changes
