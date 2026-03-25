@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.11.1
+
+### Patch Changes
+
+- 65e705a: Consolidated RGB normalisation across all color model converters through a shared clampRgb utility, fixing minor inconsistencies in rounding and clamping behaviour.
+
 ## 1.11.0
 
 ### Minor Changes
