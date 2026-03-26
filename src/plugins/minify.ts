@@ -41,13 +41,13 @@ const minifyPlugin: Plugin = (ColordxClass) => {
   ColordxClass.prototype.minify = function (this: Colordx, options: MinifyOptions = {}) {
     const opts = { hex: true, rgb: true, hsl: true, ...options };
     const { r, g, b } = this.toRgb();
-    const { h, s, l } = this.toHsl();
     const alpha = this.alpha();
+    const targetHex = this.toHex();
     const candidates: string[] = [];
 
     if (opts.hex && (alpha === 1 || (opts.alphaHex && isAlphaHexLossless(alpha)))) {
-      const short = tryShortHex(this.toHex(), alpha);
-      candidates.push(short ?? this.toHex());
+      const short = tryShortHex(targetHex, alpha);
+      candidates.push(short ?? targetHex);
     }
 
     if (opts.rgb) {
@@ -59,11 +59,18 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     }
 
     if (opts.hsl) {
-      const ha = shortenLeadingZero(h),
-        sa = shortenLeadingZero(s),
-        la = shortenLeadingZero(l),
-        aa = shortenLeadingZero(alpha);
-      candidates.push(alpha === 1 ? `hsl(${ha},${sa}%,${la}%)` : `hsla(${ha},${sa}%,${la}%,${aa})`);
+      const aa = shortenLeadingZero(alpha);
+      for (let p = 0; p <= 2; p++) {
+        const { h, s, l } = this.toHsl(p);
+        const ha = shortenLeadingZero(h),
+          sa = shortenLeadingZero(s),
+          la = shortenLeadingZero(l);
+        const str = alpha === 1 ? `hsl(${ha},${sa}%,${la}%)` : `hsla(${ha},${sa}%,${la}%,${aa})`;
+        if (new ColordxClass(str).toHex() === targetHex) {
+          candidates.push(str);
+          break;
+        }
+      }
     }
 
     if (opts.transparent && r === 0 && g === 0 && b === 0 && alpha === 0) {

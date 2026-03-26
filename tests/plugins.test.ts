@@ -253,6 +253,18 @@ describe("minify plugin", () => {
     expect(rt.b).toBe(0);
   });
 
+  it("picks shorter lossless HSL precision for alpha colors", () => {
+    // hsla(0,0%,78.4%,.55) = 19 chars beats rgba(200,200,200,.55) = 21 chars
+    const result = (colordx({ r: 200, g: 200, b: 200, a: 0.55 }) as any).minify();
+    expect(result).toBe("hsla(0,0%,78.4%,.55)");
+    // round-trip must be lossless
+    const rt = colordx(result).toRgb();
+    expect(rt.r).toBe(200);
+    expect(rt.g).toBe(200);
+    expect(rt.b).toBe(200);
+    expect(rt.a).toBeCloseTo(0.55, 2);
+  });
+
   it("HSL candidate is skipped even when rgb is disabled if lossy", () => {
     // With rgb:false, a lossy HSL should not appear — hex wins instead
     const result = (colordx({ r: 143, g: 101, b: 98, a: 1 }) as any).minify({ rgb: false });
