@@ -255,21 +255,29 @@ describe("minify plugin", () => {
 });
 
 describe("mix plugin", () => {
-  it("creates tint", () => {
-    const tint = (colordx("#ff0000") as any).tint(0.5);
-    expect(tint.toRgb().r).toBe(255);
-    expect(tint.toRgb().g).toBeGreaterThan(0);
+  it("tints returns array from color to white", () => {
+    const tints = (colordx("#ff0000") as any).tints(3);
+    expect(tints).toHaveLength(3);
+    expect(tints[0].toHex()).toBe("#ff0000");
+    expect(tints[2].toHex()).toBe("#ffffff");
   });
 
-  it("creates shade", () => {
-    const shade = (colordx("#ff0000") as any).shade(0.5);
-    expect(shade.toRgb().r).toBeLessThan(255);
+  it("shades returns array from color to black", () => {
+    const shades = (colordx("#ff0000") as any).shades(3);
+    expect(shades).toHaveLength(3);
+    expect(shades[0].toHex()).toBe("#ff0000");
+    expect(shades[2].toHex()).toBe("#000000");
   });
 
-  it("creates tone", () => {
-    const tone = (colordx("#ff0000") as any).tone(0.5);
-    expect(tone.toRgb().r).toBeLessThan(255);
-    expect(tone.toRgb().g).toBeGreaterThan(0);
+  it("tones returns array from color to gray", () => {
+    const tones = (colordx("#ff0000") as any).tones(3);
+    expect(tones).toHaveLength(3);
+    expect(tones[0].toHex()).toBe("#ff0000");
+    expect(tones[2].toHex()).toBe("#808080");
+  });
+
+  it("tints defaults to 5 steps", () => {
+    expect((colordx("#ff0000") as any).tints()).toHaveLength(5);
   });
 
   it("creates palette", () => {
@@ -406,20 +414,22 @@ describe("harmonies plugin: additional cases", () => {
 });
 
 describe("mix plugin: additional cases", () => {
-  it("tint at 0 returns original color", () => {
-    expect((colordx("#ff0000") as any).tint(0).toHex()).toBe("#ff0000");
+  it("tints(2) returns [original, white]", () => {
+    const t = (colordx("#ff0000") as any).tints(2);
+    expect(t[0].toHex()).toBe("#ff0000");
+    expect(t[1].toHex()).toBe("#ffffff");
   });
 
-  it("tint at 1 returns white", () => {
-    expect((colordx("#ff0000") as any).tint(1).toHex()).toBe("#ffffff");
+  it("shades(2) returns [original, black]", () => {
+    const s = (colordx("#ff0000") as any).shades(2);
+    expect(s[0].toHex()).toBe("#ff0000");
+    expect(s[1].toHex()).toBe("#000000");
   });
 
-  it("shade at 0 returns original color", () => {
-    expect((colordx("#ff0000") as any).shade(0).toHex()).toBe("#ff0000");
-  });
-
-  it("shade at 1 returns black", () => {
-    expect((colordx("#ff0000") as any).shade(1).toHex()).toBe("#000000");
+  it("tones(2) returns [original, gray]", () => {
+    const t = (colordx("#ff0000") as any).tones(2);
+    expect(t[0].toHex()).toBe("#ff0000");
+    expect(t[1].toHex()).toBe("#808080");
   });
 
   it("palette: first element is original color", () => {

@@ -299,11 +299,11 @@ describe('fuzz: rec2020 plugin — toRec2020String round-trip', () => {
 
 
 describe('fuzz: mix plugin', () => {
-  it('tint / shade / tone return valid colors', () => {
+  it('tints / shades / tones return valid colors', () => {
     for (const c of colors) {
-      expect((colordx(c) as any).tint().isValid()).toBe(true);
-      expect((colordx(c) as any).shade().isValid()).toBe(true);
-      expect((colordx(c) as any).tone().isValid()).toBe(true);
+      for (const color of (colordx(c) as any).tints(3)) expect(color.isValid()).toBe(true);
+      for (const color of (colordx(c) as any).shades(3)) expect(color.isValid()).toBe(true);
+      for (const color of (colordx(c) as any).tones(3)) expect(color.isValid()).toBe(true);
     }
   });
 

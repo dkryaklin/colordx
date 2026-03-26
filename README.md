@@ -200,7 +200,7 @@ import harmonies from '@colordx/core/plugins/harmonies';
 import lab from '@colordx/core/plugins/lab';
 // toLab() (CIE Lab D50), toXyz() (CIE XYZ D50), parses Lab/XYZ objects
 import lch from '@colordx/core/plugins/lch';
-// tint(), shade(), tone(), palette()
+// tints(), shades(), tones(), palette()
 import minify from '@colordx/core/plugins/minify';
 // harmonies()
 import mix from '@colordx/core/plugins/mix';
@@ -321,12 +321,11 @@ import mix from '@colordx/core/plugins/mix';
 
 extend([mix]);
 
-colordx('#ff0000').tint(0.5); // mix 50% with white → #ff8080
-colordx('#ff0000').shade(0.5); // mix 50% with black → #800000
-colordx('#ff0000').tone(0.5); // mix 50% with gray  → #c04040
+colordx('#ff0000').tints(5); // [#ff0000, #ff4040, #ff8080, #ffbfbf, #ffffff]
+colordx('#ff0000').shades(3); // [#ff0000, #800000, #000000]
+colordx('#ff0000').tones(3);  // [#ff0000, #c04040, #808080]
 
-// palette: N evenly-spaced stops from this color to a target (default: white)
-colordx('#ff0000').palette(5); // [#ff0000, #ff4040, #ff8080, #ffbfbf, #ffffff]
+// palette: N evenly-spaced stops toward any target (default: white)
 colordx('#ff0000').palette(3, '#0000ff'); // [#ff0000, #800080, #0000ff]
 ```
 
@@ -511,7 +510,7 @@ extend([lab]);
 colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab (colord-compatible)
 ```
 
-The same applies to `tint()`, `shade()`, and `tone()` from the mix plugin, which all call `.mix()` internally. If you have hardcoded expected hex values from colord's mix output, switch to `.mixLab()` or update the values.
+The same applies to `tints()`, `shades()`, and `tones()` from the mix plugin, which all call `.mix()` internally. If you have hardcoded expected hex values from colord's mix output, switch to `.mixLab()` or update the values.
 
 ### `contrast()` rounding
 
