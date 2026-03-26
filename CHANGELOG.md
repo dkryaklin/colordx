@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.13.1
+
+### Patch Changes
+
+- 5651514: Consolidate performance benchmark tables in README into a single unified comparison table
+
 ## 1.13.0
 
 ### Minor Changes
