@@ -24,10 +24,13 @@ export class Colordx {
   private readonly _rgb: RgbColor;
   private readonly _valid: boolean;
 
-  constructor(input: AnyColor | typeof _SENTINEL, _direct?: RgbColor) {
+  constructor(input: AnyColor | Colordx | typeof _SENTINEL, _direct?: RgbColor) {
     if (input === _SENTINEL) {
       this._valid = true;
       this._rgb = _direct!;
+    } else if (input instanceof Colordx) {
+      this._valid = input._valid;
+      this._rgb = input._rgb;
     } else {
       const parsed = parse(input);
       this._valid = parsed !== null;
@@ -256,7 +259,7 @@ export type Plugin = (
   formatParsers: [ColorParser, ColorFormat][]
 ) => void;
 
-export const colordx = (input: AnyColor): Colordx => new Colordx(input);
+export const colordx = (input: AnyColor | Colordx): Colordx => new Colordx(input);
 
 export const extend = (plugins: Plugin[]): void => {
   plugins.forEach((plugin) => plugin(Colordx, parsers, pluginFormatParsers));
