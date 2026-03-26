@@ -20,7 +20,6 @@ Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwa
 | HEX → toOklch | **3.6M** | — | 3.4M | 980K | 1.8M | — |
 | inGamutP3 | **3.7M** | — | 1M | — | — | — |
 | inGamutRec2020 | **3.9M** | — | 943K | — | — | — |
-| Chained (parse → lighten → saturate → toHex) | **4M** | 2.8M | 4M | 592K | 730K | 529K |
 
 ## Install
 

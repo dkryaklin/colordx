@@ -68,17 +68,4 @@ group('inGamutRec2020', () => {
 });
 
 
-group('Chained: parse → lighten → saturate → toHex', () => {
-  bench('colordx', () => colordx('#3498db').lighten(0.1).saturate(0.2).toHex());
-  bench('colord', () => colord('#3498db').lighten(0.1).saturate(0.2).toHex());
-  bench('tinycolor2', () => tinycolor2('#3498db').lighten(10).saturate(20).toHexString());
-  bench('chroma-js', () => chroma('#3498db').brighten(0.3).saturate(0.5).hex());
-  bench('color', () => ColorLib('#3498db').lighten(0.1).saturate(0.2).hex());
-  bench('culori', () => {
-    const h1 = culori.hsl(culori.parse('#3498db'));
-    const h2 = { ...h1, l: Math.min(1, (h1?.l ?? 0) + 0.1), s: Math.min(1, (h1?.s ?? 0) + 0.2) };
-    return culori.formatHex(h2);
-  });
-});
-
 await run({ format: 'mitata' });

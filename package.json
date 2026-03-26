@@ -77,7 +77,8 @@
     "changeset:ai": "tsx scripts/changeset.ts",
     "version": "changeset version",
     "release": "yarn build && publint && changeset publish",
-    "bench": "node --import tsx/esm bench/index.ts",
+    "check": "tsc --noEmit && echo 'tsc ok' && yarn lint && yarn format:check",
+    "bench": "node --expose-gc --import tsx/esm bench/index.ts",
     "prepare": "node --eval \"if (process.env.CI) process.exit(0)\" && husky || true"
   },
   "lint-staged": {
