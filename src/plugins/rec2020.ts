@@ -9,7 +9,7 @@ declare module '../colordx.js' {
   }
 }
 
-const rec2020: Plugin = (ColordxClass, parsers) => {
+const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toRec2020 = function () {
     return rgbToRec2020(this.toRgb());
   };
@@ -18,6 +18,7 @@ const rec2020: Plugin = (ColordxClass, parsers) => {
     return a < 1 ? `color(rec2020 ${r} ${g} ${b} / ${a})` : `color(rec2020 ${r} ${g} ${b})`;
   };
   parsers.push(parseRec2020String);
+  formatParsers.push([parseRec2020String, 'rec2020']);
 };
 
 export default rec2020;

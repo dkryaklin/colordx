@@ -9,7 +9,7 @@ declare module '../colordx.js' {
   }
 }
 
-const p3: Plugin = (ColordxClass, parsers) => {
+const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toP3 = function () {
     return rgbToP3(this.toRgb());
   };
@@ -18,6 +18,7 @@ const p3: Plugin = (ColordxClass, parsers) => {
     return a < 1 ? `color(display-p3 ${r} ${g} ${b} / ${a})` : `color(display-p3 ${r} ${g} ${b})`;
   };
   parsers.push(parseP3String);
+  formatParsers.push([parseP3String, 'p3']);
 };
 
 export default p3;

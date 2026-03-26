@@ -5,6 +5,9 @@ import a11y from "../src/plugins/a11y.js";
 import harmonies from "../src/plugins/harmonies.js";
 import mix from "../src/plugins/mix.js";
 import minify from "../src/plugins/minify.js";
+import lab from "../src/plugins/lab.js";
+import p3 from "../src/plugins/p3.js";
+import rec2020 from "../src/plugins/rec2020.js";
 
 beforeAll(() => {
   extend([names, a11y, harmonies, mix, minify]);
@@ -304,6 +307,24 @@ describe("names plugin: additional", () => {
   it("returns undefined toName for colors not in the CSS name list", () => {
     expect((colordx("#3b82f6") as any).toName()).toBeUndefined();
     expect((colordx("#123456") as any).toName()).toBeUndefined();
+  });
+});
+
+describe("getFormat for additional plugin formats", () => {
+  beforeAll(() => {
+    extend([lab, p3, rec2020]);
+  });
+
+  it("returns 'xyz' for XYZ object inputs", () => {
+    expect(getFormat({ x: 0.2, y: 0.2, z: 0.2, a: 1 })).toBe("xyz");
+  });
+
+  it("returns 'p3' for Display-P3 string inputs", () => {
+    expect(getFormat("color(display-p3 0.5 0.5 0.5)")).toBe("p3");
+  });
+
+  it("returns 'rec2020' for Rec.2020 string inputs", () => {
+    expect(getFormat("color(rec2020 0.5 0.5 0.5)")).toBe("rec2020");
   });
 });
 

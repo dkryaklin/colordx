@@ -5,8 +5,18 @@ import { rgbToHwb } from './colorModels/hwb.js';
 import { rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { clamp, round } from './helpers.js';
-import { parse, parsers } from './parse.js';
-import type { AnyColor, ColorParser, HslColor, HsvColor, HwbColor, OklabColor, OklchColor, RgbColor } from './types.js';
+import { parse, parsers, pluginFormatParsers } from './parse.js';
+import type {
+  AnyColor,
+  ColorFormat,
+  ColorParser,
+  HslColor,
+  HsvColor,
+  HwbColor,
+  OklabColor,
+  OklchColor,
+  RgbColor,
+} from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
 
@@ -240,12 +250,16 @@ export class Colordx {
   }
 }
 
-export type Plugin = (ColordxClass: typeof Colordx, parsers: ColorParser[]) => void;
+export type Plugin = (
+  ColordxClass: typeof Colordx,
+  parsers: ColorParser[],
+  formatParsers: [ColorParser, ColorFormat][]
+) => void;
 
 export const colordx = (input: AnyColor): Colordx => new Colordx(input);
 
 export const extend = (plugins: Plugin[]): void => {
-  plugins.forEach((plugin) => plugin(Colordx, parsers));
+  plugins.forEach((plugin) => plugin(Colordx, parsers, pluginFormatParsers));
 };
 
 export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {

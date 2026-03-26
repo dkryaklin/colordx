@@ -30,6 +30,7 @@ const builtinObjectParsers: ColorParser[] = objectFormatParsers.map(([p]) => p);
 
 export const defaultParsers: ColorParser[] = [...builtinStringParsers, ...builtinObjectParsers];
 export const parsers: ColorParser[] = [...defaultParsers];
+export const pluginFormatParsers: [ColorParser, ColorFormat][] = [];
 
 export const parse = (input: AnyColor): RgbColor | null => {
   if (input === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
@@ -50,8 +51,8 @@ export const getFormat = (input: AnyColor): ColorFormat | undefined => {
   for (const [parser, format] of typed) {
     if (parser(input)) return format;
   }
-  for (let i = defaultParsers.length; i < parsers.length; i++) {
-    if (parsers[i]!(input)) return 'name';
+  for (const [parser, format] of pluginFormatParsers) {
+    if (parser(input)) return format;
   }
   return undefined;
 };

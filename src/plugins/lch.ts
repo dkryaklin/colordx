@@ -9,7 +9,7 @@ declare module '../colordx.js' {
   }
 }
 
-const lch: Plugin = (ColordxClass, parsers) => {
+const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLch = function () {
     return rgbToLch(this.toRgb());
   };
@@ -18,6 +18,7 @@ const lch: Plugin = (ColordxClass, parsers) => {
     return a < 1 ? `lch(${l}% ${c} ${h} / ${a})` : `lch(${l}% ${c} ${h})`;
   };
   parsers.push(parseLchObject, parseLchString);
+  formatParsers.push([parseLchObject, 'lch'], [parseLchString, 'lch']);
 };
 
 export default lch;

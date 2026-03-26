@@ -107,4 +107,16 @@ export type AnyColor =
 
 export type ColorParser<T = AnyColor> = (input: T) => RgbColor | null;
 
-export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'hsv' | 'hwb' | 'lab' | 'lch' | 'xyz' | 'cmyk' | 'name';
+export type ColorFormat =
+  | 'hex'
+  | 'rgb'
+  | 'hsl'
+  | 'hsv'
+  | 'hwb'
+  | 'lab'
+  | 'lch'
+  | 'xyz'
+  | 'cmyk'
+  | 'p3'
+  | 'rec2020'
+  | 'name';

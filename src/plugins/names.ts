@@ -154,12 +154,15 @@ const NAMES: Record<string, string> = {
   yellowgreen: '#9acd32',
 };
 
-const names: Plugin = (ColordClass, parsers) => {
-  parsers.push((input): RgbColor | null => {
-    if (typeof input !== 'string') return null;
-    const hex = NAMES[input.toLowerCase().trim()];
-    return hex ? parseHex(hex) : null;
-  });
+const parseNameString = (input: unknown): RgbColor | null => {
+  if (typeof input !== 'string') return null;
+  const hex = NAMES[input.toLowerCase().trim()];
+  return hex ? parseHex(hex) : null;
+};
+
+const names: Plugin = (ColordClass, parsers, formatParsers) => {
+  parsers.push(parseNameString);
+  formatParsers.push([parseNameString, 'name']);
 
   ColordClass.prototype.toName = function (this: Colordx): string | undefined {
     const hex = this.toHex().toLowerCase();

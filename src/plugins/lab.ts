@@ -10,7 +10,7 @@ declare module '../colordx.js' {
   }
 }
 
-const lab: Plugin = (ColordxClass, parsers) => {
+const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLab = function () {
     return rgbToLab(this.toRgb());
   };
@@ -18,6 +18,7 @@ const lab: Plugin = (ColordxClass, parsers) => {
     return rgbToXyz(this.toRgb());
   };
   parsers.push(parseLabObject, parseXyzObject);
+  formatParsers.push([parseLabObject, 'lab'], [parseXyzObject, 'xyz']);
 };
 
 export default lab;

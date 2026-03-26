@@ -9,7 +9,7 @@ declare module '../colordx.js' {
   }
 }
 
-const cmyk: Plugin = (ColordxClass, parsers) => {
+const cmyk: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toCmyk = function () {
     return rgbToCmyk(this.toRgb());
   };
@@ -18,6 +18,7 @@ const cmyk: Plugin = (ColordxClass, parsers) => {
     return a < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${a})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`;
   };
   parsers.push(parseCmykObject, parseCmykString);
+  formatParsers.push([parseCmykObject, 'cmyk'], [parseCmykString, 'cmyk']);
 };
 
 export default cmyk;
