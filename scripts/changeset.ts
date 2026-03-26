@@ -10,13 +10,14 @@ const BASE_BRANCH = process.env.BASE_BRANCH ?? 'main';
 // SHA refs (direct push) don't need origin/ prefix; branch names do
 const baseRef = /^[0-9a-f]{7,40}$/.test(BASE_BRANCH) ? BASE_BRANCH : `origin/${BASE_BRANCH}`;
 
+const VALID_BUMPS = new Set(['major', 'minor', 'patch', 'none']);
+
 function getGitDiff(): string {
   try {
-    const diff = execSync(
+    return execSync(
       `git diff ${baseRef}...HEAD -- ':(exclude)*.lock' ':(exclude).yarn'`,
       { encoding: 'utf8' },
     );
-    return diff.slice(0, 8000);
   } catch {
     return '';
   }
@@ -63,22 +64,26 @@ async function main() {
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 512,
+    max_tokens: 1024,
     messages: [
       {
         role: 'user',
-        content: `Analyze these changes to the ${PACKAGE_NAME} npm library and determine:
-1. Whether a release is needed and what semver bump type:
-   - "major" — breaking changes to the public API
-   - "minor" — new features, backwards compatible
-   - "patch" — bug fixes
-   - "none" — no release needed (CI, docs, tests, refactor, tooling changes only)
-2. A concise one-sentence changelog summary (can be empty string if bump is "none")
+        content: `Analyze these changes to the ${PACKAGE_NAME} npm package and produce a changelog entry.
+
+Rules for bump type:
+- "major" — breaking changes to the public API
+- "minor" — new features, backwards compatible
+- "patch" — anything else visible to users: bug fixes, docs updates (README), performance improvements, new examples
+- "none" — truly invisible changes only: CI config, internal scripts, test-only changes, tooling
+
+When in doubt between "none" and "patch", choose "patch". A README update ships to npm and is visible to users.
+
+For the summary, write a clear human-readable changelog line. Be specific about what changed (e.g. "Add support for oklch none keyword in string parsing" not "Update source files"). Use present tense.
 
 Commit messages:
 ${commits}
 
-Git diff (excludes lock files):
+Git diff (lock files excluded):
 ${diff}
 
 Respond with JSON only, no markdown:
@@ -89,6 +94,10 @@ Respond with JSON only, no markdown:
 
   const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
   const { bump, summary } = JSON.parse(text) as { bump: string; summary: string };
+
+  if (!VALID_BUMPS.has(bump)) {
+    throw new Error(`Invalid bump value from AI: "${bump}"`);
+  }
 
   if (bump === 'none') {
     console.log('No release needed for this PR.');
