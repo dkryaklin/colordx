@@ -47,6 +47,7 @@ export const parse = (input: AnyColor): RgbColor | null => {
 };
 
 export const getFormat = (input: AnyColor): ColorFormat | undefined => {
+  if (input === 'transparent') return 'name';
   const typed = typeof input === 'string' ? stringFormatParsers : objectFormatParsers;
   for (const [parser, format] of typed) {
     if (parser(input)) return format;

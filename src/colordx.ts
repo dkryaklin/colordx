@@ -144,7 +144,7 @@ export class Colordx {
   alpha(value: number): Colordx;
   alpha(value?: number): number | Colordx {
     if (value === undefined) return this._rgb.a;
-    return Colordx._make({ ...this._rgb, a: clamp(value, 0, 1) });
+    return Colordx._make({ ...this._rgb, a: round(clamp(value, 0, 1), 3) });
   }
 
   hue(): number;
