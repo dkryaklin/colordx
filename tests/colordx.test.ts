@@ -302,8 +302,10 @@ describe("hsv object parsing", () => {
     expect(hsv.h).toBeLessThan(360);
   });
 
-  it("rejects HSV object with NaN alpha", () => {
-    expect(colordx({ h: 0, s: 100, v: 100, a: NaN } as any).isValid()).toBe(false);
+  it("clamps HSV object with NaN alpha to 0", () => {
+    const c = colordx({ h: 0, s: 100, v: 100, a: NaN } as any);
+    expect(c.isValid()).toBe(true);
+    expect(c.alpha()).toBe(0);
   });
 });
 
@@ -340,8 +342,15 @@ describe("invalid input", () => {
     expect(colordx(colordx("#f008").toRgbString()).toHex()).toBe("#ff000088");
   });
 
-  it("rejects HWB object with NaN alpha", () => {
-    expect(colordx({ h: 0, w: 0, b: 0, a: NaN } as any).isValid()).toBe(false);
+  it("clamps HWB object with NaN alpha to 0", () => {
+    const c = colordx({ h: 0, w: 0, b: 0, a: NaN } as any);
+    expect(c.isValid()).toBe(true);
+    expect(c.alpha()).toBe(0);
+  });
+
+  it("clamps NaN and ±Infinity in RGB objects", () => {
+    expect(colordx({ r: NaN, g: -Infinity, b: Infinity, a: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 255, a: 1 });
+    expect(colordx({ r: NaN, g: NaN, b: NaN, a: 1 } as any).isValid()).toBe(true);
   });
 
   it("rejects OKLCH object with l > 1 (disambiguates from CIE LCH)", () => {

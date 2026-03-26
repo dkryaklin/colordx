@@ -1,4 +1,4 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, toLinear } from './oklab.js';
 
@@ -33,14 +33,13 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['l', 'c', 'h'])) return null;
   const { l, c, h, a = 1 } = input as { l: unknown; c: unknown; h: unknown; a?: unknown };
-  if (!isNumeric(l as number) || !isNumeric(c as number) || !isNumeric(h as number) || !isNumeric(a as number))
-    return null;
+  if (!isNumber(l as number) || !isNumber(c as number) || !isNumber(h as number) || !isNumber(a as number)) return null;
   if ((l as number) > 1) return null;
   return oklchToRgb({
-    l: l as number,
-    c: c as number,
-    h: normalizeHue(Number(h)),
-    a: clamp(a as number, 0, 1),
+    l: sanitize(l as number),
+    c: sanitize(c as number),
+    h: normalizeHue(sanitize(Number(h))),
+    a: clamp(sanitize(a as number), 0, 1),
   });
 };
 

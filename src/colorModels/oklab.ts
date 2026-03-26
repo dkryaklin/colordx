@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumeric, isObject } from '../helpers.js';
+import { clamp, hasKeys, isNumber, isObject, sanitize } from '../helpers.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -71,14 +71,14 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
-  if (!isNumeric(l as number) || !isNumeric(a as number) || !isNumeric(b as number) || !isNumeric(alpha as number))
+  if (!isNumber(l as number) || !isNumber(a as number) || !isNumber(b as number) || !isNumber(alpha as number))
     return null;
   if ((l as number) > 1) return null;
   return oklabToRgb({
-    l: l as number,
-    a: a as number,
-    b: b as number,
-    alpha: clamp(alpha as number, 0, 1),
+    l: sanitize(l as number),
+    a: sanitize(a as number),
+    b: sanitize(b as number),
+    alpha: clamp(sanitize(alpha as number), 0, 1),
   });
 };
 

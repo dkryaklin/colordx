@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { clamp, hasKeys, isNumber, isObject, round, sanitize } from '../helpers.js';
 import type { RgbColor } from '../types.js';
 
 export const clampRgb = (rgb: RgbColor): RgbColor => ({
@@ -12,8 +12,8 @@ export const parseRgbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['r', 'g', 'b'])) return null;
   const { r, g, b, a = 1 } = input;
-  if (!isNumeric(r) || !isNumeric(g) || !isNumeric(b) || !isNumeric(a as number)) return null;
-  return clampRgb({ r: r, g: g, b: b, a: a as number });
+  if (!isNumber(r) || !isNumber(g) || !isNumber(b) || !isNumber(a as number)) return null;
+  return clampRgb({ r: sanitize(r), g: sanitize(g), b: sanitize(b), a: sanitize(a as number) });
 };
 
 // Matches both legacy comma syntax: rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)

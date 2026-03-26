@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { clamp, hasKeys, isNumber, isObject, round, sanitize } from '../helpers.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { rgbToXyz, xyzToRgb } from './xyz.js';
 
@@ -96,11 +96,11 @@ export const parseLabObject = (input: unknown): RgbColor | null => {
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   if ('r' in input || 'x' in input) return null;
   const { l, a, b, alpha = 1 } = input;
-  if (!isNumeric(l) || !isNumeric(a) || !isNumeric(b) || !isNumeric(alpha as number)) return null;
+  if (!isNumber(l) || !isNumber(a) || !isNumber(b) || !isNumber(alpha as number)) return null;
   return labToRgb({
-    l: clamp(Number(l), 0, 400),
-    a: Number(a),
-    b: Number(b),
-    alpha: clamp(Number(alpha), 0, 1),
+    l: clamp(sanitize(Number(l)), 0, 400),
+    a: sanitize(Number(a)),
+    b: sanitize(Number(b)),
+    alpha: clamp(sanitize(Number(alpha)), 0, 1),
   });
 };

@@ -1,4 +1,4 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 export const clampHsl = (hsl: HslColor): HslColor => ({
@@ -77,8 +77,8 @@ export const parseHslObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 's', 'l'])) return null;
   const { h, s, l, a = 1 } = input;
-  if (!isNumeric(h) || !isNumeric(s) || !isNumeric(l) || !isNumeric(a as number)) return null;
-  return hslToRgb(clampHsl({ h: h, s: s, l: l, a: a as number }));
+  if (!isNumber(h) || !isNumber(s) || !isNumber(l) || !isNumber(a as number)) return null;
+  return hslToRgb(clampHsl({ h: sanitize(h), s: sanitize(s), l: sanitize(l), a: sanitize(a as number) }));
 };
 
 const N = '[+-]?\\d*\\.?\\d+';

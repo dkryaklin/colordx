@@ -142,16 +142,20 @@ describe('Lab object parsing edge cases', () => {
     expect(colordx({ l: 50, a: 25, b: -10, alpha: 1, r: 255 } as any).isValid()).toBe(false);
   });
 
-  it('rejects Lab object when alpha is NaN', () => {
+  it('clamps Lab object with NaN alpha to 0', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(colordx({ l: 50, a: 25, b: -10, alpha: NaN } as any).isValid()).toBe(false);
+    const c = colordx({ l: 50, a: 25, b: -10, alpha: NaN } as any);
+    expect(c.isValid()).toBe(true);
+    expect(c.alpha()).toBe(0);
   });
 });
 
 describe('LCH object parsing edge cases', () => {
-  it('rejects LCH object with NaN alpha', () => {
+  it('clamps LCH object with NaN alpha to 0', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(colordx({ l: 50, c: 30, h: 180, a: NaN } as any).isValid()).toBe(false);
+    const c = colordx({ l: 50, c: 30, h: 180, a: NaN } as any);
+    expect(c.isValid()).toBe(true);
+    expect(c.alpha()).toBe(0);
   });
 });
 

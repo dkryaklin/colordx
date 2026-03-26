@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
+import { clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -100,6 +100,6 @@ export const parseHsvObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 's', 'v'])) return null;
   const { h, s, v, a = 1 } = input;
-  if (!isNumeric(h) || !isNumeric(s) || !isNumeric(v) || !isNumeric(a as number)) return null;
-  return hsvToRgb(clampHsv({ h: h, s: s, v: v, a: a as number }));
+  if (!isNumber(h) || !isNumber(s) || !isNumber(v) || !isNumber(a as number)) return null;
+  return hsvToRgb(clampHsv({ h: sanitize(h), s: sanitize(s), v: sanitize(v), a: sanitize(a as number) }));
 };

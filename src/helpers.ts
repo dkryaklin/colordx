@@ -18,6 +18,12 @@ export const ANGLE_UNITS: Record<string, number> = { deg: 1, grad: 0.9, turn: 36
 
 export const isNumeric = (n: unknown): n is number => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
 
+// Accepts any number type (including NaN/±Infinity); use sanitize() before clamping
+export const isNumber = (n: unknown): n is number => typeof n === 'number';
+
+// Replace NaN with 0; ±Infinity is left for clamp() to handle naturally
+export const sanitize = (n: number): number => (Number.isNaN(n) ? 0 : n);
+
 export const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 

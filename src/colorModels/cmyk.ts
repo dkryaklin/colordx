@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { clamp, hasKeys, isNumber, isObject, round, sanitize } from '../helpers.js';
 import type { CmykColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -37,8 +37,16 @@ export const parseCmykObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['c', 'm', 'y', 'k'])) return null;
   const { c, m, y, k, a = 1 } = input;
-  if (!isNumeric(c) || !isNumeric(m) || !isNumeric(y) || !isNumeric(k) || !isNumeric(a as number)) return null;
-  return cmykToRgb(clampCmyk({ c: Number(c), m: Number(m), y: Number(y), k: Number(k), a: Number(a) }));
+  if (!isNumber(c) || !isNumber(m) || !isNumber(y) || !isNumber(k) || !isNumber(a as number)) return null;
+  return cmykToRgb(
+    clampCmyk({
+      c: sanitize(Number(c)),
+      m: sanitize(Number(m)),
+      y: sanitize(Number(y)),
+      k: sanitize(Number(k)),
+      a: sanitize(Number(a)),
+    })
+  );
 };
 
 const CMYK_RE =

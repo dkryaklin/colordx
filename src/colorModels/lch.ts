@@ -1,4 +1,4 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, rgbToLab } from './lab.js';
 
@@ -33,8 +33,10 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['l', 'c', 'h'])) return null;
   const { l, c, h, a = 1 } = input;
-  if (!isNumeric(l) || !isNumeric(c) || !isNumeric(h) || !isNumeric(a as number)) return null;
-  return lchToRgb(clampLch({ l: Number(l), c: Number(c), h: Number(h), a: Number(a) }));
+  if (!isNumber(l) || !isNumber(c) || !isNumber(h) || !isNumber(a as number)) return null;
+  return lchToRgb(
+    clampLch({ l: sanitize(Number(l)), c: sanitize(Number(c)), h: sanitize(Number(h)), a: sanitize(Number(a)) })
+  );
 };
 
 const LCH_RE =

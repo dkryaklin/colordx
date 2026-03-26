@@ -1,4 +1,4 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
 
@@ -40,8 +40,8 @@ export const parseHwbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 'w', 'b'])) return null;
   const { h, w, b, a = 1 } = input;
-  if (!isNumeric(h) || !isNumeric(w) || !isNumeric(b) || !isNumeric(a as number)) return null;
-  return hwbToRgb(clampHwb({ h, w, b, a: a as number }));
+  if (!isNumber(h) || !isNumber(w) || !isNumber(b) || !isNumber(a as number)) return null;
+  return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), a: sanitize(a as number) }));
 };
 
 const HWB_RE =
