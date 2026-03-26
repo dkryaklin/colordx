@@ -194,17 +194,15 @@ import a11y from '@colordx/core/plugins/a11y';
 // toLch() (CIE LCH D50), toLchString(), parses lch() strings and LCH objects
 import cmyk from '@colordx/core/plugins/cmyk';
 // toCmyk(), toCmykString(), parses device-cmyk() strings and CMYK objects
-import delta from '@colordx/core/plugins/delta';
 // isReadable(), readableScore(), minReadable(), apcaContrast(), isReadableApca()
 import harmonies from '@colordx/core/plugins/harmonies';
 import lab from '@colordx/core/plugins/lab';
-// toLab() (CIE Lab D50), toXyz() (CIE XYZ D50), parses Lab/XYZ objects
+// toLab() (CIE Lab D50), toXyz() (CIE XYZ D50), delta(), parses Lab/XYZ objects
 import lch from '@colordx/core/plugins/lch';
 // tints(), shades(), tones(), palette()
 import minify from '@colordx/core/plugins/minify';
 // harmonies()
 import mix from '@colordx/core/plugins/mix';
-// delta() — CIEDE2000 color difference (0–1)
 import names from '@colordx/core/plugins/names';
 // minify() — shortest CSS string
 import p3 from '@colordx/core/plugins/p3';
@@ -213,12 +211,12 @@ import rec2020 from '@colordx/core/plugins/rec2020';
 
 // toRec2020(), toRec2020String(), parses color(rec2020 ...) strings
 
-extend([lab, lch, cmyk, delta, names, a11y, harmonies, mix, minify, p3, rec2020]);
+extend([lab, lch, cmyk, names, a11y, harmonies, mix, minify, p3, rec2020]);
 ```
 
 ### lab plugin
 
-CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input. Also adds `.mixLab()` for colord-compatible perceptual mixing.
+CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input. Also adds `.mixLab()` for colord-compatible perceptual mixing and `.delta()` for CIEDE2000 color difference.
 
 ```ts
 import lab from '@colordx/core/plugins/lab';
@@ -234,6 +232,11 @@ colordx({ x: 43.61, y: 22.25, z: 1.39, a: 1 }).toHex(); // '#ff0000'
 
 // Mix in CIE Lab space (colord-compatible)
 colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
+
+// CIEDE2000 perceptual color difference (0 = identical, ~1 = maximum)
+colordx('#ff0000').delta('#ff0000'); // 0
+colordx('#000000').delta('#ffffff'); // ~1
+colordx('#ff0000').delta(); // compared against white (default)
 ```
 
 ### lch plugin
@@ -264,21 +267,6 @@ colordx('#ff0000').toCmyk(); // { c: 0, m: 100, y: 100, k: 0, a: 1 }
 colordx('#ff0000').toCmykString(); // 'device-cmyk(0% 100% 100% 0%)'
 colordx('device-cmyk(0% 100% 100% 0%)').toHex(); // '#ff0000'
 colordx({ c: 0, m: 100, y: 100, k: 0, a: 1 }).toHex(); // '#ff0000'
-```
-
-### delta plugin
-
-CIEDE2000 perceptual color difference. Returns a value from 0 (identical) to ~1 (maximum difference). Defaults to comparing against white.
-
-```ts
-import delta from '@colordx/core/plugins/delta';
-
-extend([delta]);
-
-colordx('#ff0000').delta('#ff0000'); // 0      — identical
-colordx('#000000').delta('#ffffff'); // ~1     — maximum perceptual distance
-colordx('#ff0000').delta('#0000ff'); // > 0    — red vs blue
-colordx('#ff0000').delta(); // compared against white (default)
 ```
 
 ### names plugin
@@ -469,21 +457,6 @@ import xyzPlugin from 'colord/plugins/xyz';
 colordExtend([labPlugin, lchPlugin, xyzPlugin, cmykPlugin]);
 
 extend([lab, lch, cmyk]);
-```
-
-**`delta()` moved to a plugin:**
-
-```ts
-// colord
-// colordx
-import delta from '@colordx/core/plugins/delta';
-import deltaPlugin from 'colord/plugins/lab';
-
-colordExtend([deltaPlugin]);
-colord('#ff0000').delta('#00ff00');
-
-extend([delta]);
-colordx('#ff0000').delta('#00ff00');
 ```
 
 **`getFormat()` import path:**

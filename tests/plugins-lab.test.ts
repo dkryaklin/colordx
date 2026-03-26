@@ -1,12 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { colordx, extend } from '../src/index.js';
 import cmyk from '../src/plugins/cmyk.js';
-import delta from '../src/plugins/delta.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
 
 beforeAll(() => {
-  extend([lab, lch, cmyk, delta]);
+  extend([lab, lch, cmyk]);
 });
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];

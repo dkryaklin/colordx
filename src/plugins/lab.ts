@@ -1,4 +1,4 @@
-import { labToRgb, parseLabObject, rgbToLab } from '../colorModels/lab.js';
+import { deltaE2000, labToRgb, parseLabObject, rgbToLab } from '../colorModels/lab.js';
 import { parseXyzObject, rgbToXyz } from '../colorModels/xyz.js';
 import { Colordx } from '../colordx.js';
 import type { Plugin } from '../colordx.js';
@@ -10,6 +10,7 @@ declare module '../colordx.js' {
     toLab(): LabColor;
     toXyz(): XyzColor;
     mixLab(color: AnyColor, ratio?: number): Colordx;
+    delta(color?: AnyColor): number;
   }
 }
 
@@ -32,6 +33,9 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
         alpha: round(a.alpha * (1 - w) + b.alpha * w, 3),
       })
     );
+  };
+  ColordxClass.prototype.delta = function (color: AnyColor = '#fff') {
+    return round(deltaE2000(rgbToLab(this.toRgb()), rgbToLab(new ColordxClass(color).toRgb())) / 100, 3);
   };
   parsers.push(parseLabObject, parseXyzObject);
   formatParsers.push([parseLabObject, 'lab'], [parseXyzObject, 'xyz']);

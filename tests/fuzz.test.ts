@@ -12,7 +12,6 @@ import { colordx, extend } from '../src/index.js';
 import { inGamutSrgb, toGamutSrgb, inGamutP3, toGamutP3, inGamutRec2020, toGamutRec2020 } from '../src/gamut.js';
 import a11y from '../src/plugins/a11y.js';
 import cmyk from '../src/plugins/cmyk.js';
-import delta from '../src/plugins/delta.js';
 import harmonies from '../src/plugins/harmonies.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
@@ -23,7 +22,7 @@ import p3 from '../src/plugins/p3.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, delta, harmonies, lab, lch, minify, mix, names, p3, rec2020]);
+  extend([a11y, cmyk, harmonies, lab, lch, minify, mix, names, p3, rec2020]);
 });
 
 // Deterministic LCG — results are reproducible across runs
