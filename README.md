@@ -12,72 +12,15 @@ A modern color manipulation library built for the CSS Color 4 era. The successor
 
 Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwashere/mitata). Operations per second — higher is better.
 
-**Parse HEX → toHsl**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **27,100,000** |
-| culori | 6,500,000 |
-| colord | 10,000,000 |
-| chroma-js | 3,200,000 |
-| color | 2,500,000 |
-| tinycolor2 | 2,400,000 |
-
-**Parse HEX → lighten → toHex**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **15,000,000** |
-| culori | 4,800,000 |
-| colord | 5,700,000 |
-| chroma-js | 1,100,000 |
-| color | 990,000 |
-| tinycolor2 | 960,000 |
-
-**Mix two colors**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **8,700,000** |
-| colord | 1,300,000 |
-| chroma-js | 1,100,000 |
-| tinycolor2 | 1,100,000 |
-| culori | 714,000 |
-| color | 505,000 |
-
-**Parse HEX → toOklch**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **3,600,000** |
-| culori | 3,400,000 |
-| color | 1,800,000 |
-| chroma-js | 980,000 |
-
-**inGamutP3**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **3,700,000** |
-| culori | 1,000,000 |
-
-**inGamutRec2020**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **3,900,000** |
-| culori | 943,000 |
-
-**Chained: parse → lighten → saturate → toHex**
-
-| Library | ops/sec |
-|---|---|
-| **colordx** | **4,000,000** |
-| culori | 4,000,000 |
-| colord | 2,800,000 |
-| color | 730,000 |
-| chroma-js | 592,000 |
-| tinycolor2 | 529,000 |
+| Benchmark | **colordx** | colord | culori | chroma-js | color | tinycolor2 |
+|---|---|---|---|---|---|---|
+| HEX → toHsl | **27.1M** | 10M | 6.5M | 3.2M | 2.5M | 2.4M |
+| HEX → lighten → toHex | **15M** | 5.7M | 4.8M | 1.1M | 990K | 960K |
+| Mix two colors | **8.7M** | 1.3M | 714K | 1.1M | 505K | 1.1M |
+| HEX → toOklch | **3.6M** | — | 3.4M | 980K | 1.8M | — |
+| inGamutP3 | **3.7M** | — | 1M | — | — | — |
+| inGamutRec2020 | **3.9M** | — | 943K | — | — | — |
+| Chained (parse → lighten → saturate → toHex) | **4M** | 2.8M | 4M | 592K | 730K | 529K |
 
 ## Install
 
