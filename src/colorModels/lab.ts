@@ -14,8 +14,8 @@ const xyzToLab = ({ x, y, z, a }: XyzColor): LabColor => {
   const fy = f(y / WY);
   return {
     l: round(116 * fy - 16, 2),
-    a: round(500 * (f(x / WX) - fy), 2),
-    b: round(200 * (fy - f(z / WZ)), 2),
+    a: round(500 * (f(x / WX) - fy), 2) || 0,
+    b: round(200 * (fy - f(z / WZ)), 2) || 0,
     alpha: round(a, 3),
   };
 };
