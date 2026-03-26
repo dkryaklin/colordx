@@ -7,6 +7,9 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    "paths": {
+      "@colordx/core": ["./src/colordx.ts"]
+    },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,

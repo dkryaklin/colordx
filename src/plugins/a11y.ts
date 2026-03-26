@@ -2,7 +2,7 @@ import type { Plugin } from '../colordx.js';
 import { Colordx } from '../colordx.js';
 import type { AnyColor } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     isReadable(background?: AnyColor, options?: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' }): boolean;
     readableScore(background?: AnyColor): 'AAA' | 'AA' | 'AA large' | 'fail';

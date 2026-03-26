@@ -5,7 +5,7 @@ import type { Plugin } from '../colordx.js';
 import { clamp, round } from '../helpers.js';
 import type { AnyColor, LabColor, XyzColor } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     toLab(): LabColor;
     toXyz(): XyzColor;

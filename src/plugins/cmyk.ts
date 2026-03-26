@@ -2,7 +2,7 @@ import { parseCmykObject, parseCmykString, rgbToCmyk } from '../colorModels/cmyk
 import type { Plugin } from '../colordx.js';
 import type { CmykColor } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     toCmyk(): CmykColor;
     toCmykString(): string;

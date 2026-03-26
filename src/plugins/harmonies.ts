@@ -1,7 +1,7 @@
 import type { Plugin } from '../colordx.js';
 import { Colordx } from '../colordx.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     harmonies(type?: 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'split-complementary'): Colordx[];
   }

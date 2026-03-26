@@ -2,7 +2,7 @@ import type { Plugin } from '../colordx.js';
 import { Colordx } from '../colordx.js';
 import type { AnyColor } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     tints(count?: number): Colordx[];
     shades(count?: number): Colordx[];

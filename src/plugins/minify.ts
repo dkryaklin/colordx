@@ -9,7 +9,7 @@ interface MinifyOptions {
   name?: boolean;
 }
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     minify(options?: MinifyOptions): string;
   }

@@ -57,6 +57,11 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "plugins/*": ["./dist/plugins/*.d.ts"]
+    }
+  },
   "files": [
     "dist"
   ],

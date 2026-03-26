@@ -2,7 +2,7 @@ import { parseLchObject, parseLchString, rgbToLch } from '../colorModels/lch.js'
 import type { Plugin } from '../colordx.js';
 import type { LchColor } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     toLch(): LchColor;
     toLchString(): string;

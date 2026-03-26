@@ -3,7 +3,7 @@ import type { Plugin } from '../colordx.js';
 import { Colordx } from '../colordx.js';
 import type { RgbColor } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     toName(options?: { closest?: boolean }): string | undefined;
   }

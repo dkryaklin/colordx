@@ -2,7 +2,7 @@ import { parseRec2020String, rgbToRec2020 } from '../colorModels/rec2020.js';
 import type { Plugin } from '../colordx.js';
 import type { Rec2020Color } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     toRec2020(): Rec2020Color;
     toRec2020String(): string;

@@ -2,7 +2,7 @@ import { parseP3String, rgbToP3 } from '../colorModels/p3.js';
 import type { Plugin } from '../colordx.js';
 import type { P3Color } from '../types.js';
 
-declare module '../colordx.js' {
+declare module '@colordx/core' {
   interface Colordx {
     toP3(): P3Color;
     toP3String(): string;
