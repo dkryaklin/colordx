@@ -5,7 +5,7 @@ import type { RgbColor } from '../types.js';
 
 declare module '../colordx.js' {
   interface Colordx {
-    toName(): string | undefined;
+    toName(options?: { closest?: boolean }): string | undefined;
   }
 }
 
@@ -164,9 +164,23 @@ const names: Plugin = (ColordClass, parsers, formatParsers) => {
   parsers.push(parseNameString);
   formatParsers.push([parseNameString, 'name']);
 
-  ColordClass.prototype.toName = function (this: Colordx): string | undefined {
+  ColordClass.prototype.toName = function (this: Colordx, options?: { closest?: boolean }): string | undefined {
+    const { r, g, b, a } = this.toRgb();
+    if (a === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
     const hex = this.toHex().toLowerCase();
-    return Object.keys(NAMES).find((name) => NAMES[name] === hex);
+    const exact = Object.keys(NAMES).find((name) => NAMES[name] === hex);
+    if (exact || !options?.closest) return exact;
+    let minDist = Infinity;
+    let closest: string | undefined;
+    for (const name of Object.keys(NAMES)) {
+      const c = parseHex(NAMES[name])!;
+      const d = (c.r - r) ** 2 + (c.g - g) ** 2 + (c.b - b) ** 2;
+      if (d < minDist) {
+        minDist = d;
+        closest = name;
+      }
+    }
+    return closest;
   };
 };
 

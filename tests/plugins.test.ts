@@ -29,6 +29,16 @@ describe("names plugin", () => {
     expect((colordx("#ffffff") as any).toName()).toBe("white");
   });
 
+  it("returns 'transparent' for rgba(0,0,0,0)", () => {
+    expect((colordx({ r: 0, g: 0, b: 0, a: 0 }) as any).toName()).toBe("transparent");
+    expect((colordx({ r: 255, g: 255, b: 255, a: 0 }) as any).toName()).toBeUndefined();
+  });
+
+  it("closest: true returns nearest CSS name", () => {
+    expect((colordx("#aaaaaa") as any).toName({ closest: true })).toBe("darkgray");
+    expect((colordx("#fe0000") as any).toName({ closest: true })).toBe("red");
+  });
+
   it("getFormat returns 'name' for CSS color names when names plugin is loaded", () => {
     expect(getFormat("red")).toBe("name");
     expect(getFormat("blue")).toBe("name");
