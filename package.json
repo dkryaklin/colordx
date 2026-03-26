@@ -1,6 +1,6 @@
 {
   "name": "@colordx/core",
-  "version": "1.13.1",
+  "version": "2.0.0",
   "description": "A high-performance color library with extended support for modern color spaces including OKLCH, OKLAB, Display-P3, and more",
   "author": "Dmitrii Kriaklin",
   "license": "MIT",
@@ -59,7 +59,9 @@
   "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
-      "plugins/*": ["./dist/plugins/*.d.ts"]
+      "plugins/*": [
+        "./dist/plugins/*.d.ts"
+      ]
     }
   },
   "files": [
