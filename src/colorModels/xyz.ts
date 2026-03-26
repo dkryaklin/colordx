@@ -24,9 +24,9 @@ export const rgbToXyz = ({ r, g, b, a }: RgbColor): XyzColor => {
   const zd65 = 100 * (0.0193339 * lr + 0.119192 * lg + 0.9503041 * lb);
   // D65 → D50 (Bradford)
   return {
-    x: clamp(round(1.0478112 * xd65 + 0.0228866 * yd65 - 0.050127 * zd65, 2), 0, WX),
-    y: clamp(round(0.0295424 * xd65 + 0.9904844 * yd65 - 0.0170491 * zd65, 2), 0, WY),
-    z: clamp(round(-0.0092345 * xd65 + 0.0150436 * yd65 + 0.7521316 * zd65, 2), 0, WZ),
+    x: clamp(1.0478112 * xd65 + 0.0228866 * yd65 - 0.050127 * zd65, 0, WX),
+    y: clamp(0.0295424 * xd65 + 0.9904844 * yd65 - 0.0170491 * zd65, 0, WY),
+    z: clamp(-0.0092345 * xd65 + 0.0150436 * yd65 + 0.7521316 * zd65, 0, WZ),
     a: clamp(round(a, 3), 0, 1),
   };
 };

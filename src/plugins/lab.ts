@@ -16,10 +16,12 @@ declare module '@colordx/core' {
 
 const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLab = function () {
-    return rgbToLab(this.toRgb());
+    const { l, a, b, alpha } = rgbToLab(this.toRgb());
+    return { l: round(l, 2), a: round(a, 2) || 0, b: round(b, 2) || 0, alpha };
   };
   ColordxClass.prototype.toXyz = function () {
-    return rgbToXyz(this.toRgb());
+    const { x, y, z, a } = rgbToXyz(this.toRgb());
+    return { x: round(x, 2), y: round(y, 2), z: round(z, 2), a };
   };
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {
     const a = rgbToLab(this.toRgb());
