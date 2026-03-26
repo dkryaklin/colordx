@@ -1,6 +1,6 @@
 import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue, round } from '../helpers.js';
 import type { HwbColor, RgbColor } from '../types.js';
-import { hsvToRgb, rgbToHsv } from './hsv.js';
+import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
 
 export const clampHwb = (hwb: HwbColor): HwbColor => {
   const w = clamp(hwb.w, 0, Infinity);
@@ -22,7 +22,7 @@ export const roundHwb = (hwb: HwbColor): HwbColor => ({
 });
 
 export const rgbToHwb = (rgb: RgbColor): HwbColor => {
-  const { h } = rgbToHsv(rgb);
+  const { h } = rgbToHsvRaw(rgb);
   return clampHwb({
     h,
     w: (Math.min(rgb.r, rgb.g, rgb.b) / 255) * 100,
@@ -32,7 +32,6 @@ export const rgbToHwb = (rgb: RgbColor): HwbColor => {
 };
 
 export const hwbToRgb = ({ h, w, b, a }: HwbColor): RgbColor => {
-  // Values are already normalized by clampHwb; w + b is guaranteed <= 100
   const s = b === 100 ? 0 : 100 - (w / (100 - b)) * 100;
   return hsvToRgb({ h, s, v: 100 - b, a });
 };

@@ -1,17 +1,6 @@
 import { ANGLE_UNITS, clamp, hasKeys, isNumeric, isObject, normalizeHue } from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
-import { oklabToRgb, rgbToOklab } from './oklab.js';
-
-const oklabToOklch = ({ l, a, b, alpha }: OklabColor): OklchColor => {
-  const C = Math.sqrt(a ** 2 + b ** 2);
-  const H = (Math.atan2(b, a) * 180) / Math.PI;
-  return {
-    l,
-    c: C,
-    h: normalizeHue(H),
-    a: alpha,
-  };
-};
+import { oklabToRgb, toLinear } from './oklab.js';
 
 const oklchToOklab = ({ l, c, h, a }: OklchColor): OklabColor => ({
   l,
@@ -20,7 +9,23 @@ const oklchToOklab = ({ l, c, h, a }: OklchColor): OklabColor => ({
   alpha: a,
 });
 
-export const rgbToOklch = (rgb: RgbColor): OklchColor => oklabToOklch(rgbToOklab(rgb));
+export const rgbToOklch = ({ r, g, b, a }: RgbColor): OklchColor => {
+  const lr = toLinear(r),
+    lg = toLinear(g),
+    lb = toLinear(b);
+  const lv = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const mv = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const sv = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+  const l_ = Math.cbrt(lv),
+    m_ = Math.cbrt(mv),
+    s_ = Math.cbrt(sv);
+  const oa = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
+  const ob = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
+  const ol = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
+  const C = Math.sqrt(oa * oa + ob * ob);
+  const H = (Math.atan2(ob, oa) * 180) / Math.PI;
+  return { l: ol, c: C, h: normalizeHue(H), a };
+};
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));
 
@@ -30,7 +35,6 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   const { l, c, h, a = 1 } = input as { l: unknown; c: unknown; h: unknown; a?: unknown };
   if (!isNumeric(l as number) || !isNumeric(c as number) || !isNumeric(h as number) || !isNumeric(a as number))
     return null;
-  // Distinguish OklchColor (l in 0-1) from LchColor (l in 0-100): if l > 1 treat as Lch
   if ((l as number) > 1) return null;
   return oklchToRgb({
     l: l as number,

@@ -2,7 +2,7 @@ import { clamp, hasKeys, isNumeric, isObject } from '../helpers.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
-const toLinear = (c: number): number => {
+export const toLinear = (c: number): number => {
   const n = c / 255;
   return n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
 };
@@ -73,7 +73,6 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isNumeric(l as number) || !isNumeric(a as number) || !isNumeric(b as number) || !isNumeric(alpha as number))
     return null;
-  // Distinguish OklabColor (l in 0-1) from LabColor (l in 0-100): if l > 1 treat as Lab
   if ((l as number) > 1) return null;
   return oklabToRgb({
     l: l as number,

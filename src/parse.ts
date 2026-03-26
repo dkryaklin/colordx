@@ -25,16 +25,21 @@ const objectFormatParsers: [ColorParser, ColorFormat][] = [
   [parseOklchObject, 'lch'],
 ];
 
-const formatParsers: [ColorParser, ColorFormat][] = [...stringFormatParsers, ...objectFormatParsers];
+const builtinStringParsers: ColorParser[] = stringFormatParsers.map(([p]) => p);
+const builtinObjectParsers: ColorParser[] = objectFormatParsers.map(([p]) => p);
 
-export const defaultParsers: ColorParser[] = formatParsers.map(([parser]) => parser);
-
+export const defaultParsers: ColorParser[] = [...builtinStringParsers, ...builtinObjectParsers];
 export const parsers: ColorParser[] = [...defaultParsers];
 
 export const parse = (input: AnyColor): RgbColor | null => {
   if (input === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
-  for (const parser of parsers) {
+  const builtins = typeof input === 'string' ? builtinStringParsers : builtinObjectParsers;
+  for (const parser of builtins) {
     const result = parser(input);
+    if (result) return result;
+  }
+  for (let i = defaultParsers.length; i < parsers.length; i++) {
+    const result = parsers[i]!(input);
     if (result) return result;
   }
   return null;
@@ -45,7 +50,6 @@ export const getFormat = (input: AnyColor): ColorFormat | undefined => {
   for (const [parser, format] of typed) {
     if (parser(input)) return format;
   }
-  // Check parsers added by plugins (format unknown)
   for (let i = defaultParsers.length; i < parsers.length; i++) {
     if (parsers[i]!(input)) return 'name';
   }

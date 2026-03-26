@@ -8,21 +8,31 @@ import { clamp, round } from './helpers.js';
 import { parse, parsers } from './parse.js';
 import type { AnyColor, ColorParser, HslColor, HsvColor, HwbColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
+const _SENTINEL: unique symbol = Symbol();
+
 export class Colordx {
   private readonly _rgb: RgbColor;
   private readonly _valid: boolean;
 
-  constructor(input: AnyColor) {
-    const parsed = parse(input);
-    this._valid = parsed !== null;
-    this._rgb = parsed ?? { r: 0, g: 0, b: 0, a: 1 };
+  constructor(input: AnyColor | typeof _SENTINEL, _direct?: RgbColor) {
+    if (input === _SENTINEL) {
+      this._valid = true;
+      this._rgb = _direct!;
+    } else {
+      const parsed = parse(input);
+      this._valid = parsed !== null;
+      this._rgb = parsed ?? { r: 0, g: 0, b: 0, a: 1 };
+    }
+  }
+
+  private static _make(rgb: RgbColor): Colordx {
+    return new Colordx(_SENTINEL, rgb);
   }
 
   isValid(): boolean {
     return this._valid;
   }
 
-  // Converters
   toRgb(): RgbColor {
     const { r, g, b, a } = this._rgb;
     return { r: round(r), g: round(g), b: round(b), a };
@@ -98,7 +108,6 @@ export class Colordx {
     return a < 1 ? `oklch(${L} ${C} ${H} / ${a})` : `oklch(${L} ${C} ${H})`;
   }
 
-  // Getters
   brightness(): number {
     const { r, g, b } = this._rgb;
     return round((r * 299 + g * 587 + b * 114) / 255000, 2);
@@ -125,15 +134,18 @@ export class Colordx {
   alpha(value: number): Colordx;
   alpha(value?: number): number | Colordx {
     if (value === undefined) return this._rgb.a;
-    return new Colordx({ ...this._rgb, a: clamp(value, 0, 1) });
+    return Colordx._make({ ...this._rgb, a: clamp(value, 0, 1) });
   }
 
   hue(): number;
   hue(value: number): Colordx;
   hue(value?: number): number | Colordx {
-    const hsl = this.toHsl();
-    if (value === undefined) return hsl.h;
-    return new Colordx(hslToRgb({ ...hsl, h: value }));
+    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    if (value === undefined) {
+      const hr = round(h, 2);
+      return hr >= 360 ? 0 : hr;
+    }
+    return Colordx._make(hslToRgb({ h: value, s, l, a }));
   }
 
   lightness(): number;
@@ -141,7 +153,7 @@ export class Colordx {
   lightness(value?: number): number | Colordx {
     const oklch = this.toOklch();
     if (value === undefined) return oklch.l;
-    return new Colordx(oklchToRgb({ ...oklch, l: clamp(value, 0, 1) }));
+    return Colordx._make(oklchToRgb({ ...oklch, l: clamp(value, 0, 1) }));
   }
 
   chroma(): number;
@@ -149,27 +161,26 @@ export class Colordx {
   chroma(value?: number): number | Colordx {
     const oklch = this.toOklch();
     if (value === undefined) return oklch.c;
-    return new Colordx(oklchToRgb({ ...oklch, c: clamp(value, 0, 0.4) }));
+    return Colordx._make(oklchToRgb({ ...oklch, c: clamp(value, 0, 0.4) }));
   }
 
-  // Manipulators
-  lighten(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
-    const hsl = this.toHsl();
-    const l = options.relative ? hsl.l * (1 + amount) : hsl.l + amount * 100;
-    return new Colordx(hslToRgb({ ...hsl, l: clamp(l, 0, 100) }));
+  lighten(amount = 0.1, options?: { relative?: boolean }): Colordx {
+    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    const newL = options?.relative ? l * (1 + amount) : l + amount * 100;
+    return Colordx._make(hslToRgb({ h, s, l: clamp(newL, 0, 100), a }));
   }
 
-  darken(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
+  darken(amount = 0.1, options?: { relative?: boolean }): Colordx {
     return this.lighten(-amount, options);
   }
 
-  saturate(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
-    const hsl = this.toHsl();
-    const s = options.relative ? hsl.s * (1 + amount) : hsl.s + amount * 100;
-    return new Colordx(hslToRgb({ ...hsl, s: clamp(s, 0, 100) }));
+  saturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
+    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    const newS = options?.relative ? s * (1 + amount) : s + amount * 100;
+    return Colordx._make(hslToRgb({ h, s: clamp(newS, 0, 100), l, a }));
   }
 
-  desaturate(amount = 0.1, options: { relative?: boolean } = {}): Colordx {
+  desaturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
     return this.saturate(-amount, options);
   }
 
@@ -179,7 +190,7 @@ export class Colordx {
 
   invert(): Colordx {
     const { r, g, b, a } = this._rgb;
-    return new Colordx({ r: 255 - r, g: 255 - g, b: 255 - b, a });
+    return Colordx._make({ r: 255 - r, g: 255 - g, b: 255 - b, a });
   }
 
   rotate(amount = 15): Colordx {
@@ -190,7 +201,7 @@ export class Colordx {
     const other = new Colordx(color).toRgb();
     const self = this._rgb;
     const w = clamp(ratio, 0, 1);
-    return new Colordx({
+    return Colordx._make({
       r: round(self.r * (1 - w) + other.r * w),
       g: round(self.g * (1 - w) + other.g * w),
       b: round(self.b * (1 - w) + other.b * w),
@@ -202,11 +213,9 @@ export class Colordx {
     const bg = new Colordx(color);
     const bgRgb = bg._rgb;
     const fgRgb = this._rgb;
-    // Composite semi-transparent foreground over the background before measuring contrast.
-    // A fully-transparent color has zero contrast with any background, not the contrast of its base color.
     const effectiveFg =
       fgRgb.a < 1
-        ? new Colordx({
+        ? Colordx._make({
             r: round(fgRgb.a * fgRgb.r + (1 - fgRgb.a) * bgRgb.r),
             g: round(fgRgb.a * fgRgb.g + (1 - fgRgb.a) * bgRgb.g),
             b: round(fgRgb.a * fgRgb.b + (1 - fgRgb.a) * bgRgb.b),

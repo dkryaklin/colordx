@@ -2,11 +2,82 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era. Drop-in upgrade from [colord](https://github.com/omgovich/colord) with first-class support for **OKLCH**, **OKLab**, and a cleaner plugin system.
+A modern color manipulation library built for the CSS Color 4 era. The successor to [colord](https://github.com/omgovich/colord) with first-class support for **OKLCH** and **OKLab**. **5 KB gzipped. More than 2× faster than colord.**
 
 ## Why colordx?
 
-[colord](https://github.com/omgovich/colord) is a great library, but it was designed around CSS Color 3. Modern CSS uses `oklch()` and `oklab()` — color spaces that are perceptually uniform and supported natively in all modern browsers. With colord, you need plugins for those. With colordx, they're built in.
+[colord](https://github.com/omgovich/colord) is a great library, but it was designed around CSS Color 3. Modern CSS uses `oklch()` and `oklab()` — color spaces that produce better gradients, more accurate lightness adjustments, and consistent hue shifts. colord has no support for them, not even via a plugin. With colordx, they're built in.
+
+## Performance
+
+Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwashere/mitata). Operations per second — higher is better.
+
+**Parse HEX → toHsl**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **27,100,000** |
+| culori | 6,500,000 |
+| colord | 10,000,000 |
+| chroma-js | 3,200,000 |
+| color | 2,500,000 |
+| tinycolor2 | 2,400,000 |
+
+**Parse HEX → lighten → toHex**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **15,000,000** |
+| culori | 4,800,000 |
+| colord | 5,700,000 |
+| chroma-js | 1,100,000 |
+| color | 990,000 |
+| tinycolor2 | 960,000 |
+
+**Mix two colors**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **8,700,000** |
+| colord | 1,300,000 |
+| chroma-js | 1,100,000 |
+| tinycolor2 | 1,100,000 |
+| culori | 714,000 |
+| color | 505,000 |
+
+**Parse HEX → toOklch**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **3,600,000** |
+| culori | 3,400,000 |
+| color | 1,800,000 |
+| chroma-js | 980,000 |
+
+**inGamutP3**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **3,700,000** |
+| culori | 1,000,000 |
+
+**inGamutRec2020**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **3,900,000** |
+| culori | 943,000 |
+
+**Chained: parse → lighten → saturate → toHex**
+
+| Library | ops/sec |
+|---|---|
+| **colordx** | **4,000,000** |
+| culori | 4,000,000 |
+| colord | 2,800,000 |
+| color | 730,000 |
+| chroma-js | 592,000 |
+| tinycolor2 | 529,000 |
 
 ## Install
 

@@ -123,10 +123,6 @@ describe('toGamutSrgb', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Display-P3 gamut
-// ---------------------------------------------------------------------------
-
 describe('inGamutP3', () => {
   it('returns true for sRGB hex colors (sRGB ⊂ P3)', () => {
     expect(inGamutP3('#ff0000')).toBe(true);
@@ -237,10 +233,6 @@ describe('toGamutP3', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Rec.2020 gamut
-// ---------------------------------------------------------------------------
-
 describe('inGamutRec2020', () => {
   it('returns true for sRGB hex colors (sRGB ⊂ Rec.2020)', () => {
     expect(inGamutRec2020('#ff0000')).toBe(true);
@@ -344,10 +336,6 @@ describe('toGamutRec2020', () => {
     expect(result.toRgb().a).toBeCloseTo(0.7, 2);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Extended corner cases
-// ---------------------------------------------------------------------------
 
 describe('inGamutSrgb: additional hue and lightness coverage', () => {
   it('returns true for low chroma at all cardinal hue angles', () => {

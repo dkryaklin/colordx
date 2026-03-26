@@ -45,14 +45,12 @@ const colors = Array.from({ length: N }, () => ({
   a: Math.round(rand() * 1000) / 1000, // 3dp, covers 0.000–1.000 including extremes
 }));
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 
 const rgbClose = (a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }) =>
   Math.abs(a.r - b.r) <= 1 && Math.abs(a.g - b.g) <= 1 && Math.abs(a.b - b.b) <= 1;
 
 const alphaClose = (a: number, b: number) => Math.abs(a - b) <= 0.01;
 
-// ─── Core conversions ─────────────────────────────────────────────────────────
 
 describe('fuzz: core — toRgb/toHex round-trip', () => {
   it('toHex round-trips r/g/b within ±1', () => {
@@ -121,7 +119,6 @@ describe('fuzz: core — OKLch string round-trip', () => {
   });
 });
 
-// ─── Core getters ─────────────────────────────────────────────────────────────
 
 describe('fuzz: core — getters are in range', () => {
   it('brightness ∈ [0, 1]', () => {
@@ -173,7 +170,6 @@ describe('fuzz: core — getters are in range', () => {
   });
 });
 
-// ─── Core manipulators ────────────────────────────────────────────────────────
 
 describe('fuzz: core — manipulators return valid colors', () => {
   it('lighten / darken', () => {
@@ -211,7 +207,6 @@ describe('fuzz: core — manipulators return valid colors', () => {
   });
 });
 
-// ─── Gamut ────────────────────────────────────────────────────────────────────
 
 describe('fuzz: gamut — sRGB colors are always in-gamut', () => {
   it('inGamutSrgb is true for all generated sRGB colors', () => {
@@ -246,7 +241,6 @@ describe('fuzz: gamut — sRGB colors are always in-gamut', () => {
   });
 });
 
-// ─── Plugin: Lab / LCH / CMYK ─────────────────────────────────────────────────
 
 describe('fuzz: lab plugin — toLab string round-trip', () => {
   it('round-trips within ±1 rgb and ±0.01 alpha', () => {
@@ -280,7 +274,6 @@ describe('fuzz: cmyk plugin — toCmyk string round-trip', () => {
   });
 });
 
-// ─── Plugin: P3 / Rec2020 ────────────────────────────────────────────────────
 
 describe('fuzz: p3 plugin — toP3String round-trip', () => {
   it('round-trips within ±1 rgb and ±0.01 alpha', () => {
@@ -304,7 +297,6 @@ describe('fuzz: rec2020 plugin — toRec2020String round-trip', () => {
   });
 });
 
-// ─── Plugin: mix ─────────────────────────────────────────────────────────────
 
 describe('fuzz: mix plugin', () => {
   it('tint / shade / tone return valid colors', () => {
@@ -325,7 +317,6 @@ describe('fuzz: mix plugin', () => {
   });
 });
 
-// ─── Plugin: harmonies ────────────────────────────────────────────────────────
 
 describe('fuzz: harmonies plugin', () => {
   const types = ['complementary', 'analogous', 'triadic', 'tetradic', 'split-complementary'] as const;
@@ -342,7 +333,6 @@ describe('fuzz: harmonies plugin', () => {
   }
 });
 
-// ─── Plugin: delta ────────────────────────────────────────────────────────────
 
 describe('fuzz: delta plugin', () => {
   it('delta vs white is a non-negative number', () => {
@@ -360,7 +350,6 @@ describe('fuzz: delta plugin', () => {
   });
 });
 
-// ─── Plugin: a11y ────────────────────────────────────────────────────────────
 
 describe('fuzz: a11y plugin', () => {
   it('isReadable returns a boolean', () => {
@@ -383,7 +372,6 @@ describe('fuzz: a11y plugin', () => {
   });
 });
 
-// ─── Plugin: minify ───────────────────────────────────────────────────────────
 
 describe('fuzz: minify plugin', () => {
   it('output is always valid', () => {

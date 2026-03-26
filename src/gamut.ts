@@ -118,10 +118,6 @@ export const toGamutSrgb = (input: AnyColor): Colordx => {
   return new Colordx(oklch);
 };
 
-// ---------------------------------------------------------------------------
-// Generic helpers shared by P3 and Rec.2020 gamut functions
-// ---------------------------------------------------------------------------
-
 type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
 
 const isLinearInGamutCustom = (r: number, g: number, b: number): boolean =>
@@ -163,10 +159,6 @@ const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
   return new Colordx(oklch);
 };
 
-// ---------------------------------------------------------------------------
-// Display-P3 gamut
-// ---------------------------------------------------------------------------
-
 /**
  * Returns true if the color is within the Display-P3 gamut.
  * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ P3).
@@ -178,10 +170,6 @@ export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, okla
  * Colors already in P3 gamut are returned as-is. sRGB inputs are passed through.
  */
 export const toGamutP3 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearP3);
-
-// ---------------------------------------------------------------------------
-// Rec.2020 gamut
-// ---------------------------------------------------------------------------
 
 /**
  * Returns true if the color is within the Rec.2020 gamut.
