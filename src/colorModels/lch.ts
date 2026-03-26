@@ -11,11 +11,12 @@ const clampLch = (lch: LchColor): LchColor => ({
 
 export const rgbToLch = (rgb: RgbColor): LchColor => {
   const lab = rgbToLab(rgb);
+  const c = round(Math.sqrt(lab.a ** 2 + lab.b ** 2), 2);
   const h = (Math.atan2(lab.b, lab.a) / Math.PI) * 180;
   return {
     l: lab.l,
-    c: round(Math.sqrt(lab.a ** 2 + lab.b ** 2), 2),
-    h: round(h < 0 ? h + 360 : h, 2),
+    c,
+    h: c < 0.0001 ? 0 : round(h < 0 ? h + 360 : h, 2),
     a: lab.alpha,
   };
 };
