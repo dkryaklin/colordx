@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 1.13.0
+
+### Minor Changes
+
+- f85e2bf: Perfomance up
+
 ## 1.12.0
 
 ### Minor Changes
