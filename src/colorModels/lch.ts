@@ -42,7 +42,7 @@ const LCH_RE =
 
 export const parseLchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = LCH_RE.exec(input);
+  const m = LCH_RE.exec(input.trim());
   if (!m) return null;
   const unit = m[4]?.toLowerCase() ?? 'deg';
   const h = Number(m[3]) * (ANGLE_UNITS[unit] ?? 1);

@@ -41,7 +41,7 @@ const P3_RE =
 
 export const parseP3String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = P3_RE.exec(input);
+  const m = P3_RE.exec(input.trim());
   if (!m) return null;
   const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
   return p3ToRgb({ r: Number(m[1]), g: Number(m[2]), b: Number(m[3]), a: clamp(alpha, 0, 1) });

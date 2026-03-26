@@ -33,7 +33,7 @@ const RGB_RE = new RegExp(
 
 export const parseRgbString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = RGB_RE.exec(input);
+  const m = RGB_RE.exec(input.trim());
   if (!m) return null;
 
   // comma branch: m[1]r m[2]r% m[3]g m[4]g% m[5]b m[6]b% m[7]a m[8]a%

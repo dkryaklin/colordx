@@ -46,7 +46,7 @@ const CMYK_RE =
 
 export const parseCmykString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = CMYK_RE.exec(input);
+  const m = CMYK_RE.exec(input.trim());
   if (!m) return null;
   const toPercent = (val: string, pct: string) => Number(val) * (pct ? 1 : 100);
   return cmykToRgb(

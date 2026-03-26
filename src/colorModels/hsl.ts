@@ -93,7 +93,7 @@ const HSL_RE = new RegExp(
 
 export const parseHslString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = HSL_RE.exec(input);
+  const m = HSL_RE.exec(input.trim());
   if (!m) return null;
   const unit = m[2]?.toLowerCase() ?? 'deg';
   const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);

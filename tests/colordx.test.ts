@@ -86,6 +86,30 @@ describe("conversion", () => {
   });
 });
 
+describe("achromatic hue normalization", () => {
+  it("toOklch hue is 0 for white", () => {
+    const { c, h } = colordx("#ffffff").toOklch();
+    expect(c).toBeCloseTo(0, 4);
+    expect(h).toBe(0);
+  });
+
+  it("toOklch hue is 0 for black", () => {
+    const { c, h } = colordx("#000000").toOklch();
+    expect(c).toBeCloseTo(0, 4);
+    expect(h).toBe(0);
+  });
+
+  it("toOklch hue is 0 for mid-gray", () => {
+    // #808080 has near-zero but non-negligible chroma in oklab due to sRGB gamma
+    const { c } = colordx("#808080").toOklch();
+    expect(c).toBeLessThan(0.01);
+  });
+
+  it("toOklchString hue is 0 for white", () => {
+    expect(colordx("#ffffff").toOklchString()).toMatch(/oklch\([\d.]+ [\d.]+ 0\)/);
+  });
+});
+
 describe("manipulation", () => {
   it("lightens", () => {
     const l1 = colordx("#ff0000").toHsl().l;

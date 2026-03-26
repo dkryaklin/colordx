@@ -51,7 +51,7 @@ const val = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
 
 export const parseOklchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = OKLCH_RE.exec(input);
+  const m = OKLCH_RE.exec(input.trim());
   if (!m) return null;
   const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
   const C = m[4] ? val(m[3]!) * 0.004 : val(m[3]!);

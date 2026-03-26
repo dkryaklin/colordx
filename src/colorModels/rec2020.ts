@@ -56,7 +56,7 @@ const REC2020_RE =
 
 export const parseRec2020String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = REC2020_RE.exec(input);
+  const m = REC2020_RE.exec(input.trim());
   if (!m) return null;
   const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
   return rec2020ToRgb({ r: Number(m[1]), g: Number(m[2]), b: Number(m[3]), a: clamp(alpha, 0, 1) });
