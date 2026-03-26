@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 2.0.1
+
+### Patch Changes
+
+- 366a180: Remove intermediate rounding in XYZ/Lab conversion pipeline to prevent precision loss; rounding is now applied only at the final output stage in toLab() and toXyz().
+
 ## 2.0.0
 
 ### Major Changes
