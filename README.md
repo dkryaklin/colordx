@@ -109,7 +109,8 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .grayscale()       // fully desaturate
 .invert()          // invert RGB channels
 .rotate(30)        // rotate hue by 30°
-.mix('#0000ff', 0.5)  // mix with another color
+.mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
+.mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
 .alpha(0.5)        // set alpha
 .hue(120)          // set hue (HSL)
 .lightness(0.5)    // set lightness (OKLCH, 0–1)
@@ -217,7 +218,7 @@ extend([lab, lch, cmyk, delta, names, a11y, harmonies, mix, minify, p3, rec2020]
 
 ### lab plugin
 
-CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input.
+CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input. Also adds `.mixLab()` for colord-compatible perceptual mixing.
 
 ```ts
 import lab from '@colordx/core/plugins/lab';
@@ -230,6 +231,9 @@ colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, a: 1 }
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
 colordx({ l: 54.29, a: 80.82, b: 69.91, alpha: 1 }).toHex(); // '#ff0000'
 colordx({ x: 43.61, y: 22.25, z: 1.39, a: 1 }).toHex(); // '#ff0000'
+
+// Mix in CIE Lab space (colord-compatible)
+colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
 ```
 
 ### lch plugin
@@ -432,7 +436,7 @@ const c = colordx('#ff0000');
 ### What's the same
 
 All core manipulation and conversion methods have identical signatures:
-`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.toHsv()`, `.toHwb()`, `.toHwbString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.mix()`, `.alpha()`, `.hue()`, `.brightness()`, `.luminance()`, `.isDark()`, `.isLight()`, `.contrast()`, `.isEqual()`, `getFormat()`, `random()`
+`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.toHsv()`, `.toHwb()`, `.toHwbString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.mix()`, `.mixOklab()`, `.alpha()`, `.hue()`, `.brightness()`, `.luminance()`, `.isDark()`, `.isLight()`, `.contrast()`, `.isEqual()`, `getFormat()`, `random()`
 
 `.lighten()`, `.darken()`, `.saturate()`, and `.desaturate()` accept an optional `{ relative: true }` flag not present in colord — see [Relative lighten/darken](#relative-lightendarken) below.
 
@@ -493,17 +497,21 @@ import { getFormat } from 'colord';
 import { getFormat } from '@colordx/core';
 ```
 
-### `mix()` uses RGB instead of Lab
+### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
 
-colord's `mix` plugin interpolates in **CIE Lab** space. colordx interpolates in **linear RGB**, which matches how browsers composite a semi-transparent layer over a background (CSS `opacity`, Figma elevation layers, etc.).
+colord's `mix` plugin interpolated in **CIE Lab** space. colordx's `mix()` uses **sRGB interpolation**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers.
 
 ```ts
-// Background: #f0f3f1, overlay: #007d40 at 14% opacity
-colord('#f0f3f1').mix('#007d40', 0.14); // '#d3e2d6'  ← Lab interpolation
-colordx('#f0f3f1').mix('#007d40', 0.14); // '#cee2d8'  ← RGB interpolation (matches browser)
+colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
+colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform, no plugin needed)
+
+// colord-compatible Lab mixing — requires lab plugin
+import lab from '@colordx/core/plugins/lab';
+extend([lab]);
+colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab (colord-compatible)
 ```
 
-The same applies to `tint()`, `shade()`, and `tone()` from the mix plugin, which all call `.mix()` internally. If you have hardcoded expected hex values from colord's mix output, update them — the new values are more accurate for UI work.
+The same applies to `tint()`, `shade()`, and `tone()` from the mix plugin, which all call `.mix()` internally. If you have hardcoded expected hex values from colord's mix output, switch to `.mixLab()` or update the values.
 
 ### `contrast()` rounding
 

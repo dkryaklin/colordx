@@ -2,7 +2,7 @@ import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { rgbToHsv } from './colorModels/hsv.js';
 import { rgbToHwb } from './colorModels/hwb.js';
-import { rgbToOklab } from './colorModels/oklab.js';
+import { oklabToRgb, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
@@ -210,7 +210,7 @@ export class Colordx {
     return this.hue(this.hue() + amount);
   }
 
-  mix(color: AnyColor, ratio = 0.5): Colordx {
+  mix(color: AnyColor | Colordx, ratio = 0.5): Colordx {
     const other = new Colordx(color).toRgb();
     const self = this._rgb;
     const w = clamp(ratio, 0, 1);
@@ -220,6 +220,20 @@ export class Colordx {
       b: round(self.b * (1 - w) + other.b * w),
       a: round(self.a * (1 - w) + other.a * w, 3),
     });
+  }
+
+  mixOklab(color: AnyColor | Colordx, ratio = 0.5): Colordx {
+    const a = rgbToOklab(this._rgb);
+    const b = rgbToOklab(new Colordx(color)._rgb);
+    const w = clamp(ratio, 0, 1);
+    return Colordx._make(
+      oklabToRgb({
+        l: a.l * (1 - w) + b.l * w,
+        a: a.a * (1 - w) + b.a * w,
+        b: a.b * (1 - w) + b.b * w,
+        alpha: round(a.alpha * (1 - w) + b.alpha * w, 3),
+      })
+    );
   }
 
   contrast(color: AnyColor = '#fff'): number {

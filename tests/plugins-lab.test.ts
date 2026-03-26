@@ -316,3 +316,26 @@ describe('delta: additional cases', () => {
     }
   });
 });
+
+describe('mixLab', () => {
+  it('black + white at 50% gives Lab mid-gray (#777777)', () => {
+    expect((colordx('#000000') as any).mixLab('#ffffff').toHex()).toBe('#777777');
+  });
+
+  it('differs from sRGB mix (#808080)', () => {
+    expect((colordx('#000000') as any).mixLab('#ffffff').toHex()).not.toBe('#808080');
+  });
+
+  it('at weight=0 returns original color', () => {
+    expect((colordx('#ff0000') as any).mixLab('#0000ff', 0).toHex()).toBe('#ff0000');
+  });
+
+  it('at weight=1 returns target color', () => {
+    expect((colordx('#ff0000') as any).mixLab('#0000ff', 1).toHex()).toBe('#0000ff');
+  });
+
+  it('blends alpha channels', () => {
+    const mixed = (colordx({ r: 255, g: 0, b: 0, a: 1 }) as any).mixLab({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
+    expect(mixed.alpha()).toBe(0.5);
+  });
+});

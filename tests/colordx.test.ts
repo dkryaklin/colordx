@@ -681,6 +681,23 @@ describe("manipulation: boundary conditions", () => {
     expect(mixed.alpha()).toBe(0.5);
   });
 
+  it("mixOklab blends in Oklab space", () => {
+    // black + white at 50% in Oklab gives #636363 (perceptually mid-gray)
+    expect(colordx("#000000").mixOklab("#ffffff").toHex()).toBe("#636363");
+    // differs from sRGB mix (#808080)
+    expect(colordx("#000000").mix("#ffffff").toHex()).toBe("#808080");
+  });
+
+  it("mixOklab at weight=0 returns original, weight=1 returns target", () => {
+    expect(colordx("#ff0000").mixOklab("#0000ff", 0).toHex()).toBe("#ff0000");
+    expect(colordx("#ff0000").mixOklab("#0000ff", 1).toHex()).toBe("#0000ff");
+  });
+
+  it("mixOklab blends alpha channels", () => {
+    const mixed = colordx({ r: 255, g: 0, b: 0, a: 1 }).mixOklab({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
+    expect(mixed.alpha()).toBe(0.5);
+  });
+
   it("rotate 360 returns same color as original", () => {
     expect(colordx("#ff0000").rotate(360).toHex()).toBe("#ff0000");
     expect(colordx("#3b82f6").rotate(360).toHex()).toBe(colordx("#3b82f6").toHex());
