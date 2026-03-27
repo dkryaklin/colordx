@@ -19,16 +19,16 @@ const srgbFromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.05
 
 // Linear sRGB → Linear Rec.2020 (D65, via XYZ, from CSS Color 4)
 const srgbToLinearRec2020 = (r: number, g: number, b: number): [number, number, number] => [
-  0.627404 * r + 0.329282 * g + 0.043314 * b,
-  0.069097 * r + 0.91954 * g + 0.011363 * b,
-  0.0163916 * r + 0.0880132 * g + 0.895595 * b,
+  0.6274038959 * r + 0.3292830384 * g + 0.0433130657 * b,
+  0.0690972894 * r + 0.9195403951 * g + 0.0113623156 * b,
+  0.0163914389 * r + 0.0880133079 * g + 0.8955952532 * b,
 ];
 
 // Linear Rec.2020 → Linear sRGB
 const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
-  1.660491 * r - 0.5876411 * g - 0.0728499 * b,
-  -0.1245505 * r + 1.1328999 * g - 0.0083494 * b,
-  -0.0181508 * r - 0.1005789 * g + 1.1187297 * b,
+  1.6604910021084345 * r - 0.58764113878854951 * g - 0.072849863319884883 * b,
+  -0.12455047452159074 * r + 1.1328998971259603 * g - 0.0083494226043694768 * b,
+  -0.018150763354905303 * r - 0.10057889800800739 * g + 1.1187296613629127 * b,
 ];
 
 export const rgbToRec2020 = ({ r, g, b, a }: RgbColor): Rec2020Color => {

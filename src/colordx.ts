@@ -117,7 +117,7 @@ export class Colordx {
     const { l, c, h, a } = this.toOklch();
     const L = round(l, 4);
     const C = round(c, 4);
-    const H = round(h, 2);
+    const H = c < 0.000004 ? 'none' : round(h, 2);
     return a < 1 ? `oklch(${L} ${C} ${H} / ${a})` : `oklch(${L} ${C} ${H})`;
   }
 

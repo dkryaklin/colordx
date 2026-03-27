@@ -9,16 +9,16 @@ const fromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * 
 
 // Linear sRGB → Linear Display-P3 (D65 white point for both, from CSS Color 4)
 const srgbToLinearP3 = (r: number, g: number, b: number): [number, number, number] => [
-  0.8224621478 * r + 0.17753786 * g,
-  0.03319831 * r + 0.96680169 * g,
-  0.01708264 * r + 0.07239744 * g + 0.91051993 * b,
+  0.8224619687 * r + 0.1775380313 * g,
+  0.0331941989 * r + 0.9668058011 * g,
+  0.0170826307 * r + 0.0723974407 * g + 0.9105199286 * b,
 ];
 
 // Linear Display-P3 → Linear sRGB
 const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
-  1.22494018 * r - 0.22494018 * g,
-  -0.04205695 * r + 1.04205695 * g,
-  -0.01963755 * r - 0.07863605 * g + 1.0982737 * b,
+  1.2249401762805598 * r - 0.22494017628055996 * g,
+  -0.042056954709688163 * r + 1.0420569547096881 * g,
+  -0.019637554590334432 * r - 0.078636045550631889 * g + 1.0982736001409663 * b,
 ];
 
 export const rgbToP3 = ({ r, g, b, a }: RgbColor): P3Color => {

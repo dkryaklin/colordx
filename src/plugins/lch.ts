@@ -15,7 +15,8 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toLchString = function () {
     const { l, c, h, a } = this.toLch();
-    return a < 1 ? `lch(${l}% ${c} ${h} / ${a})` : `lch(${l}% ${c} ${h})`;
+    const H = c < 0.0015 ? 'none' : h;
+    return a < 1 ? `lch(${l}% ${c} ${H} / ${a})` : `lch(${l}% ${c} ${H})`;
   };
   parsers.push(parseLchObject, parseLchString);
   formatParsers.push([parseLchObject, 'lch'], [parseLchString, 'lch']);

@@ -105,8 +105,21 @@ describe("achromatic hue normalization", () => {
     expect(c).toBeLessThan(0.01);
   });
 
-  it("toOklchString hue is 0 for white", () => {
-    expect(colordx("#ffffff").toOklchString()).toMatch(/oklch\([\d.]+ [\d.]+ 0\)/);
+  it("toOklchString hue is none for achromatic colors", () => {
+    expect(colordx("#ffffff").toOklchString()).toMatch(/oklch\([\d.]+ [\d.]+ none\)/);
+    expect(colordx("#000000").toOklchString()).toMatch(/oklch\([\d.]+ [\d.]+ none\)/);
+    expect(colordx("#808080").toOklchString()).toMatch(/oklch\([\d.]+ [\d.]+ none\)/);
+  });
+
+  it("toOklchString achromatic with alpha outputs none hue and alpha", () => {
+    const str = colordx({ r: 255, g: 255, b: 255, a: 0.5 }).toOklchString();
+    expect(str).toMatch(/oklch\([\d.]+ [\d.]+ none \/ 0\.5\)/);
+  });
+
+  it("toOklchString chromatic color outputs real hue, not none", () => {
+    expect(colordx("#ff0000").toOklchString()).not.toMatch(/none/);
+    expect(colordx("#0000ff").toOklchString()).not.toMatch(/none/);
+    expect(colordx("#00ff00").toOklchString()).not.toMatch(/none/);
   });
 });
 

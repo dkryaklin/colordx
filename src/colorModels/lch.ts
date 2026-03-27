@@ -16,7 +16,7 @@ export const rgbToLch = (rgb: RgbColor): LchColor => {
   return {
     l: lab.l,
     c,
-    h: c < 0.0001 ? 0 : round(h < 0 ? h + 360 : h, 2),
+    h: c < 0.0015 ? 0 : round(h < 0 ? h + 360 : h, 2),
     a: lab.alpha,
   };
 };
@@ -40,14 +40,14 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
 };
 
 const LCH_RE =
-  /^lch\(\s*([+-]?\d*\.?\d+)%\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+  /^lch\(\s*([+-]?\d*\.?\d+)%\s+([+-]?\d*\.?\d+)\s+(none|[+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 
 export const parseLchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const m = LCH_RE.exec(input.trim());
   if (!m) return null;
   const unit = m[4]?.toLowerCase() ?? 'deg';
-  const h = Number(m[3]) * (ANGLE_UNITS[unit] ?? 1);
+  const h = m[3]!.toLowerCase() === 'none' ? 0 : Number(m[3]) * (ANGLE_UNITS[unit] ?? 1);
   const a = m[5] === undefined ? 1 : Number(m[5]) / (m[6] ? 100 : 1);
   return lchToRgb(clampLch({ l: Number(m[1]), c: Number(m[2]), h, a }));
 };

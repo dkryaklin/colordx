@@ -48,6 +48,31 @@ describe('LCH string parsing', () => {
     expect(colordx((colordx('#0000ff') as any).toLchString()).toHex()).toBe('#0000ff');
   });
 
+  it('toLchString hue is none for achromatic colors', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ffffff') as any).toLchString()).toMatch(/lch\([\d.]+% [\d.]+ none\)/);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#000000') as any).toLchString()).toMatch(/lch\([\d.]+% [\d.]+ none\)/);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#808080') as any).toLchString()).toMatch(/lch\([\d.]+% [\d.]+ none\)/);
+  });
+
+  it('toLchString chromatic colors output real hue, not none', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ff0000') as any).toLchString()).not.toMatch(/none/);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#0000ff') as any).toLchString()).not.toMatch(/none/);
+  });
+
+  it('achromatic toLchString round-trips via none hue', () => {
+    for (const hex of ['#ffffff', '#000000', '#808080']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const str = (colordx(hex) as any).toLchString();
+      expect(str).toMatch(/none/);
+      expect(colordx(str).toHex()).toBe(hex);
+    }
+  });
+
   it('parses lch string with alpha as percentage', () => {
     expect(colordx('lch(50% 50 180 / 50%)').alpha()).toBeCloseTo(0.5, 2);
   });
@@ -336,5 +361,69 @@ describe('mixLab', () => {
   it('blends alpha channels', () => {
     const mixed = (colordx({ r: 255, g: 0, b: 0, a: 1 }) as any).mixLab({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
     expect(mixed.alpha()).toBe(0.5);
+  });
+});
+
+describe('Lab white/black ground truth (CSS Color 4 D50)', () => {
+  it('white is Lab(100, 0, 0)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lab = (colordx('#ffffff') as any).toLab();
+    expect(lab.l).toBeCloseTo(100, 1);
+    expect(Math.abs(lab.a)).toBeLessThan(0.05);
+    expect(Math.abs(lab.b)).toBeLessThan(0.05);
+  });
+
+  it('black is Lab(0, 0, 0)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lab = (colordx('#000000') as any).toLab();
+    expect(lab.l).toBeCloseTo(0, 1);
+    expect(Math.abs(lab.a)).toBeLessThan(0.05);
+    expect(Math.abs(lab.b)).toBeLessThan(0.05);
+  });
+
+  it('neutral grays have a*≈0, b*≈0', () => {
+    for (const hex of ['#1a1a1a', '#333333', '#808080', '#cccccc']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lab = (colordx(hex) as any).toLab();
+      expect(Math.abs(lab.a)).toBeLessThan(0.1);
+      expect(Math.abs(lab.b)).toBeLessThan(0.1);
+    }
+  });
+
+  it('sRGB red has L*≈53, strongly positive a* and b*', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lab = (colordx('#ff0000') as any).toLab();
+    expect(lab.l).toBeCloseTo(54.3, 0); // D50-adapted (D65 would be ~53.2)
+    expect(lab.a).toBeGreaterThan(70);
+    expect(lab.b).toBeGreaterThan(40);
+  });
+
+  it('sRGB blue has strongly negative b*', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lab = (colordx('#0000ff') as any).toLab();
+    expect(lab.b).toBeLessThan(-80);
+  });
+});
+
+describe('XYZ D50 white point (CSS Color 4)', () => {
+  it('white maps to XYZ D50 ≈ (96.43, 100, 82.51)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const xyz = (colordx('#ffffff') as any).toXyz();
+    expect(xyz.x).toBeCloseTo(96.43, 0);
+    expect(xyz.y).toBeCloseTo(100, 0);
+    expect(xyz.z).toBeCloseTo(82.51, 0);
+  });
+
+  it('XYZ round-trip preserves RGB within ±1', () => {
+    for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#c06060', '#3b82f6']) {
+      const orig = colordx(hex).toRgb();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const xyz = (colordx(hex) as any).toXyz();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const back = (colordx(xyz) as any).toRgb();
+      expect(Math.abs(orig.r - back.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(orig.g - back.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(orig.b - back.b)).toBeLessThanOrEqual(1);
+    }
   });
 });

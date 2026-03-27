@@ -24,7 +24,7 @@ export const rgbToOklch = ({ r, g, b, a }: RgbColor): OklchColor => {
   const ol = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
   const C = Math.sqrt(oa * oa + ob * ob);
   const H = (Math.atan2(ob, oa) * 180) / Math.PI;
-  return { l: ol, c: C, h: C < 0.0001 ? 0 : normalizeHue(H), a };
+  return { l: ol, c: C, h: C < 0.000004 ? 0 : normalizeHue(H), a };
 };
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));

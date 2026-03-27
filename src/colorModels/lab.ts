@@ -2,9 +2,10 @@ import { clamp, hasKeys, isNumber, isObject, round, sanitize } from '../helpers.
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { rgbToXyz, xyzToRgb } from './xyz.js';
 
-const WX = 96.422,
+// D50 white point (CSS Color 4: xy = 0.3457/0.3585)
+const WX = 96.42956752983539,
   WY = 100,
-  WZ = 82.521;
+  WZ = 82.51046025104603;
 const EPSILON = 216 / 24389;
 const KAPPA = 24389 / 27;
 
