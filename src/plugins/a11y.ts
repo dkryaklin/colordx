@@ -1,5 +1,4 @@
-import type { Plugin } from '../colordx.js';
-import { Colordx } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import type { AnyColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -46,9 +45,9 @@ function calcApca(textRgb: { r: number; g: number; b: number }, bgRgb: { r: numb
   }
 }
 
-const a11y: Plugin = (ColordClass) => {
-  ColordClass.prototype.apcaContrast = function (this: Colordx, background: AnyColor = '#fff'): number {
-    const bgRgb = new Colordx(background).toRgb();
+const a11y: Plugin = (ColordxClass) => {
+  ColordxClass.prototype.apcaContrast = function (this: Colordx, background: AnyColor = '#fff'): number {
+    const bgRgb = new ColordxClass(background).toRgb();
     const fgRgb = this.toRgb();
     // Composite semi-transparent foreground over background before APCA calculation.
     const effectiveFg =
@@ -62,7 +61,7 @@ const a11y: Plugin = (ColordClass) => {
     return Math.round(calcApca(effectiveFg, bgRgb) * 10) / 10;
   };
 
-  ColordClass.prototype.isReadableApca = function (
+  ColordxClass.prototype.isReadableApca = function (
     this: Colordx,
     background: AnyColor = '#fff',
     options: { size?: 'normal' | 'large' } = {}
@@ -72,7 +71,7 @@ const a11y: Plugin = (ColordClass) => {
     return size === 'large' ? lc >= 60 : lc >= 75;
   };
 
-  ColordClass.prototype.readableScore = function (
+  ColordxClass.prototype.readableScore = function (
     this: Colordx,
     background: AnyColor = '#fff'
   ): 'AAA' | 'AA' | 'AA large' | 'fail' {
@@ -83,7 +82,7 @@ const a11y: Plugin = (ColordClass) => {
     return 'fail';
   };
 
-  ColordClass.prototype.isReadable = function (
+  ColordxClass.prototype.isReadable = function (
     this: Colordx,
     background: AnyColor = '#fff',
     options: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' } = {}
@@ -94,14 +93,16 @@ const a11y: Plugin = (ColordClass) => {
     return size === 'large' ? ratio >= 3 : ratio >= 4.5;
   };
 
-  ColordClass.prototype.minReadable = function (this: Colordx, background: AnyColor = '#fff'): Colordx {
-    let color: Colordx = new Colordx(this.toRgb());
-    const bgLuminance = new Colordx(background).luminance();
-    const darken = this.luminance() < bgLuminance;
+  ColordxClass.prototype.minReadable = function (this: Colordx, background: AnyColor = '#fff'): Colordx {
+    const bgLuminance = new ColordxClass(background).luminance();
+    const shouldDarken = this.luminance() < bgLuminance;
+    const step = (c: Colordx) => (shouldDarken ? c.darken(0.01) : c.lighten(0.01));
 
-    for (let i = 0; i < 100; i++) {
+    if (this.contrast(background) >= 4.5) return this;
+    let color = step(this);
+    for (let i = 1; i < 100; i++) {
       if (color.contrast(background) >= 4.5) break;
-      color = darken ? color.darken(0.01) : color.lighten(0.01);
+      color = step(color);
     }
     return color;
   };

@@ -1,6 +1,5 @@
 import { parseHex } from '../colorModels/hex.js';
-import type { Plugin } from '../colordx.js';
-import { Colordx } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import type { RgbColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -160,11 +159,11 @@ const parseNameString = (input: unknown): RgbColor | null => {
   return hex ? parseHex(hex) : null;
 };
 
-const names: Plugin = (ColordClass, parsers, formatParsers) => {
+const names: Plugin = (ColordxClass, parsers, formatParsers) => {
   parsers.push(parseNameString);
   formatParsers.push([parseNameString, 'name']);
 
-  ColordClass.prototype.toName = function (this: Colordx, options?: { closest?: boolean }): string | undefined {
+  ColordxClass.prototype.toName = function (this: Colordx, options?: { closest?: boolean }): string | undefined {
     const { r, g, b, alpha } = this.toRgb();
     if (alpha === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
     const hex = this.toHex().toLowerCase();

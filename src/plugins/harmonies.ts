@@ -1,5 +1,4 @@
-import type { Plugin } from '../colordx.js';
-import { Colordx } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -7,8 +6,8 @@ declare module '@colordx/core' {
   }
 }
 
-const harmonies: Plugin = (ColordClass) => {
-  ColordClass.prototype.harmonies = function (
+const harmonies: Plugin = (ColordxClass) => {
+  ColordxClass.prototype.harmonies = function (
     this: Colordx,
     type: 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'split-complementary' = 'complementary'
   ): Colordx[] {

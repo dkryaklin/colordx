@@ -1,5 +1,4 @@
-import type { Plugin } from '../colordx.js';
-import { Colordx } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import type { AnyColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -11,20 +10,20 @@ declare module '@colordx/core' {
   }
 }
 
-const mix: Plugin = (ColordClass) => {
-  ColordClass.prototype.tints = function (this: Colordx, count = 5): Colordx[] {
+const mix: Plugin = (ColordxClass) => {
+  ColordxClass.prototype.tints = function (this: Colordx, count = 5): Colordx[] {
     return Array.from({ length: count }, (_, i) => this.mix('#ffffff', i / (count - 1)));
   };
 
-  ColordClass.prototype.shades = function (this: Colordx, count = 5): Colordx[] {
+  ColordxClass.prototype.shades = function (this: Colordx, count = 5): Colordx[] {
     return Array.from({ length: count }, (_, i) => this.mix('#000000', i / (count - 1)));
   };
 
-  ColordClass.prototype.tones = function (this: Colordx, count = 5): Colordx[] {
+  ColordxClass.prototype.tones = function (this: Colordx, count = 5): Colordx[] {
     return Array.from({ length: count }, (_, i) => this.mix('#808080', i / (count - 1)));
   };
 
-  ColordClass.prototype.palette = function (this: Colordx, count: number, target: AnyColor = '#ffffff'): Colordx[] {
+  ColordxClass.prototype.palette = function (this: Colordx, count: number, target: AnyColor = '#ffffff'): Colordx[] {
     return Array.from({ length: count }, (_, i) => this.mix(target, i / (count - 1)));
   };
 };
