@@ -20,8 +20,8 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     return { l: round(l, 2), a: round(a, 2) || 0, b: round(b, 2) || 0, alpha };
   };
   ColordxClass.prototype.toXyz = function () {
-    const { x, y, z, a } = rgbToXyz(this.toRgb());
-    return { x: round(x, 2), y: round(y, 2), z: round(z, 2), a };
+    const { x, y, z, alpha } = rgbToXyz(this.toRgb());
+    return { x: round(x, 2), y: round(y, 2), z: round(z, 2), alpha };
   };
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {
     const a = rgbToLab(this.toRgb());

@@ -31,23 +31,24 @@ const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, 
   -0.018150763354905303 * r - 0.10057889800800739 * g + 1.1187296613629127 * b,
 ];
 
-export const rgbToRec2020 = ({ r, g, b, a }: RgbColor): Rec2020Color => {
+export const rgbToRec2020 = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
   const [rr, rg, rb] = srgbLinearToRec2020Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
     r: round(fromLinear(clamp(rr, 0, 1)), 4),
     g: round(fromLinear(clamp(rg, 0, 1)), 4),
     b: round(fromLinear(clamp(rb, 0, 1)), 4),
-    a,
+    alpha,
+    colorSpace: 'rec2020',
   };
 };
 
-export const rec2020ToRgb = ({ r, g, b, a }: Rec2020Color): RgbColor => {
+export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
   const [sr, sg, sb] = linearRec2020ToSrgb(toLinear(r), toLinear(g), toLinear(b));
   return clampRgb({
     r: srgbFromLinear(clamp(sr, 0, 1)) * 255,
     g: srgbFromLinear(clamp(sg, 0, 1)) * 255,
     b: srgbFromLinear(clamp(sb, 0, 1)) * 255,
-    a,
+    alpha,
   });
 };
 
@@ -59,7 +60,13 @@ export const parseRec2020String = (input: unknown): RgbColor | null => {
   const m = REC2020_RE.exec(input.trim());
   if (!m) return null;
   const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
-  return rec2020ToRgb({ r: Number(m[1]), g: Number(m[2]), b: Number(m[3]), a: clamp(alpha, 0, 1) });
+  return rec2020ToRgb({
+    r: Number(m[1]),
+    g: Number(m[2]),
+    b: Number(m[3]),
+    alpha: clamp(alpha, 0, 1),
+    colorSpace: 'rec2020',
+  });
 };
 
 /** Unclamped linear Rec.2020 channels from OKLab values. */

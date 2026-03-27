@@ -52,11 +52,11 @@ const a11y: Plugin = (ColordClass) => {
     const fgRgb = this.toRgb();
     // Composite semi-transparent foreground over background before APCA calculation.
     const effectiveFg =
-      fgRgb.a < 1
+      fgRgb.alpha < 1
         ? {
-            r: Math.round(fgRgb.a * fgRgb.r + (1 - fgRgb.a) * bgRgb.r),
-            g: Math.round(fgRgb.a * fgRgb.g + (1 - fgRgb.a) * bgRgb.g),
-            b: Math.round(fgRgb.a * fgRgb.b + (1 - fgRgb.a) * bgRgb.b),
+            r: Math.round(fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r),
+            g: Math.round(fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g),
+            b: Math.round(fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b),
           }
         : fgRgb;
     return Math.round(calcApca(effectiveFg, bgRgb) * 10) / 10;

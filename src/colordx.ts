@@ -36,7 +36,7 @@ export class Colordx {
     } else {
       const parsed = parse(input);
       this._valid = parsed !== null;
-      this._rgb = parsed ?? { r: 0, g: 0, b: 0, a: 1 };
+      this._rgb = parsed ?? { r: 0, g: 0, b: 0, alpha: 1 };
     }
   }
 
@@ -49,16 +49,16 @@ export class Colordx {
   }
 
   toRgb(): RgbColor {
-    const { r, g, b, a } = this._rgb;
-    return { r: round(r), g: round(g), b: round(b), a };
+    const { r, g, b, alpha } = this._rgb;
+    return { r: round(r), g: round(g), b: round(b), alpha };
   }
 
   toRgbString(): string {
-    const { r, g, b, a } = this._rgb;
+    const { r, g, b, alpha } = this._rgb;
     const ri = round(r),
       gi = round(g),
       bi = round(b);
-    return a < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${a})` : `rgb(${ri}, ${gi}, ${bi})`;
+    return alpha < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${alpha})` : `rgb(${ri}, ${gi}, ${bi})`;
   }
 
   toHex(): string {
@@ -71,13 +71,13 @@ export class Colordx {
   }
 
   toHsl(precision = 2): HslColor {
-    const { h, s, l, a } = rgbToHslRaw(this._rgb);
-    return { h: round(h, precision), s: round(s, precision), l: round(l, precision), a };
+    const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
+    return { h: round(h, precision), s: round(s, precision), l: round(l, precision), alpha };
   }
 
   toHslString(precision = 2): string {
-    const { h, s, l, a } = this.toHsl(precision);
-    return a < 1 ? `hsla(${h}, ${s}%, ${l}%, ${a})` : `hsl(${h}, ${s}%, ${l}%)`;
+    const { h, s, l, alpha } = this.toHsl(precision);
+    return alpha < 1 ? `hsla(${h}, ${s}%, ${l}%, ${alpha})` : `hsl(${h}, ${s}%, ${l}%)`;
   }
 
   toHsv(): HsvColor {
@@ -85,18 +85,18 @@ export class Colordx {
   }
 
   toHsvString(): string {
-    const { h, s, v, a } = this.toHsv();
-    return a < 1 ? `hsva(${h}, ${s}%, ${v}%, ${a})` : `hsv(${h}, ${s}%, ${v}%)`;
+    const { h, s, v, alpha } = this.toHsv();
+    return alpha < 1 ? `hsva(${h}, ${s}%, ${v}%, ${alpha})` : `hsv(${h}, ${s}%, ${v}%)`;
   }
 
   toHwb(precision = 0): HwbColor {
-    const { h, w, b, a } = rgbToHwb(this._rgb);
-    return { h: round(h, precision), w: round(w, precision), b: round(b, precision), a: round(a, 3) };
+    const { h, w, b, alpha } = rgbToHwb(this._rgb);
+    return { h: round(h, precision), w: round(w, precision), b: round(b, precision), alpha: round(alpha, 3) };
   }
 
   toHwbString(precision = 0): string {
-    const { h, w, b, a } = this.toHwb(precision);
-    return a < 1 ? `hwb(${h} ${w}% ${b}% / ${a})` : `hwb(${h} ${w}% ${b}%)`;
+    const { h, w, b, alpha } = this.toHwb(precision);
+    return alpha < 1 ? `hwb(${h} ${w}% ${b}% / ${alpha})` : `hwb(${h} ${w}% ${b}%)`;
   }
 
   toOklab(): OklabColor {
@@ -116,11 +116,11 @@ export class Colordx {
   }
 
   toOklchString(): string {
-    const { l, c, h, a } = this.toOklch();
+    const { l, c, h, alpha } = this.toOklch();
     const L = round(l, 4);
     const C = round(c, 4);
     const H = c < 0.000004 ? 'none' : round(h, 2);
-    return a < 1 ? `oklch(${L} ${C} ${H} / ${a})` : `oklch(${L} ${C} ${H})`;
+    return alpha < 1 ? `oklch(${L} ${C} ${H} / ${alpha})` : `oklch(${L} ${C} ${H})`;
   }
 
   toP3(): P3Color {
@@ -128,8 +128,8 @@ export class Colordx {
   }
 
   toP3String(): string {
-    const { r, g, b, a } = this.toP3();
-    return a < 1 ? `color(display-p3 ${r} ${g} ${b} / ${a})` : `color(display-p3 ${r} ${g} ${b})`;
+    const { r, g, b, alpha } = this.toP3();
+    return alpha < 1 ? `color(display-p3 ${r} ${g} ${b} / ${alpha})` : `color(display-p3 ${r} ${g} ${b})`;
   }
 
   brightness(): number {
@@ -157,19 +157,19 @@ export class Colordx {
   alpha(): number;
   alpha(value: number): Colordx;
   alpha(value?: number): number | Colordx {
-    if (value === undefined) return this._rgb.a;
-    return Colordx._make({ ...this._rgb, a: round(clamp(value, 0, 1), 3) });
+    if (value === undefined) return this._rgb.alpha;
+    return Colordx._make({ ...this._rgb, alpha: round(clamp(value, 0, 1), 3) });
   }
 
   hue(): number;
   hue(value: number): Colordx;
   hue(value?: number): number | Colordx {
-    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     if (value === undefined) {
       const hr = round(h, 2);
       return hr >= 360 ? 0 : hr;
     }
-    return Colordx._make(hslToRgb({ h: value, s, l, a }));
+    return Colordx._make(hslToRgb({ h: value, s, l, alpha }));
   }
 
   lightness(): number;
@@ -189,9 +189,9 @@ export class Colordx {
   }
 
   lighten(amount = 0.1, options?: { relative?: boolean }): Colordx {
-    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newL = options?.relative ? l * (1 + amount) : l + amount * 100;
-    return Colordx._make(hslToRgb({ h, s, l: clamp(newL, 0, 100), a }));
+    return Colordx._make(hslToRgb({ h, s, l: clamp(newL, 0, 100), alpha }));
   }
 
   darken(amount = 0.1, options?: { relative?: boolean }): Colordx {
@@ -199,9 +199,9 @@ export class Colordx {
   }
 
   saturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
-    const { h, s, l, a } = rgbToHslRaw(this._rgb);
+    const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newS = options?.relative ? s * (1 + amount) : s + amount * 100;
-    return Colordx._make(hslToRgb({ h, s: clamp(newS, 0, 100), l, a }));
+    return Colordx._make(hslToRgb({ h, s: clamp(newS, 0, 100), l, alpha }));
   }
 
   desaturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
@@ -213,8 +213,8 @@ export class Colordx {
   }
 
   invert(): Colordx {
-    const { r, g, b, a } = this._rgb;
-    return Colordx._make({ r: 255 - r, g: 255 - g, b: 255 - b, a });
+    const { r, g, b, alpha } = this._rgb;
+    return Colordx._make({ r: 255 - r, g: 255 - g, b: 255 - b, alpha });
   }
 
   rotate(amount = 15): Colordx {
@@ -229,7 +229,7 @@ export class Colordx {
       r: round(self.r * (1 - w) + other.r * w),
       g: round(self.g * (1 - w) + other.g * w),
       b: round(self.b * (1 - w) + other.b * w),
-      a: round(self.a * (1 - w) + other.a * w, 3),
+      alpha: round(self.alpha * (1 - w) + other.alpha * w, 3),
     });
   }
 
@@ -252,12 +252,12 @@ export class Colordx {
     const bgRgb = bg._rgb;
     const fgRgb = this._rgb;
     const effectiveFg =
-      fgRgb.a < 1
+      fgRgb.alpha < 1
         ? Colordx._make({
-            r: round(fgRgb.a * fgRgb.r + (1 - fgRgb.a) * bgRgb.r),
-            g: round(fgRgb.a * fgRgb.g + (1 - fgRgb.a) * bgRgb.g),
-            b: round(fgRgb.a * fgRgb.b + (1 - fgRgb.a) * bgRgb.b),
-            a: 1,
+            r: round(fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r),
+            g: round(fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g),
+            b: round(fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b),
+            alpha: 1,
           })
         : this;
     const l1 = effectiveFg.luminance();
@@ -270,7 +270,7 @@ export class Colordx {
   isEqual(color: AnyColor): boolean {
     const other = new Colordx(color).toRgb();
     const self = this.toRgb();
-    return self.r === other.r && self.g === other.g && self.b === other.b && self.a === other.a;
+    return self.r === other.r && self.g === other.g && self.b === other.b && self.alpha === other.alpha;
   }
 
   toString(): string {
@@ -310,5 +310,5 @@ export const random = (): Colordx =>
     r: Math.round(Math.random() * 255),
     g: Math.round(Math.random() * 255),
     b: Math.round(Math.random() * 255),
-    a: 1,
+    alpha: 1,
   });

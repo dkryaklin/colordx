@@ -5,12 +5,12 @@ export const clampHsl = (hsl: HslColor): HslColor => ({
   h: normalizeHue(hsl.h),
   s: clamp(hsl.s, 0, 100),
   l: clamp(hsl.l, 0, 100),
-  a: clamp(round(hsl.a, 3), 0, 1),
+  alpha: clamp(round(hsl.alpha, 3), 0, 1),
 });
 
-const _hslBuf: HslColor = { h: 0, s: 0, l: 0, a: 0 };
+const _hslBuf: HslColor = { h: 0, s: 0, l: 0, alpha: 0 };
 
-export const rgbToHslRaw = ({ r, g, b, a }: RgbColor): HslColor => {
+export const rgbToHslRaw = ({ r, g, b, alpha }: RgbColor): HslColor => {
   const rn = r / 255,
     gn = g / 255,
     bn = b / 255;
@@ -40,14 +40,14 @@ export const rgbToHslRaw = ({ r, g, b, a }: RgbColor): HslColor => {
   _hslBuf.h = hDeg >= 0 && hDeg < 360 ? hDeg : ((hDeg % 360) + 360) % 360;
   _hslBuf.s = clamp(s * 100, 0, 100);
   _hslBuf.l = clamp(l * 100, 0, 100);
-  _hslBuf.a = clamp(round(a, 3), 0, 1);
+  _hslBuf.alpha = clamp(round(alpha, 3), 0, 1);
   return _hslBuf;
 };
 
 export const rgbToHsl = (rgb: RgbColor): HslColor => {
-  const { h, s, l, a } = rgbToHslRaw(rgb);
+  const { h, s, l, alpha } = rgbToHslRaw(rgb);
   const hr = round(h, 2);
-  return { h: hr >= 360 ? 0 : hr, s: round(s, 2), l: round(l, 2), a };
+  return { h: hr >= 360 ? 0 : hr, s: round(s, 2), l: round(l, 2), alpha };
 };
 
 const _hueToRgb = (p: number, q: number, t: number): number => {
@@ -59,7 +59,7 @@ const _hueToRgb = (p: number, q: number, t: number): number => {
   return p;
 };
 
-export const hslToRgb = ({ h, s, l, a }: HslColor): RgbColor => {
+export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
   const sn = s / 100,
     ln = l / 100;
   const q = ln < 0.5 ? ln * (1 + sn) : ln + sn - ln * sn;
@@ -69,16 +69,16 @@ export const hslToRgb = ({ h, s, l, a }: HslColor): RgbColor => {
     r: _hueToRgb(p, q, hue + 1 / 3) * 255,
     g: _hueToRgb(p, q, hue) * 255,
     b: _hueToRgb(p, q, hue - 1 / 3) * 255,
-    a,
+    alpha,
   };
 };
 
 export const parseHslObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 's', 'l'])) return null;
-  const { h, s, l, a = 1 } = input;
-  if (!isNumber(h) || !isNumber(s) || !isNumber(l) || !isNumber(a as number)) return null;
-  return hslToRgb(clampHsl({ h: sanitize(h), s: sanitize(s), l: sanitize(l), a: sanitize(a as number) }));
+  const { h, s, l, alpha = 1 } = input as { h: unknown; s: unknown; l: unknown; alpha?: unknown };
+  if (!isNumber(h) || !isNumber(s) || !isNumber(l) || !isNumber(alpha as number)) return null;
+  return hslToRgb(clampHsl({ h: sanitize(h), s: sanitize(s), l: sanitize(l), alpha: sanitize(alpha as number) }));
 };
 
 const N = '[+-]?\\d*\\.?\\d+';
@@ -101,6 +101,6 @@ export const parseHslString = (input: unknown): RgbColor | null => {
   const l = Number(m[4] ?? m[9]);
   const rawA = m[5] ?? m[11];
   const isPercent = !!(m[6] ?? m[12]);
-  const a = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
-  return hslToRgb(clampHsl({ h, s, l, a }));
+  const alpha = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
+  return hslToRgb(clampHsl({ h, s, l, alpha }));
 };

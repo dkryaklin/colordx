@@ -39,13 +39,13 @@ describe('toRec2020 known values', () => {
     const rec = (colordx('#ff0000') as any).toRec2020();
     expect(rec.r).toBeLessThan(1);
     expect(rec.r).toBeGreaterThan(0.5);
-    expect(rec.a).toBe(1);
+    expect(rec.alpha).toBe(1);
   });
 
   it('alpha is preserved', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rec = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).toRec2020();
-    expect(rec.a).toBeCloseTo(0.5, 3);
+    const rec = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).toRec2020();
+    expect(rec.alpha).toBeCloseTo(0.5, 3);
   });
 });
 
@@ -58,7 +58,7 @@ describe('toRec2020String', () => {
 
   it('includes alpha when < 1', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const str = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).toRec2020String();
+    const str = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).toRec2020String();
     expect(str).toMatch(/\/ 0\.5/);
   });
 
@@ -165,7 +165,7 @@ describe('toRec2020String: format verification', () => {
 
   it('semi-transparent color string includes alpha with slash', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const str = (colordx({ r: 100, g: 150, b: 200, a: 0.7 }) as any).toRec2020String();
+    const str = (colordx({ r: 100, g: 150, b: 200, alpha: 0.7 }) as any).toRec2020String();
     expect(str).toContain('/ 0.7');
   });
 });

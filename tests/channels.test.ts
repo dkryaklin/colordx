@@ -25,9 +25,9 @@ describe('oklchToRgbChannels', () => {
       [0.5, 0.06, 330],
     ];
     for (const [l, c, h] of cases) {
-      if (!inGamutSrgb({ l, c, h, a: 1 })) continue;
+      if (!inGamutSrgb({ l, c, h, alpha: 1 })) continue;
       const [r, g, b] = oklchToRgbChannels(l, c, h);
-      const rgb = colordx({ l, c, h, a: 1 }).toRgb();
+      const rgb = colordx({ l, c, h, alpha: 1 }).toRgb();
       expect(Math.round(r * 255)).toBe(rgb.r);
       expect(Math.round(g * 255)).toBe(rgb.g);
       expect(Math.round(b * 255)).toBe(rgb.b);
@@ -80,7 +80,7 @@ describe('oklchToP3Channels', () => {
     // For in-gamut sRGB, p3 channels should match colordx toP3String values
     const l = 0.7, c = 0.1, h = 120;
     const [r, g, b] = oklchToP3Channels(l, c, h);
-    const p3str = colordx({ l, c, h, a: 1 }).toP3String();
+    const p3str = colordx({ l, c, h, alpha: 1 }).toP3String();
     // Parse the channel values from the string
     const m = /color\(display-p3\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/.exec(p3str)!;
     expect(r).toBeCloseTo(Number(m[1]), 3);
@@ -139,7 +139,7 @@ describe('toP3String', () => {
   });
 
   it('includes alpha with / separator when alpha < 1', () => {
-    const result = colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toP3String();
+    const result = colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toP3String();
     expect(result).toMatch(/^color\(display-p3 [\d.]+ [\d.]+ [\d.]+ \/ 0\.5\)$/);
   });
 

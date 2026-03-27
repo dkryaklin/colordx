@@ -41,7 +41,7 @@ const colors = Array.from({ length: N }, () => ({
   r: Math.floor(rand() * 256),
   g: Math.floor(rand() * 256),
   b: Math.floor(rand() * 256),
-  a: Math.round(rand() * 1000) / 1000, // 3dp, covers 0.000–1.000 including extremes
+  alpha: Math.round(rand() * 1000) / 1000, // 3dp, covers 0.000–1.000 including extremes
 }));
 
 
@@ -54,7 +54,7 @@ const alphaClose = (a: number, b: number) => Math.abs(a - b) <= 0.01;
 describe('fuzz: core — toRgb/toHex round-trip', () => {
   it('toHex round-trips r/g/b within ±1', () => {
     for (const c of colors) {
-      if (c.a !== 1) continue; // toHex is opaque-only
+      if (c.alpha !== 1) continue; // toHex is opaque-only
       const rt = colordx(colordx(c).toHex()).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
     }
@@ -65,7 +65,7 @@ describe('fuzz: core — toRgb/toHex round-trip', () => {
       const str = colordx(c).toRgbString();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -76,7 +76,7 @@ describe('fuzz: core — HSL string round-trip', () => {
       const str = colordx(c).toHslString();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -91,7 +91,7 @@ describe('fuzz: core — HWB string round-trip', () => {
       expect(Math.abs(rt.r - c.r)).toBeLessThanOrEqual(3);
       expect(Math.abs(rt.g - c.g)).toBeLessThanOrEqual(3);
       expect(Math.abs(rt.b - c.b)).toBeLessThanOrEqual(3);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -102,7 +102,7 @@ describe('fuzz: core — OKLab string round-trip', () => {
       const str = colordx(c).toOklabString();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -113,7 +113,7 @@ describe('fuzz: core — OKLch string round-trip', () => {
       const str = colordx(c).toOklchString();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -245,7 +245,7 @@ describe('fuzz: lab plugin — toLab string round-trip', () => {
   it('round-trips within ±1 rgb and ±0.01 alpha', () => {
     for (const c of colors) {
       const obj = (colordx(c) as any).toLab();
-      const rt = colordx({ ...obj, alpha: c.a }).toRgb();
+      const rt = colordx({ ...obj, alpha: c.alpha }).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
     }
   });
@@ -257,7 +257,7 @@ describe('fuzz: lch plugin — toLch string round-trip', () => {
       const str = (colordx(c) as any).toLchString();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -268,7 +268,7 @@ describe('fuzz: cmyk plugin — toCmyk string round-trip', () => {
       const str = (colordx(c) as any).toCmykString();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -280,7 +280,7 @@ describe('fuzz: p3 plugin — toP3String round-trip', () => {
       const str = (colordx(c) as any).toP3String();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -291,7 +291,7 @@ describe('fuzz: rec2020 plugin — toRec2020String round-trip', () => {
       const str = (colordx(c) as any).toRec2020String();
       const rt = colordx(str).toRgb();
       expect(rgbClose(rt, c)).toBe(true);
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });
@@ -389,14 +389,14 @@ describe('fuzz: minify plugin', () => {
   it('alpha round-trips within ±0.01', () => {
     for (const c of colors) {
       const rt = colordx((colordx(c) as any).minify()).toRgb();
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 
   it('alphaHex alpha round-trips within ±0.01', () => {
     for (const c of colors) {
       const rt = colordx((colordx(c) as any).minify({ alphaHex: true })).toRgb();
-      expect(alphaClose(rt.a, c.a)).toBe(true);
+      expect(alphaClose(rt.alpha, c.alpha)).toBe(true);
     }
   });
 });

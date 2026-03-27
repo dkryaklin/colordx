@@ -21,18 +21,24 @@ const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, numbe
   -0.019637554590334432 * r - 0.078636045550631889 * g + 1.0982736001409663 * b,
 ];
 
-export const rgbToP3 = ({ r, g, b, a }: RgbColor): P3Color => {
+export const rgbToP3 = ({ r, g, b, alpha }: RgbColor): P3Color => {
   const [p3r, p3g, p3b] = srgbLinearToP3Linear(toLinear(r / 255), toLinear(g / 255), toLinear(b / 255));
-  return { r: round(fromLinear(p3r), 4), g: round(fromLinear(p3g), 4), b: round(fromLinear(p3b), 4), a };
+  return {
+    r: round(fromLinear(p3r), 4),
+    g: round(fromLinear(p3g), 4),
+    b: round(fromLinear(p3b), 4),
+    alpha,
+    colorSpace: 'display-p3',
+  };
 };
 
-export const p3ToRgb = ({ r, g, b, a }: P3Color): RgbColor => {
+export const p3ToRgb = ({ r, g, b, alpha }: P3Color): RgbColor => {
   const [sr, sg, sb] = linearP3ToSrgb(toLinear(r), toLinear(g), toLinear(b));
   return clampRgb({
     r: fromLinear(clamp(sr, 0, 1)) * 255,
     g: fromLinear(clamp(sg, 0, 1)) * 255,
     b: fromLinear(clamp(sb, 0, 1)) * 255,
-    a,
+    alpha,
   });
 };
 
@@ -44,7 +50,13 @@ export const parseP3String = (input: unknown): RgbColor | null => {
   const m = P3_RE.exec(input.trim());
   if (!m) return null;
   const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
-  return p3ToRgb({ r: Number(m[1]), g: Number(m[2]), b: Number(m[3]), a: clamp(alpha, 0, 1) });
+  return p3ToRgb({
+    r: Number(m[1]),
+    g: Number(m[2]),
+    b: Number(m[3]),
+    alpha: clamp(alpha, 0, 1),
+    colorSpace: 'display-p3',
+  });
 };
 
 /** Unclamped linear Display-P3 channels from OKLab values. */

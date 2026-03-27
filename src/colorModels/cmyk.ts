@@ -7,12 +7,12 @@ const clampCmyk = (cmyk: CmykColor): CmykColor => ({
   m: clamp(cmyk.m, 0, 100),
   y: clamp(cmyk.y, 0, 100),
   k: clamp(cmyk.k, 0, 100),
-  a: clamp(cmyk.a, 0, 1),
+  alpha: clamp(cmyk.alpha, 0, 1),
 });
 
-export const rgbToCmyk = ({ r, g, b, a }: RgbColor): CmykColor => {
+export const rgbToCmyk = ({ r, g, b, alpha }: RgbColor): CmykColor => {
   const k = 1 - Math.max(r / 255, g / 255, b / 255);
-  if (k === 1) return { c: 0, m: 0, y: 0, k: round(100 * k), a };
+  if (k === 1) return { c: 0, m: 0, y: 0, k: round(100 * k), alpha };
   const c = (1 - r / 255 - k) / (1 - k);
   const m = (1 - g / 255 - k) / (1 - k);
   const y = (1 - b / 255 - k) / (1 - k);
@@ -21,30 +21,30 @@ export const rgbToCmyk = ({ r, g, b, a }: RgbColor): CmykColor => {
     m: round(100 * (isNaN(m) ? 0 : m), 2),
     y: round(100 * (isNaN(y) ? 0 : y), 2),
     k: round(100 * k, 2),
-    a,
+    alpha,
   };
 };
 
-export const cmykToRgb = ({ c, m, y, k, a }: CmykColor): RgbColor =>
+export const cmykToRgb = ({ c, m, y, k, alpha }: CmykColor): RgbColor =>
   clampRgb({
     r: 255 * (1 - c / 100) * (1 - k / 100),
     g: 255 * (1 - m / 100) * (1 - k / 100),
     b: 255 * (1 - y / 100) * (1 - k / 100),
-    a,
+    alpha,
   });
 
 export const parseCmykObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['c', 'm', 'y', 'k'])) return null;
-  const { c, m, y, k, a = 1 } = input;
-  if (!isNumber(c) || !isNumber(m) || !isNumber(y) || !isNumber(k) || !isNumber(a as number)) return null;
+  const { c, m, y, k, alpha = 1 } = input as { c: unknown; m: unknown; y: unknown; k: unknown; alpha?: unknown };
+  if (!isNumber(c) || !isNumber(m) || !isNumber(y) || !isNumber(k) || !isNumber(alpha as number)) return null;
   return cmykToRgb(
     clampCmyk({
       c: sanitize(Number(c)),
       m: sanitize(Number(m)),
       y: sanitize(Number(y)),
       k: sanitize(Number(k)),
-      a: sanitize(Number(a)),
+      alpha: sanitize(Number(alpha)),
     })
   );
 };
@@ -63,7 +63,7 @@ export const parseCmykString = (input: unknown): RgbColor | null => {
       m: toPercent(m[3]!, m[4]!),
       y: toPercent(m[5]!, m[6]!),
       k: toPercent(m[7]!, m[8]!),
-      a: m[9] === undefined ? 1 : Number(m[9]) / (m[10] ? 100 : 1),
+      alpha: m[9] === undefined ? 1 : Number(m[9]) / (m[10] ? 100 : 1),
     })
   );
 };

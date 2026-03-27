@@ -12,8 +12,8 @@ const stringFormatParsers: [ColorParser, ColorFormat][] = [
   [parseRgbString, 'rgb'],
   [parseHslString, 'hsl'],
   [parseHwbString, 'hwb'],
-  [parseOklchString, 'lch'],
-  [parseOklabString, 'lab'],
+  [parseOklchString, 'oklch'],
+  [parseOklabString, 'oklab'],
 ];
 
 const objectFormatParsers: [ColorParser, ColorFormat][] = [
@@ -21,8 +21,8 @@ const objectFormatParsers: [ColorParser, ColorFormat][] = [
   [parseHslObject, 'hsl'],
   [parseHsvObject, 'hsv'],
   [parseHwbObject, 'hwb'],
-  [parseOklabObject, 'lab'],
-  [parseOklchObject, 'lch'],
+  [parseOklabObject, 'oklab'],
+  [parseOklchObject, 'oklch'],
 ];
 
 const builtinStringParsers: ColorParser[] = stringFormatParsers.map(([p]) => p);
@@ -33,7 +33,7 @@ export const parsers: ColorParser[] = [...defaultParsers];
 export const pluginFormatParsers: [ColorParser, ColorFormat][] = [];
 
 export const parse = (input: AnyColor): RgbColor | null => {
-  if (input === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+  if (input === 'transparent') return { r: 0, g: 0, b: 0, alpha: 0 };
   const builtins = typeof input === 'string' ? builtinStringParsers : builtinObjectParsers;
   for (const parser of builtins) {
     const result = parser(input);

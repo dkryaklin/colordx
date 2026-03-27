@@ -30,8 +30,8 @@ describe("names plugin", () => {
   });
 
   it("returns 'transparent' for rgba(0,0,0,0)", () => {
-    expect((colordx({ r: 0, g: 0, b: 0, a: 0 }) as any).toName()).toBe("transparent");
-    expect((colordx({ r: 255, g: 255, b: 255, a: 0 }) as any).toName()).toBeUndefined();
+    expect((colordx({ r: 0, g: 0, b: 0, alpha: 0 }) as any).toName()).toBe("transparent");
+    expect((colordx({ r: 255, g: 255, b: 255, alpha: 0 }) as any).toName()).toBeUndefined();
   });
 
   it("closest: true returns nearest CSS name", () => {
@@ -178,30 +178,30 @@ describe("minify plugin", () => {
   });
 
   it("handles transparent option", () => {
-    expect((colordx({ r: 0, g: 0, b: 0, a: 0 }) as any).minify({ transparent: true })).toBe("transparent");
+    expect((colordx({ r: 0, g: 0, b: 0, alpha: 0 }) as any).minify({ transparent: true })).toBe("transparent");
   });
 
   it("handles alphaHex option", () => {
-    const result = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).minify({ alphaHex: true });
+    const result = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).minify({ alphaHex: true });
     expect(result.length).toBeLessThanOrEqual("rgba(255,0,0,.5)".length);
   });
 
   it("produces short 4-digit alphaHex when all channel pairs match", () => {
     // r=255=ff, g=0=00, b=0=00, a=0.4→102=0x66 → #ff000066 → #f006
-    const result = (colordx({ r: 255, g: 0, b: 0, a: 0.4 }) as any).minify({ alphaHex: true });
+    const result = (colordx({ r: 255, g: 0, b: 0, alpha: 0.4 }) as any).minify({ alphaHex: true });
     expect(result).toBe("#f006");
   });
 
   it("alphaHex falls back to rgb() when alpha is lossy in 8-bit hex", () => {
     // a=0.005 → round(0.005*255)=1=0x01 → 1/255=0.004 → rounds to 0.00 ≠ 0.01 → lossy
-    const result = (colordx({ r: 255, g: 0, b: 0, a: 0.005 }) as any).minify({ alphaHex: true });
+    const result = (colordx({ r: 255, g: 0, b: 0, alpha: 0.005 }) as any).minify({ alphaHex: true });
     expect(result).not.toMatch(/^#/);
   });
 
   it("alphaHex includes fully transparent (alpha=0) in short hex", () => {
     // alpha=0 → 0x00, #rgba short form: all pairs must match
     // r=0=00, g=0=00, b=0=00, a=0=00 → #00000000 → #0000
-    const result = (colordx({ r: 0, g: 0, b: 0, a: 0 }) as any).minify({ alphaHex: true });
+    const result = (colordx({ r: 0, g: 0, b: 0, alpha: 0 }) as any).minify({ alphaHex: true });
     expect(result).toBe("#0000");
   });
 
@@ -209,10 +209,10 @@ describe("minify plugin", () => {
     // cssnano#1515: integer HSL rounding caused lossy minification
     // e.g. rgb(143,101,98) → hsla(4,19%,47%) → rgb(143,100,97) — off by 1
     const colors = [
-      { r: 143, g: 101, b: 98, a: 0.43 },
-      { r: 14, g: 14, b: 14, a: 0.5 },  // colord#130: becomes hsl(0,0%,5%) → rgb(13,13,13)
-      { r: 100, g: 150, b: 200, a: 1 },
-      { r: 64, g: 128, b: 192, a: 1 },
+      { r: 143, g: 101, b: 98, alpha: 0.43 },
+      { r: 14, g: 14, b: 14, alpha: 0.5 },  // colord#130: becomes hsl(0,0%,5%) → rgb(13,13,13)
+      { r: 100, g: 150, b: 200, alpha: 1 },
+      { r: 64, g: 128, b: 192, alpha: 1 },
     ];
     for (const rgb of colors) {
       const minified = (colordx(rgb) as any).minify();
@@ -225,7 +225,7 @@ describe("minify plugin", () => {
 
   it("does not produce lossy HSL when rgb option is disabled", () => {
     // When HSL is shorter it should still be lossless
-    const color = colordx({ r: 255, g: 0, b: 0, a: 1 }); // pure red — exact in HSL
+    const color = colordx({ r: 255, g: 0, b: 0, alpha: 1 }); // pure red — exact in HSL
     const minified = (color as any).minify({ rgb: false });
     const result = colordx(minified).toRgb();
     expect(result.r).toBe(255);
@@ -235,7 +235,7 @@ describe("minify plugin", () => {
 
   it("skips HSL candidate when it would be lossy, falls back to rgb()", () => {
     // rgb(143,101,98) → hsl rounds to values that don't convert back exactly
-    const result = (colordx({ r: 143, g: 101, b: 98, a: 1 }) as any).minify();
+    const result = (colordx({ r: 143, g: 101, b: 98, alpha: 1 }) as any).minify();
     const rt = colordx(result).toRgb();
     expect(rt.r).toBe(143);
     expect(rt.g).toBe(101);
@@ -245,7 +245,7 @@ describe("minify plugin", () => {
 
   it("uses HSL when it round-trips exactly", () => {
     // Pure hues round-trip exactly through HSL
-    const result = (colordx({ r: 255, g: 0, b: 0, a: 1 }) as any).minify();
+    const result = (colordx({ r: 255, g: 0, b: 0, alpha: 1 }) as any).minify();
     expect(result).toMatch(/^hsl|^#f00|^red/);
     const rt = colordx(result).toRgb();
     expect(rt.r).toBe(255);
@@ -255,19 +255,19 @@ describe("minify plugin", () => {
 
   it("picks shorter lossless HSL precision for alpha colors", () => {
     // hsla(0,0%,78.4%,.55) = 19 chars beats rgba(200,200,200,.55) = 21 chars
-    const result = (colordx({ r: 200, g: 200, b: 200, a: 0.55 }) as any).minify();
+    const result = (colordx({ r: 200, g: 200, b: 200, alpha: 0.55 }) as any).minify();
     expect(result).toBe("hsla(0,0%,78.4%,.55)");
     // round-trip must be lossless
     const rt = colordx(result).toRgb();
     expect(rt.r).toBe(200);
     expect(rt.g).toBe(200);
     expect(rt.b).toBe(200);
-    expect(rt.a).toBeCloseTo(0.55, 2);
+    expect(rt.alpha).toBeCloseTo(0.55, 2);
   });
 
   it("HSL candidate is skipped even when rgb is disabled if lossy", () => {
     // With rgb:false, a lossy HSL should not appear — hex wins instead
-    const result = (colordx({ r: 143, g: 101, b: 98, a: 1 }) as any).minify({ rgb: false });
+    const result = (colordx({ r: 143, g: 101, b: 98, alpha: 1 }) as any).minify({ rgb: false });
     const rt = colordx(result).toRgb();
     expect(rt.r).toBe(143);
     expect(rt.g).toBe(101);
@@ -346,7 +346,7 @@ describe("getFormat for additional plugin formats", () => {
   });
 
   it("returns 'xyz' for XYZ object inputs", () => {
-    expect(getFormat({ x: 0.2, y: 0.2, z: 0.2, a: 1 })).toBe("xyz");
+    expect(getFormat({ x: 0.2, y: 0.2, z: 0.2, alpha: 1 })).toBe("xyz");
   });
 
   it("returns 'p3' for Display-P3 string inputs", () => {
@@ -519,13 +519,13 @@ describe("minify fuzz: 10k random colors", () => {
 
   // Generate colors with uniform r/g/b (0-255) and alpha covering full 0-1
   // including extremes: 0, 1, and fine-grained steps near 0 and 1
-  const colors: { r: number; g: number; b: number; a: number }[] = [];
+  const colors: { r: number; g: number; b: number; alpha: number }[] = [];
   for (let i = 0; i < N; i++) {
     colors.push({
       r: Math.floor(rand() * 256),
       g: Math.floor(rand() * 256),
       b: Math.floor(rand() * 256),
-      a: Math.round(rand() * 1000) / 1000, // 3dp precision, covers 0.000–1.000
+      alpha: Math.round(rand() * 1000) / 1000, // 3dp precision, covers 0.000–1.000
     });
   }
 
@@ -550,7 +550,7 @@ describe("minify fuzz: 10k random colors", () => {
     for (const c of colors) {
       const minified = (colordx(c) as any).minify();
       const rt = colordx(minified).toRgb();
-      expect(Math.abs(rt.a - c.a)).toBeLessThanOrEqual(0.01);
+      expect(Math.abs(rt.alpha - c.alpha)).toBeLessThanOrEqual(0.01);
     }
   });
 
@@ -558,7 +558,7 @@ describe("minify fuzz: 10k random colors", () => {
     for (const c of colors) {
       const minified = (colordx(c) as any).minify({ alphaHex: true });
       const rt = colordx(minified).toRgb();
-      expect(Math.abs(rt.a - c.a)).toBeLessThanOrEqual(0.01);
+      expect(Math.abs(rt.alpha - c.alpha)).toBeLessThanOrEqual(0.01);
     }
   });
 

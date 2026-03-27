@@ -14,8 +14,8 @@ const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
     return rgbToRec2020(this.toRgb());
   };
   ColordxClass.prototype.toRec2020String = function () {
-    const { r, g, b, a } = this.toRec2020();
-    return a < 1 ? `color(rec2020 ${r} ${g} ${b} / ${a})` : `color(rec2020 ${r} ${g} ${b})`;
+    const { r, g, b, alpha } = this.toRec2020();
+    return alpha < 1 ? `color(rec2020 ${r} ${g} ${b} / ${alpha})` : `color(rec2020 ${r} ${g} ${b})`;
   };
   parsers.push(parseRec2020String);
   formatParsers.push([parseRec2020String, 'rec2020']);

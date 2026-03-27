@@ -14,9 +14,9 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
     return rgbToLch(this.toRgb());
   };
   ColordxClass.prototype.toLchString = function () {
-    const { l, c, h, a } = this.toLch();
+    const { l, c, h, alpha } = this.toLch();
     const H = c < 0.0015 ? 'none' : h;
-    return a < 1 ? `lch(${l}% ${c} ${H} / ${a})` : `lch(${l}% ${c} ${H})`;
+    return alpha < 1 ? `lch(${l}% ${c} ${H} / ${alpha})` : `lch(${l}% ${c} ${H})`;
   };
   parsers.push(parseLchObject, parseLchString);
   formatParsers.push([parseLchObject, 'lch'], [parseLchString, 'lch']);

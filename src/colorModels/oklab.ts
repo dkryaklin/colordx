@@ -9,7 +9,7 @@ export const toLinear = (c: number): number => {
 
 const fromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
 
-export const rgbToOklab = ({ r, g, b, a }: RgbColor): OklabColor => {
+export const rgbToOklab = ({ r, g, b, alpha }: RgbColor): OklabColor => {
   const lr = toLinear(r),
     lg = toLinear(g),
     lb = toLinear(b);
@@ -26,7 +26,7 @@ export const rgbToOklab = ({ r, g, b, a }: RgbColor): OklabColor => {
     l: 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
     a: 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
     b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
-    alpha: a,
+    alpha,
   };
 };
 
@@ -47,7 +47,7 @@ export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
     r: fromLinear(clamp(r, 0, 1)) * 255,
     g: fromLinear(clamp(g, 0, 1)) * 255,
     b: fromLinear(clamp(bv, 0, 1)) * 255,
-    a: alpha,
+    alpha,
   });
 };
 

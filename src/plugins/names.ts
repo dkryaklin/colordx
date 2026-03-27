@@ -165,8 +165,8 @@ const names: Plugin = (ColordClass, parsers, formatParsers) => {
   formatParsers.push([parseNameString, 'name']);
 
   ColordClass.prototype.toName = function (this: Colordx, options?: { closest?: boolean }): string | undefined {
-    const { r, g, b, a } = this.toRgb();
-    if (a === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
+    const { r, g, b, alpha } = this.toRgb();
+    if (alpha === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
     const hex = this.toHex().toLowerCase();
     const exact = Object.keys(NAMES).find((name) => NAMES[name] === hex);
     if (exact || !options?.closest) return exact;

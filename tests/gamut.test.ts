@@ -18,7 +18,7 @@ describe('inGamutSrgb', () => {
   });
 
   it('returns true for rgb objects', () => {
-    expect(inGamutSrgb({ r: 255, g: 0, b: 0, a: 1 })).toBe(true);
+    expect(inGamutSrgb({ r: 255, g: 0, b: 0, alpha: 1 })).toBe(true);
   });
 
   it('returns true for oklch colors in sRGB gamut', () => {
@@ -37,7 +37,7 @@ describe('inGamutSrgb', () => {
   });
 
   it('returns false for out-of-gamut oklch objects', () => {
-    expect(inGamutSrgb({ l: 0.5, c: 0.4, h: 180, a: 1 })).toBe(false);
+    expect(inGamutSrgb({ l: 0.5, c: 0.4, h: 180, alpha: 1 })).toBe(false);
   });
 
   it('returns false for out-of-gamut oklab objects', () => {
@@ -85,7 +85,7 @@ describe('toGamutSrgb', () => {
   });
 
   it('reduces chroma while preserving lightness and hue', () => {
-    const outOfGamut = { l: 0.7, c: 0.4, h: 145, a: 1 };
+    const outOfGamut = { l: 0.7, c: 0.4, h: 145, alpha: 1 };
     expect(inGamutSrgb(outOfGamut)).toBe(false);
 
     const mapped = toGamutSrgb(outOfGamut);
@@ -112,8 +112,8 @@ describe('toGamutSrgb', () => {
 
   it('handles oklch string with alpha', () => {
     const result = toGamutSrgb('oklch(0.5 0.4 180 / 0.5)');
-    const { a } = result.toRgb();
-    expect(a).toBeCloseTo(0.5, 2);
+    const { alpha } = result.toRgb();
+    expect(alpha).toBeCloseTo(0.5, 2);
   });
 
   it('handles achromatic out-of-lightness-range oklch', () => {
@@ -136,7 +136,7 @@ describe('inGamutP3', () => {
   });
 
   it('returns true for sRGB rgb objects', () => {
-    expect(inGamutP3({ r: 255, g: 0, b: 0, a: 1 })).toBe(true);
+    expect(inGamutP3({ r: 255, g: 0, b: 0, alpha: 1 })).toBe(true);
   });
 
   it('returns true for oklch colors within P3 but outside sRGB', () => {
@@ -160,7 +160,7 @@ describe('inGamutP3', () => {
 
   it('returns false for out-of-P3 oklch objects', () => {
     // Extreme chroma in cyan direction
-    expect(inGamutP3({ l: 0.5, c: 0.5, h: 180, a: 1 })).toBe(false);
+    expect(inGamutP3({ l: 0.5, c: 0.5, h: 180, alpha: 1 })).toBe(false);
   });
 
   it('inGamutP3 is strictly less restrictive than inGamutSrgb', () => {
@@ -199,7 +199,7 @@ describe('toGamutP3', () => {
   });
 
   it('reduces chroma while preserving lightness', () => {
-    const outOfGamut = { l: 0.7, c: 0.5, h: 145, a: 1 };
+    const outOfGamut = { l: 0.7, c: 0.5, h: 145, alpha: 1 };
     expect(inGamutP3(outOfGamut)).toBe(false);
 
     const mapped = toGamutP3(outOfGamut);
@@ -229,7 +229,7 @@ describe('toGamutP3', () => {
 
   it('preserves alpha', () => {
     const result = toGamutP3('oklch(0.7 0.5 145 / 0.5)');
-    expect(result.toRgb().a).toBeCloseTo(0.5, 2);
+    expect(result.toRgb().alpha).toBeCloseTo(0.5, 2);
   });
 });
 
@@ -241,7 +241,7 @@ describe('inGamutRec2020', () => {
   });
 
   it('returns true for sRGB rgb objects', () => {
-    expect(inGamutRec2020({ r: 255, g: 0, b: 0, a: 1 })).toBe(true);
+    expect(inGamutRec2020({ r: 255, g: 0, b: 0, alpha: 1 })).toBe(true);
   });
 
   it('returns true for oklch colors within P3 but outside sRGB (P3 ⊂ Rec.2020)', () => {
@@ -262,7 +262,7 @@ describe('inGamutRec2020', () => {
   });
 
   it('returns false for extreme out-of-gamut oklch objects', () => {
-    expect(inGamutRec2020({ l: 0.5, c: 0.8, h: 145, a: 1 })).toBe(false);
+    expect(inGamutRec2020({ l: 0.5, c: 0.8, h: 145, alpha: 1 })).toBe(false);
   });
 
   it('inGamutRec2020 is at least as permissive as inGamutP3', () => {
@@ -304,7 +304,7 @@ describe('toGamutRec2020', () => {
   });
 
   it('reduces chroma while preserving lightness', () => {
-    const outOfGamut = { l: 0.7, c: 0.8, h: 145, a: 1 };
+    const outOfGamut = { l: 0.7, c: 0.8, h: 145, alpha: 1 };
     expect(inGamutRec2020(outOfGamut)).toBe(false);
 
     const mapped = toGamutRec2020(outOfGamut);
@@ -333,7 +333,7 @@ describe('toGamutRec2020', () => {
 
   it('preserves alpha', () => {
     const result = toGamutRec2020('oklch(0.5 0.8 145 / 0.7)');
-    expect(result.toRgb().a).toBeCloseTo(0.7, 2);
+    expect(result.toRgb().alpha).toBeCloseTo(0.7, 2);
   });
 });
 
@@ -367,7 +367,7 @@ describe('toGamutSrgb: additional coverage', () => {
   });
 
   it('maps out-of-gamut colors at L=0.3 while preserving lightness', () => {
-    const outOfGamut = { l: 0.3, c: 0.4, h: 200, a: 1 };
+    const outOfGamut = { l: 0.3, c: 0.4, h: 200, alpha: 1 };
     if (!inGamutSrgb(outOfGamut)) {
       const mapped = toGamutSrgb(outOfGamut);
       expect(mapped.toOklch().l).toBeCloseTo(0.3, 1);
@@ -375,7 +375,7 @@ describe('toGamutSrgb: additional coverage', () => {
   });
 
   it('maps out-of-gamut colors at L=0.9 while preserving lightness', () => {
-    const outOfGamut = { l: 0.9, c: 0.4, h: 145, a: 1 };
+    const outOfGamut = { l: 0.9, c: 0.4, h: 145, alpha: 1 };
     if (!inGamutSrgb(outOfGamut)) {
       const mapped = toGamutSrgb(outOfGamut);
       expect(mapped.toOklch().l).toBeCloseTo(0.9, 1);

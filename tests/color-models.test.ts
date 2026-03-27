@@ -17,7 +17,7 @@ describe('toHwbString', () => {
   });
 
   it('includes alpha in string when < 1', () => {
-    const str = colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toHwbString();
+    const str = colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toHwbString();
     expect(str).toMatch(/\/ 0\.5/);
     expect(colordx(str).alpha()).toBeCloseTo(0.5, 2);
   });
@@ -44,7 +44,7 @@ describe('HWB object parsing', () => {
   });
 
   it('handles full black (b=100)', () => {
-    expect(colordx({ h: 0, w: 0, b: 100, a: 1 }).toHex()).toBe('#000000');
+    expect(colordx({ h: 0, w: 0, b: 100, alpha: 1 }).toHex()).toBe('#000000');
   });
 });
 
@@ -61,7 +61,7 @@ describe('toOklab round-trip', () => {
 
 describe('toOklabString alpha', () => {
   it('includes alpha in string when < 1', () => {
-    const str = colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toOklabString();
+    const str = colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toOklabString();
     expect(str).toMatch(/\/ 0\.5/);
     expect(colordx(str).alpha()).toBeCloseTo(0.5, 2);
   });
@@ -155,7 +155,7 @@ describe('toOklch round-trip', () => {
 
 describe('toOklchString alpha', () => {
   it('includes alpha in string when < 1', () => {
-    const str = colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toOklchString();
+    const str = colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toOklchString();
     expect(str).toMatch(/\/ 0\.5/);
     expect(colordx(str).alpha()).toBeCloseTo(0.5, 2);
   });
@@ -231,7 +231,7 @@ describe('OKLch object parsing', () => {
   });
 
   it('parses OKLch object with alpha', () => {
-    const oklch = { ...colordx('#ff0000').toOklch(), a: 0.5 };
+    const oklch = { ...colordx('#ff0000').toOklch(), alpha: 0.5 };
     expect(colordx(oklch).alpha()).toBe(0.5);
   });
 });
@@ -525,7 +525,7 @@ describe('rgb() percentage channels', () => {
   it('parses all-percentage rgba with alpha', () => {
     const c = colordx('rgba(100%, 64.7%, 0%, .5)');
     expect(c.isValid()).toBe(true);
-    expect(c.toRgb()).toMatchObject({ r: 255, g: 165, b: 0, a: 0.5 });
+    expect(c.toRgb()).toMatchObject({ r: 255, g: 165, b: 0, alpha: 0.5 });
   });
 
   it('parses space-syntax percentage rgb', () => {
@@ -542,7 +542,7 @@ describe('rgb() percentage channels', () => {
   it('parses modern space-syntax with percentage alpha', () => {
     const c = colordx('rgb(143 101 98 / 43%)');
     expect(c.isValid()).toBe(true);
-    expect(c.toRgb()).toMatchObject({ r: 143, g: 101, b: 98, a: 0.43 });
+    expect(c.toRgb()).toMatchObject({ r: 143, g: 101, b: 98, alpha: 0.43 });
   });
 });
 

@@ -3,23 +3,23 @@ import { colordx, nearest, random, Colordx, getFormat } from "../src/index.js";
 
 describe("parsing", () => {
   it("parses hex colors", () => {
-    expect(colordx("#fff").toRgb()).toEqual({ r: 255, g: 255, b: 255, a: 1 });
-    expect(colordx("#ff0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+    expect(colordx("#fff").toRgb()).toEqual({ r: 255, g: 255, b: 255, alpha: 1 });
+    expect(colordx("#ff0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
     // Alpha is stored at 3dp — the minimum precision for all 256 hex byte values (n/255)
     // to survive a round-trip without corruption. 128/255 = 0.50196… → 0.502, not 0.5.
     // Values set directly (e.g. alpha(0.5)) are unaffected: round(0.5, 3) = 0.5.
-    expect(colordx("#ff000080").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.502 });
+    expect(colordx("#ff000080").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.502 });
   });
 
   it("parses rgb strings", () => {
-    expect(colordx("rgb(255, 0, 0)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
-    expect(colordx("rgba(255, 0, 0, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("rgb(255, 0, 0)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
+    expect(colordx("rgba(255, 0, 0, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
   });
 
   it("parses modern rgb space syntax", () => {
-    expect(colordx("rgb(255 0 0)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
-    expect(colordx("rgb(255 0 0 / 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
-    expect(colordx("rgb(255 0 0 / 50%)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("rgb(255 0 0)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
+    expect(colordx("rgb(255 0 0 / 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
+    expect(colordx("rgb(255 0 0 / 50%)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
   });
 
   it("parses hsl strings", () => {
@@ -28,18 +28,18 @@ describe("parsing", () => {
 
   it("parses modern hsl space syntax", () => {
     expect(colordx("hsl(0 100% 50%)").toHex()).toBe("#ff0000");
-    expect(colordx("hsl(0 100% 50% / 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
-    expect(colordx("hsl(0 100% 50% / 50%)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("hsl(0 100% 50% / 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
+    expect(colordx("hsl(0 100% 50% / 50%)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
     expect(colordx("hsl(120deg 100% 50%)").toHex()).toBe("#00ff00");
     expect(colordx("hsl(240deg 100% 50%)").toHex()).toBe("#0000ff");
   });
 
   it("parses rgb objects", () => {
-    expect(colordx({ r: 255, g: 0, b: 0, a: 1 }).toHex()).toBe("#ff0000");
+    expect(colordx({ r: 255, g: 0, b: 0, alpha: 1 }).toHex()).toBe("#ff0000");
   });
 
   it("parses hsl objects", () => {
-    expect(colordx({ h: 0, s: 100, l: 50, a: 1 }).toHex()).toBe("#ff0000");
+    expect(colordx({ h: 0, s: 100, l: 50, alpha: 1 }).toHex()).toBe("#ff0000");
   });
 });
 
@@ -57,7 +57,7 @@ describe("conversion", () => {
 
   it("converts to rgb string", () => {
     expect(colordx("#ff0000").toRgbString()).toBe("rgb(255, 0, 0)");
-    expect(colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toRgbString()).toBe("rgba(255, 0, 0, 0.5)");
+    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString()).toBe("rgba(255, 0, 0, 0.5)");
   });
 
   it("converts to hsl", () => {
@@ -65,12 +65,12 @@ describe("conversion", () => {
     expect(hsl.h).toBe(0);
     expect(hsl.s).toBe(100);
     expect(hsl.l).toBe(50);
-    expect(hsl.a).toBe(1);
+    expect(hsl.alpha).toBe(1);
   });
 
   it("converts to hsl string", () => {
     expect(colordx("#ff0000").toHslString()).toBe("hsl(0, 100%, 50%)");
-    expect(colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toHslString()).toBe("hsla(0, 100%, 50%, 0.5)");
+    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toHslString()).toBe("hsla(0, 100%, 50%, 0.5)");
   });
 
   it("converts to hsv", () => {
@@ -112,7 +112,7 @@ describe("achromatic hue normalization", () => {
   });
 
   it("toOklchString achromatic with alpha outputs none hue and alpha", () => {
-    const str = colordx({ r: 255, g: 255, b: 255, a: 0.5 }).toOklchString();
+    const str = colordx({ r: 255, g: 255, b: 255, alpha: 0.5 }).toOklchString();
     expect(str).toMatch(/oklch\([\d.]+ [\d.]+ none \/ 0\.5\)/);
   });
 
@@ -159,7 +159,7 @@ describe("manipulation", () => {
 
   it("saturates/desaturates relatively", () => {
     // hsl(0, 50%, 50%) — construct via hex that round-trips, check relative < absolute
-    const base = colordx({ h: 0, s: 50, l: 50, a: 1 });
+    const base = colordx({ h: 0, s: 50, l: 50, alpha: 1 });
     const absS = base.saturate(0.1).toHsl().s;
     const relS = base.saturate(0.1, { relative: true }).toHsl().s;
     // relative step is smaller than absolute step for same amount
@@ -276,12 +276,12 @@ describe("nearest", () => {
 
   it("works with hex, rgb, and object inputs", () => {
     expect(nearest('rgb(200, 0, 0)', palette)).toBe('#f00');
-    expect(nearest({ r: 0, g: 0, b: 200, a: 1 }, palette)).toBe('#00f');
+    expect(nearest({ r: 0, g: 0, b: 200, alpha: 1 }, palette)).toBe('#00f');
   });
 
   it("preserves candidate type", () => {
-    const objects = [{ r: 255, g: 0, b: 0, a: 1 }, { r: 0, g: 0, b: 255, a: 1 }];
-    expect(nearest('#800', objects)).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+    const objects = [{ r: 255, g: 0, b: 0, alpha: 1 }, { r: 0, g: 0, b: 255, alpha: 1 }];
+    expect(nearest('#800', objects)).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
   });
 });
 
@@ -302,10 +302,10 @@ describe("toString", () => {
 
 describe("hsv object parsing", () => {
   it("parses HSV object", () => {
-    expect(colordx({ h: 0, s: 100, v: 100, a: 1 }).toHex()).toBe("#ff0000");
-    expect(colordx({ h: 120, s: 100, v: 100, a: 1 }).toHex()).toBe("#00ff00");
-    expect(colordx({ h: 240, s: 100, v: 100, a: 1 }).toHex()).toBe("#0000ff");
-    expect(colordx({ h: 0, s: 0, v: 0, a: 1 }).toHex()).toBe("#000000");
+    expect(colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex()).toBe("#ff0000");
+    expect(colordx({ h: 120, s: 100, v: 100, alpha: 1 }).toHex()).toBe("#00ff00");
+    expect(colordx({ h: 240, s: 100, v: 100, alpha: 1 }).toHex()).toBe("#0000ff");
+    expect(colordx({ h: 0, s: 0, v: 0, alpha: 1 }).toHex()).toBe("#000000");
   });
 
   it("covers gn < bn branch in rgbToHsv (red-dominant, g < b)", () => {
@@ -316,7 +316,7 @@ describe("hsv object parsing", () => {
   });
 
   it("clamps HSV object with NaN alpha to 0", () => {
-    const c = colordx({ h: 0, s: 100, v: 100, a: NaN } as any);
+    const c = colordx({ h: 0, s: 100, v: 100, alpha: NaN } as any);
     expect(c.isValid()).toBe(true);
     expect(c.alpha()).toBe(0);
   });
@@ -324,7 +324,7 @@ describe("hsv object parsing", () => {
 
 describe("transparent", () => {
   it("parses transparent as rgba(0,0,0,0)", () => {
-    expect(colordx("transparent").toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 0 });
+    expect(colordx("transparent").toRgb()).toEqual({ r: 0, g: 0, b: 0, alpha: 0 });
     expect(colordx("transparent").isValid()).toBe(true);
     expect(colordx("transparent").isEqual("rgba(0,0,0,0)")).toBe(true);
     expect(colordx("transparent").isEqual("#000")).toBe(false);
@@ -333,16 +333,16 @@ describe("transparent", () => {
 
 describe("invalid input", () => {
   it("falls back to black for invalid color", () => {
-    expect(colordx("notacolor").toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(colordx("notacolor").toRgb()).toEqual({ r: 0, g: 0, b: 0, alpha: 1 });
     expect(colordx("notacolor").isValid()).toBe(false);
   });
 
   it("returns null from parse for invalid input", () => {
-    expect(colordx({} as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(colordx({} as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, alpha: 1 });
   });
 
   it("rejects invalid rgb object", () => {
-    expect(colordx({ r: "x", g: 0, b: 0, a: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(colordx({ r: "x", g: 0, b: 0, alpha: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 0, alpha: 1 });
   });
 
   it("rejects 5-char hex as invalid", () => {
@@ -356,14 +356,14 @@ describe("invalid input", () => {
   });
 
   it("clamps HWB object with NaN alpha to 0", () => {
-    const c = colordx({ h: 0, w: 0, b: 0, a: NaN } as any);
+    const c = colordx({ h: 0, w: 0, b: 0, alpha: NaN } as any);
     expect(c.isValid()).toBe(true);
     expect(c.alpha()).toBe(0);
   });
 
   it("clamps NaN and ±Infinity in RGB objects", () => {
-    expect(colordx({ r: NaN, g: -Infinity, b: Infinity, a: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 255, a: 1 });
-    expect(colordx({ r: NaN, g: NaN, b: NaN, a: 1 } as any).isValid()).toBe(true);
+    expect(colordx({ r: NaN, g: -Infinity, b: Infinity, alpha: 1 } as any).toRgb()).toEqual({ r: 0, g: 0, b: 255, alpha: 1 });
+    expect(colordx({ r: NaN, g: NaN, b: NaN, alpha: 1 } as any).isValid()).toBe(true);
   });
 
   it("rejects OKLCH object with l > 1 (disambiguates from CIE LCH)", () => {
@@ -387,15 +387,15 @@ describe("getFormat", () => {
   });
 
   it("detects rgb object", () => {
-    expect(getFormat({ r: 255, g: 0, b: 0, a: 1 })).toBe("rgb");
+    expect(getFormat({ r: 255, g: 0, b: 0, alpha: 1 })).toBe("rgb");
   });
 
   it("detects hsl object", () => {
-    expect(getFormat({ h: 0, s: 100, l: 50, a: 1 })).toBe("hsl");
+    expect(getFormat({ h: 0, s: 100, l: 50, alpha: 1 })).toBe("hsl");
   });
 
   it("detects hsv object", () => {
-    expect(getFormat({ h: 0, s: 100, v: 100, a: 1 })).toBe("hsv");
+    expect(getFormat({ h: 0, s: 100, v: 100, alpha: 1 })).toBe("hsv");
   });
 
   it("returns undefined for invalid input", () => {
@@ -503,25 +503,25 @@ describe("parsing: hex variations", () => {
     expect(result.r).toBe(255);
     expect(result.g).toBe(0);
     expect(result.b).toBe(0);
-    expect(result.a).toBeCloseTo(0.667, 2);
+    expect(result.alpha).toBeCloseTo(0.667, 2);
   });
 
   it("parses uppercase hex", () => {
-    expect(colordx("#FF0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
-    expect(colordx("#FFF").toRgb()).toEqual({ r: 255, g: 255, b: 255, a: 1 });
+    expect(colordx("#FF0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
+    expect(colordx("#FFF").toRgb()).toEqual({ r: 255, g: 255, b: 255, alpha: 1 });
   });
 
   it("parses mixed-case hex", () => {
-    expect(colordx("#Ff0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+    expect(colordx("#Ff0000").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
   });
 
   it("parses green and blue hex", () => {
-    expect(colordx("#00ff00").toRgb()).toEqual({ r: 0, g: 255, b: 0, a: 1 });
-    expect(colordx("#0000ff").toRgb()).toEqual({ r: 0, g: 0, b: 255, a: 1 });
+    expect(colordx("#00ff00").toRgb()).toEqual({ r: 0, g: 255, b: 0, alpha: 1 });
+    expect(colordx("#0000ff").toRgb()).toEqual({ r: 0, g: 0, b: 255, alpha: 1 });
   });
 
   it("parses 8-digit hex with full opacity", () => {
-    expect(colordx("#ff0000ff").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 1 });
+    expect(colordx("#ff0000ff").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
   });
 });
 
@@ -539,7 +539,7 @@ describe("parsing: hsl edge cases", () => {
   });
 
   it("parses hsla string", () => {
-    expect(colordx("hsla(0, 100%, 50%, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(colordx("hsla(0, 100%, 50%, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
   });
 
   it("parses hsla with 0% alpha", () => {
@@ -569,7 +569,7 @@ describe("conversion: comprehensive", () => {
   });
 
   it("toHex for fully transparent black", () => {
-    expect(colordx({ r: 0, g: 0, b: 0, a: 0 }).toHex()).toBe("#00000000");
+    expect(colordx({ r: 0, g: 0, b: 0, alpha: 0 }).toHex()).toBe("#00000000");
   });
 
   it("toHsl for green gives h=120, s=100, l=50", () => {
@@ -645,7 +645,7 @@ describe("conversion: comprehensive", () => {
   });
 
   it("toRgbString for transparent uses rgba", () => {
-    expect(colordx({ r: 0, g: 128, b: 255, a: 0.5 }).toRgbString()).toBe("rgba(0, 128, 255, 0.5)");
+    expect(colordx({ r: 0, g: 128, b: 255, alpha: 0.5 }).toRgbString()).toBe("rgba(0, 128, 255, 0.5)");
   });
 
   it("toHsvString for blue", () => {
@@ -653,9 +653,9 @@ describe("conversion: comprehensive", () => {
   });
 
   it("toHwb for primary colors", () => {
-    expect(colordx("#ff0000").toHwb()).toEqual({ h: 0, w: 0, b: 0, a: 1 });
-    expect(colordx("#ffffff").toHwb()).toEqual({ h: 0, w: 100, b: 0, a: 1 });
-    expect(colordx("#000000").toHwb()).toEqual({ h: 0, w: 0, b: 100, a: 1 });
+    expect(colordx("#ff0000").toHwb()).toEqual({ h: 0, w: 0, b: 0, alpha: 1 });
+    expect(colordx("#ffffff").toHwb()).toEqual({ h: 0, w: 100, b: 0, alpha: 1 });
+    expect(colordx("#000000").toHwb()).toEqual({ h: 0, w: 0, b: 100, alpha: 1 });
   });
 });
 
@@ -690,7 +690,7 @@ describe("manipulation: boundary conditions", () => {
   });
 
   it("mix blends alpha channels", () => {
-    const mixed = colordx({ r: 255, g: 0, b: 0, a: 1 }).mix({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
+    const mixed = colordx({ r: 255, g: 0, b: 0, alpha: 1 }).mix({ r: 0, g: 0, b: 255, alpha: 0 }, 0.5);
     expect(mixed.alpha()).toBe(0.5);
   });
 
@@ -707,7 +707,7 @@ describe("manipulation: boundary conditions", () => {
   });
 
   it("mixOklab blends alpha channels", () => {
-    const mixed = colordx({ r: 255, g: 0, b: 0, a: 1 }).mixOklab({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
+    const mixed = colordx({ r: 255, g: 0, b: 0, alpha: 1 }).mixOklab({ r: 0, g: 0, b: 255, alpha: 0 }, 0.5);
     expect(mixed.alpha()).toBe(0.5);
   });
 
@@ -725,7 +725,7 @@ describe("manipulation: boundary conditions", () => {
   });
 
   it("invert preserves alpha", () => {
-    const inverted = colordx({ r: 255, g: 0, b: 0, a: 0.5 }).invert();
+    const inverted = colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).invert();
     expect(inverted.alpha()).toBe(0.5);
     expect(inverted.toRgb().r).toBe(0);
     expect(inverted.toRgb().g).toBe(255);
@@ -822,7 +822,7 @@ describe("getters: comprehensive", () => {
   });
 
   it("isEqual is false for different alpha at same RGB", () => {
-    expect(colordx("#ff0000").isEqual({ r: 255, g: 0, b: 0, a: 0.5 })).toBe(false);
+    expect(colordx("#ff0000").isEqual({ r: 255, g: 0, b: 0, alpha: 0.5 })).toBe(false);
   });
 
   it("isEqual with different formats for green", () => {
@@ -873,7 +873,7 @@ describe("invalid input: comprehensive", () => {
     expect(rgb.r).toBe(0);
     expect(rgb.g).toBe(0);
     expect(rgb.b).toBe(0);
-    expect(rgb.a).toBe(1);
+    expect(rgb.alpha).toBe(1);
   });
 
   it("rejects array input", () => {
@@ -892,24 +892,28 @@ describe("getFormat: extended", () => {
     expect(getFormat("hwb(120 50% 20%)")).toBe("hwb");
   });
 
-  it("detects oklch string as 'lch'", () => {
-    expect(getFormat("oklch(0.5 0.2 240)")).toBe("lch");
+  it("detects oklch string as 'oklch'", () => {
+    expect(getFormat("oklch(0.5 0.2 240)")).toBe("oklch");
+    expect(getFormat("oklch(0.5 0.1 200)")).toBe("oklch");
   });
 
-  it("detects oklab string as 'lab'", () => {
-    expect(getFormat("oklab(0.5 0.1 0.1)")).toBe("lab");
+  it("detects oklab string as 'oklab'", () => {
+    expect(getFormat("oklab(0.5 0.1 0.1)")).toBe("oklab");
+    expect(getFormat("oklab(1 0 0)")).toBe("oklab");
   });
 
   it("detects hwb object", () => {
-    expect(getFormat({ h: 0, w: 0, b: 0, a: 1 })).toBe("hwb");
+    expect(getFormat({ h: 0, w: 0, b: 0, alpha: 1 })).toBe("hwb");
   });
 
-  it("detects oklch object as 'lch'", () => {
-    expect(getFormat({ l: 0.5, c: 0.2, h: 240, a: 1 })).toBe("lch");
+  it("detects oklch object as 'oklch'", () => {
+    expect(getFormat({ l: 0.5, c: 0.2, h: 240, alpha: 1 })).toBe("oklch");
+    expect(getFormat({ l: 0.5, c: 0.1, h: 200, alpha: 1 })).toBe("oklch");
   });
 
-  it("detects oklab object as 'lab'", () => {
-    expect(getFormat({ l: 0.5, a: 0.1, b: 0.1, alpha: 1 })).toBe("lab");
+  it("detects oklab object as 'oklab'", () => {
+    expect(getFormat({ l: 0.5, a: 0.1, b: 0.1, alpha: 1 })).toBe("oklab");
+    expect(getFormat({ l: 0.5, a: 0, b: 0, alpha: 1 })).toBe("oklab");
   });
 
   it("returns undefined for number input", () => {

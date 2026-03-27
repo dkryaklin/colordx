@@ -6,12 +6,12 @@ export const clampHsv = (hsv: HsvColor): HsvColor => ({
   h: normalizeHue(hsv.h),
   s: clamp(hsv.s, 0, 100),
   v: clamp(hsv.v, 0, 100),
-  a: clamp(round(hsv.a, 3), 0, 1),
+  alpha: clamp(round(hsv.alpha, 3), 0, 1),
 });
 
-const _hsvBuf: HsvColor = { h: 0, s: 0, v: 0, a: 0 };
+const _hsvBuf: HsvColor = { h: 0, s: 0, v: 0, alpha: 0 };
 
-export const rgbToHsvRaw = ({ r, g, b, a }: RgbColor): HsvColor => {
+export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
   const rn = r / 255,
     gn = g / 255,
     bn = b / 255;
@@ -39,19 +39,19 @@ export const rgbToHsvRaw = ({ r, g, b, a }: RgbColor): HsvColor => {
   _hsvBuf.h = hDeg >= 0 && hDeg < 360 ? hDeg : ((hDeg % 360) + 360) % 360;
   _hsvBuf.s = clamp(s * 100, 0, 100);
   _hsvBuf.v = clamp(max * 100, 0, 100);
-  _hsvBuf.a = clamp(round(a, 3), 0, 1);
+  _hsvBuf.alpha = clamp(round(alpha, 3), 0, 1);
   return _hsvBuf;
 };
 
 export const rgbToHsv = (rgb: RgbColor): HsvColor => {
-  const { h, s, v, a } = rgbToHsvRaw(rgb);
+  const { h, s, v, alpha } = rgbToHsvRaw(rgb);
   const hr = round(h, 2);
-  return { h: hr >= 360 ? 0 : hr, s: round(s, 2), v: round(v, 2), a };
+  return { h: hr >= 360 ? 0 : hr, s: round(s, 2), v: round(v, 2), alpha };
 };
 
 const _RGB = [0, 0, 0] as [number, number, number];
 
-export const hsvToRgb = ({ h, s, v, a }: HsvColor): RgbColor => {
+export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
   const sn = s / 100,
     vn = v / 100;
   const i = Math.floor((h / 60) % 6);
@@ -93,13 +93,13 @@ export const hsvToRgb = ({ h, s, v, a }: HsvColor): RgbColor => {
       break;
   }
 
-  return clampRgb({ r: _RGB[0] * 255, g: _RGB[1] * 255, b: _RGB[2] * 255, a });
+  return clampRgb({ r: _RGB[0] * 255, g: _RGB[1] * 255, b: _RGB[2] * 255, alpha });
 };
 
 export const parseHsvObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 's', 'v'])) return null;
-  const { h, s, v, a = 1 } = input;
-  if (!isNumber(h) || !isNumber(s) || !isNumber(v) || !isNumber(a as number)) return null;
-  return hsvToRgb(clampHsv({ h: sanitize(h), s: sanitize(s), v: sanitize(v), a: sanitize(a as number) }));
+  const { h, s, v, alpha = 1 } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
+  if (!isNumber(h) || !isNumber(s) || !isNumber(v) || !isNumber(alpha as number)) return null;
+  return hsvToRgb(clampHsv({ h: sanitize(h), s: sanitize(s), v: sanitize(v), alpha: sanitize(alpha as number) }));
 };

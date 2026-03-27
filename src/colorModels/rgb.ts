@@ -5,15 +5,15 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
   r: clamp(rgb.r, 0, 255),
   g: clamp(rgb.g, 0, 255),
   b: clamp(rgb.b, 0, 255),
-  a: clamp(round(rgb.a, 3), 0, 1),
+  alpha: clamp(round(rgb.alpha, 3), 0, 1),
 });
 
 export const parseRgbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['r', 'g', 'b'])) return null;
-  const { r, g, b, a = 1 } = input;
-  if (!isNumber(r) || !isNumber(g) || !isNumber(b) || !isNumber(a as number)) return null;
-  return clampRgb({ r: sanitize(r), g: sanitize(g), b: sanitize(b), a: sanitize(a as number) });
+  const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
+  if (!isNumber(r) || !isNumber(g) || !isNumber(b) || !isNumber(alpha as number)) return null;
+  return clampRgb({ r: sanitize(r), g: sanitize(g), b: sanitize(b), alpha: sanitize(alpha as number) });
 };
 
 // Matches both legacy comma syntax: rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
@@ -54,7 +54,7 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
 
   const rawA = m[7] ?? m[13];
   const aPct = !!(m[8] ?? m[14]);
-  const a = rawA === undefined ? 1 : Number(rawA) / (aPct ? 100 : 1);
+  const alpha = rawA === undefined ? 1 : Number(rawA) / (aPct ? 100 : 1);
 
-  return clampRgb({ r, g, b, a });
+  return clampRgb({ r, g, b, alpha });
 };

@@ -11,13 +11,13 @@ const KAPPA = 24389 / 27;
 
 const f = (t: number) => (t > EPSILON ? Math.cbrt(t) : (KAPPA * t + 16) / 116);
 
-const xyzToLab = ({ x, y, z, a }: XyzColor): LabColor => {
+const xyzToLab = ({ x, y, z, alpha }: XyzColor): LabColor => {
   const fy = f(y / WY);
   return {
     l: 116 * fy - 16,
     a: 500 * (f(x / WX) - fy) || 0,
     b: 200 * (fy - f(z / WZ)) || 0,
-    alpha: round(a, 3),
+    alpha: round(alpha, 3),
   };
 };
 
@@ -29,7 +29,7 @@ const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
     x: (fx ** 3 > EPSILON ? fx ** 3 : (116 * fx - 16) / KAPPA) * WX,
     y: (l > 8 ? ((l + 16) / 116) ** 3 : l / KAPPA) * WY,
     z: (fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA) * WZ,
-    a: alpha,
+    alpha,
   };
 };
 
@@ -96,7 +96,7 @@ export const parseLabObject = (input: unknown): RgbColor | null => {
   // LabColor has 'l' key; distinguish from other objects with a/b
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   if ('r' in input || 'x' in input) return null;
-  const { l, a, b, alpha = 1 } = input;
+  const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isNumber(l) || !isNumber(a) || !isNumber(b) || !isNumber(alpha as number)) return null;
   return labToRgb({
     l: clamp(sanitize(Number(l)), 0, 400),

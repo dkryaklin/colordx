@@ -30,12 +30,12 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
         return { l: c.l, a: c.a, b: c.b, alpha: c.alpha };
       }
     }
-    // OklchColor: has l, c, h — no r, x, alpha (alpha uses 'a')
-    if ('l' in obj && 'c' in obj && 'h' in obj && !('r' in obj) && !('x' in obj) && !('alpha' in obj)) {
+    // OklchColor: has l, c, h, alpha — no a, r, x
+    if ('l' in obj && 'c' in obj && 'h' in obj && 'alpha' in obj && !('a' in obj) && !('r' in obj) && !('x' in obj)) {
       const c = input as OklchColor;
       if (typeof c.l === 'number' && typeof c.c === 'number' && typeof c.h === 'number') {
         const hRad = (c.h * Math.PI) / 180;
-        return { l: c.l, a: c.c * Math.cos(hRad), b: c.c * Math.sin(hRad), alpha: typeof c.a === 'number' ? c.a : 1 };
+        return { l: c.l, a: c.c * Math.cos(hRad), b: c.c * Math.sin(hRad), alpha: c.alpha };
       }
     }
     return null;
@@ -114,7 +114,7 @@ export const toGamutSrgb = (input: AnyColor): Colordx => {
 
   const cFinal = (lo + hi) / 2;
   const hDeg = ((hRad * 180) / Math.PI + 360) % 360;
-  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, a: clamp(alpha, 0, 1) };
+  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, alpha: clamp(alpha, 0, 1) };
   return new Colordx(oklch);
 };
 
@@ -155,7 +155,7 @@ const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
 
   const cFinal = (lo + hi) / 2;
   const hDeg = ((hRad * 180) / Math.PI + 360) % 360;
-  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, a: clamp(alpha, 0, 1) };
+  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, alpha: clamp(alpha, 0, 1) };
   return new Colordx(oklch);
 };
 

@@ -17,22 +17,22 @@ export const parseHex = (input: unknown): RgbColor | null => {
     const gv = hexNibble(s.charCodeAt(2));
     const bv = hexNibble(s.charCodeAt(3));
     const av = len === 5 ? hexNibble(s.charCodeAt(4)) : 15;
-    return { r: rv | (rv << 4), g: gv | (gv << 4), b: bv | (bv << 4), a: round((av | (av << 4)) / 255, 3) };
+    return { r: rv | (rv << 4), g: gv | (gv << 4), b: bv | (bv << 4), alpha: round((av | (av << 4)) / 255, 3) };
   }
 
   return {
     r: hexByte(s, 1),
     g: hexByte(s, 3),
     b: hexByte(s, 5),
-    a: len === 9 ? round(hexByte(s, 7) / 255, 3) : 1,
+    alpha: len === 9 ? round(hexByte(s, 7) / 255, 3) : 1,
   };
 };
 
-export const rgbToHex = ({ r, g, b, a }: RgbColor): string => {
+export const rgbToHex = ({ r, g, b, alpha }: RgbColor): string => {
   const hex =
     '#' +
     HEX_BYTE[clamp(Math.round(r), 0, 255)] +
     HEX_BYTE[clamp(Math.round(g), 0, 255)] +
     HEX_BYTE[clamp(Math.round(b), 0, 255)];
-  return a < 1 ? hex + HEX_BYTE[clamp(Math.round(a * 255), 0, 255)] : hex;
+  return alpha < 1 ? hex + HEX_BYTE[clamp(Math.round(alpha * 255), 0, 255)] : hex;
 };

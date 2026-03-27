@@ -92,7 +92,7 @@ describe('toCmyk round-trip', () => {
 describe('CMYK black (k=100 edge case)', () => {
   it('pure black has c=m=y=0, k=100', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((colordx('#000000') as any).toCmyk()).toEqual({ c: 0, m: 0, y: 0, k: 100, a: 1 });
+    expect((colordx('#000000') as any).toCmyk()).toEqual({ c: 0, m: 0, y: 0, k: 100, alpha: 1 });
   });
 });
 
@@ -177,7 +177,7 @@ describe('Lab object parsing edge cases', () => {
 describe('LCH object parsing edge cases', () => {
   it('clamps LCH object with NaN alpha to 0', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = colordx({ l: 50, c: 30, h: 180, a: NaN } as any);
+    const c = colordx({ l: 50, c: 30, h: 180, alpha: NaN } as any);
     expect(c.isValid()).toBe(true);
     expect(c.alpha()).toBe(0);
   });
@@ -186,7 +186,7 @@ describe('LCH object parsing edge cases', () => {
 describe('toCmykString with alpha', () => {
   it('includes alpha in output when color has alpha < 1', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const str = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).toCmykString();
+    const str = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).toCmykString();
     expect(str).toMatch(/\/ 0\.5/);
   });
 });
@@ -359,7 +359,7 @@ describe('mixLab', () => {
   });
 
   it('blends alpha channels', () => {
-    const mixed = (colordx({ r: 255, g: 0, b: 0, a: 1 }) as any).mixLab({ r: 0, g: 0, b: 255, a: 0 }, 0.5);
+    const mixed = (colordx({ r: 255, g: 0, b: 0, alpha: 1 }) as any).mixLab({ r: 0, g: 0, b: 255, alpha: 0 }, 0.5);
     expect(mixed.alpha()).toBe(0.5);
   });
 });

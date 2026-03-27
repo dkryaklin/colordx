@@ -14,13 +14,13 @@ const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#ff00008
 // This is an intentional improvement for round-trip accuracy.
 // Use toBeCloseTo(x, 1) for alpha comparisons on hex-alpha inputs.
 const approxRgbEqual = (
-  dx: { r: number; g: number; b: number; a: number },
+  dx: { r: number; g: number; b: number; alpha: number },
   d: { r: number; g: number; b: number; a: number }
 ) => {
   expect(dx.r).toBe(d.r);
   expect(dx.g).toBe(d.g);
   expect(dx.b).toBe(d.b);
-  expect(dx.a).toBeCloseTo(d.a, 1);
+  expect(dx.alpha).toBeCloseTo(d.a, 1);
 };
 
 describe('isValid', () => {
@@ -56,7 +56,7 @@ describe('toHsl', () => {
     expect(dx.h).toBeCloseTo(d.h, 0);
     expect(dx.s).toBeCloseTo(d.s, 0);
     expect(dx.l).toBeCloseTo(d.l, 0);
-    expect(dx.a).toBeCloseTo(d.a, 1);
+    expect(dx.alpha).toBeCloseTo(d.a, 1);
   });
 });
 
@@ -79,7 +79,7 @@ describe('toHsv', () => {
     expect(dx.h).toBeCloseTo(d.h, 0);
     expect(dx.s).toBeCloseTo(d.s, 0);
     expect(dx.v).toBeCloseTo(d.v, 0);
-    expect(dx.a).toBeCloseTo(d.a, 1);
+    expect(dx.alpha).toBeCloseTo(d.a, 1);
   });
 });
 
@@ -109,7 +109,7 @@ describe('alpha (get)', () => {
 
 describe('alpha (set)', () => {
   it.each(inputs)('%s', (input) => {
-    expect(colordx(input).alpha(0.5).toRgb()).toEqual(colord(input).alpha(0.5).toRgb());
+    approxRgbEqual(colordx(input).alpha(0.5).toRgb(), colord(input).alpha(0.5).toRgb());
   });
 });
 
@@ -169,7 +169,7 @@ describe('rotate', () => {
     expect(Math.abs(dx.r - d.r)).toBeLessThanOrEqual(1);
     expect(Math.abs(dx.g - d.g)).toBeLessThanOrEqual(1);
     expect(Math.abs(dx.b - d.b)).toBeLessThanOrEqual(1);
-    expect(dx.a).toBeCloseTo(d.a, 1);
+    expect(dx.alpha).toBeCloseTo(d.a, 1);
   });
 });
 

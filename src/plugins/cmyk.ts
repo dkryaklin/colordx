@@ -14,8 +14,8 @@ const cmyk: Plugin = (ColordxClass, parsers, formatParsers) => {
     return rgbToCmyk(this.toRgb());
   };
   ColordxClass.prototype.toCmykString = function () {
-    const { c, m, y, k, a } = this.toCmyk();
-    return a < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${a})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`;
+    const { c, m, y, k, alpha } = this.toCmyk();
+    return alpha < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${alpha})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`;
   };
   parsers.push(parseCmykObject, parseCmykString);
   formatParsers.push([parseCmykObject, 'cmyk'], [parseCmykString, 'cmyk']);

@@ -39,13 +39,13 @@ describe('toP3 known values', () => {
     const p3Color = (colordx('#ff0000') as any).toP3();
     expect(p3Color.r).toBeLessThan(1);
     expect(p3Color.r).toBeGreaterThan(0.5);
-    expect(p3Color.a).toBe(1);
+    expect(p3Color.alpha).toBe(1);
   });
 
   it('alpha is preserved', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const p3Color = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).toP3();
-    expect(p3Color.a).toBeCloseTo(0.5, 3);
+    const p3Color = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).toP3();
+    expect(p3Color.alpha).toBeCloseTo(0.5, 3);
   });
 });
 
@@ -59,7 +59,7 @@ describe('toP3String', () => {
 
   it('includes alpha when < 1', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const str = (colordx({ r: 255, g: 0, b: 0, a: 0.5 }) as any).toP3String();
+    const str = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).toP3String();
     expect(str).toMatch(/\/ 0\.5/);
   });
 
@@ -175,7 +175,7 @@ describe('toP3String: format verification', () => {
 
   it('semi-transparent color string has slash and alpha', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const str = (colordx({ r: 100, g: 150, b: 200, a: 0.7 }) as any).toP3String();
+    const str = (colordx({ r: 100, g: 150, b: 200, alpha: 0.7 }) as any).toP3String();
     expect(str).toContain('/ 0.7');
   });
 

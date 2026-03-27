@@ -2,14 +2,14 @@ import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, sanitize
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, toLinear } from './oklab.js';
 
-const oklchToOklab = ({ l, c, h, a }: OklchColor): OklabColor => ({
+const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
   l,
   a: c * Math.cos((h * Math.PI) / 180),
   b: c * Math.sin((h * Math.PI) / 180),
-  alpha: a,
+  alpha,
 });
 
-export const rgbToOklch = ({ r, g, b, a }: RgbColor): OklchColor => {
+export const rgbToOklch = ({ r, g, b, alpha }: RgbColor): OklchColor => {
   const lr = toLinear(r),
     lg = toLinear(g),
     lb = toLinear(b);
@@ -24,7 +24,7 @@ export const rgbToOklch = ({ r, g, b, a }: RgbColor): OklchColor => {
   const ol = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
   const C = Math.sqrt(oa * oa + ob * ob);
   const H = (Math.atan2(ob, oa) * 180) / Math.PI;
-  return { l: ol, c: C, h: C < 0.000004 ? 0 : normalizeHue(H), a };
+  return { l: ol, c: C, h: C < 0.000004 ? 0 : normalizeHue(H), alpha };
 };
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));
@@ -32,14 +32,15 @@ export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOkl
 export const parseOklchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['l', 'c', 'h'])) return null;
-  const { l, c, h, a = 1 } = input as { l: unknown; c: unknown; h: unknown; a?: unknown };
-  if (!isNumber(l as number) || !isNumber(c as number) || !isNumber(h as number) || !isNumber(a as number)) return null;
+  const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
+  if (!isNumber(l as number) || !isNumber(c as number) || !isNumber(h as number) || !isNumber(alpha as number))
+    return null;
   if ((l as number) > 1) return null;
   return oklchToRgb({
     l: sanitize(l as number),
     c: sanitize(c as number),
     h: normalizeHue(sanitize(Number(h))),
-    a: clamp(sanitize(a as number), 0, 1),
+    alpha: clamp(sanitize(alpha as number), 0, 1),
   });
 };
 
@@ -61,6 +62,6 @@ export const parseOklchString = (input: unknown): RgbColor | null => {
     l: L,
     c: C,
     h: normalizeHue(H),
-    a: clamp(alpha, 0, 1),
+    alpha: clamp(alpha, 0, 1),
   });
 };

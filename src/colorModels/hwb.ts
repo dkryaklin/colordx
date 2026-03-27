@@ -10,7 +10,7 @@ export const clampHwb = (hwb: HwbColor): HwbColor => {
     h: normalizeHue(hwb.h),
     w: sum > 100 ? (w / sum) * 100 : w,
     b: sum > 100 ? (b / sum) * 100 : b,
-    a: clamp(round(hwb.a, 3), 0, 1),
+    alpha: clamp(round(hwb.alpha, 3), 0, 1),
   };
 };
 
@@ -18,7 +18,7 @@ export const roundHwb = (hwb: HwbColor): HwbColor => ({
   h: round(hwb.h),
   w: round(hwb.w),
   b: round(hwb.b),
-  a: round(hwb.a, 3),
+  alpha: round(hwb.alpha, 3),
 });
 
 export const rgbToHwb = (rgb: RgbColor): HwbColor => {
@@ -27,21 +27,21 @@ export const rgbToHwb = (rgb: RgbColor): HwbColor => {
     h,
     w: (Math.min(rgb.r, rgb.g, rgb.b) / 255) * 100,
     b: 100 - (Math.max(rgb.r, rgb.g, rgb.b) / 255) * 100,
-    a: rgb.a,
+    alpha: rgb.alpha,
   });
 };
 
-export const hwbToRgb = ({ h, w, b, a }: HwbColor): RgbColor => {
+export const hwbToRgb = ({ h, w, b, alpha }: HwbColor): RgbColor => {
   const s = b === 100 ? 0 : 100 - (w / (100 - b)) * 100;
-  return hsvToRgb({ h, s, v: 100 - b, a });
+  return hsvToRgb({ h, s, v: 100 - b, alpha });
 };
 
 export const parseHwbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 'w', 'b'])) return null;
-  const { h, w, b, a = 1 } = input;
-  if (!isNumber(h) || !isNumber(w) || !isNumber(b) || !isNumber(a as number)) return null;
-  return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), a: sanitize(a as number) }));
+  const { h, w, b, alpha = 1 } = input as { h: unknown; w: unknown; b: unknown; alpha?: unknown };
+  if (!isNumber(h) || !isNumber(w) || !isNumber(b) || !isNumber(alpha as number)) return null;
+  return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), alpha: sanitize(alpha as number) }));
 };
 
 const HWB_RE =
@@ -53,6 +53,6 @@ export const parseHwbString = (input: unknown): RgbColor | null => {
   if (!m) return null;
   const unit = m[2]?.toLowerCase() ?? 'deg';
   const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);
-  const a = m[5] === undefined ? 1 : Number(m[5]) / (m[6] ? 100 : 1);
-  return hwbToRgb(clampHwb({ h, w: Number(m[3]), b: Number(m[4]), a }));
+  const alpha = m[5] === undefined ? 1 : Number(m[5]) / (m[6] ? 100 : 1);
+  return hwbToRgb(clampHwb({ h, w: Number(m[3]), b: Number(m[4]), alpha }));
 };
