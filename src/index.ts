@@ -2,6 +2,7 @@ export { Colordx, colordx, extend, nearest, random } from './colordx.js';
 export type { Plugin } from './colordx.js';
 export { getFormat } from './parse.js';
 export { inGamutP3, inGamutRec2020, inGamutSrgb, toGamutP3, toGamutRec2020, toGamutSrgb } from './gamut.js';
+export { oklchToRgbChannels, oklchToP3Channels, oklchToRec2020Channels } from './channels.js';
 export type {
   AnyColor,
   ColorFormat,

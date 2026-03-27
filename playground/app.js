@@ -1,8 +1,9 @@
 import { colordx, extend, inGamutSrgb, toGamutSrgb } from '/index.mjs';
 import a11y from '/plugins/a11y.mjs';
 import harmoniesPlugin from '/plugins/harmonies.mjs';
+import p3Plugin from '/plugins/p3.mjs';
 
-extend([a11y, harmoniesPlugin]);
+extend([a11y, harmoniesPlugin, p3Plugin]);
 
 // Always stored as OKLCH
 let S = { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 };
@@ -223,6 +224,7 @@ function updateLeft({ skipBg = false } = {}) {
     { lbl: 'HSL', val: c.toHslString() },
     { lbl: 'HSV', val: c.toHsvString() },
     { lbl: 'HWB', val: c.toHwbString() },
+    { lbl: 'P3', val: c.toP3String() },
   ];
 
   document.getElementById('outputs').innerHTML = rows

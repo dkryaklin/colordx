@@ -93,6 +93,8 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
 .toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, a: 1 }
 .toOklchString()   // 'oklch(0.6279 0.2577 29.23)'
+.toP3()            // { r: 0.9176, g: 0.2003, b: 0.1386, a: 1 }
+.toP3String()      // 'color(display-p3 0.9176 0.2003 0.1386)'
 ```
 
 ### Manipulation
@@ -136,7 +138,7 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 ### Utilities
 
 ```ts
-import { getFormat, nearest, random } from '@colordx/core';
+import { getFormat, nearest, oklchToP3Channels, oklchToRec2020Channels, oklchToRgbChannels, random } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255, 0, 0)'); // 'rgb'
@@ -153,6 +155,12 @@ nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
 
 random(); // random Colordx instance
+
+// Low-level functional converters — no object allocation, for hot paths (canvas gradients, etc.)
+oklchToRgbChannels(0.5, 0.2, 240);    // [r, g, b] gamma-encoded sRGB in [0, 1]
+oklchToP3Channels(0.5, 0.2, 240);     // [r, g, b] gamma-encoded Display-P3 in [0, 1]
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (BT.2020 gamma)
+// Out-of-gamut channels may exceed [0, 1] — callers clamp before byte encoding
 ```
 
 ### Gamut
@@ -206,7 +214,7 @@ import mix from '@colordx/core/plugins/mix';
 import names from '@colordx/core/plugins/names';
 // minify() — shortest CSS string
 import p3 from '@colordx/core/plugins/p3';
-// toP3(), toP3String(), parses color(display-p3 ...) strings
+// parses color(display-p3 ...) strings (toP3/toP3String are core)
 import rec2020 from '@colordx/core/plugins/rec2020';
 
 // toRec2020(), toRec2020String(), parses color(rec2020 ...) strings
@@ -370,17 +378,18 @@ APCA is better suited than WCAG 2.x for dark color pairs and more accurately ref
 
 ### p3 plugin
 
-Adds Display-P3 color space support. Display-P3 uses the same transfer function as sRGB but a wider gamut (about 26% more colors).
+Enables parsing of `color(display-p3 ...)` CSS strings. `toP3()` and `toP3String()` are available in core without this plugin.
 
 ```ts
 import p3 from '@colordx/core/plugins/p3';
 
 extend([p3]);
 
+// toP3 / toP3String are core — no plugin needed:
 colordx('#ff0000').toP3(); // { r: 0.9176, g: 0.2003, b: 0.1386, a: 1 }
 colordx('#ff0000').toP3String(); // 'color(display-p3 0.9176 0.2003 0.1386)'
 
-// Parse Display-P3 strings (alpha optional)
+// Parsing Display-P3 strings requires the plugin:
 colordx('color(display-p3 0.9176 0.2003 0.1386)').toHex(); // '#ff0000'
 colordx('color(display-p3 0.9176 0.2003 0.1386 / 0.5)').toHex(); // '#ff000080'
 ```

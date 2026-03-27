@@ -4,6 +4,7 @@ import { rgbToHsv } from './colorModels/hsv.js';
 import { rgbToHwb } from './colorModels/hwb.js';
 import { oklabToRgb, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
+import { rgbToP3 } from './colorModels/p3.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
 import type {
@@ -15,6 +16,7 @@ import type {
   HwbColor,
   OklabColor,
   OklchColor,
+  P3Color,
   RgbColor,
 } from './types.js';
 
@@ -119,6 +121,15 @@ export class Colordx {
     const C = round(c, 4);
     const H = c < 0.000004 ? 'none' : round(h, 2);
     return a < 1 ? `oklch(${L} ${C} ${H} / ${a})` : `oklch(${L} ${C} ${H})`;
+  }
+
+  toP3(): P3Color {
+    return rgbToP3(this._rgb);
+  }
+
+  toP3String(): string {
+    const { r, g, b, a } = this.toP3();
+    return a < 1 ? `color(display-p3 ${r} ${g} ${b} / ${a})` : `color(display-p3 ${r} ${g} ${b})`;
   }
 
   brightness(): number {
