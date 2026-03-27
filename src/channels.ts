@@ -1,18 +1,9 @@
 import { oklabToLinear } from './colorModels/oklab.js';
 import { oklabToLinearP3, srgbLinearToP3Linear } from './colorModels/p3.js';
 import { oklabToLinearRec2020, srgbLinearToRec2020Linear } from './colorModels/rec2020.js';
+import { rec2020FromLinear, srgbFromLinear } from './transfer.js';
 
 const DEG_TO_RAD = Math.PI / 180;
-
-// sRGB / Display-P3 transfer function (IEC 61966-2-1)
-// Display-P3 uses the same gamma curve as sRGB — not DCI-P3 gamma 2.6.
-const srgbFromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
-
-// BT.2020 transfer function (CSS Color 4 § 10.5)
-const REC2020_ALPHA = 1.09929682680944;
-const REC2020_BETA = 0.018053968510807;
-const rec2020FromLinear = (n: number): number =>
-  n < REC2020_BETA ? 4.5 * n : REC2020_ALPHA * n ** 0.45 - (REC2020_ALPHA - 1);
 
 /**
  * Convert OKLCH to unclamped linear sRGB channels without object allocation.

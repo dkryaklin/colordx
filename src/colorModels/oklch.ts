@@ -1,6 +1,7 @@
 import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
+import { srgbToLinear } from '../transfer.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
-import { oklabToRgb, toLinear } from './oklab.js';
+import { oklabToRgb } from './oklab.js';
 
 const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
   l,
@@ -10,9 +11,9 @@ const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
 });
 
 export const rgbToOklch = ({ r, g, b, alpha }: RgbColor): OklchColor => {
-  const lr = toLinear(r),
-    lg = toLinear(g),
-    lb = toLinear(b);
+  const lr = srgbToLinear(r / 255),
+    lg = srgbToLinear(g / 255),
+    lb = srgbToLinear(b / 255);
   const lv = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
   const mv = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
   const sv = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;

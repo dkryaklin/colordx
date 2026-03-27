@@ -7,6 +7,7 @@ import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { rgbToP3 } from './colorModels/p3.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
+import { srgbToLinear } from './transfer.js';
 import type {
   AnyColor,
   ColorFormat,
@@ -138,12 +139,8 @@ export class Colordx {
   }
 
   luminance(): number {
-    const toLinear = (c: number) => {
-      const n = c / 255;
-      return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
-    };
     const { r, g, b } = this._rgb;
-    return round(0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b), 4);
+    return round(0.2126 * srgbToLinear(r / 255) + 0.7152 * srgbToLinear(g / 255) + 0.0722 * srgbToLinear(b / 255), 4);
   }
 
   isDark(): boolean {

@@ -1,21 +1,8 @@
 import { clamp, round } from '../helpers.js';
+import { rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 import { clampRgb } from './rgb.js';
-
-// Rec.2020 / BT.2020 transfer function
-const REC2020_ALPHA = 1.09929682680944;
-const REC2020_BETA = 0.018053968510807;
-
-const toLinear = (c: number): number =>
-  c < REC2020_BETA * 4.5 ? c / 4.5 : ((c + REC2020_ALPHA - 1) / REC2020_ALPHA) ** (1 / 0.45);
-
-const fromLinear = (n: number): number =>
-  n < REC2020_BETA ? 4.5 * n : REC2020_ALPHA * n ** 0.45 - (REC2020_ALPHA - 1);
-
-// sRGB transfer function for decoding sRGB inputs
-const srgbToLinear = (c: number): number => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-const srgbFromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
 
 // Linear sRGB → Linear Rec.2020 (D65, via XYZ, from CSS Color 4)
 export const srgbLinearToRec2020Linear = (r: number, g: number, b: number): [number, number, number] => [
@@ -34,16 +21,16 @@ const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, 
 export const rgbToRec2020 = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
   const [rr, rg, rb] = srgbLinearToRec2020Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
-    r: round(fromLinear(clamp(rr, 0, 1)), 4),
-    g: round(fromLinear(clamp(rg, 0, 1)), 4),
-    b: round(fromLinear(clamp(rb, 0, 1)), 4),
+    r: round(rec2020FromLinear(clamp(rr, 0, 1)), 4),
+    g: round(rec2020FromLinear(clamp(rg, 0, 1)), 4),
+    b: round(rec2020FromLinear(clamp(rb, 0, 1)), 4),
     alpha,
     colorSpace: 'rec2020',
   };
 };
 
 export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
-  const [sr, sg, sb] = linearRec2020ToSrgb(toLinear(r), toLinear(g), toLinear(b));
+  const [sr, sg, sb] = linearRec2020ToSrgb(rec2020ToLinear(r), rec2020ToLinear(g), rec2020ToLinear(b));
   return clampRgb({
     r: srgbFromLinear(clamp(sr, 0, 1)) * 255,
     g: srgbFromLinear(clamp(sg, 0, 1)) * 255,

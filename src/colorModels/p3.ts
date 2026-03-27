@@ -1,11 +1,8 @@
 import { clamp, round } from '../helpers.js';
+import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 import { clampRgb } from './rgb.js';
-
-// Display-P3 uses the same transfer function as sRGB
-const toLinear = (c: number): number => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-const fromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
 
 // Linear sRGB → Linear Display-P3 (D65 white point for both, from CSS Color 4)
 export const srgbLinearToP3Linear = (r: number, g: number, b: number): [number, number, number] => [
@@ -22,22 +19,22 @@ const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, numbe
 ];
 
 export const rgbToP3 = ({ r, g, b, alpha }: RgbColor): P3Color => {
-  const [p3r, p3g, p3b] = srgbLinearToP3Linear(toLinear(r / 255), toLinear(g / 255), toLinear(b / 255));
+  const [p3r, p3g, p3b] = srgbLinearToP3Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
-    r: round(fromLinear(p3r), 4),
-    g: round(fromLinear(p3g), 4),
-    b: round(fromLinear(p3b), 4),
+    r: round(srgbFromLinear(p3r), 4),
+    g: round(srgbFromLinear(p3g), 4),
+    b: round(srgbFromLinear(p3b), 4),
     alpha,
     colorSpace: 'display-p3',
   };
 };
 
 export const p3ToRgb = ({ r, g, b, alpha }: P3Color): RgbColor => {
-  const [sr, sg, sb] = linearP3ToSrgb(toLinear(r), toLinear(g), toLinear(b));
+  const [sr, sg, sb] = linearP3ToSrgb(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
   return clampRgb({
-    r: fromLinear(clamp(sr, 0, 1)) * 255,
-    g: fromLinear(clamp(sg, 0, 1)) * 255,
-    b: fromLinear(clamp(sb, 0, 1)) * 255,
+    r: srgbFromLinear(clamp(sr, 0, 1)) * 255,
+    g: srgbFromLinear(clamp(sg, 0, 1)) * 255,
+    b: srgbFromLinear(clamp(sb, 0, 1)) * 255,
     alpha,
   });
 };

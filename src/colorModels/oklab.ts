@@ -1,18 +1,12 @@
 import { clamp, hasKeys, isNumber, isObject, sanitize } from '../helpers.js';
+import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
-export const toLinear = (c: number): number => {
-  const n = c / 255;
-  return n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
-};
-
-const fromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
-
 export const rgbToOklab = ({ r, g, b, alpha }: RgbColor): OklabColor => {
-  const lr = toLinear(r),
-    lg = toLinear(g),
-    lb = toLinear(b);
+  const lr = srgbToLinear(r / 255),
+    lg = srgbToLinear(g / 255),
+    lb = srgbToLinear(b / 255);
 
   const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
   const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
@@ -44,9 +38,9 @@ export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
   const bv = -0.0041960865 * lv - 0.7034186145 * mv + 1.7076147009 * sv;
 
   return clampRgb({
-    r: fromLinear(clamp(r, 0, 1)) * 255,
-    g: fromLinear(clamp(g, 0, 1)) * 255,
-    b: fromLinear(clamp(bv, 0, 1)) * 255,
+    r: srgbFromLinear(clamp(r, 0, 1)) * 255,
+    g: srgbFromLinear(clamp(g, 0, 1)) * 255,
+    b: srgbFromLinear(clamp(bv, 0, 1)) * 255,
     alpha,
   });
 };

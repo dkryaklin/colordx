@@ -1,4 +1,5 @@
 import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { RgbColor, XyzColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -7,17 +8,10 @@ const WX = 96.42956752983539,
   WY = 100,
   WZ = 82.51046025104603;
 
-const toLinear = (c: number): number => {
-  const n = c / 255;
-  return n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
-};
-
-const fromLinear = (c: number): number => 255 * (c > 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c);
-
 export const rgbToXyz = ({ r, g, b, alpha }: RgbColor): XyzColor => {
-  const lr = toLinear(r),
-    lg = toLinear(g),
-    lb = toLinear(b);
+  const lr = srgbToLinear(r / 255),
+    lg = srgbToLinear(g / 255),
+    lb = srgbToLinear(b / 255);
   // sRGB → XYZ D65 (CSS Color 4 exact rational fractions)
   const xd65 = 100 * (0.41239079926595951 * lr + 0.35758433938387796 * lg + 0.18048078840183429 * lb);
   const yd65 = 100 * (0.21263900587151036 * lr + 0.71516867876775592 * lg + 0.072192315360733714 * lb);
@@ -37,9 +31,10 @@ export const xyzToRgb = ({ x, y, z, alpha }: XyzColor): RgbColor => {
   const yd65 = -0.0283697093338637 * x + 1.0099953980813041 * y + 0.021041441191917323 * z;
   const zd65 = 0.012314014864481998 * x - 0.020507649298898964 * y + 1.330365926242124 * z;
   return clampRgb({
-    r: fromLinear(0.032409699419045213 * xd65 - 0.015373831775700935 * yd65 - 0.0049861076029300327 * zd65),
-    g: fromLinear(-0.0096924363628087984 * xd65 + 0.018759675015077206 * yd65 + 0.00041555057407175612 * zd65),
-    b: fromLinear(0.00055630079696993608 * xd65 - 0.0020397695888897657 * yd65 + 0.010569715142428786 * zd65),
+    r: srgbFromLinear(0.032409699419045213 * xd65 - 0.015373831775700935 * yd65 - 0.0049861076029300327 * zd65) * 255,
+    g:
+      srgbFromLinear(-0.0096924363628087984 * xd65 + 0.018759675015077206 * yd65 + 0.00041555057407175612 * zd65) * 255,
+    b: srgbFromLinear(0.00055630079696993608 * xd65 - 0.0020397695888897657 * yd65 + 0.010569715142428786 * zd65) * 255,
     alpha,
   });
 };
