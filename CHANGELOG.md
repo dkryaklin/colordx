@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 2.2.0
+
+### Minor Changes
+
+- b5a8e49: Add `oklchToLinear`, `linearToP3Channels`, and `linearToRec2020Channels` split-step exports for converting one OKLCH color to multiple color spaces without repeating the expensive OKLab pipeline.
+
 ## 2.1.0
 
 ### Minor Changes
