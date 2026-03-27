@@ -18,11 +18,10 @@ import lch from '../src/plugins/lch.js';
 import minify from '../src/plugins/minify.js';
 import mix from '../src/plugins/mix.js';
 import names from '../src/plugins/names.js';
-import p3 from '../src/plugins/p3.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, harmonies, lab, lch, minify, mix, names, p3, rec2020]);
+  extend([a11y, cmyk, harmonies, lab, lch, minify, mix, names, rec2020]);
 });
 
 // Deterministic LCG — results are reproducible across runs

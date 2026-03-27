@@ -27,6 +27,7 @@ const APCA = {
 };
 
 function apcaLuminance(r: number, g: number, b: number): number {
+  // APCA 0.0.98G intentionally uses a straight 2.4 power curve, not the piecewise sRGB function.
   const lin = (c: number) => (c / 255) ** 2.4;
   const Y = SA98G.Rsco * lin(r) + SA98G.Gsco * lin(g) + SA98G.Bsco * lin(b);
   return Y > APCA.blkThrs ? Y : Y + (APCA.blkThrs - Y) ** APCA.blkClmp;
@@ -53,9 +54,9 @@ const a11y: Plugin = (ColordxClass) => {
     const effectiveFg =
       fgRgb.alpha < 1
         ? {
-            r: Math.round(fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r),
-            g: Math.round(fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g),
-            b: Math.round(fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b),
+            r: fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r,
+            g: fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g,
+            b: fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b,
           }
         : fgRgb;
     return Math.round(calcApca(effectiveFg, bgRgb) * 10) / 10;
@@ -68,6 +69,7 @@ const a11y: Plugin = (ColordxClass) => {
   ): boolean {
     const { size = 'normal' } = options;
     const lc = Math.abs(this.apcaContrast(background));
+    // Lc 75 for normal body text, Lc 60 for large/bold — simplified defaults, not the full APCA lookup table.
     return size === 'large' ? lc >= 60 : lc >= 75;
   };
 
@@ -95,7 +97,12 @@ const a11y: Plugin = (ColordxClass) => {
 
   ColordxClass.prototype.minReadable = function (this: Colordx, background: AnyColor = '#fff'): Colordx {
     const bgLuminance = new ColordxClass(background).luminance();
-    const shouldDarken = this.luminance() < bgLuminance;
+    // Pick direction by which extreme (black vs white) gives higher max contrast against the background.
+    // Using fg vs bg luminance comparison fails for dark-on-dark: fg darker than bg → darken, but
+    // darkening toward black may never reach 4.5:1 against a dark background.
+    const darkContrast = (bgLuminance + 0.05) / 0.05;
+    const lightContrast = 1.05 / (bgLuminance + 0.05);
+    const shouldDarken = darkContrast >= lightContrast;
     const step = (c: Colordx) => (shouldDarken ? c.darken(0.01) : c.lighten(0.01));
 
     if (this.contrast(background) >= 4.5) return this;

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { colordx } from '../src/index.js';
+import { xyzD50ToLinearSrgb } from '../src/colorModels/xyz.js';
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
 
@@ -706,5 +707,39 @@ describe('oklabToRgb deferred-rounding precision', () => {
     expect(Math.abs(roundtripped.l - original.l)).toBeLessThan(0.001);
     expect(Math.abs(roundtripped.a - original.a)).toBeLessThan(0.001);
     expect(Math.abs(roundtripped.b - original.b)).toBeLessThan(0.001);
+  });
+});
+
+describe('xyzD50ToLinearSrgb', () => {
+  it('returns linear sRGB values outside [0,1] without clamping for out-of-gamut XYZ', () => {
+    // D50 white point → linear sRGB should be exactly [1, 1, 1]
+    const [r, g, b] = xyzD50ToLinearSrgb(96.42956752983539, 100, 82.51046025104603);
+    expect(r).toBeCloseTo(1, 4);
+    expect(g).toBeCloseTo(1, 4);
+    expect(b).toBeCloseTo(1, 4);
+  });
+
+  it('returns [0, 0, 0] for XYZ black', () => {
+    const [r, g, b] = xyzD50ToLinearSrgb(0, 0, 0);
+    expect(r).toBeCloseTo(0, 6);
+    expect(g).toBeCloseTo(0, 6);
+    expect(b).toBeCloseTo(0, 6);
+  });
+
+  it('returns unclamped values > 1 for out-of-sRGB XYZ coordinates', () => {
+    // P3 red primary in XYZ D50 ≈ (47.5, 22.9, 1.6) — gives r > 1 in linear sRGB.
+    // The function must NOT clamp: raw out-of-gamut values are required by callers
+    // like gamut.ts that need to detect out-of-gamut colors.
+    const [rp3] = xyzD50ToLinearSrgb(47.5, 22.9, 1.6);
+    expect(rp3).toBeGreaterThan(1);
+  });
+
+  it('sRGB red primary roundtrip: sRGB red → XYZ → linear sRGB = [1, 0, 0]', () => {
+    // sRGB red linear = [1, 0, 0]; forward: sRGB→XYZ D65→D50; reverse: D50→D65→linear sRGB
+    // XYZ D50 of sRGB red ≈ (43.61, 22.25, 1.39) — from CSS Color 4 matrix
+    const [r, g, b] = xyzD50ToLinearSrgb(43.60654, 22.24884, 1.38956);
+    expect(r).toBeCloseTo(1, 3);
+    expect(g).toBeCloseTo(0, 3);
+    expect(b).toBeCloseTo(0, 3);
   });
 });

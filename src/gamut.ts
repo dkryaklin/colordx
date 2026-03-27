@@ -1,9 +1,11 @@
-import { oklabToLinear } from './colorModels/oklab.js';
+import { labToXyz } from './colorModels/lab.js';
+import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
 import { oklabToLinearP3 } from './colorModels/p3.js';
 import { oklabToLinearRec2020 } from './colorModels/rec2020.js';
+import { xyzD50ToLinearSrgb } from './colorModels/xyz.js';
 import { Colordx } from './colordx.js';
 import { ANGLE_UNITS, clamp } from './helpers.js';
-import type { AnyColor, OklabColor, OklchColor } from './types.js';
+import type { AnyColor, LabColor, OklabColor, OklchColor } from './types.js';
 
 const OKLCH_RE =
   /^oklch\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
@@ -18,8 +20,8 @@ const OKLAB_RE =
 const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha: number } | null => {
   if (typeof input === 'object' && input !== null) {
     const obj = input as unknown as Record<string, unknown>;
-    // OklabColor: has l, a, b, alpha — no c, h, r, x
-    if ('l' in obj && 'a' in obj && 'b' in obj && 'alpha' in obj && !('c' in obj) && !('h' in obj) && !('r' in obj)) {
+    // OklabColor: l/a/b present, no 'lab' colorSpace brand
+    if ('l' in obj && 'a' in obj && 'b' in obj && obj.colorSpace !== 'lab' && !('c' in obj) && !('r' in obj)) {
       const c = input as OklabColor;
       if (
         typeof c.l === 'number' &&
@@ -30,13 +32,22 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
         return { l: c.l, a: c.a, b: c.b, alpha: c.alpha };
       }
     }
-    // OklchColor: has l, c, h, alpha — no a, r, x
-    if ('l' in obj && 'c' in obj && 'h' in obj && 'alpha' in obj && !('a' in obj) && !('r' in obj) && !('x' in obj)) {
+    // OklchColor: l/c/h present, no 'lch' colorSpace brand
+    if ('l' in obj && 'c' in obj && 'h' in obj && obj.colorSpace !== 'lch' && !('a' in obj) && !('r' in obj)) {
       const c = input as OklchColor;
       if (typeof c.l === 'number' && typeof c.c === 'number' && typeof c.h === 'number') {
         const hRad = (c.h * Math.PI) / 180;
         return { l: c.l, a: c.c * Math.cos(hRad), b: c.c * Math.sin(hRad), alpha: c.alpha };
       }
+    }
+    // LabColor: convert Lab (D50) → XYZ D50 → D65 → linear sRGB → OKLab (no clamping)
+    if (obj.colorSpace === 'lab') {
+      const c = input as LabColor;
+      if (typeof c.l !== 'number' || typeof c.a !== 'number' || typeof c.b !== 'number') return null;
+      const { x, y, z } = labToXyz(c);
+      const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
+      const [ol, oa, ob] = linearSrgbToOklab(lr, lg, lb);
+      return { l: ol, a: oa, b: ob, alpha: typeof c.alpha === 'number' ? c.alpha : 1 };
     }
     return null;
   }
@@ -113,22 +124,23 @@ export const toGamutSrgb = (input: AnyColor): Colordx => {
   }
 
   const cFinal = (lo + hi) / 2;
-  const hDeg = ((hRad * 180) / Math.PI + 360) % 360;
-  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, alpha: clamp(alpha, 0, 1) };
-  return new Colordx(oklch);
+  const oklab: OklabColor = {
+    l: clamp(l, 0, 1),
+    a: cFinal * Math.cos(hRad),
+    b: cFinal * Math.sin(hRad),
+    alpha: clamp(alpha, 0, 1),
+  };
+  return new Colordx(oklab);
 };
 
 type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
-
-const isLinearInGamutCustom = (r: number, g: number, b: number): boolean =>
-  r >= -EPS && r <= 1 + EPS && g >= -EPS && g <= 1 + EPS && b >= -EPS && b <= 1 + EPS;
 
 const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
   const raw = getRawOklab(input);
   // sRGB-bounded inputs (hex, rgb, hsl, etc.) are always inside the wider P3/Rec.2020 gamut
   if (raw === null) return true;
   const [r, g, b] = toLinear(raw.l, raw.a, raw.b);
-  return isLinearInGamutCustom(r, g, b);
+  return isLinearInGamut(r, g, b);
 };
 
 const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
@@ -137,7 +149,7 @@ const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
 
   const { l, a, b, alpha } = raw;
   const [r, g, bv] = toLinear(l, a, b);
-  if (isLinearInGamutCustom(r, g, bv)) return new Colordx(input);
+  if (isLinearInGamut(r, g, bv)) return new Colordx(input);
 
   const hRad = Math.atan2(b, a);
   let lo = 0;
@@ -146,7 +158,7 @@ const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
   for (let i = 0; i < 24; i++) {
     const mid = (lo + hi) / 2;
     const [lr, lg, lb] = toLinear(l, mid * Math.cos(hRad), mid * Math.sin(hRad));
-    if (isLinearInGamutCustom(lr, lg, lb)) {
+    if (isLinearInGamut(lr, lg, lb)) {
       lo = mid;
     } else {
       hi = mid;
@@ -154,9 +166,13 @@ const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
   }
 
   const cFinal = (lo + hi) / 2;
-  const hDeg = ((hRad * 180) / Math.PI + 360) % 360;
-  const oklch: OklchColor = { l: clamp(l, 0, 1), c: cFinal, h: hDeg, alpha: clamp(alpha, 0, 1) };
-  return new Colordx(oklch);
+  const oklab: OklabColor = {
+    l: clamp(l, 0, 1),
+    a: cFinal * Math.cos(hRad),
+    b: cFinal * Math.sin(hRad),
+    alpha: clamp(alpha, 0, 1),
+  };
+  return new Colordx(oklab);
 };
 
 /**

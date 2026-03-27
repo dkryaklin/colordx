@@ -51,11 +51,8 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     }
 
     if (opts.rgb) {
-      const ra = shortenLeadingZero(r),
-        ga = shortenLeadingZero(g),
-        ba = shortenLeadingZero(b),
-        aa = shortenLeadingZero(alpha);
-      candidates.push(alpha === 1 ? `rgb(${ra},${ga},${ba})` : `rgba(${ra},${ga},${ba},${aa})`);
+      const aa = shortenLeadingZero(alpha);
+      candidates.push(alpha === 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${aa})`);
     }
 
     if (opts.hsl) {
@@ -76,6 +73,7 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     if (opts.transparent && r === 0 && g === 0 && b === 0 && alpha === 0) {
       candidates.push('transparent');
     } else if (
+      // else if: transparent takes priority over name even though it is also a CSS named color
       alpha === 1 &&
       opts.name &&
       typeof (this as { toName?: () => string | undefined }).toName === 'function'
@@ -84,6 +82,7 @@ const minifyPlugin: Plugin = (ColordxClass) => {
       if (name) candidates.push(name);
     }
 
+    if (candidates.length === 0) return targetHex;
     return candidates.reduce((shortest, c) => (c.length < shortest.length ? c : shortest));
   };
 };

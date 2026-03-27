@@ -1,9 +1,10 @@
 import { parseHex } from './colorModels/hex.js';
 import { parseHslObject, parseHslString } from './colorModels/hsl.js';
-import { parseHsvObject } from './colorModels/hsv.js';
+import { parseHsvObject, parseHsvString } from './colorModels/hsv.js';
 import { parseHwbObject, parseHwbString } from './colorModels/hwb.js';
 import { parseOklabObject, parseOklabString } from './colorModels/oklab.js';
 import { parseOklchObject, parseOklchString } from './colorModels/oklch.js';
+import { parseP3String } from './colorModels/p3.js';
 import { parseRgbObject, parseRgbString } from './colorModels/rgb.js';
 import type { AnyColor, ColorFormat, ColorParser, RgbColor } from './types.js';
 
@@ -11,9 +12,11 @@ const stringFormatParsers: [ColorParser, ColorFormat][] = [
   [parseHex, 'hex'],
   [parseRgbString, 'rgb'],
   [parseHslString, 'hsl'],
+  [parseHsvString, 'hsv'],
   [parseHwbString, 'hwb'],
   [parseOklchString, 'oklch'],
   [parseOklabString, 'oklab'],
+  [parseP3String, 'p3'],
 ];
 
 const objectFormatParsers: [ColorParser, ColorFormat][] = [

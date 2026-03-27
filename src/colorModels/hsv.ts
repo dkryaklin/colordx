@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -9,6 +9,7 @@ export const clampHsv = (hsv: HsvColor): HsvColor => ({
   alpha: clamp(round(hsv.alpha, 3), 0, 1),
 });
 
+// Shared write buffer for rgbToHsvRaw — callers must destructure immediately, never store the reference.
 const _hsvBuf: HsvColor = { h: 0, s: 0, v: 0, alpha: 0 };
 
 export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
@@ -46,6 +47,7 @@ export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
 export const rgbToHsv = (rgb: RgbColor): HsvColor => {
   const { h, s, v, alpha } = rgbToHsvRaw(rgb);
   const hr = round(h, 2);
+  // round() can push a value just below 360 to 360.00 due to floating-point; clamp back to 0.
   return { h: hr >= 360 ? 0 : hr, s: round(s, 2), v: round(v, 2), alpha };
 };
 
@@ -86,7 +88,7 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
       _RGB[1] = p;
       _RGB[2] = vn;
       break;
-    default:
+    default: // case 5 — not an error handler; i is always 0–5 for h in [0, 360)
       _RGB[0] = vn;
       _RGB[1] = p;
       _RGB[2] = q;
@@ -96,10 +98,36 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
   return clampRgb({ r: _RGB[0] * 255, g: _RGB[1] * 255, b: _RGB[2] * 255, alpha });
 };
 
+const N = '[+-]?\\d*\\.?\\d+';
+// HSV/HSVA is a non-standard, library-defined syntax (not part of any CSS spec).
+// Format mirrors HSL for consistency: hsv(h, s%, v%) / hsv(h s% v% / alpha).
+const HSV_RE = new RegExp(
+  `^hsva?\\(\\s*(${N})(deg|rad|grad|turn)?\\s*(?:` +
+    `,\\s*(${N})%\\s*,\\s*(${N})%(?:\\s*,\\s*(${N})(%?)?\\s*)?` +
+    `|` +
+    `\\s+(${N})(%?)\\s+(${N})(%?)(?:\\s*/\\s*(${N})(%?)?\\s*)?` +
+    `)\\)$`,
+  'i'
+);
+
+export const parseHsvString = (input: unknown): RgbColor | null => {
+  if (typeof input !== 'string') return null;
+  const m = HSV_RE.exec(input.trim());
+  if (!m) return null;
+  const unit = m[2]?.toLowerCase() ?? 'deg';
+  const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);
+  const s = Number(m[3] ?? m[7]);
+  const v = Number(m[4] ?? m[9]);
+  const rawA = m[5] ?? m[11];
+  const isPercent = !!(m[6] ?? m[12]);
+  const alpha = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
+  return hsvToRgb(clampHsv({ h, s, v, alpha }));
+};
+
 export const parseHsvObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 's', 'v'])) return null;
   const { h, s, v, alpha = 1 } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
-  if (!isNumber(h) || !isNumber(s) || !isNumber(v) || !isNumber(alpha as number)) return null;
-  return hsvToRgb(clampHsv({ h: sanitize(h), s: sanitize(s), v: sanitize(v), alpha: sanitize(alpha as number) }));
+  if (!isAnyNumber(h) || !isAnyNumber(s) || !isAnyNumber(v) || !isAnyNumber(alpha)) return null;
+  return hsvToRgb(clampHsv({ h: sanitize(h), s: sanitize(s), v: sanitize(v), alpha: sanitize(alpha) }));
 };

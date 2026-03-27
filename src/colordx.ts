@@ -66,6 +66,7 @@ export class Colordx {
     return rgbToHex(this._rgb);
   }
 
+  /** Returns a 24-bit RGB integer (0x000000–0xFFFFFF). Alpha is not included. */
   toNumber(): number {
     const { r, g, b } = this._rgb;
     return (round(r) << 16) | (round(g) << 8) | round(b);
@@ -85,6 +86,7 @@ export class Colordx {
     return rgbToHsv(this._rgb);
   }
 
+  // Non-standard syntax — HSV is not in any CSS spec. Format is library-defined.
   toHsvString(): string {
     const { h, s, v, alpha } = this.toHsv();
     return alpha < 1 ? `hsva(${h}, ${s}%, ${v}%, ${alpha})` : `hsv(${h}, ${s}%, ${v}%)`;
@@ -231,15 +233,15 @@ export class Colordx {
   }
 
   mixOklab(color: AnyColor | Colordx, ratio = 0.5): Colordx {
-    const a = rgbToOklab(this._rgb);
-    const b = rgbToOklab(new Colordx(color)._rgb);
+    const oklab1 = rgbToOklab(this._rgb);
+    const oklab2 = rgbToOklab(new Colordx(color)._rgb);
     const w = clamp(ratio, 0, 1);
     return Colordx._make(
       oklabToRgb({
-        l: a.l * (1 - w) + b.l * w,
-        a: a.a * (1 - w) + b.a * w,
-        b: a.b * (1 - w) + b.b * w,
-        alpha: round(a.alpha * (1 - w) + b.alpha * w, 3),
+        l: oklab1.l * (1 - w) + oklab2.l * w,
+        a: oklab1.a * (1 - w) + oklab2.a * w,
+        b: oklab1.b * (1 - w) + oklab2.b * w,
+        alpha: round(oklab1.alpha * (1 - w) + oklab2.alpha * w, 3),
       })
     );
   }
@@ -251,9 +253,9 @@ export class Colordx {
     const effectiveFg =
       fgRgb.alpha < 1
         ? Colordx._make({
-            r: round(fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r),
-            g: round(fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g),
-            b: round(fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b),
+            r: fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r,
+            g: fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g,
+            b: fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b,
             alpha: 1,
           })
         : this;
@@ -288,6 +290,7 @@ export const extend = (plugins: Plugin[]): void => {
 };
 
 export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {
+  if (candidates.length === 0) throw new Error('nearest: candidates array must not be empty');
   const { l: l1, a: a1, b: b1 } = new Colordx(color).toOklab();
   let minDist = Infinity;
   let result = candidates[0] as T;

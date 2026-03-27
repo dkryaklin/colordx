@@ -5,6 +5,7 @@ import { oklabToLinear } from './oklab.js';
 import { clampRgb } from './rgb.js';
 
 // Linear sRGB → Linear Display-P3 (D65 white point for both, from CSS Color 4)
+// The r and g rows have zero blue coefficients — this is correct per the spec, not a bug.
 export const srgbLinearToP3Linear = (r: number, g: number, b: number): [number, number, number] => [
   0.8224619687 * r + 0.1775380313 * g,
   0.0331941989 * r + 0.9668058011 * g,
@@ -18,6 +19,8 @@ const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, numbe
   -0.019637554590334432 * r - 0.078636045550631889 * g + 1.0982736001409663 * b,
 ];
 
+// No clamping on output: P3 is wide-gamut, sRGB values can legitimately sit outside [0,1] in P3 space.
+// p3ToRgb clips back to sRGB gamut on the way out.
 export const rgbToP3 = ({ r, g, b, alpha }: RgbColor): P3Color => {
   const [p3r, p3g, p3b] = srgbLinearToP3Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {

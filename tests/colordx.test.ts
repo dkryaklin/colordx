@@ -84,6 +84,24 @@ describe("conversion", () => {
     expect(colordx("#ff0000").toHsvString()).toBe("hsv(0, 100%, 100%)");
     expect(colordx("rgba(255, 0, 0, 0.5)").toHsvString()).toBe("hsva(0, 100%, 100%, 0.5)");
   });
+
+  it("parses hsv strings (round-trip)", () => {
+    expect(colordx("hsv(0, 100%, 100%)").toHex()).toBe("#ff0000");
+    expect(colordx("hsv(120, 100%, 100%)").toHex()).toBe("#00ff00");
+    expect(colordx("hsv(240, 100%, 100%)").toHex()).toBe("#0000ff");
+    expect(colordx("hsva(0, 100%, 100%, 0.5)").toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 0.5 });
+  });
+
+  it("parses hsv strings — modern space syntax", () => {
+    expect(colordx("hsv(0 100% 100%)").toHex()).toBe("#ff0000");
+    expect(colordx("hsv(0 100% 100% / 0.5)").toRgb().alpha).toBe(0.5);
+    expect(colordx("hsv(120deg 100% 100%)").toHex()).toBe("#00ff00");
+  });
+
+  it("getFormat detects hsv strings", () => {
+    expect(getFormat("hsv(0, 100%, 100%)")).toBe("hsv");
+    expect(getFormat("hsva(0, 100%, 100%, 0.5)")).toBe("hsv");
+  });
 });
 
 describe("achromatic hue normalization", () => {
@@ -366,8 +384,25 @@ describe("invalid input", () => {
     expect(colordx({ r: NaN, g: NaN, b: NaN, alpha: 1 } as any).isValid()).toBe(true);
   });
 
-  it("rejects OKLCH object with l > 1 (disambiguates from CIE LCH)", () => {
+  it("parses {l,c,h} without colorSpace as OKLCH when L is in [0,1]", () => {
+    // No colorSpace → OKLCH. l must be in [0, 1]; l > 1 is rejected (guard restored).
+    expect(colordx({ l: 0.5, c: 0.2, h: 180 } as any).isValid()).toBe(true);
+    // l=50 is out-of-range for OKLCH (L ∈ [0,1]) → rejected, not silently garbage
     expect(colordx({ l: 50, c: 0.2, h: 180 } as any).isValid()).toBe(false);
+    // colorSpace:'lch' routes to CIE LCH parser (plugin); unrecognised by base instance
+    expect(colordx({ l: 50, c: 20, h: 180, colorSpace: 'lch' } as any).isValid()).toBe(false);
+  });
+
+  it("rejects OKLab objects with l > 1 (l > 1 guard)", () => {
+    // CIE Lab-scale values accidentally passed without colorSpace branding must be rejected.
+    // Without this guard, {l:50,a:0.1,b:-0.1} would be parsed as OKLab (L=50 is wildly out
+    // of range for OKLab where L ∈ [0,1]) and produce a garbage color like #ff00ff.
+    expect(colordx({ l: 50, a: 0.1, b: -0.1, alpha: 1 } as any).isValid()).toBe(false);
+    expect(colordx({ l: 1.001, a: 0, b: 0, alpha: 1 } as any).isValid()).toBe(false);
+    // Boundary: l=1.0 is valid (white in OKLab)
+    expect(colordx({ l: 1.0, a: 0, b: 0, alpha: 1 } as any).isValid()).toBe(true);
+    // Correctly branded CIE Lab is accepted by the lab plugin, not this parser
+    expect(colordx({ l: 50, a: 0.1, b: -0.1, alpha: 1, colorSpace: 'lab' } as any).isValid()).toBe(false); // no lab plugin loaded
   });
 });
 
@@ -902,6 +937,19 @@ describe("getFormat: extended", () => {
     expect(getFormat("oklab(1 0 0)")).toBe("oklab");
   });
 
+  it("detects display-p3 string as 'p3' without any plugin loaded", () => {
+    // parseP3String is now a builtin — no plugin needed
+    expect(getFormat("color(display-p3 0.5 0.5 0.5)")).toBe("p3");
+    expect(getFormat("color(display-p3 1 0 0)")).toBe("p3");
+  });
+
+  it("parses display-p3 string without any plugin loaded", () => {
+    const c = colordx("color(display-p3 1 0 0)");
+    expect(c.isValid()).toBe(true);
+    // P3 red (1,0,0) is out-of-sRGB-gamut but maps to #ff0000 after clamping
+    expect(c.toHex()).toBe("#ff0000");
+  });
+
   it("detects hwb object", () => {
     expect(getFormat({ h: 0, w: 0, b: 0, alpha: 1 })).toBe("hwb");
   });
@@ -926,6 +974,10 @@ describe("getFormat: extended", () => {
 });
 
 describe("nearest: edge cases", () => {
+  it("throws for empty candidates array", () => {
+    expect(() => nearest("#ff0000", [])).toThrow();
+  });
+
   it("returns the only candidate for a single-element palette", () => {
     expect(nearest("#ff0000", ["#ff0000"])).toBe("#ff0000");
     expect(nearest("#0000cc", ["#ff0000"])).toBe("#ff0000");

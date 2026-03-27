@@ -161,25 +161,88 @@ describe('delta', () => {
 });
 
 describe('Lab object parsing edge cases', () => {
-  it('rejects Lab object when "r" key is present (avoids RGB collision)', () => {
+  it('rejects {l,a,b,r} — "r" key disqualifies both OKLab and Lab parsers', () => {
+    // parseOklabObject checks 'r' in input → null; parseLabObject checks colorSpace → null
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(colordx({ l: 50, a: 25, b: -10, alpha: 1, r: 255 } as any).isValid()).toBe(false);
   });
 
-  it('clamps Lab object with NaN alpha to 0', () => {
+  it('clamps branded Lab object with NaN alpha to 0', () => {
+    // colorSpace:'lab' routes to parseLabObject; NaN alpha → sanitize → 0 → clamp → 0
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = colordx({ l: 50, a: 25, b: -10, alpha: NaN } as any);
+    const c = colordx({ l: 50, a: 25, b: -10, alpha: NaN, colorSpace: 'lab' } as any);
     expect(c.isValid()).toBe(true);
     expect(c.alpha()).toBe(0);
   });
 });
 
 describe('LCH object parsing edge cases', () => {
-  it('clamps LCH object with NaN alpha to 0', () => {
+  it('clamps branded LCH object with NaN alpha to 0', () => {
+    // colorSpace:'lch' routes to parseLchObject; NaN alpha → sanitize → 0 → clamp → 0
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = colordx({ l: 50, c: 30, h: 180, alpha: NaN } as any);
+    const c = colordx({ l: 50, c: 30, h: 180, alpha: NaN, colorSpace: 'lch' } as any);
     expect(c.isValid()).toBe(true);
     expect(c.alpha()).toBe(0);
+  });
+
+  it('clamps negative chroma to 0 (achromatic)', () => {
+    // clampLch applies Math.max(0, c); negative C → 0 → Lab a=b=0 → achromatic gray
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const neg = colordx({ l: 50, c: -30, h: 180, alpha: 1, colorSpace: 'lch' } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const zero = colordx({ l: 50, c: 0, h: 0, alpha: 1, colorSpace: 'lch' } as any);
+    expect(neg.toHex()).toBe(zero.toHex());
+  });
+});
+
+describe('Lab colorSpace branding', () => {
+  it('branded { colorSpace: "lab" } round-trips white and black', () => {
+    // CIE Lab: L*=100 is white, L*=0 is black
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx({ l: 100, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any).toHex()).toBe('#ffffff');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx({ l: 0, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any).toHex()).toBe('#000000');
+  });
+
+  it('L* is clamped to [0, 100] — L=150 maps to white', () => {
+    // Old clamp was 0–400 (incorrect); now 0–100 per the CIE Lab spec
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = colordx({ l: 150, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    expect(c.toHex()).toBe('#ffffff');
+  });
+
+  it('unbranded { l, a, b } without colorSpace is parsed as OKLab, not CIE Lab', () => {
+    // parseLabObject now requires colorSpace:'lab'; plain objects fall through to parseOklabObject
+    // OKLab L=0.5 ≠ CIE Lab L=0.5 — they produce different grays
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const asOklab = colordx({ l: 0.5, a: 0, b: 0, alpha: 1 } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const asCieLab = colordx({ l: 0.5, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    expect(asOklab.isValid()).toBe(true);
+    // OKLab (0.5,0,0) is a much darker gray than CIE Lab (0.5,0,0)
+    expect(asOklab.toHex()).not.toBe(asCieLab.toHex());
+  });
+});
+
+describe('LCH colorSpace branding', () => {
+  it('branded { colorSpace: "lch" } round-trips primary colors', () => {
+    for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lchObj = (colordx(hex) as any).toLch();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((colordx(lchObj) as any).toHex()).toBe(colordx(hex).toHex());
+    }
+  });
+
+  it('unbranded { l, c, h } without colorSpace is parsed as OKLCH, not CIE LCH', () => {
+    // parseLchObject requires colorSpace:'lch'; plain {l,c,h} routes to parseOklchObject
+    // OKLCH l=0.5 ≠ CIE LCH l=50 — different color spaces, different output
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const asOklch = colordx({ l: 0.5, c: 0.1, h: 180, alpha: 1 } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const asCieLch = colordx({ l: 50, c: 10, h: 180, alpha: 1, colorSpace: 'lch' } as any);
+    expect(asOklch.isValid()).toBe(true);
+    expect(asOklch.toHex()).not.toBe(asCieLch.toHex());
   });
 });
 

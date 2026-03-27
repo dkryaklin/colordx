@@ -1,12 +1,12 @@
-import { clamp, hasKeys, isNumeric, isObject, round } from '../helpers.js';
+import { clamp, hasKeys, isNumber, isObject, round } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { RgbColor, XyzColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
 // D50 white point (CSS Color 4: xy = 0.3457/0.3585)
-const WX = 96.42956752983539,
-  WY = 100,
-  WZ = 82.51046025104603;
+export const D50_WX = 96.42956752983539;
+export const D50_WY = 100;
+export const D50_WZ = 82.51046025104603;
 
 export const rgbToXyz = ({ r, g, b, alpha }: RgbColor): XyzColor => {
   const lr = srgbToLinear(r / 255),
@@ -25,16 +25,25 @@ export const rgbToXyz = ({ r, g, b, alpha }: RgbColor): XyzColor => {
   };
 };
 
-export const xyzToRgb = ({ x, y, z, alpha }: XyzColor): RgbColor => {
+/** XYZ D50 → linear sRGB (no gamma, no clamping). x/y/z are in 0–100 scale. */
+export const xyzD50ToLinearSrgb = (x: number, y: number, z: number): [number, number, number] => {
   // D50 → D65 (Bradford inverse, CSS Color 4)
   const xd65 = 0.955473421488075 * x - 0.02309845494876471 * y + 0.06325924320057072 * z;
   const yd65 = -0.0283697093338637 * x + 1.0099953980813041 * y + 0.021041441191917323 * z;
   const zd65 = 0.012314014864481998 * x - 0.020507649298898964 * y + 1.330365926242124 * z;
+  return [
+    0.032409699419045213 * xd65 - 0.015373831775700935 * yd65 - 0.0049861076029300327 * zd65,
+    -0.0096924363628087984 * xd65 + 0.018759675015077206 * yd65 + 0.00041555057407175612 * zd65,
+    0.00055630079696993608 * xd65 - 0.0020397695888897657 * yd65 + 0.010569715142428786 * zd65,
+  ];
+};
+
+export const xyzToRgb = ({ x, y, z, alpha }: XyzColor): RgbColor => {
+  const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
   return clampRgb({
-    r: srgbFromLinear(0.032409699419045213 * xd65 - 0.015373831775700935 * yd65 - 0.0049861076029300327 * zd65) * 255,
-    g:
-      srgbFromLinear(-0.0096924363628087984 * xd65 + 0.018759675015077206 * yd65 + 0.00041555057407175612 * zd65) * 255,
-    b: srgbFromLinear(0.00055630079696993608 * xd65 - 0.0020397695888897657 * yd65 + 0.010569715142428786 * zd65) * 255,
+    r: srgbFromLinear(lr) * 255,
+    g: srgbFromLinear(lg) * 255,
+    b: srgbFromLinear(lb) * 255,
     alpha,
   });
 };
@@ -43,11 +52,11 @@ export const parseXyzObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['x', 'y', 'z'])) return null;
   const { x, y, z, alpha = 1 } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
-  if (!isNumeric(x) || !isNumeric(y) || !isNumeric(z) || !isNumeric(alpha as number)) return null;
+  if (!isNumber(x) || !isNumber(y) || !isNumber(z) || !isNumber(alpha)) return null;
   return xyzToRgb({
-    x: clamp(Number(x), 0, WX),
-    y: clamp(Number(y), 0, WY),
-    z: clamp(Number(z), 0, WZ),
-    alpha: clamp(Number(alpha), 0, 1),
+    x: clamp(x, 0, D50_WX),
+    y: clamp(y, 0, D50_WY),
+    z: clamp(z, 0, D50_WZ),
+    alpha: clamp(alpha, 0, 1),
   });
 };

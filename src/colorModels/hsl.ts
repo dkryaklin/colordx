@@ -1,4 +1,4 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 export const clampHsl = (hsl: HslColor): HslColor => ({
@@ -8,6 +8,7 @@ export const clampHsl = (hsl: HslColor): HslColor => ({
   alpha: clamp(round(hsl.alpha, 3), 0, 1),
 });
 
+// Shared write buffer for rgbToHslRaw — callers must destructure immediately, never store the reference.
 const _hslBuf: HslColor = { h: 0, s: 0, l: 0, alpha: 0 };
 
 export const rgbToHslRaw = ({ r, g, b, alpha }: RgbColor): HslColor => {
@@ -47,6 +48,7 @@ export const rgbToHslRaw = ({ r, g, b, alpha }: RgbColor): HslColor => {
 export const rgbToHsl = (rgb: RgbColor): HslColor => {
   const { h, s, l, alpha } = rgbToHslRaw(rgb);
   const hr = round(h, 2);
+  // round() can push a value just below 360 to 360.00 due to floating-point; clamp back to 0.
   return { h: hr >= 360 ? 0 : hr, s: round(s, 2), l: round(l, 2), alpha };
 };
 
@@ -77,8 +79,8 @@ export const parseHslObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 's', 'l'])) return null;
   const { h, s, l, alpha = 1 } = input as { h: unknown; s: unknown; l: unknown; alpha?: unknown };
-  if (!isNumber(h) || !isNumber(s) || !isNumber(l) || !isNumber(alpha as number)) return null;
-  return hslToRgb(clampHsl({ h: sanitize(h), s: sanitize(s), l: sanitize(l), alpha: sanitize(alpha as number) }));
+  if (!isAnyNumber(h) || !isAnyNumber(s) || !isAnyNumber(l) || !isAnyNumber(alpha)) return null;
+  return hslToRgb(clampHsl({ h: sanitize(h), s: sanitize(s), l: sanitize(l), alpha: sanitize(alpha) }));
 };
 
 const N = '[+-]?\\d*\\.?\\d+';

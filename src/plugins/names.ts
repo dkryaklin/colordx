@@ -165,14 +165,19 @@ const names: Plugin = (ColordxClass, parsers, formatParsers) => {
 
   ColordxClass.prototype.toName = function (this: Colordx, options?: { closest?: boolean }): string | undefined {
     const { r, g, b, alpha } = this.toRgb();
+    // Strict: CSS transparent is rgba(0,0,0,0) specifically. Other fully-transparent colors return undefined.
     if (alpha === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
+    // toHex() returns 6-char hex for alpha=1, 8-char for alpha<1. Only 6-char can match NAMES entries,
+    // so semi-transparent colors always return undefined here (closest still works via RGB distance).
     const hex = this.toHex().toLowerCase();
+    // aqua/cyan and fuchsia/magenta share the same hex — insertion order means cyan/magenta are unreachable.
     const exact = Object.keys(NAMES).find((name) => NAMES[name] === hex);
     if (exact || !options?.closest) return exact;
     let minDist = Infinity;
     let closest: string | undefined;
     for (const name of Object.keys(NAMES)) {
       const c = parseHex(NAMES[name])!;
+      // Alpha is intentionally excluded — all CSS named colors are opaque, so distance is RGB-only.
       const d = (c.r - r) ** 2 + (c.g - g) ** 2 + (c.b - b) ** 2;
       if (d < minDist) {
         minDist = d;

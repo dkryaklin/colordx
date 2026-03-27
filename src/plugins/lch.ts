@@ -1,5 +1,6 @@
 import { parseLchObject, parseLchString, rgbToLch } from '../colorModels/lch.js';
 import type { Plugin } from '../colordx.js';
+import { round } from '../helpers.js';
 import type { LchColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -11,11 +12,13 @@ declare module '@colordx/core' {
 
 const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLch = function () {
-    return rgbToLch(this.toRgb());
+    const { l, c, h, alpha } = rgbToLch(this.toRgb());
+    return { l: round(l, 2), c, h, alpha, colorSpace: 'lch' as const };
   };
   ColordxClass.prototype.toLchString = function () {
     const { l, c, h, alpha } = this.toLch();
-    const H = c < 0.0015 ? 'none' : h;
+    // c is already rounded to 2dp; c === 0 is the effective achromatic check at this precision.
+    const H = c === 0 ? 'none' : h;
     return alpha < 1 ? `lch(${l}% ${c} ${H} / ${alpha})` : `lch(${l}% ${c} ${H})`;
   };
   parsers.push(parseLchObject, parseLchString);

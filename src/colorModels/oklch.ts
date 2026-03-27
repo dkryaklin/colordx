@@ -1,7 +1,6 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
-import { srgbToLinear } from '../transfer.js';
+import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
-import { oklabToRgb } from './oklab.js';
+import { oklabToRgb, rgbToOklab } from './oklab.js';
 
 const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
   l,
@@ -10,21 +9,11 @@ const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
   alpha,
 });
 
-export const rgbToOklch = ({ r, g, b, alpha }: RgbColor): OklchColor => {
-  const lr = srgbToLinear(r / 255),
-    lg = srgbToLinear(g / 255),
-    lb = srgbToLinear(b / 255);
-  const lv = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
-  const mv = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
-  const sv = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
-  const l_ = Math.cbrt(lv),
-    m_ = Math.cbrt(mv),
-    s_ = Math.cbrt(sv);
-  const oa = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
-  const ob = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
-  const ol = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
+export const rgbToOklch = (rgb: RgbColor): OklchColor => {
+  const { l: ol, a: oa, b: ob, alpha } = rgbToOklab(rgb);
   const C = Math.sqrt(oa * oa + ob * ob);
   const H = (Math.atan2(ob, oa) * 180) / Math.PI;
+  // Achromatic threshold on OKLCH scale (0–~0.4): proportionally equivalent to LCH's 0.0015 threshold.
   return { l: ol, c: C, h: C < 0.000004 ? 0 : normalizeHue(H), alpha };
 };
 
@@ -32,16 +21,17 @@ export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOkl
 
 export const parseOklchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
+  // Objects with colorSpace: 'lch' are CIE LCH, not OKLCH — let parseLchObject handle them.
+  if ((input as { colorSpace?: unknown }).colorSpace === 'lch') return null;
   if (!hasKeys(input, ['l', 'c', 'h'])) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
-  if (!isNumber(l as number) || !isNumber(c as number) || !isNumber(h as number) || !isNumber(alpha as number))
-    return null;
-  if ((l as number) > 1) return null;
+  if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
+  if (sanitize(l) > 1) return null; // OKLCH L is always [0, 1]; reject CIE LCH values passed without colorSpace branding
   return oklchToRgb({
-    l: sanitize(l as number),
-    c: sanitize(c as number),
-    h: normalizeHue(sanitize(Number(h))),
-    alpha: clamp(sanitize(alpha as number), 0, 1),
+    l: sanitize(l),
+    c: Math.max(0, sanitize(c)),
+    h: normalizeHue(sanitize(h)),
+    alpha: clamp(sanitize(alpha), 0, 1),
   });
 };
 
@@ -55,7 +45,7 @@ export const parseOklchString = (input: unknown): RgbColor | null => {
   const m = OKLCH_RE.exec(input.trim());
   if (!m) return null;
   const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
-  const C = m[4] ? val(m[3]!) * 0.004 : val(m[3]!);
+  const C = Math.max(0, m[4] ? val(m[3]!) * 0.004 : val(m[3]!)); // CSS Color 4: 100% = 0.4, so 1% = 0.004
   const unit = m[6]?.toLowerCase() ?? 'deg';
   const H = val(m[5]!) * (ANGLE_UNITS[unit] ?? 1);
   const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);

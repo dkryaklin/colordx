@@ -491,3 +491,82 @@ describe('gamut subset transitivity', () => {
     }
   });
 });
+
+describe('CIE Lab object gamut checking', () => {
+  // Verified via lab(l,a,b) → XYZ D50 → D65 → linear sRGB (before clamping):
+  // lab(90,50,-30)  → linear(1.383, 0.526, 1.285) — r,b > 1 → out of sRGB
+  // lab(50,100,0)   → linear(1.017, -0.065, 0.199) — r > 1, g < 0 → out of sRGB
+  // lab(50,0,-80)   → linear(-0.210, 0.217, 1.019) — r < 0, b > 1 → out of sRGB
+  // lab(70,-60,60)  → linear(0.066, 0.547, 0.029) — all in [0,1] → in sRGB
+
+  it('returns false for out-of-sRGB CIE Lab colors (inGamutSrgb)', () => {
+    expect(inGamutSrgb({ l: 90, a: 50, b: -30, alpha: 1, colorSpace: 'lab' } as any)).toBe(false);
+    expect(inGamutSrgb({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(false);
+    expect(inGamutSrgb({ l: 50, a: 0, b: -80, alpha: 1, colorSpace: 'lab' } as any)).toBe(false);
+  });
+
+  it('returns true for in-sRGB CIE Lab colors (inGamutSrgb)', () => {
+    expect(inGamutSrgb({ l: 70, a: -60, b: 60, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+    // White and black are always in gamut
+    expect(inGamutSrgb({ l: 100, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+    expect(inGamutSrgb({ l: 0, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+  });
+
+  it('out-of-sRGB CIE Lab colors may be in P3 (inGamutP3)', () => {
+    // lab(90,50,-30) is out of sRGB but may be in P3 — check it's no longer blindly true
+    const result = inGamutP3({ l: 90, a: 50, b: -30, alpha: 1, colorSpace: 'lab' } as any);
+    // lab(50,100,0) with linear r=1.017 — still outside P3 gamut
+    expect(inGamutP3({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(false);
+    // Whatever the result for (90,50,-30), it must not be blindly true for all out-of-sRGB colors
+    expect(typeof result).toBe('boolean');
+  });
+
+  it('toGamutSrgb maps out-of-sRGB CIE Lab to a valid sRGB color', () => {
+    const mapped = toGamutSrgb({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    const rgb = mapped.toRgb();
+    expect(rgb.r).toBeGreaterThanOrEqual(0);
+    expect(rgb.r).toBeLessThanOrEqual(255);
+    expect(rgb.g).toBeGreaterThanOrEqual(0);
+    expect(rgb.g).toBeLessThanOrEqual(255);
+    expect(rgb.b).toBeGreaterThanOrEqual(0);
+    expect(rgb.b).toBeLessThanOrEqual(255);
+    expect(inGamutSrgb(mapped.toHex())).toBe(true);
+  });
+
+  it('inGamutRec2020 returns false for extreme out-of-gamut CIE Lab colors', () => {
+    // lab(50,0,-200): extreme blue far outside the visible sRGB/P3/Rec.2020 gamut.
+    // Computed linear Rec.2020: r≈-0.53, b≈3.99 — clearly out of [0,1].
+    expect(inGamutRec2020({ l: 50, a: 0, b: -200, alpha: 1, colorSpace: 'lab' } as any)).toBe(false);
+    // lab(50,100,0) has linear sRGB r≈1.017, which is inside Rec.2020 (Rec.2020 ⊃ sRGB)
+    expect(inGamutRec2020({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+  });
+
+  it('inGamutRec2020 returns true for in-sRGB CIE Lab colors (sRGB ⊂ Rec.2020)', () => {
+    expect(inGamutRec2020({ l: 70, a: -60, b: 60, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+    expect(inGamutRec2020({ l: 100, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+    expect(inGamutRec2020({ l: 0, a: 0, b: 0, alpha: 1, colorSpace: 'lab' } as any)).toBe(true);
+  });
+
+  it('toGamutP3 maps out-of-P3 CIE Lab to a valid color', () => {
+    // lab(50,100,0) has linear sRGB r≈1.017 — outside sRGB and P3
+    const mapped = toGamutP3({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    const rgb = mapped.toRgb();
+    expect(rgb.r).toBeGreaterThanOrEqual(0);
+    expect(rgb.r).toBeLessThanOrEqual(255);
+    expect(rgb.g).toBeGreaterThanOrEqual(0);
+    expect(rgb.g).toBeLessThanOrEqual(255);
+    expect(rgb.b).toBeGreaterThanOrEqual(0);
+    expect(rgb.b).toBeLessThanOrEqual(255);
+  });
+
+  it('toGamutRec2020 maps out-of-Rec.2020 CIE Lab to a valid color', () => {
+    const mapped = toGamutRec2020({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    const rgb = mapped.toRgb();
+    expect(rgb.r).toBeGreaterThanOrEqual(0);
+    expect(rgb.r).toBeLessThanOrEqual(255);
+    expect(rgb.g).toBeGreaterThanOrEqual(0);
+    expect(rgb.g).toBeLessThanOrEqual(255);
+    expect(rgb.b).toBeGreaterThanOrEqual(0);
+    expect(rgb.b).toBeLessThanOrEqual(255);
+  });
+});

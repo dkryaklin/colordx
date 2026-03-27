@@ -1,12 +1,13 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, rgbToLab } from './lab.js';
 
-const clampLch = (lch: LchColor): LchColor => ({
+const clampLch = (lch: Omit<LchColor, 'colorSpace'>): LchColor => ({
   l: clamp(lch.l, 0, 100),
-  c: lch.c,
+  c: Math.max(0, lch.c),
   h: normalizeHue(lch.h),
   alpha: clamp(lch.alpha, 0, 1),
+  colorSpace: 'lch',
 });
 
 export const rgbToLch = (rgb: RgbColor): LchColor => {
@@ -16,8 +17,10 @@ export const rgbToLch = (rgb: RgbColor): LchColor => {
   return {
     l: lab.l,
     c,
+    // Achromatic threshold on LCH scale (0–~150): below this chroma the hue is numerically unstable.
     h: c < 0.0015 ? 0 : round(h < 0 ? h + 360 : h, 2),
     alpha: lab.alpha,
+    colorSpace: 'lch',
   };
 };
 
@@ -27,19 +30,21 @@ export const lchToRgb = ({ l, c, h, alpha }: LchColor): RgbColor =>
     a: c * Math.cos((h * Math.PI) / 180),
     b: c * Math.sin((h * Math.PI) / 180),
     alpha,
+    colorSpace: 'lab',
   });
 
 export const parseLchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
+  if ((input as { colorSpace?: unknown }).colorSpace !== 'lch') return null;
   if (!hasKeys(input, ['l', 'c', 'h'])) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
-  if (!isNumber(l) || !isNumber(c) || !isNumber(h) || !isNumber(alpha as number)) return null;
+  if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   return lchToRgb(
     clampLch({
-      l: sanitize(Number(l)),
-      c: sanitize(Number(c)),
-      h: sanitize(Number(h)),
-      alpha: sanitize(Number(alpha)),
+      l: sanitize(l),
+      c: sanitize(c),
+      h: sanitize(h),
+      alpha: sanitize(alpha),
     })
   );
 };

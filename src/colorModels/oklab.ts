@@ -1,27 +1,23 @@
-import { clamp, hasKeys, isNumber, isObject, sanitize } from '../helpers.js';
+import { clamp, hasKeys, isAnyNumber, isObject, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
+/** Convert linear sRGB channels to OKLab (Björn Ottosson). No gamma, no clamping. */
+export const linearSrgbToOklab = (lr: number, lg: number, lb: number): [number, number, number] => {
+  const lv = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const mv = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const sv = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  return [
+    0.2104542553 * lv + 0.793617785 * mv - 0.0040720468 * sv,
+    1.9779984951 * lv - 2.428592205 * mv + 0.4505937099 * sv,
+    0.0259040371 * lv + 0.7827717662 * mv - 0.808675766 * sv,
+  ];
+};
+
 export const rgbToOklab = ({ r, g, b, alpha }: RgbColor): OklabColor => {
-  const lr = srgbToLinear(r / 255),
-    lg = srgbToLinear(g / 255),
-    lb = srgbToLinear(b / 255);
-
-  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
-  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
-  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
-
-  const l_ = Math.cbrt(l);
-  const m_ = Math.cbrt(m);
-  const s_ = Math.cbrt(s);
-
-  return {
-    l: 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
-    a: 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
-    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
-    alpha,
-  };
+  const [l, a, bv] = linearSrgbToOklab(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  return { l, a, b: bv, alpha };
 };
 
 export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
@@ -62,17 +58,18 @@ export const oklabToLinear = (l: number, a: number, b: number): [number, number,
 
 export const parseOklabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
+  // Objects with colorSpace: 'lab' are CIE Lab, not OKLab — let parseLabObject handle them.
+  if ((input as { colorSpace?: unknown }).colorSpace === 'lab') return null;
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
-  if (!isNumber(l as number) || !isNumber(a as number) || !isNumber(b as number) || !isNumber(alpha as number))
-    return null;
-  if ((l as number) > 1) return null;
+  if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
+  if (sanitize(l) > 1) return null; // OKLab L is always [0, 1]; reject CIE Lab values passed without colorSpace branding
   return oklabToRgb({
-    l: sanitize(l as number),
-    a: sanitize(a as number),
-    b: sanitize(b as number),
-    alpha: clamp(sanitize(alpha as number), 0, 1),
+    l: sanitize(l),
+    a: sanitize(a),
+    b: sanitize(b),
+    alpha: clamp(sanitize(alpha), 0, 1),
   });
 };
 
@@ -86,7 +83,7 @@ export const parseOklabString = (input: unknown): RgbColor | null => {
   const m = OKLAB_RE.exec(input.trim());
   if (!m) return null;
   const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
-  const a = m[4] ? val(m[3]!) * 0.004 : val(m[3]!);
+  const a = m[4] ? val(m[3]!) * 0.004 : val(m[3]!); // CSS Color 4: 100% = 0.4, so 1% = 0.004
   const b = m[6] ? val(m[5]!) * 0.004 : val(m[5]!);
   const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
   return oklabToRgb({ l: L, a, b, alpha: clamp(alpha, 0, 1) });

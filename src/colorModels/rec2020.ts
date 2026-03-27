@@ -21,9 +21,9 @@ const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, 
 export const rgbToRec2020 = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
   const [rr, rg, rb] = srgbLinearToRec2020Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
-    r: round(rec2020FromLinear(clamp(rr, 0, 1)), 4),
-    g: round(rec2020FromLinear(clamp(rg, 0, 1)), 4),
-    b: round(rec2020FromLinear(clamp(rb, 0, 1)), 4),
+    r: round(rec2020FromLinear(rr), 4),
+    g: round(rec2020FromLinear(rg), 4),
+    b: round(rec2020FromLinear(rb), 4),
     alpha,
     colorSpace: 'rec2020',
   };

@@ -1,11 +1,7 @@
-import { clamp, hasKeys, isNumber, isObject, round, sanitize } from '../helpers.js';
+import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
-import { rgbToXyz, xyzToRgb } from './xyz.js';
+import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzToRgb } from './xyz.js';
 
-// D50 white point (CSS Color 4: xy = 0.3457/0.3585)
-const WX = 96.42956752983539,
-  WY = 100,
-  WZ = 82.51046025104603;
 const EPSILON = 216 / 24389;
 const KAPPA = 24389 / 27;
 
@@ -15,19 +11,20 @@ const xyzToLab = ({ x, y, z, alpha }: XyzColor): LabColor => {
   const fy = f(y / WY);
   return {
     l: 116 * fy - 16,
-    a: 500 * (f(x / WX) - fy) || 0,
+    a: 500 * (f(x / WX) - fy) || 0, // || 0 suppresses −0; NaN is impossible since WX/WZ are non-zero constants
     b: 200 * (fy - f(z / WZ)) || 0,
     alpha: round(alpha, 3),
+    colorSpace: 'lab' as const,
   };
 };
 
-const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
+export const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
   const fy = (l + 16) / 116;
   const fx = a / 500 + fy;
   const fz = fy - b / 200;
   return {
     x: (fx ** 3 > EPSILON ? fx ** 3 : (116 * fx - 16) / KAPPA) * WX,
-    y: (l > 8 ? ((l + 16) / 116) ** 3 : l / KAPPA) * WY,
+    y: (l > 8 ? fy ** 3 : l / KAPPA) * WY,
     z: (fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA) * WZ,
     alpha,
   };
@@ -93,15 +90,15 @@ export const labToRgb = (lab: LabColor): RgbColor => xyzToRgb(labToXyz(lab));
 
 export const parseLabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
-  // LabColor has 'l' key; distinguish from other objects with a/b
+  if ((input as { colorSpace?: unknown }).colorSpace !== 'lab') return null;
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
-  if ('r' in input || 'x' in input) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
-  if (!isNumber(l) || !isNumber(a) || !isNumber(b) || !isNumber(alpha as number)) return null;
+  if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return labToRgb({
-    l: clamp(sanitize(Number(l)), 0, 400),
-    a: sanitize(Number(a)),
-    b: sanitize(Number(b)),
-    alpha: clamp(sanitize(Number(alpha)), 0, 1),
+    l: clamp(sanitize(l), 0, 100),
+    a: sanitize(a),
+    b: sanitize(b),
+    alpha: clamp(sanitize(alpha), 0, 1),
+    colorSpace: 'lab',
   });
 };

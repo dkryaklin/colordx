@@ -36,6 +36,7 @@ export interface LabColor {
   /** Blue–yellow axis */
   b: number;
   alpha: number;
+  readonly colorSpace: 'lab';
 }
 
 /** CIE LCH (D50) */
@@ -44,6 +45,7 @@ export interface LchColor {
   c: number;
   h: number;
   alpha: number;
+  readonly colorSpace: 'lch';
 }
 
 /** CIE XYZ (D65) */

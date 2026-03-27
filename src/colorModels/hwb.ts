@@ -1,8 +1,9 @@
-import { ANGLE_UNITS, clamp, hasKeys, isNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
 
 export const clampHwb = (hwb: HwbColor): HwbColor => {
+  // Infinity upper bound = reject negatives only; proportional normalization handles w+b > 100 below.
   const w = clamp(hwb.w, 0, Infinity);
   const b = clamp(hwb.b, 0, Infinity);
   const sum = w + b;
@@ -31,6 +32,8 @@ export const rgbToHwb = (rgb: RgbColor): HwbColor => {
   });
 };
 
+// Precondition: w + b must be ≤ 100. Call clampHwb first — direct use with unnormalized values
+// produces negative saturation and incorrect output.
 export const hwbToRgb = ({ h, w, b, alpha }: HwbColor): RgbColor => {
   const s = b === 100 ? 0 : 100 - (w / (100 - b)) * 100;
   return hsvToRgb({ h, s, v: 100 - b, alpha });
@@ -40,8 +43,8 @@ export const parseHwbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['h', 'w', 'b'])) return null;
   const { h, w, b, alpha = 1 } = input as { h: unknown; w: unknown; b: unknown; alpha?: unknown };
-  if (!isNumber(h) || !isNumber(w) || !isNumber(b) || !isNumber(alpha as number)) return null;
-  return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), alpha: sanitize(alpha as number) }));
+  if (!isAnyNumber(h) || !isAnyNumber(w) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
+  return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), alpha: sanitize(alpha) }));
 };
 
 const HWB_RE =

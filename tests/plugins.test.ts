@@ -6,7 +6,6 @@ import harmonies from "../src/plugins/harmonies.js";
 import mix from "../src/plugins/mix.js";
 import minify from "../src/plugins/minify.js";
 import lab from "../src/plugins/lab.js";
-import p3 from "../src/plugins/p3.js";
 import rec2020 from "../src/plugins/rec2020.js";
 
 beforeAll(() => {
@@ -342,7 +341,7 @@ describe("names plugin: additional", () => {
 
 describe("getFormat for additional plugin formats", () => {
   beforeAll(() => {
-    extend([lab, p3, rec2020]);
+    extend([lab, rec2020]);
   });
 
   it("returns 'xyz' for XYZ object inputs", () => {
@@ -394,6 +393,16 @@ describe("a11y plugin: additional cases", () => {
   it("minReadable for dark background lightens the color", () => {
     const result = (colordx("#888888") as any).minReadable("#000000");
     expect(result.contrast("#000000")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("minReadable dark fg on dark bg lightens (not darkens) toward contrast", () => {
+    // Old logic: fg.luminance < bg.luminance → darken → could never pass 4.5:1 on a dark bg
+    // New logic: pick the extreme (black vs white) with higher max contrast against bg
+    // For dark bg (#333), white gives ~10:1 max contrast vs black gives ~1:1 — so lighten wins.
+    const result = (colordx("#222222") as any).minReadable("#333333");
+    expect(result.contrast("#333333")).toBeGreaterThanOrEqual(4.5);
+    // Result must be lighter than fg, not darker
+    expect(result.toHsl().l).toBeGreaterThan(colordx("#222222").toHsl().l);
   });
 });
 
@@ -470,6 +479,36 @@ describe("mix plugin: additional cases", () => {
       expect(c).toBeInstanceOf(Colordx);
     }
   });
+
+  it("tints(0) returns empty array", () => {
+    expect((colordx("#ff0000") as any).tints(0)).toEqual([]);
+  });
+
+  it("tints(1) returns array containing just the original color", () => {
+    const t = (colordx("#ff0000") as any).tints(1);
+    expect(t).toHaveLength(1);
+    expect(t[0].toHex()).toBe("#ff0000");
+  });
+
+  it("shades(0) returns empty array", () => {
+    expect((colordx("#ff0000") as any).shades(0)).toEqual([]);
+  });
+
+  it("shades(1) returns array containing just the original color", () => {
+    const s = (colordx("#ff0000") as any).shades(1);
+    expect(s).toHaveLength(1);
+    expect(s[0].toHex()).toBe("#ff0000");
+  });
+
+  it("palette(0) returns empty array", () => {
+    expect((colordx("#ff0000") as any).palette(0)).toEqual([]);
+  });
+
+  it("palette(1) returns array containing just the original color", () => {
+    const p = (colordx("#ff0000") as any).palette(1);
+    expect(p).toHaveLength(1);
+    expect(p[0].toHex()).toBe("#ff0000");
+  });
 });
 
 describe("minify plugin: additional cases", () => {
@@ -501,6 +540,20 @@ describe("minify plugin: additional cases", () => {
       const minified = (colordx(c) as any).minify();
       expect(minified.length).toBeLessThanOrEqual(7); // #xxxxxx
     }
+  });
+
+  it("returns targetHex without crashing when all candidate formats are disabled", () => {
+    // Previously: reduce on empty array threw; now guarded by candidates.length === 0 check
+    const result = (colordx("#ff0000") as any).minify({ hex: false, rgb: false, hsl: false });
+    expect(colordx(result).isValid()).toBe(true);
+    expect(colordx(result).toHex()).toBe("#ff0000");
+  });
+
+  it("returns targetHex for semi-transparent when hex is disabled and alphaHex is false", () => {
+    // alpha < 1 with hex:true alphaHex:false → no hex candidate; rgb and hsl still produce candidates
+    // But with hex:false, rgb:false, hsl:false → empty candidates → returns targetHex (8-char)
+    const result = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).minify({ hex: false, rgb: false, hsl: false });
+    expect(colordx(result).isValid()).toBe(true);
   });
 });
 

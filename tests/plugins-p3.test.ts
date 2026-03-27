@@ -1,10 +1,5 @@
-import { beforeAll, describe, expect, it } from 'vitest';
-import { colordx, extend } from '../src/index.js';
-import p3 from '../src/plugins/p3.js';
-
-beforeAll(() => {
-  extend([p3]);
-});
+import { describe, expect, it } from 'vitest';
+import { colordx } from '../src/index.js';
 
 const srgbInputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
 

@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isNumber, isObject, round, sanitize } from '../helpers.js';
+import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
 import type { CmykColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -17,9 +17,9 @@ export const rgbToCmyk = ({ r, g, b, alpha }: RgbColor): CmykColor => {
   const m = (1 - g / 255 - k) / (1 - k);
   const y = (1 - b / 255 - k) / (1 - k);
   return {
-    c: round(100 * (isNaN(c) ? 0 : c), 2),
-    m: round(100 * (isNaN(m) ? 0 : m), 2),
-    y: round(100 * (isNaN(y) ? 0 : y), 2),
+    c: round(100 * c, 2),
+    m: round(100 * m, 2),
+    y: round(100 * y, 2),
     k: round(100 * k, 2),
     alpha,
   };
@@ -37,14 +37,14 @@ export const parseCmykObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['c', 'm', 'y', 'k'])) return null;
   const { c, m, y, k, alpha = 1 } = input as { c: unknown; m: unknown; y: unknown; k: unknown; alpha?: unknown };
-  if (!isNumber(c) || !isNumber(m) || !isNumber(y) || !isNumber(k) || !isNumber(alpha as number)) return null;
+  if (!isAnyNumber(c) || !isAnyNumber(m) || !isAnyNumber(y) || !isAnyNumber(k) || !isAnyNumber(alpha)) return null;
   return cmykToRgb(
     clampCmyk({
-      c: sanitize(Number(c)),
-      m: sanitize(Number(m)),
-      y: sanitize(Number(y)),
-      k: sanitize(Number(k)),
-      alpha: sanitize(Number(alpha)),
+      c: sanitize(c),
+      m: sanitize(m),
+      y: sanitize(y),
+      k: sanitize(k),
+      alpha: sanitize(alpha),
     })
   );
 };
