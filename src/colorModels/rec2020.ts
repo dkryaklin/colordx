@@ -18,7 +18,7 @@ const srgbToLinear = (c: number): number => (c <= 0.04045 ? c / 12.92 : ((c + 0.
 const srgbFromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
 
 // Linear sRGB → Linear Rec.2020 (D65, via XYZ, from CSS Color 4)
-const srgbToLinearRec2020 = (r: number, g: number, b: number): [number, number, number] => [
+export const srgbLinearToRec2020Linear = (r: number, g: number, b: number): [number, number, number] => [
   0.6274038959 * r + 0.3292830384 * g + 0.0433130657 * b,
   0.0690972894 * r + 0.9195403951 * g + 0.0113623156 * b,
   0.0163914389 * r + 0.0880133079 * g + 0.8955952532 * b,
@@ -32,7 +32,7 @@ const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, 
 ];
 
 export const rgbToRec2020 = ({ r, g, b, a }: RgbColor): Rec2020Color => {
-  const [rr, rg, rb] = srgbToLinearRec2020(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [rr, rg, rb] = srgbLinearToRec2020Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
     r: round(fromLinear(clamp(rr, 0, 1)), 4),
     g: round(fromLinear(clamp(rg, 0, 1)), 4),
@@ -64,4 +64,4 @@ export const parseRec2020String = (input: unknown): RgbColor | null => {
 
 /** Unclamped linear Rec.2020 channels from OKLab values. */
 export const oklabToLinearRec2020 = (l: number, a: number, b: number): [number, number, number] =>
-  srgbToLinearRec2020(...oklabToLinear(l, a, b));
+  srgbLinearToRec2020Linear(...oklabToLinear(l, a, b));

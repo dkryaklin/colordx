@@ -138,7 +138,7 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 ### Utilities
 
 ```ts
-import { getFormat, nearest, oklchToP3Channels, oklchToRec2020Channels, oklchToRgbChannels, random } from '@colordx/core';
+import { getFormat, linearToP3Channels, linearToRec2020Channels, nearest, oklchToLinear, oklchToP3Channels, oklchToRec2020Channels, oklchToRgbChannels, random } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255, 0, 0)'); // 'rgb'
@@ -157,10 +157,17 @@ nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
 random(); // random Colordx instance
 
 // Low-level functional converters — no object allocation, for hot paths (canvas gradients, etc.)
-oklchToRgbChannels(0.5, 0.2, 240);    // [r, g, b] gamma-encoded sRGB in [0, 1]
-oklchToP3Channels(0.5, 0.2, 240);     // [r, g, b] gamma-encoded Display-P3 in [0, 1]
+oklchToRgbChannels(0.5, 0.2, 240);     // [r, g, b] gamma-encoded sRGB in [0, 1]
+oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3 in [0, 1]
 oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (BT.2020 gamma)
 // Out-of-gamut channels may exceed [0, 1] — callers clamp before byte encoding
+
+// Split-step API: when rendering one color to multiple spaces, compute the shared
+// expensive OKLCH→linear sRGB step once, then apply the cheap per-space steps.
+// Avoids repeating 3× Math.cbrt + OKLab matrix per additional color space.
+const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a free sRGB gamut check
+linearToP3Channels(...linear);               // linear sRGB → gamma-encoded P3
+linearToRec2020Channels(...linear);          // linear sRGB → gamma-encoded Rec.2020 (BT.2020 gamma)
 ```
 
 ### Gamut

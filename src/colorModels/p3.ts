@@ -8,7 +8,7 @@ const toLinear = (c: number): number => (c <= 0.04045 ? c / 12.92 : ((c + 0.055)
 const fromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
 
 // Linear sRGB → Linear Display-P3 (D65 white point for both, from CSS Color 4)
-const srgbToLinearP3 = (r: number, g: number, b: number): [number, number, number] => [
+export const srgbLinearToP3Linear = (r: number, g: number, b: number): [number, number, number] => [
   0.8224619687 * r + 0.1775380313 * g,
   0.0331941989 * r + 0.9668058011 * g,
   0.0170826307 * r + 0.0723974407 * g + 0.9105199286 * b,
@@ -22,7 +22,7 @@ const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, numbe
 ];
 
 export const rgbToP3 = ({ r, g, b, a }: RgbColor): P3Color => {
-  const [p3r, p3g, p3b] = srgbToLinearP3(toLinear(r / 255), toLinear(g / 255), toLinear(b / 255));
+  const [p3r, p3g, p3b] = srgbLinearToP3Linear(toLinear(r / 255), toLinear(g / 255), toLinear(b / 255));
   return { r: round(fromLinear(p3r), 4), g: round(fromLinear(p3g), 4), b: round(fromLinear(p3b), 4), a };
 };
 
@@ -49,4 +49,4 @@ export const parseP3String = (input: unknown): RgbColor | null => {
 
 /** Unclamped linear Display-P3 channels from OKLab values. */
 export const oklabToLinearP3 = (l: number, a: number, b: number): [number, number, number] =>
-  srgbToLinearP3(...oklabToLinear(l, a, b));
+  srgbLinearToP3Linear(...oklabToLinear(l, a, b));
