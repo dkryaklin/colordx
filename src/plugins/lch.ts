@@ -13,7 +13,7 @@ declare module '@colordx/core' {
 const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLch = function () {
     const { l, c, h, alpha } = rgbToLch(this._rawRgb());
-    return { l: round(l, 2), c, h, alpha, colorSpace: 'lch' as const };
+    return { l: round(l, 2), c: round(c, 2), h: round(h, 2), alpha, colorSpace: 'lch' as const };
   };
   ColordxClass.prototype.toLchString = function () {
     const { l, c, h, alpha } = this.toLch();

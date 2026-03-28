@@ -32,10 +32,10 @@ npm install @colordx/core
 ```ts
 import { colordx } from '@colordx/core';
 
-colordx('#ff0000').toOklch(); // { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }
-colordx('#ff0000').toOklchString(); // 'oklch(0.6279 0.2577 29.23)'
+colordx('#ff0000').toOklch(); // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
+colordx('#ff0000').toOklchString(); // 'oklch(0.628 0.2577 29.23)'
 colordx('#ff0000').lighten(0.1).toHex(); // '#ff3333'
-colordx('oklch(0.5 0.2 240)').toHex(); // '#0055c2'
+colordx('oklch(0.5 0.2 240)').toHex(); // '#0069c7'
 ```
 
 ## API
@@ -79,21 +79,21 @@ colordx({ h: 0, s: 100, v: 100, alpha: 1 }); // HSV
 .toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
 .toHslString()     // 'hsl(0, 100%, 50%)'
 // toHsl accepts an optional precision argument (decimal places):
-colordx('#3d7a9f').toHsl()         // { h: 205.71, s: 43.24, l: 43.33, alpha: 1 }      — default (2)
-colordx('#3d7a9f').toHsl(4)        // { h: 205.7143, s: 43.2432, l: 43.3333, alpha: 1 }
-colordx('#3d7a9f').toHsl(0)        // { h: 206, s: 43, l: 43, alpha: 1 }               — integers
-colordx('#3d7a9f').toHslString()   // 'hsl(205.71, 43.24%, 43.33%)'
-colordx('#3d7a9f').toHslString(4)  // 'hsl(205.7143, 43.2432%, 43.3333%)'
+colordx('#3d7a9f').toHsl()         // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }      — default (2)
+colordx('#3d7a9f').toHsl(4)        // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
+colordx('#3d7a9f').toHsl(0)        // { h: 203, s: 45, l: 43, alpha: 1 }               — integers
+colordx('#3d7a9f').toHslString()   // 'hsl(202.65, 44.55%, 43.14%)'
+colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531, 44.5455%, 43.1373%)'
 // With hwb plugin loaded:
 .toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
 .toHwbString()     // 'hwb(0 0% 0%)'
-.toOklab()         // { l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }
-.toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
-.toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }
-.toOklchString()   // 'oklch(0.6279 0.2577 29.23)'
+.toOklab()         // { l: 0.628, a: 0.2249, b: 0.1258, alpha: 1 }
+.toOklabString()   // 'oklab(0.628 0.2249 0.1258)'
+.toOklch()         // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
+.toOklchString()   // 'oklch(0.628 0.2577 29.23)'
 // With p3 plugin loaded:
-.toP3()            // { r: 0.9176, g: 0.2003, b: 0.1386, alpha: 1 }
-.toP3String()      // 'color(display-p3 0.9176 0.2003 0.1386)'
+.toP3()            // { r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }
+.toP3String()      // 'color(display-p3 0.9175 0.2003 0.1386)'
 ```
 
 ### Manipulation
@@ -187,7 +187,7 @@ import { inGamutRec2020, toGamutRec2020 } from '@colordx/core/plugins/rec2020';
 
 // Check: is this color displayable in sRGB?
 inGamutSrgb('#ff0000'); // true  — hex is always sRGB
-inGamutSrgb('oklch(0.6279 0.2577 29.23)'); // true  — red
+inGamutSrgb('oklch(0.628 0.2577 29.23)'); // true  — red
 inGamutSrgb('oklch(0.5 0.4 180)'); // false — too much cyan chroma
 
 // Map: reduce chroma until in-gamut (preserves lightness and hue)
@@ -249,14 +249,14 @@ import lab from '@colordx/core/plugins/lab';
 
 extend([lab]);
 
-colordx('#ff0000').toLab(); // { l: 54.29, a: 80.82, b: 69.91, alpha: 1 }
-colordx('#ff0000').toLabString(); // 'lab(54.29% 80.82 69.91)'
+colordx('#ff0000').toLab(); // { l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' }
+colordx('#ff0000').toLabString(); // 'lab(54.29% 80.8 69.89)'
 colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
 colordx('#ff0000').toXyzString(); // 'color(xyz-d65 43.61 22.25 1.39)'
 
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
 // Lab objects require colorSpace: 'lab' to distinguish from OKLab (which has the same l/a/b shape)
-colordx({ l: 54.29, a: 80.82, b: 69.91, alpha: 1, colorSpace: 'lab' as const }).toHex(); // '#ff0000'
+colordx({ l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' as const }).toHex(); // '#ff0000'
 colordx({ x: 43.61, y: 22.25, z: 1.39, alpha: 1 }).toHex(); // '#ff0000'
 
 // Mix in CIE Lab space (colord-compatible)
@@ -277,9 +277,9 @@ import lch from '@colordx/core/plugins/lch';
 
 extend([lch]);
 
-colordx('#ff0000').toLch(); // { l: 54.29, c: 106.84, h: 40.85, alpha: 1, colorSpace: 'lch' }
-colordx('#ff0000').toLchString(); // 'lch(54.29% 106.84 40.85)'
-colordx('lch(54.29% 106.84 40.85)').toHex(); // '#ff0000'
+colordx('#ff0000').toLch(); // { l: 54.29, c: 106.84, h: 40.86, alpha: 1, colorSpace: 'lch' }
+colordx('#ff0000').toLchString(); // 'lch(54.29% 106.84 40.86)'
+colordx('lch(54.29% 106.84 40.86)').toHex(); // '#ff0000'
 // LCH objects require colorSpace: 'lch' to distinguish from OKLCH (which has the same l/c/h shape)
 colordx({ l: 50, c: 50, h: 180, alpha: 1, colorSpace: 'lch' as const }).toHex(); // parses as LCH object
 ```
@@ -364,10 +364,10 @@ colordx('hwb(0 0% 0%)').toHex();   // '#ff0000'
 colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex(); // '#ff0000'
 
 // toHwb accepts an optional precision argument (decimal places):
-colordx('#3d7a9f').toHwb();    // { h: 206, w: 24, b: 38, alpha: 1 }   — default (0)
-colordx('#3d7a9f').toHwb(2);   // { h: 205.71, w: 23.92, b: 37.65, alpha: 1 }
-colordx('#3d7a9f').toHwbString();  // 'hwb(206 24% 38%)'
-colordx('#3d7a9f').toHwbString(2); // 'hwb(205.71 23.92% 37.65%)'
+colordx('#3d7a9f').toHwb();    // { h: 203, w: 24, b: 38, alpha: 1 }   — default (0)
+colordx('#3d7a9f').toHwb(2);   // { h: 202.65, w: 23.92, b: 37.65, alpha: 1 }
+colordx('#3d7a9f').toHwbString();  // 'hwb(203 24% 38%)'
+colordx('#3d7a9f').toHwbString(2); // 'hwb(202.65 23.92% 37.65%)'
 ```
 
 ### mix plugin
@@ -447,12 +447,12 @@ import p3 from '@colordx/core/plugins/p3';
 
 extend([p3]);
 
-colordx('#ff0000').toP3(); // { r: 0.9176, g: 0.2003, b: 0.1386, alpha: 1 }
-colordx('#ff0000').toP3String(); // 'color(display-p3 0.9176 0.2003 0.1386)'
+colordx('#ff0000').toP3(); // { r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }
+colordx('#ff0000').toP3String(); // 'color(display-p3 0.9175 0.2003 0.1386)'
 
 // Parse Display-P3 strings (alpha optional)
-colordx('color(display-p3 0.9176 0.2003 0.1386)').toHex(); // '#ff0000'
-colordx('color(display-p3 0.9176 0.2003 0.1386 / 0.5)').toHex(); // '#ff000080'
+colordx('color(display-p3 0.9175 0.2003 0.1386)').toHex(); // '#ff0000'
+colordx('color(display-p3 0.9175 0.2003 0.1386 / 0.5)').toHex(); // '#ff000080'
 ```
 
 The plugin also exports standalone gamut utilities and low-level channel functions (no `extend()` needed for these):
@@ -481,12 +481,12 @@ import rec2020 from '@colordx/core/plugins/rec2020';
 
 extend([rec2020]);
 
-colordx('#ff0000').toRec2020(); // { r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1 }
-colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.7919 0.2307 0.0739)'
+colordx('#ff0000').toRec2020(); // { r: 0.792, g: 0.231, b: 0.0738, alpha: 1, colorSpace: 'rec2020' }
+colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.792 0.231 0.0738)'
 
 // Parse Rec.2020 strings (alpha optional)
-colordx('color(rec2020 0.7919 0.2307 0.0739)').toHex(); // '#ff0000'
-colordx('color(rec2020 0.7919 0.2307 0.0739 / 0.5)').toHex(); // '#ff000080'
+colordx('color(rec2020 0.792 0.231 0.0738)').toHex(); // '#ff0000'
+colordx('color(rec2020 0.792 0.231 0.0738 / 0.5)').toHex(); // '#ff000080'
 ```
 
 The plugin also exports standalone gamut utilities and low-level channel functions (no `extend()` needed for these):
@@ -629,9 +629,9 @@ colordx returns higher precision HSL/HSV values than colord. If your code does e
 `toHsl()` now accepts an optional `precision` argument to control decimal places:
 
 ```ts
-colordx('#3d7a9f').toHsl(); // { h: 205.71, s: 43.24, l: 43.33, alpha: 1 }  — default (2)
-colordx('#3d7a9f').toHsl(4); // { h: 205.7143, s: 43.2432, l: 43.3333, alpha: 1 }
-colordx('#3d7a9f').toHsl(0); // { h: 206, s: 43, l: 43, alpha: 1 }
+colordx('#3d7a9f').toHsl(); // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }  — default (2)
+colordx('#3d7a9f').toHsl(4); // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
+colordx('#3d7a9f').toHsl(0); // { h: 203, s: 45, l: 43, alpha: 1 }
 ```
 
 The `minify()` plugin preserves full HSL precision when building candidates, so minification is now lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
