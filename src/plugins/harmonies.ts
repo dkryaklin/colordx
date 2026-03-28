@@ -1,30 +1,33 @@
 import type { Colordx, Plugin } from '../colordx.js';
 
+type HarmonyType =
+  | 'complementary'
+  | 'analogous'
+  | 'triadic'
+  | 'tetradic'
+  | 'split-complementary'
+  | 'double-split-complementary'
+  | 'rectangle';
+
 declare module '@colordx/core' {
   interface Colordx {
-    harmonies(type?: 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'split-complementary'): Colordx[];
+    harmonies(type?: HarmonyType): Colordx[];
   }
 }
 
+const HARMONIES: Record<HarmonyType, number[]> = {
+  analogous: [-30, 0, 30],
+  complementary: [0, 180],
+  'double-split-complementary': [-30, 0, 30, 150, 210],
+  rectangle: [0, 60, 180, 240],
+  tetradic: [0, 90, 180, 270],
+  triadic: [0, 120, 240],
+  'split-complementary': [0, 150, 210],
+};
+
 const harmonies: Plugin = (ColordxClass) => {
-  ColordxClass.prototype.harmonies = function (
-    this: Colordx,
-    type: 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'split-complementary' = 'complementary'
-  ): Colordx[] {
-    switch (type) {
-      case 'complementary':
-        return [this, this.rotate(180)];
-      case 'analogous':
-        return [this.rotate(-30), this, this.rotate(30)];
-      case 'triadic':
-        return [this, this.rotate(120), this.rotate(240)];
-      case 'tetradic':
-        return [this, this.rotate(90), this.rotate(180), this.rotate(270)];
-      case 'split-complementary':
-        return [this, this.rotate(150), this.rotate(210)];
-      default:
-        return [this];
-    }
+  ColordxClass.prototype.harmonies = function (this: Colordx, type: HarmonyType = 'complementary'): Colordx[] {
+    return HARMONIES[type].map((degrees) => this.rotate(degrees));
   };
 };
 

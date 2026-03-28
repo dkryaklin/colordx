@@ -338,11 +338,14 @@ import harmonies from '@colordx/core/plugins/harmonies';
 
 extend([harmonies]);
 
-colordx('#ff0000').harmonies(); // [red, cyan]  — complementary (default)
-colordx('#ff0000').harmonies('analogous'); // 3 colors at ±30°
-colordx('#ff0000').harmonies('triadic'); // 3 colors at 120° intervals
-colordx('#ff0000').harmonies('tetradic'); // 4 colors at 90° intervals
-colordx('#ff0000').harmonies('split-complementary'); // 3 colors at 0°, 150°, 210°
+colordx('#ff0000').harmonies();                              // complementary (default) — 2 colors
+colordx('#ff0000').harmonies('complementary');               // [0°, 180°] — 2 colors
+colordx('#ff0000').harmonies('analogous');                   // [−30°, 0°, 30°] — 3 colors
+colordx('#ff0000').harmonies('split-complementary');         // [0°, 150°, 210°] — 3 colors
+colordx('#ff0000').harmonies('triadic');                     // [0°, 120°, 240°] — 3 colors
+colordx('#ff0000').harmonies('tetradic');                    // [0°, 90°, 180°, 270°] — 4 colors (square)
+colordx('#ff0000').harmonies('rectangle');                   // [0°, 60°, 180°, 240°] — 4 colors
+colordx('#ff0000').harmonies('double-split-complementary');  // [−30°, 0°, 30°, 150°, 210°] — 5 colors
 ```
 
 ### mix plugin
@@ -570,16 +573,6 @@ colord({ r: 255, g: 0, b: 0, a: 1 });
 // colordx
 colordx('#ff0000').toRgb(); // { r: 255, g: 0, b: 0, alpha: 1 }
 colordx({ r: 255, g: 0, b: 0, alpha: 1 });
-```
-
-**Harmonies: `'double-split-complementary'` and `'rectangle'` types removed:**
-
-```ts
-// colord — supported:
-color.harmonies('double-split-complementary');
-color.harmonies('rectangle');
-
-// colordx — not supported; use 'complementary', 'analogous', 'triadic', 'tetradic', or 'split-complementary'
 ```
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending

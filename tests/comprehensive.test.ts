@@ -643,10 +643,76 @@ describe('Plugins — mix (tints/shades/tones)', () => {
 });
 
 describe('Plugins — harmonies', () => {
-  it('complementary returns 2 distinct colors', () => {
+  it('defaults to complementary', () => {
+    const h = (colordx('#ff0000') as any).harmonies();
+    expect(h).toHaveLength(2);
+    expect(h[0].toHex()).toBe('#ff0000');
+    expect(h[1].toHex()).toBe('#00ffff');
+  });
+
+  it('complementary: 2 colors, base + opposite', () => {
     const h = (colordx('#ff0000') as any).harmonies('complementary');
     expect(h).toHaveLength(2);
-    expect(h[0].toHex()).not.toBe(h[1].toHex());
+    expect(h[0].toHex()).toBe('#ff0000');
+    expect(h[1].toHex()).toBe('#00ffff');
+  });
+
+  it('analogous: 3 colors at −30°, 0°, +30°', () => {
+    const h = (colordx('#ff0000') as any).harmonies('analogous');
+    expect(h).toHaveLength(3);
+    expect(h[0].toHex()).toBe('#ff0080'); // rotate(−30) → hsl(330)
+    expect(h[1].toHex()).toBe('#ff0000'); // rotate(0)
+    expect(h[2].toHex()).toBe('#ff8000'); // rotate(30) → hsl(30)
+  });
+
+  it('triadic: 3 colors at 120° intervals', () => {
+    const h = (colordx('#ff0000') as any).harmonies('triadic');
+    expect(h).toHaveLength(3);
+    expect(h[0].toHex()).toBe('#ff0000');
+    expect(h[1].toHex()).toBe('#00ff00'); // rotate(120) → hsl(120)
+    expect(h[2].toHex()).toBe('#0000ff'); // rotate(240) → hsl(240)
+  });
+
+  it('tetradic: 4 colors at 90° intervals (square)', () => {
+    const h = (colordx('#ff0000') as any).harmonies('tetradic');
+    expect(h).toHaveLength(4);
+    expect(h[0].toHex()).toBe('#ff0000');
+    expect(h[1].toHex()).toBe('#80ff00'); // rotate(90) → hsl(90)
+    expect(h[2].toHex()).toBe('#00ffff'); // rotate(180)
+    expect(h[3].toHex()).toBe('#7f00ff'); // rotate(270) → hsl(270)
+  });
+
+  it('split-complementary: 3 colors at 0°, 150°, 210°', () => {
+    const h = (colordx('#ff0000') as any).harmonies('split-complementary');
+    expect(h).toHaveLength(3);
+    expect(h[0].toHex()).toBe('#ff0000');
+    expect(h[1].toHex()).toBe('#00ff80'); // rotate(150) → hsl(150)
+    expect(h[2].toHex()).toBe('#007fff'); // rotate(210) → hsl(210)
+  });
+
+  it('rectangle: 4 colors at 0°, 60°, 180°, 240°', () => {
+    const h = (colordx('#ff0000') as any).harmonies('rectangle');
+    expect(h).toHaveLength(4);
+    expect(h[0].toHex()).toBe('#ff0000');
+    expect(h[1].toHex()).toBe('#ffff00'); // rotate(60) → hsl(60)
+    expect(h[2].toHex()).toBe('#00ffff'); // rotate(180)
+    expect(h[3].toHex()).toBe('#0000ff'); // rotate(240) → hsl(240)
+  });
+
+  it('double-split-complementary: 5 colors at −30°, 0°, 30°, 150°, 210°', () => {
+    const h = (colordx('#ff0000') as any).harmonies('double-split-complementary');
+    expect(h).toHaveLength(5);
+    expect(h[0].toHex()).toBe('#ff0080'); // rotate(−30) → hsl(330)
+    expect(h[1].toHex()).toBe('#ff0000'); // rotate(0)
+    expect(h[2].toHex()).toBe('#ff8000'); // rotate(30) → hsl(30)
+    expect(h[3].toHex()).toBe('#00ff80'); // rotate(150) → hsl(150)
+    expect(h[4].toHex()).toBe('#007fff'); // rotate(210) → hsl(210)
+  });
+
+  it('works with non-primary input', () => {
+    const h = (colordx('#0080ff') as any).harmonies('complementary');
+    expect(h).toHaveLength(2);
+    expect(h[1].toHex()).toBe((colordx('#0080ff') as any).rotate(180).toHex());
   });
 });
 
