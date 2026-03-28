@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 3.0.1
+
+### Patch Changes
+
+- d3c0df7: Fix HSL hue wrapping for out-of-range values (negative and >360) and export xyzToLab for internal use; add comprehensive, round-trip, property-based, and plugin edge case test suites
+
 ## 3.0.0
 
 ### Major Changes
