@@ -113,6 +113,7 @@
     "culori": "^4.0.2",
     "eslint": "^9.39.0",
     "eslint-config-prettier": "^10.1.8",
+    "fast-check": "^4.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "mitata": "^1.0.34",

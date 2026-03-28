@@ -66,7 +66,7 @@ export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
     ln = l / 100;
   const q = ln < 0.5 ? ln * (1 + sn) : ln + sn - ln * sn;
   const p = 2 * ln - q;
-  const hue = h / 360;
+  const hue = (((h % 360) + 360) % 360) / 360;
   return {
     r: _hueToRgb(p, q, hue + 1 / 3) * 255,
     g: _hueToRgb(p, q, hue) * 255,

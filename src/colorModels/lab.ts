@@ -7,7 +7,7 @@ const KAPPA = 24389 / 27;
 
 const f = (t: number) => (t > EPSILON ? Math.cbrt(t) : (KAPPA * t + 16) / 116);
 
-const xyzToLab = ({ x, y, z, alpha }: XyzColor): LabColor => {
+export const xyzToLab = ({ x, y, z, alpha }: XyzColor): LabColor => {
   const fy = f(y / WY);
   return {
     l: 116 * fy - 16,
