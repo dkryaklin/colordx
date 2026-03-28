@@ -30,12 +30,10 @@ const round = (v: number, d = 4) => parseFloat(v.toFixed(d));
 const absDiff = (a: number, b: number) => Math.abs(a - b);
 const hueDiff = (a: number, b: number) => { const d = Math.abs(a - b); return d > 180 ? 360 - d : d; };
 const maxDiff = (...pairs: [number, number][]) => Math.max(...pairs.map(([a, b]) => absDiff(a, b)));
-const maxDiffHue = (hPair: [number, number], ...pairs: [number, number][]) =>
-  Math.max(hueDiff(hPair[0], hPair[1]), ...pairs.map(([a, b]) => absDiff(a, b)));
 
 // Per-format stats
-type FormatStats = { matched: number; offBy1: number; larger: number; worstDelta: number; worstColor: string };
-const mkStats = (): FormatStats => ({ matched: 0, offBy1: 0, larger: 0, worstDelta: 0, worstColor: '' });
+type FormatStats = { matched: number; offBy1: number; larger: number; skipped: number; worstDelta: number; worstColor: string };
+const mkStats = (): FormatStats => ({ matched: 0, offBy1: 0, larger: 0, skipped: 0, worstDelta: 0, worstColor: '' });
 
 const stats: Record<string, FormatStats> = {
   RGB:        mkStats(),
@@ -54,6 +52,7 @@ const record = (key: string, delta: number, color: string) => {
   else                  s.larger++;
   if (delta > s.worstDelta) { s.worstDelta = delta; s.worstColor = color; }
 };
+const recordSkip = (key: string) => { stats[key].skipped++; };
 
 for (let i = 0; i < COUNT; i++) {
   const l = rand();
@@ -74,47 +73,49 @@ for (let i = 0; i < COUNT; i++) {
   const cuR = Math.round(cuGamut.r * 255), cuG = Math.round(cuGamut.g * 255), cuB = Math.round(cuGamut.b * 255);
   record('RGB', maxDiff([cxR, cuR], [cxG, cuG], [cxB, cuB]), color);
 
-  // For format comparisons below, normalize culori to same 8-bit base as colordx
-  // to isolate conversion formula differences from gamut-mapping + quantization differences.
-  // When RGB values differ (gamut mapping disagrees), any format deltas are contaminated —
-  // skip those comparisons by using the same colordx hex as culori's base.
+  // For format comparisons below, both libraries start from the same 8-bit sRGB base.
+  // When gamut mapping disagrees, there is no common base — skip those comparisons.
   const rgbMatch = cxR === cuR && cxG === cuG && cxB === cuB;
-  const cuBase = rgbMatch
-    ? { mode: 'rgb' as const, r: cuR / 255, g: cuG / 255, b: cuB / 255 }
-    : { mode: 'rgb' as const, r: cxR / 255, g: cxG / 255, b: cxB / 255 };
 
-  // HSL (h 0-360, s/l 0-100) — skip hue if saturation is near 0 (hue undefined for achromatic)
-  const cxHsl = cxCs.toHsl();
-  const cuHsl = culoriToHsl(cuBase)!;
-  const cuHslH = (cuHsl.h ?? 0), cuHslS = (cuHsl.s ?? 0) * 100, cuHslL = (cuHsl.l ?? 0) * 100;
-  const hslAchromatic = cxHsl.s < 1 || cuHslS < 1;
-  const hslHueDelta = hslAchromatic ? 0 : hueDiff(cxHsl.h, round(cuHslH));
-  record('HSL', Math.max(hslHueDelta, absDiff(cxHsl.s, round(cuHslS)), absDiff(cxHsl.l, round(cuHslL))), color);
+  if (!rgbMatch) {
+    recordSkip('HSL');
+    recordSkip('LCH');
+    recordSkip('Lab');
+    recordSkip('OKLab');
+  } else {
+    const cuBase = { mode: 'rgb' as const, r: cuR / 255, g: cuG / 255, b: cuB / 255 };
 
-  // LCH (l 0-100, c 0-150, h 0-360) — skip hue if chroma is near 0 (hue undefined for achromatic)
-  const cxLch = cxCs.toLch();
-  const cuLch = culoriToLch(cuBase)!;
-  const cuLchL = cuLch.l ?? 0, cuLchC = cuLch.c ?? 0, cuLchH = cuLch.h ?? 0;
-  const lchAchromatic = cxLch.c < 0.5 || cuLchC < 0.5;
-  const lchHueDelta = lchAchromatic ? 0 : hueDiff(cxLch.h, round(cuLchH, 2));
-  record('LCH', Math.max(lchHueDelta, absDiff(cxLch.l, round(cuLchL, 2)), absDiff(cxLch.c, round(cuLchC, 2))), color);
+    // HSL (h 0-360, s/l 0-100) — skip hue if saturation is near 0 (hue undefined for achromatic)
+    const cxHsl = cxCs.toHsl();
+    const cuHsl = culoriToHsl(cuBase)!;
+    const cuHslH = (cuHsl.h ?? 0), cuHslS = (cuHsl.s ?? 0) * 100, cuHslL = (cuHsl.l ?? 0) * 100;
+    const hslAchromatic = cxHsl.s < 1 || cuHslS < 1;
+    const hslHueDelta = hslAchromatic ? 0 : hueDiff(cxHsl.h, round(cuHslH, 2));
+    record('HSL', Math.max(hslHueDelta, absDiff(cxHsl.s, round(cuHslS, 2)), absDiff(cxHsl.l, round(cuHslL, 2))), color);
 
-  // Lab (l 0-100, a/b -128..128)
-  const cxLab = cxCs.toLab();
-  const cuLab = culoriToLab(cuBase)!;
-  const cuLabL = cuLab.l ?? 0, cuLabA = cuLab.a ?? 0, cuLabB = cuLab.b ?? 0;
-  record('Lab', maxDiff([cxLab.l, round(cuLabL, 2)], [cxLab.a, round(cuLabA, 2)], [cxLab.b, round(cuLabB, 2)]), color);
+    // LCH (l 0-100, c 0-150, h 0-360) — skip hue if chroma is near 0 (hue undefined for achromatic)
+    const cxLch = cxCs.toLch();
+    const cuLch = culoriToLch(cuBase)!;
+    const cuLchL = cuLch.l ?? 0, cuLchC = cuLch.c ?? 0, cuLchH = cuLch.h ?? 0;
+    const lchAchromatic = cxLch.c < 0.5 || cuLchC < 0.5;
+    const lchHueDelta = lchAchromatic ? 0 : hueDiff(cxLch.h, round(cuLchH, 2));
+    record('LCH', Math.max(lchHueDelta, absDiff(cxLch.l, round(cuLchL, 2)), absDiff(cxLch.c, round(cuLchC, 2))), color);
 
-  // OKLab — from raw OKLCH (polar decomposition, no gamut mapping)
-  const rawOklabA = round(c * Math.cos(h * Math.PI / 180), 4);
-  const rawOklabB = round(c * Math.sin(h * Math.PI / 180), 4);
-  const cuOklab = culoriToOklab({ mode: 'oklch', l, c, h })!;
-  const cuOlL = cuOklab.l ?? 0, cuOlA = cuOklab.a ?? 0, cuOlB = cuOklab.b ?? 0;
-  record('OKLab', maxDiff(
-    [round(l, 4), round(cuOlL, 4)],
-    [rawOklabA, round(cuOlA, 4)],
-    [rawOklabB, round(cuOlB, 4)],
-  ), color);
+    // Lab (l 0-100, a/b -128..128)
+    const cxLab = cxCs.toLab();
+    const cuLab = culoriToLab(cuBase)!;
+    const cuLabL = cuLab.l ?? 0, cuLabA = cuLab.a ?? 0, cuLabB = cuLab.b ?? 0;
+    record('Lab', maxDiff([cxLab.l, round(cuLabL, 2)], [cxLab.a, round(cuLabA, 2)], [cxLab.b, round(cuLabB, 2)]), color);
+
+    // OKLab — from gamut-mapped sRGB base; tests the actual toOklab() implementation
+    const cxOklab = cxCs.toOklab();
+    const cuOklab = culoriToOklab(cuBase)!;
+    record('OKLab', maxDiff(
+      [cxOklab.l, round(cuOklab.l ?? 0, 4)],
+      [cxOklab.a, round(cuOklab.a ?? 0, 4)],
+      [cxOklab.b, round(cuOklab.b ?? 0, 4)],
+    ), color);
+  }
 
   // P3 raw — direct OKLCH → P3, no gamut mapping (channels may be negative)
   const [cxP3R, cxP3G, cxP3B] = oklchToP3Channels(l, c, h);
@@ -139,13 +140,15 @@ for (let i = 0; i < COUNT; i++) {
 
 const PAD = 12;
 console.log(`\nResults over ${COUNT.toLocaleString()} random OKLCH colors:\n`);
-console.log(`${'Format'.padEnd(PAD)} ${'Exact'.padStart(7)} ${'±1'.padStart(7)} ${'> 1'.padStart(7)}  Worst delta  Worst color`);
-console.log('─'.repeat(90));
+console.log(`${'Format'.padEnd(PAD)} ${'Exact'.padStart(7)} ${'±1'.padStart(7)} ${'> 1'.padStart(7)} ${'Skipped'.padStart(8)}  Worst delta  Worst color`);
+console.log('─'.repeat(100));
 
 for (const [fmt, s] of Object.entries(stats)) {
-  const exact = `${(s.matched / COUNT * 100).toFixed(1)}%`;
-  const pm1   = `${(s.offBy1 / COUNT * 100).toFixed(1)}%`;
-  const big   = `${(s.larger / COUNT * 100).toFixed(1)}%`;
-  const worst = s.worstDelta > 0 ? `${s.worstDelta.toFixed(4).padStart(10)}   ${s.worstColor}` : '—';
-  console.log(`${fmt.padEnd(PAD)} ${exact.padStart(7)} ${pm1.padStart(7)} ${big.padStart(7)}  ${worst}`);
+  const compared = COUNT - s.skipped;
+  const exact   = compared > 0 ? `${(s.matched / compared * 100).toFixed(1)}%` : 'n/a';
+  const pm1     = compared > 0 ? `${(s.offBy1  / compared * 100).toFixed(1)}%` : 'n/a';
+  const big     = compared > 0 ? `${(s.larger  / compared * 100).toFixed(1)}%` : 'n/a';
+  const skipped = s.skipped > 0 ? `${(s.skipped / COUNT * 100).toFixed(1)}%` : '—';
+  const worst   = s.worstDelta > 0 ? `${s.worstDelta.toFixed(4).padStart(10)}   ${s.worstColor}` : '—';
+  console.log(`${fmt.padEnd(PAD)} ${exact.padStart(7)} ${pm1.padStart(7)} ${big.padStart(7)} ${skipped.padStart(8)}  ${worst}`);
 }

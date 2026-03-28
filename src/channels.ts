@@ -26,3 +26,25 @@ export const oklchToRgbChannels = (l: number, c: number, h: number): [number, nu
   const [r, g, b] = oklchToLinear(l, c, h);
   return [srgbFromLinear(r), srgbFromLinear(g), srgbFromLinear(b)];
 };
+
+/**
+ * Convert OKLCH to both linear and gamma-encoded sRGB channels in a single pass.
+ * Avoids recomputing the expensive OKLCH → OKLab → linear step when you need both.
+ *
+ * Linear channels are useful for gamut checks (all in [0,1] = in sRGB gamut)
+ * and as input to P3/Rec2020 conversion matrices.
+ * Gamma channels are ready for display on an sRGB canvas (still need clamping for out-of-gamut).
+ *
+ * Returns [[lr, lg, lb], [sr, sg, sb]] — both in [0, 1] for in-gamut colors.
+ */
+export const oklchToLinearAndSrgb = (
+  l: number,
+  c: number,
+  h: number
+): [[number, number, number], [number, number, number]] => {
+  const [lr, lg, lb] = oklchToLinear(l, c, h);
+  return [
+    [lr, lg, lb],
+    [srgbFromLinear(lr), srgbFromLinear(lg), srgbFromLinear(lb)],
+  ];
+};

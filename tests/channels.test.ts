@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { oklchToRgbChannels } from '../src/channels.js';
+import { oklchToLinearAndSrgb, oklchToRgbChannels } from '../src/channels.js';
 import { colordx, extend } from '../src/index.js';
 import p3 from '../src/plugins/p3.js';
 import { oklchToP3Channels } from '../src/plugins/p3.js';
@@ -57,6 +57,70 @@ describe('oklchToRgbChannels', () => {
     const [r, g, b] = oklchToRgbChannels(0.5, 0.4, 145);
     const outOfGamut = r < 0 || r > 1 || g < 0 || g > 1 || b < 0 || b > 1;
     expect(outOfGamut).toBe(true);
+  });
+});
+
+describe('oklchToLinearAndSrgb', () => {
+  it('linear and sRGB channels are consistent with each other', () => {
+    const [[lr, lg, lb], [sr, sg, sb]] = oklchToLinearAndSrgb(0.7, 0.1, 120);
+    const [sr2, sg2, sb2] = oklchToRgbChannels(0.7, 0.1, 120);
+    expect(sr).toBeCloseTo(sr2, 10);
+    expect(sg).toBeCloseTo(sg2, 10);
+    expect(sb).toBeCloseTo(sb2, 10);
+    // linear channels must differ from gamma channels for non-trivial lightness
+    expect(lr).not.toBeCloseTo(sr, 3);
+    expect(lg).not.toBeCloseTo(sg, 3);
+  });
+
+  it('returns [[1,1,1],[1,1,1]] for white', () => {
+    const [[lr, lg, lb], [sr, sg, sb]] = oklchToLinearAndSrgb(1, 0, 0);
+    expect(lr).toBeCloseTo(1, 5);
+    expect(lg).toBeCloseTo(1, 5);
+    expect(lb).toBeCloseTo(1, 5);
+    expect(sr).toBeCloseTo(1, 5);
+    expect(sg).toBeCloseTo(1, 5);
+    expect(sb).toBeCloseTo(1, 5);
+  });
+
+  it('returns [[0,0,0],[0,0,0]] for black', () => {
+    const [[lr, lg, lb], [sr, sg, sb]] = oklchToLinearAndSrgb(0, 0, 0);
+    expect(lr).toBeCloseTo(0, 5);
+    expect(lg).toBeCloseTo(0, 5);
+    expect(lb).toBeCloseTo(0, 5);
+    expect(sr).toBeCloseTo(0, 5);
+    expect(sg).toBeCloseTo(0, 5);
+    expect(sb).toBeCloseTo(0, 5);
+  });
+
+  it('linear channels in [0,1] for in-gamut colors (free gamut check)', () => {
+    const [[lr, lg, lb]] = oklchToLinearAndSrgb(0.6, 0.1, 200);
+    expect(lr).toBeGreaterThanOrEqual(0);
+    expect(lr).toBeLessThanOrEqual(1);
+    expect(lg).toBeGreaterThanOrEqual(0);
+    expect(lg).toBeLessThanOrEqual(1);
+    expect(lb).toBeGreaterThanOrEqual(0);
+    expect(lb).toBeLessThanOrEqual(1);
+  });
+
+  it('linear channels exceed [0,1] for out-of-gamut colors', () => {
+    const [[lr, lg, lb]] = oklchToLinearAndSrgb(0.5, 0.4, 145);
+    const outOfGamut = lr < 0 || lr > 1 || lg < 0 || lg > 1 || lb < 0 || lb > 1;
+    expect(outOfGamut).toBe(true);
+  });
+
+  it('sRGB channels match oklchToRgbChannels exactly', () => {
+    const cases: [number, number, number][] = [
+      [0.5, 0.05, 250],
+      [0.5, 0.06, 330],
+      [0.9, 0.08, 60],
+    ];
+    for (const [l, c, h] of cases) {
+      const [, [sr, sg, sb]] = oklchToLinearAndSrgb(l, c, h);
+      const [er, eg, eb] = oklchToRgbChannels(l, c, h);
+      expect(sr).toBeCloseTo(er, 10);
+      expect(sg).toBeCloseTo(eg, 10);
+      expect(sb).toBeCloseTo(eb, 10);
+    }
   });
 });
 
