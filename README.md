@@ -32,7 +32,7 @@ npm install @colordx/core
 ```ts
 import { colordx } from '@colordx/core';
 
-colordx('#ff0000').toOklch(); // { l: 0.6279, c: 0.2577, h: 29.23, a: 1 }
+colordx('#ff0000').toOklch(); // { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }
 colordx('#ff0000').toOklchString(); // 'oklch(0.6279 0.2577 29.23)'
 colordx('#ff0000').lighten(0.1).toHex(); // '#ff3333'
 colordx('oklch(0.5 0.2 240)').toHex(); // '#0055c2'
@@ -55,45 +55,44 @@ colordx('hsl(0, 100%, 50%)');
 colordx('hwb(0 0% 0%)');
 colordx('oklab(0.6279 0.2249 0.1257)');
 colordx('oklch(0.6279 0.2577 29.23)');
-colordx({ r: 255, g: 0, b: 0, a: 1 });
-colordx({ h: 0, s: 100, l: 50, a: 1 });
-colordx({ h: 0, s: 100, v: 100, a: 1 });
-colordx({ h: 0, w: 0, b: 0, a: 1 });
+colordx({ r: 255, g: 0, b: 0, alpha: 1 });
+colordx({ h: 0, s: 100, l: 50, alpha: 1 });
+colordx({ h: 0, w: 0, b: 0, alpha: 1 });
 colordx({ l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }); // OKLab
-colordx({ l: 0.6279, c: 0.2577, h: 29.23, a: 1 }); // OKLch
-// With p3/rec2020 plugins loaded:
-colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
+colordx({ l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }); // OKLch
+colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string (core, no plugin needed)
+// With rec2020 plugin loaded:
 colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
+// With hsv plugin loaded:
+colordx({ h: 0, s: 100, v: 100, alpha: 1 }); // HSV
 ```
 
 ### Conversion
 
 ```ts
-.toRgb()           // { r: 255, g: 0, b: 0, a: 1 }
+.toRgb()           // { r: 255, g: 0, b: 0, alpha: 1 }
 .toRgbString()     // 'rgb(255, 0, 0)'
 .toHex()           // '#ff0000'
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
-.toHsl()           // { h: 0, s: 100, l: 50, a: 1 }
+.toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
 .toHslString()     // 'hsl(0, 100%, 50%)'
-.toHsv()           // { h: 0, s: 100, v: 100, a: 1 }
-.toHsvString()     // 'hsv(0, 100%, 100%)'
-.toHwb()           // { h: 0, w: 0, b: 0, a: 1 }
+.toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
 .toHwbString()     // 'hwb(0 0% 0%)'
 // toHsl/toHwb accept an optional precision argument (decimal places):
-colordx('#3d7a9f').toHsl()         // { h: 205.71, s: 43.24, l: 43.33, a: 1 }      — default (2)
-colordx('#3d7a9f').toHsl(4)        // { h: 205.7143, s: 43.2432, l: 43.3333, a: 1 }
-colordx('#3d7a9f').toHsl(0)        // { h: 206, s: 43, l: 43, a: 1 }               — integers
+colordx('#3d7a9f').toHsl()         // { h: 205.71, s: 43.24, l: 43.33, alpha: 1 }      — default (2)
+colordx('#3d7a9f').toHsl(4)        // { h: 205.7143, s: 43.2432, l: 43.3333, alpha: 1 }
+colordx('#3d7a9f').toHsl(0)        // { h: 206, s: 43, l: 43, alpha: 1 }               — integers
 colordx('#3d7a9f').toHslString()   // 'hsl(205.71, 43.24%, 43.33%)'
 colordx('#3d7a9f').toHslString(4)  // 'hsl(205.7143, 43.2432%, 43.3333%)'
-colordx('#3d7a9f').toHwb()         // { h: 206, w: 24, b: 38, a: 1 }               — default (0)
-colordx('#3d7a9f').toHwb(2)        // { h: 205.71, w: 23.92, b: 37.65, a: 1 }
+colordx('#3d7a9f').toHwb()         // { h: 206, w: 24, b: 38, alpha: 1 }               — default (0)
+colordx('#3d7a9f').toHwb(2)        // { h: 205.71, w: 23.92, b: 37.65, alpha: 1 }
 colordx('#3d7a9f').toHwbString()   // 'hwb(206 24% 38%)'
 colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .toOklab()         // { l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }
 .toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
-.toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, a: 1 }
+.toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }
 .toOklchString()   // 'oklch(0.6279 0.2577 29.23)'
-.toP3()            // { r: 0.9176, g: 0.2003, b: 0.1386, a: 1 }
+.toP3()            // { r: 0.9176, g: 0.2003, b: 0.1386, alpha: 1 }
 .toP3String()      // 'color(display-p3 0.9176 0.2003 0.1386)'
 ```
 
@@ -144,12 +143,14 @@ getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255, 0, 0)'); // 'rgb'
 getFormat('hsl(0, 100%, 50%)'); // 'hsl'
 getFormat('hwb(0 0% 0%)'); // 'hwb'
-getFormat('oklch(0.5 0.2 240)'); // 'lch'  — oklch and lch() both return 'lch'
-getFormat('oklab(0.6279 0.2249 0.1257)'); // 'lab'  — oklab and lab() both return 'lab'
-getFormat({ r: 255, g: 0, b: 0, a: 1 }); // 'rgb'
-getFormat({ h: 0, s: 100, l: 50, a: 1 }); // 'hsl'
+getFormat('oklch(0.5 0.2 240)'); // 'oklch'
+getFormat('oklab(0.6279 0.2249 0.1257)'); // 'oklab'
+getFormat('color(display-p3 0.9176 0.2003 0.1386)'); // 'p3'
+getFormat({ r: 255, g: 0, b: 0, alpha: 1 }); // 'rgb'
+getFormat({ h: 0, s: 100, l: 50, alpha: 1 }); // 'hsl'
 getFormat('notacolor'); // undefined
-// Plugin-added parsers (cmyk, lch string, names, p3, rec2020) return 'name'
+// Plugin-added parsers register their own format:
+// hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020'
 
 nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via OKLab
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
@@ -204,34 +205,33 @@ Opt-in plugins for less common color spaces and utilities:
 
 ```ts
 import { extend } from '@colordx/core';
-// toName(), parses CSS color names
 import a11y from '@colordx/core/plugins/a11y';
-// toLch() (CIE LCH D50), toLchString(), parses lch() strings and LCH objects
+// isReadable(), readableScore(), minReadable(), apcaContrast(), isReadableApca()
 import cmyk from '@colordx/core/plugins/cmyk';
 // toCmyk(), toCmykString(), parses device-cmyk() strings and CMYK objects
-// isReadable(), readableScore(), minReadable(), apcaContrast(), isReadableApca()
 import harmonies from '@colordx/core/plugins/harmonies';
-import lab from '@colordx/core/plugins/lab';
-// toLab() (CIE Lab D50), toXyz() (CIE XYZ D50), delta(), parses Lab/XYZ objects
-import lch from '@colordx/core/plugins/lch';
-// tints(), shades(), tones(), palette()
-import minify from '@colordx/core/plugins/minify';
 // harmonies()
-import mix from '@colordx/core/plugins/mix';
-import names from '@colordx/core/plugins/names';
+import hsv from '@colordx/core/plugins/hsv';
+// toHsv(), toHsvString(), parses hsv() strings and HSV objects
+import lab from '@colordx/core/plugins/lab';
+// toLab(), toLabString(), toXyz(), toXyzString(), mixLab(), delta(), parses Lab/XYZ objects
+import lch from '@colordx/core/plugins/lch';
+// toLch(), toLchString(), parses lch() strings and LCH objects
+import minify from '@colordx/core/plugins/minify';
 // minify() — shortest CSS string
-import p3 from '@colordx/core/plugins/p3';
-// parses color(display-p3 ...) strings (toP3/toP3String are core)
+import mix from '@colordx/core/plugins/mix';
+// tints(), shades(), tones(), palette()
+import names from '@colordx/core/plugins/names';
+// toName(), parses CSS color names
 import rec2020 from '@colordx/core/plugins/rec2020';
-
 // toRec2020(), toRec2020String(), parses color(rec2020 ...) strings
 
-extend([lab, lch, cmyk, names, a11y, harmonies, mix, minify, p3, rec2020]);
+extend([lab, lch, cmyk, names, a11y, harmonies, hsv, mix, minify, rec2020]);
 ```
 
 ### lab plugin
 
-CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input. Also adds `.mixLab()` for colord-compatible perceptual mixing and `.delta()` for CIEDE2000 color difference.
+CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input (Lab requires a `colorSpace: 'lab'` discriminant). Also adds `.mixLab()` for colord-compatible perceptual mixing, `.delta()` for CIEDE2000 color difference, and string conversion methods.
 
 ```ts
 import lab from '@colordx/core/plugins/lab';
@@ -239,11 +239,14 @@ import lab from '@colordx/core/plugins/lab';
 extend([lab]);
 
 colordx('#ff0000').toLab(); // { l: 54.29, a: 80.82, b: 69.91, alpha: 1 }
-colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, a: 1 }
+colordx('#ff0000').toLabString(); // 'lab(54.29% 80.82 69.91)'
+colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
+colordx('#ff0000').toXyzString(); // 'color(xyz-d65 43.61 22.25 1.39)'
 
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
-colordx({ l: 54.29, a: 80.82, b: 69.91, alpha: 1 }).toHex(); // '#ff0000'
-colordx({ x: 43.61, y: 22.25, z: 1.39, a: 1 }).toHex(); // '#ff0000'
+// Lab objects require colorSpace: 'lab' to distinguish from OKLab (which has the same l/a/b shape)
+colordx({ l: 54.29, a: 80.82, b: 69.91, alpha: 1, colorSpace: 'lab' as const }).toHex(); // '#ff0000'
+colordx({ x: 43.61, y: 22.25, z: 1.39, alpha: 1 }).toHex(); // '#ff0000'
 
 // Mix in CIE Lab space (colord-compatible)
 colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
@@ -263,10 +266,11 @@ import lch from '@colordx/core/plugins/lch';
 
 extend([lch]);
 
-colordx('#ff0000').toLch(); // { l: 54.29, c: 106.84, h: 40.85, a: 1 }
+colordx('#ff0000').toLch(); // { l: 54.29, c: 106.84, h: 40.85, alpha: 1, colorSpace: 'lch' }
 colordx('#ff0000').toLchString(); // 'lch(54.29% 106.84 40.85)'
 colordx('lch(54.29% 106.84 40.85)').toHex(); // '#ff0000'
-colordx({ l: 50, c: 50, h: 180, a: 1 }).toHex(); // parses as LCH object
+// LCH objects require colorSpace: 'lch' to distinguish from OKLCH (which has the same l/c/h shape)
+colordx({ l: 50, c: 50, h: 180, alpha: 1, colorSpace: 'lch' as const }).toHex(); // parses as LCH object
 ```
 
 ### cmyk plugin
@@ -278,10 +282,10 @@ import cmyk from '@colordx/core/plugins/cmyk';
 
 extend([cmyk]);
 
-colordx('#ff0000').toCmyk(); // { c: 0, m: 100, y: 100, k: 0, a: 1 }
+colordx('#ff0000').toCmyk(); // { c: 0, m: 100, y: 100, k: 0, alpha: 1 }
 colordx('#ff0000').toCmykString(); // 'device-cmyk(0% 100% 100% 0%)'
 colordx('device-cmyk(0% 100% 100% 0%)').toHex(); // '#ff0000'
-colordx({ c: 0, m: 100, y: 100, k: 0, a: 1 }).toHex(); // '#ff0000'
+colordx({ c: 0, m: 100, y: 100, k: 0, alpha: 1 }).toHex(); // '#ff0000'
 ```
 
 ### names plugin
@@ -297,6 +301,22 @@ colordx('red').toHex(); // '#ff0000'
 colordx('rebeccapurple').toHex(); // '#663399'
 colordx('#ff0000').toName(); // 'red'
 colordx('#c06060').toName(); // undefined — no CSS name for this color
+colordx('#c06060').toName({ closest: true }); // nearest named color by RGB distance
+```
+
+### hsv plugin
+
+HSV/HSVa color model. Parses `hsv()` / `hsva()` strings and HSV objects.
+
+```ts
+import hsv from '@colordx/core/plugins/hsv';
+
+extend([hsv]);
+
+colordx('#ff0000').toHsv(); // { h: 0, s: 100, v: 100, alpha: 1 }
+colordx('#ff0000').toHsvString(); // 'hsv(0, 100%, 100%)'
+colordx('hsv(0, 100%, 100%)').toHex(); // '#ff0000'
+colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex(); // '#ff0000'
 ```
 
 ### harmonies plugin
@@ -383,26 +403,6 @@ colordx('#777').isReadableApca('#fff', { size: 'large' }); // true
 
 APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.
 
-### p3 plugin
-
-Enables parsing of `color(display-p3 ...)` CSS strings. `toP3()` and `toP3String()` are available in core without this plugin.
-
-```ts
-import p3 from '@colordx/core/plugins/p3';
-
-extend([p3]);
-
-// toP3 / toP3String are core — no plugin needed:
-colordx('#ff0000').toP3(); // { r: 0.9176, g: 0.2003, b: 0.1386, a: 1 }
-colordx('#ff0000').toP3String(); // 'color(display-p3 0.9176 0.2003 0.1386)'
-
-// Parsing Display-P3 strings requires the plugin:
-colordx('color(display-p3 0.9176 0.2003 0.1386)').toHex(); // '#ff0000'
-colordx('color(display-p3 0.9176 0.2003 0.1386 / 0.5)').toHex(); // '#ff000080'
-```
-
-> **Note:** Object parsing (`{ r, g, b, a }`) is not supported for P3 — the shape is identical to sRGB and would be ambiguous. Use string format to pass P3 values into colordx.
-
 ### rec2020 plugin
 
 Adds Rec.2020 (BT.2020) color space support. Rec.2020 has the widest gamut of the three — it covers most of the visible spectrum.
@@ -412,7 +412,7 @@ import rec2020 from '@colordx/core/plugins/rec2020';
 
 extend([rec2020]);
 
-colordx('#ff0000').toRec2020(); // { r: 0.7919, g: 0.2307, b: 0.0739, a: 1 }
+colordx('#ff0000').toRec2020(); // { r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1 }
 colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.7919 0.2307 0.0739)'
 
 // Parse Rec.2020 strings (alpha optional)
@@ -420,7 +420,7 @@ colordx('color(rec2020 0.7919 0.2307 0.0739)').toHex(); // '#ff0000'
 colordx('color(rec2020 0.7919 0.2307 0.0739 / 0.5)').toHex(); // '#ff000080'
 ```
 
-> **Note:** Same as p3 — object parsing is not supported. Use string format.
+> **Note:** Object parsing is not supported for Rec.2020 — the shape is identical to sRGB and would be ambiguous. Use string format.
 
 ## Migrating from colord
 
@@ -439,11 +439,25 @@ const c = colordx('#ff0000');
 ### What's the same
 
 All core manipulation and conversion methods have identical signatures:
-`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.toHsv()`, `.toHwb()`, `.toHwbString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.mix()`, `.mixOklab()`, `.alpha()`, `.hue()`, `.brightness()`, `.luminance()`, `.isDark()`, `.isLight()`, `.contrast()`, `.isEqual()`, `getFormat()`, `random()`
+`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.toHwb()`, `.toHwbString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.mix()`, `.alpha()`, `.hue()`, `.brightness()`, `.isDark()`, `.isLight()`, `.isEqual()`, `getFormat()`, `random()`
+
+The following were **plugin-only in colord** but are now **built into colordx core**: `.toHwb()`, `.toHwbString()`, `.mix()`, `.luminance()`, `.contrast()`.
 
 `.lighten()`, `.darken()`, `.saturate()`, and `.desaturate()` accept an optional `{ relative: true }` flag not present in colord — see [Relative lighten/darken](#relative-lightendarken) below.
 
 ### What changed
+
+**HSV moved to a plugin:**
+
+```ts
+// colord
+colord('#ff0000').toHsv();
+
+// colordx
+import hsv from '@colordx/core/plugins/hsv';
+extend([hsv]);
+colordx('#ff0000').toHsv();
+```
 
 **OKLCH and OKLab are now core** — no plugin needed:
 
@@ -459,19 +473,19 @@ colordx('oklch(0.5 0.2 240)').toHex();
 
 ```ts
 // colord
-// colordx
-import { extend } from '@colordx/core';
-import cmyk from '@colordx/core/plugins/cmyk';
-import lab from '@colordx/core/plugins/lab';
-import lch from '@colordx/core/plugins/lch';
-import { colord } from 'colord';
-import cmykPlugin from 'colord/plugins/cmyk';
+import { colord, extend } from 'colord';
 import labPlugin from 'colord/plugins/lab';
 import lchPlugin from 'colord/plugins/lch';
 import xyzPlugin from 'colord/plugins/xyz';
+import cmykPlugin from 'colord/plugins/cmyk';
+extend([labPlugin, lchPlugin, xyzPlugin, cmykPlugin]);
 
-colordExtend([labPlugin, lchPlugin, xyzPlugin, cmykPlugin]);
-
+// colordx
+import { colordx, extend } from '@colordx/core';
+import lab from '@colordx/core/plugins/lab';
+import lch from '@colordx/core/plugins/lch';
+import cmyk from '@colordx/core/plugins/cmyk';
+// Note: XYZ is part of the lab plugin in colordx
 extend([lab, lch, cmyk]);
 ```
 
@@ -483,6 +497,30 @@ import { getFormat } from 'colord';
 
 // colordx
 import { getFormat } from '@colordx/core';
+```
+
+**Alpha channel property renamed from `a` to `alpha`:**
+
+colord used `a` as the alpha key in all color objects. colordx uses `alpha` everywhere (except OKLab and CIE Lab where `a` is a color axis).
+
+```ts
+// colord
+colord('#ff0000').toRgb(); // { r: 255, g: 0, b: 0, a: 1 }
+colord({ r: 255, g: 0, b: 0, a: 1 });
+
+// colordx
+colordx('#ff0000').toRgb(); // { r: 255, g: 0, b: 0, alpha: 1 }
+colordx({ r: 255, g: 0, b: 0, alpha: 1 });
+```
+
+**Harmonies: `'double-split-complementary'` and `'rectangle'` types removed:**
+
+```ts
+// colord — supported:
+color.harmonies('double-split-complementary');
+color.harmonies('rectangle');
+
+// colordx — not supported; use 'complementary', 'analogous', 'triadic', 'tetradic', or 'split-complementary'
 ```
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
@@ -517,12 +555,12 @@ colordx returns higher precision HSL/HSV values than colord. If your code does e
 `toHsl()` and `toHwb()` now accept an optional `precision` argument to control decimal places:
 
 ```ts
-colordx('#3d7a9f').toHsl(); // { h: 205.71, s: 43.24, l: 43.33, a: 1 }  — default (2)
-colordx('#3d7a9f').toHsl(4); // { h: 205.7143, s: 43.2432, l: 43.3333, a: 1 }
-colordx('#3d7a9f').toHsl(0); // { h: 206, s: 43, l: 43, a: 1 }
+colordx('#3d7a9f').toHsl(); // { h: 205.71, s: 43.24, l: 43.33, alpha: 1 }  — default (2)
+colordx('#3d7a9f').toHsl(4); // { h: 205.7143, s: 43.2432, l: 43.3333, alpha: 1 }
+colordx('#3d7a9f').toHsl(0); // { h: 206, s: 43, l: 43, alpha: 1 }
 
-colordx('#3d7a9f').toHwb(); // { h: 206, w: 24, b: 38, a: 1 }            — default (0)
-colordx('#3d7a9f').toHwb(2); // { h: 205.71, w: 23.92, b: 37.65, a: 1 }
+colordx('#3d7a9f').toHwb(); // { h: 206, w: 24, b: 38, alpha: 1 }            — default (0)
+colordx('#3d7a9f').toHwb(2); // { h: 205.71, w: 23.92, b: 37.65, alpha: 1 }
 ```
 
 The `minify()` plugin preserves full HSL precision when building candidates, so minification is now lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
