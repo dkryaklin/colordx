@@ -1,6 +1,7 @@
 import { oklchToLinear } from '../channels.js';
 import {
   oklabToLinearRec2020,
+  parseRec2020Object,
   parseRec2020String,
   rgbToRec2020,
   srgbLinearToRec2020Linear,
@@ -56,8 +57,8 @@ const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { r, g, b, alpha } = this.toRec2020();
     return alpha < 1 ? `color(rec2020 ${r} ${g} ${b} / ${alpha})` : `color(rec2020 ${r} ${g} ${b})`;
   };
-  parsers.push(parseRec2020String);
-  formatParsers.push([parseRec2020String, 'rec2020']);
+  parsers.push(parseRec2020String, parseRec2020Object);
+  formatParsers.push([parseRec2020String, 'rec2020'], [parseRec2020Object, 'rec2020']);
 };
 
 export default rec2020;

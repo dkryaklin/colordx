@@ -1,5 +1,5 @@
 import { oklchToLinear } from '../channels.js';
-import { oklabToLinearP3, parseP3String, rgbToP3, srgbLinearToP3Linear } from '../colorModels/p3.js';
+import { oklabToLinearP3, parseP3Object, parseP3String, rgbToP3, srgbLinearToP3Linear } from '../colorModels/p3.js';
 import type { Plugin } from '../colordx.js';
 import type { Colordx } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
@@ -53,8 +53,8 @@ const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { r, g, b, alpha } = this.toP3();
     return alpha < 1 ? `color(display-p3 ${r} ${g} ${b} / ${alpha})` : `color(display-p3 ${r} ${g} ${b})`;
   };
-  parsers.push(parseP3String);
-  formatParsers.push([parseP3String, 'p3']);
+  parsers.push(parseP3String, parseP3Object);
+  formatParsers.push([parseP3String, 'p3'], [parseP3Object, 'p3']);
 };
 
 export default p3;

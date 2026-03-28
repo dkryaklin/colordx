@@ -441,7 +441,11 @@ toGamutP3('oklch(0.5 0.4 180)');  // → Colordx at the P3 boundary
 oklchToP3Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded P3 in [0, 1]
 ```
 
-> **Note:** Object parsing is not supported for Display-P3 — the shape `{ r, g, b }` is identical to sRGB and would be ambiguous. Use string format.
+Object parsing is also supported using the `colorSpace` discriminant:
+
+```ts
+colordx({ r: 0.9505, g: 0.2856, b: 0.0459, alpha: 1, colorSpace: 'display-p3' }).toHex();
+```
 
 ### rec2020 plugin
 
@@ -471,7 +475,11 @@ toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1]
 ```
 
-> **Note:** Object parsing is not supported for Rec.2020 — the shape is identical to sRGB and would be ambiguous. Use string format.
+Object parsing is also supported using the `colorSpace` discriminant:
+
+```ts
+colordx({ r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1, colorSpace: 'rec2020' }).toHex();
+```
 
 ## Migrating from colord
 

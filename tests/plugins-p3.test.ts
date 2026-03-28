@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { colordx } from '../src/index.js';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { colordx, extend, getFormat } from '../src/index.js';
+import p3 from '../src/plugins/p3.js';
+
+beforeAll(() => {
+  extend([p3]);
+});
 
 const srgbInputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
 
@@ -176,5 +181,43 @@ describe('toP3String: format verification', () => {
 
   it('P3 (0.5 0.5 0.5) is a valid parseable color', () => {
     expect(colordx('color(display-p3 0.5 0.5 0.5)').isValid()).toBe(true);
+  });
+});
+
+describe('P3 object parsing', () => {
+  it('parses { r, g, b, colorSpace: "display-p3" }', () => {
+    expect(colordx({ r: 1, g: 1, b: 1, alpha: 1, colorSpace: 'display-p3' } as any).isValid()).toBe(true);
+  });
+
+  it('white P3 object → #ffffff', () => {
+    expect(colordx({ r: 1, g: 1, b: 1, alpha: 1, colorSpace: 'display-p3' } as any).toHex()).toBe('#ffffff');
+  });
+
+  it('black P3 object → #000000', () => {
+    expect(colordx({ r: 0, g: 0, b: 0, alpha: 1, colorSpace: 'display-p3' } as any).toHex()).toBe('#000000');
+  });
+
+  it('alpha is preserved from P3 object', () => {
+    expect(colordx({ r: 1, g: 0, b: 0, alpha: 0.5, colorSpace: 'display-p3' } as any).alpha()).toBeCloseTo(0.5, 3);
+  });
+
+  it('defaults alpha to 1 when omitted', () => {
+    expect(colordx({ r: 1, g: 1, b: 1, colorSpace: 'display-p3' } as any).alpha()).toBe(1);
+  });
+
+  it('getFormat returns "p3" for P3 object', () => {
+    expect(getFormat({ r: 1, g: 0, b: 0, alpha: 1, colorSpace: 'display-p3' } as any)).toBe('p3');
+  });
+
+  it('plain { r, g, b } without colorSpace still parses as sRGB', () => {
+    expect(getFormat({ r: 255, g: 0, b: 0, alpha: 1 })).toBe('rgb');
+  });
+
+  it('round-trip: toP3() object → parse back → same hex', () => {
+    for (const input of srgbInputs) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const p3Color = (colordx(input) as any).toP3();
+      expect(colordx(p3Color).toHex()).toBe(colordx(input).toHex());
+    }
   });
 });

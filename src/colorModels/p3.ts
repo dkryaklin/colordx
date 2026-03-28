@@ -1,4 +1,4 @@
-import { clamp, round } from '../helpers.js';
+import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
@@ -39,6 +39,21 @@ export const p3ToRgb = ({ r, g, b, alpha }: P3Color): RgbColor => {
     g: srgbFromLinear(clamp(sg, 0, 1)) * 255,
     b: srgbFromLinear(clamp(sb, 0, 1)) * 255,
     alpha,
+  });
+};
+
+export const parseP3Object = (input: unknown): RgbColor | null => {
+  if (!isObject(input)) return null;
+  if ((input as { colorSpace?: unknown }).colorSpace !== 'display-p3') return null;
+  if (!hasKeys(input, ['r', 'g', 'b'])) return null;
+  const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
+  if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
+  return p3ToRgb({
+    r: sanitize(r),
+    g: sanitize(g),
+    b: sanitize(b),
+    alpha: clamp(sanitize(alpha), 0, 1),
+    colorSpace: 'display-p3',
   });
 };
 
