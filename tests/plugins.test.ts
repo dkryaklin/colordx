@@ -6,6 +6,7 @@ import harmonies from "../src/plugins/harmonies.js";
 import mix from "../src/plugins/mix.js";
 import minify from "../src/plugins/minify.js";
 import lab from "../src/plugins/lab.js";
+import p3 from "../src/plugins/p3.js";
 import rec2020 from "../src/plugins/rec2020.js";
 
 beforeAll(() => {
@@ -341,7 +342,7 @@ describe("names plugin: additional", () => {
 
 describe("getFormat for additional plugin formats", () => {
   beforeAll(() => {
-    extend([lab, rec2020]);
+    extend([lab, p3, rec2020]);
   });
 
   it("returns 'xyz' for XYZ object inputs", () => {

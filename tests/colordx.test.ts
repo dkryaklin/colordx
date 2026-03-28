@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { colordx, nearest, random, Colordx, getFormat, extend } from "../src/index.js";
+import a11y from "../src/plugins/a11y.js";
 import hsv from "../src/plugins/hsv.js";
+import hwb from "../src/plugins/hwb.js";
+import mix from "../src/plugins/mix.js";
+import p3 from "../src/plugins/p3.js";
 
-beforeAll(() => extend([hsv]));
+beforeAll(() => extend([a11y, hsv, hwb, mix, p3]));
 
 describe("parsing", () => {
   it("parses hex colors", () => {
@@ -940,13 +944,12 @@ describe("getFormat: extended", () => {
     expect(getFormat("oklab(1 0 0)")).toBe("oklab");
   });
 
-  it("detects display-p3 string as 'p3' without any plugin loaded", () => {
-    // parseP3String is now a builtin — no plugin needed
+  it("detects display-p3 string as 'p3'", () => {
     expect(getFormat("color(display-p3 0.5 0.5 0.5)")).toBe("p3");
     expect(getFormat("color(display-p3 1 0 0)")).toBe("p3");
   });
 
-  it("parses display-p3 string without any plugin loaded", () => {
+  it("parses display-p3 string", () => {
     const c = colordx("color(display-p3 1 0 0)");
     expect(c.isValid()).toBe(true);
     // P3 red (1,0,0) is out-of-sRGB-gamut but maps to #ff0000 after clamping

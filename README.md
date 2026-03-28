@@ -52,18 +52,19 @@ colordx('#f00');
 colordx('rgb(255, 0, 0)');
 colordx('rgba(255, 0, 0, 0.5)');
 colordx('hsl(0, 100%, 50%)');
-colordx('hwb(0 0% 0%)');
 colordx('oklab(0.6279 0.2249 0.1257)');
 colordx('oklch(0.6279 0.2577 29.23)');
 colordx({ r: 255, g: 0, b: 0, alpha: 1 });
 colordx({ h: 0, s: 100, l: 50, alpha: 1 });
-colordx({ h: 0, w: 0, b: 0, alpha: 1 });
 colordx({ l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }); // OKLab
 colordx({ l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }); // OKLch
 // With p3 plugin loaded:
 colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
 colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
+// With hwb plugin loaded:
+colordx('hwb(0 0% 0%)');
+colordx({ h: 0, w: 0, b: 0, alpha: 1 });
 // With hsv plugin loaded:
 colordx({ h: 0, s: 100, v: 100, alpha: 1 }); // HSV
 ```
@@ -77,18 +78,15 @@ colordx({ h: 0, s: 100, v: 100, alpha: 1 }); // HSV
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
 .toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
 .toHslString()     // 'hsl(0, 100%, 50%)'
-.toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
-.toHwbString()     // 'hwb(0 0% 0%)'
-// toHsl/toHwb accept an optional precision argument (decimal places):
+// toHsl accepts an optional precision argument (decimal places):
 colordx('#3d7a9f').toHsl()         // { h: 205.71, s: 43.24, l: 43.33, alpha: 1 }      — default (2)
 colordx('#3d7a9f').toHsl(4)        // { h: 205.7143, s: 43.2432, l: 43.3333, alpha: 1 }
 colordx('#3d7a9f').toHsl(0)        // { h: 206, s: 43, l: 43, alpha: 1 }               — integers
 colordx('#3d7a9f').toHslString()   // 'hsl(205.71, 43.24%, 43.33%)'
 colordx('#3d7a9f').toHslString(4)  // 'hsl(205.7143, 43.2432%, 43.3333%)'
-colordx('#3d7a9f').toHwb()         // { h: 206, w: 24, b: 38, alpha: 1 }               — default (0)
-colordx('#3d7a9f').toHwb(2)        // { h: 205.71, w: 23.92, b: 37.65, alpha: 1 }
-colordx('#3d7a9f').toHwbString()   // 'hwb(206 24% 38%)'
-colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
+// With hwb plugin loaded:
+.toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
+.toHwbString()     // 'hwb(0 0% 0%)'
 .toOklab()         // { l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }
 .toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
 .toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }
@@ -112,8 +110,6 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .grayscale()       // fully desaturate
 .invert()          // invert RGB channels
 .rotate(30)        // rotate hue by 30°
-.mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
-.mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
 .alpha(0.5)        // set alpha
 .hue(120)          // set hue (HSL)
 .lightness(0.5)    // set lightness (OKLCH, 0–1)
@@ -129,11 +125,15 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .lightness()       // get OKLCH lightness (0–1)
 .chroma()          // get OKLCH chroma (0–0.4)
 .brightness()      // perceived brightness (0–1)
-.luminance()       // relative luminance (0–1, WCAG)
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
-.contrast('#fff')  // WCAG 2.x contrast ratio (1–21)
 .isEqual('#f00')   // exact RGB equality
+// With a11y plugin loaded:
+.luminance()       // relative luminance (0–1, WCAG)
+.contrast('#fff')  // WCAG 2.x contrast ratio (1–21)
+// With mix plugin loaded:
+.mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
+.mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
 ```
 
 ### Utilities
@@ -144,7 +144,6 @@ import { getFormat, nearest, oklchToLinear, oklchToRgbChannels, random } from '@
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255, 0, 0)'); // 'rgb'
 getFormat('hsl(0, 100%, 50%)'); // 'hsl'
-getFormat('hwb(0 0% 0%)'); // 'hwb'
 getFormat('oklch(0.5 0.2 240)'); // 'oklch'
 getFormat('oklab(0.6279 0.2249 0.1257)'); // 'oklab'
 getFormat({ r: 255, g: 0, b: 0, alpha: 1 }); // 'rgb'
@@ -219,6 +218,8 @@ import cmyk from '@colordx/core/plugins/cmyk';
 // toCmyk(), toCmykString(), parses device-cmyk() strings and CMYK objects
 import harmonies from '@colordx/core/plugins/harmonies';
 // harmonies()
+import hwb from '@colordx/core/plugins/hwb';
+// toHwb(), toHwbString(), parses hwb() strings and HWB objects
 import hsv from '@colordx/core/plugins/hsv';
 // toHsv(), toHsvString(), parses hsv() strings and HSV objects
 import lab from '@colordx/core/plugins/lab';
@@ -236,7 +237,7 @@ import p3 from '@colordx/core/plugins/p3';
 import rec2020 from '@colordx/core/plugins/rec2020';
 // toRec2020(), toRec2020String(), inGamutRec2020(), toGamutRec2020(), linearToRec2020Channels(), oklchToRec2020Channels(), parses color(rec2020 ...) strings
 
-extend([lab, lch, cmyk, names, a11y, harmonies, hsv, mix, minify, p3, rec2020]);
+extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020]);
 ```
 
 ### lab plugin
@@ -348,6 +349,27 @@ colordx('#ff0000').harmonies('rectangle');                   // [0°, 60°, 180�
 colordx('#ff0000').harmonies('double-split-complementary');  // [−30°, 0°, 30°, 150°, 210°] — 5 colors
 ```
 
+### hwb plugin
+
+CSS Color Level 4 HWB (Hue, Whiteness, Blackness) color model.
+
+```ts
+import hwb from '@colordx/core/plugins/hwb';
+
+extend([hwb]);
+
+colordx('#ff0000').toHwb();         // { h: 0, w: 0, b: 0, alpha: 1 }
+colordx('#ff0000').toHwbString();   // 'hwb(0 0% 0%)'
+colordx('hwb(0 0% 0%)').toHex();   // '#ff0000'
+colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex(); // '#ff0000'
+
+// toHwb accepts an optional precision argument (decimal places):
+colordx('#3d7a9f').toHwb();    // { h: 206, w: 24, b: 38, alpha: 1 }   — default (0)
+colordx('#3d7a9f').toHwb(2);   // { h: 205.71, w: 23.92, b: 37.65, alpha: 1 }
+colordx('#3d7a9f').toHwbString();  // 'hwb(206 24% 38%)'
+colordx('#3d7a9f').toHwbString(2); // 'hwb(205.71 23.92% 37.65%)'
+```
+
 ### mix plugin
 
 Color mixing helpers built on top of `.mix()`.
@@ -386,7 +408,7 @@ colordx('#ff0000').minify({ hsl: false }); // skips HSL, picks from hex/RGB
 
 ### a11y plugin
 
-WCAG 2.x contrast (uses `.contrast()` from core):
+WCAG 2.x contrast:
 
 ```ts
 colordx('#000').isReadable('#fff'); // true  — AA normal (ratio >= 4.5)
@@ -501,9 +523,9 @@ const c = colordx('#ff0000');
 ### What's the same
 
 All core manipulation and conversion methods have identical signatures:
-`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.toHwb()`, `.toHwbString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.mix()`, `.alpha()`, `.hue()`, `.brightness()`, `.isDark()`, `.isLight()`, `.isEqual()`, `getFormat()`, `random()`
+`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.alpha()`, `.hue()`, `.brightness()`, `.isDark()`, `.isLight()`, `.isEqual()`, `getFormat()`, `random()`
 
-The following were **plugin-only in colord** but are now **built into colordx core**: `.toHwb()`, `.toHwbString()`, `.mix()`, `.luminance()`, `.contrast()`.
+The following remain **plugin-only** (same as colord): `.mix()`, `.mixOklab()`, `.luminance()`, `.contrast()`, `.toHwb()`, `.toHwbString()`.
 
 `.lighten()`, `.darken()`, `.saturate()`, and `.desaturate()` accept an optional `{ relative: true }` flag not present in colord — see [Relative lighten/darken](#relative-lightendarken) below.
 
@@ -581,7 +603,7 @@ colord's `mix` plugin interpolated in **CIE Lab** space. colordx's `mix()` uses 
 
 ```ts
 colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
-colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform, no plugin needed)
+colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform)
 
 // colord-compatible Lab mixing — requires lab plugin
 import lab from '@colordx/core/plugins/lab';
@@ -600,19 +622,16 @@ colord('#ff0000').contrast('#ffffff'); // 3.99  (floor)
 colordx('#ff0000').contrast('#ffffff'); // 4     (round)
 ```
 
-### HSL/HWB precision
+### HSL precision
 
 colordx returns higher precision HSL/HSV values than colord. If your code does exact equality checks on `.toHsl()` output, use `toBeCloseTo` or round the values.
 
-`toHsl()` and `toHwb()` now accept an optional `precision` argument to control decimal places:
+`toHsl()` now accepts an optional `precision` argument to control decimal places:
 
 ```ts
 colordx('#3d7a9f').toHsl(); // { h: 205.71, s: 43.24, l: 43.33, alpha: 1 }  — default (2)
 colordx('#3d7a9f').toHsl(4); // { h: 205.7143, s: 43.2432, l: 43.3333, alpha: 1 }
 colordx('#3d7a9f').toHsl(0); // { h: 206, s: 43, l: 43, alpha: 1 }
-
-colordx('#3d7a9f').toHwb(); // { h: 206, w: 24, b: 38, alpha: 1 }            — default (0)
-colordx('#3d7a9f').toHwb(2); // { h: 205.71, w: 23.92, b: 37.65, alpha: 1 }
 ```
 
 The `minify()` plugin preserves full HSL precision when building candidates, so minification is now lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.

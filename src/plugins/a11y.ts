@@ -1,8 +1,12 @@
 import type { Colordx, Plugin } from '../colordx.js';
+import { round } from '../helpers.js';
+import { srgbToLinear } from '../transfer.js';
 import type { AnyColor } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
+    luminance(): number;
+    contrast(color?: AnyColor | Colordx): number;
     isReadable(background?: AnyColor, options?: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' }): boolean;
     readableScore(background?: AnyColor): 'AAA' | 'AA' | 'AA large' | 'fail';
     minReadable(background?: AnyColor): Colordx;
@@ -47,6 +51,31 @@ function calcApca(textRgb: { r: number; g: number; b: number }, bgRgb: { r: numb
 }
 
 const a11y: Plugin = (ColordxClass) => {
+  ColordxClass.prototype.luminance = function (this: Colordx): number {
+    const { r, g, b } = this._rawRgb();
+    return round(0.2126 * srgbToLinear(r / 255) + 0.7152 * srgbToLinear(g / 255) + 0.0722 * srgbToLinear(b / 255), 4);
+  };
+
+  ColordxClass.prototype.contrast = function (this: Colordx, color: AnyColor = '#fff'): number {
+    const bg = new ColordxClass(color);
+    const bgRgb = bg._rawRgb();
+    const fgRgb = this._rawRgb();
+    const effectiveFg =
+      fgRgb.alpha < 1
+        ? new ColordxClass({
+            r: fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r,
+            g: fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g,
+            b: fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b,
+            alpha: 1,
+          })
+        : this;
+    const l1 = effectiveFg.luminance();
+    const l2 = bg.luminance();
+    const lighter = Math.max(l1, l2);
+    const darker = Math.min(l1, l2);
+    return round((lighter + 0.05) / (darker + 0.05), 2);
+  };
+
   ColordxClass.prototype.apcaContrast = function (this: Colordx, background: AnyColor = '#fff'): number {
     const bgRgb = new ColordxClass(background).toRgb();
     const fgRgb = this.toRgb();

@@ -10,7 +10,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { colordx, extend } from '../src/index.js';
 import { inGamutSrgb, toGamutSrgb } from '../src/gamut.js';
-import { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
+import p3, { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
 import { inGamutRec2020, toGamutRec2020 } from '../src/plugins/rec2020.js';
 import a11y from '../src/plugins/a11y.js';
 import cmyk from '../src/plugins/cmyk.js';
@@ -19,11 +19,12 @@ import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
 import minify from '../src/plugins/minify.js';
 import mix from '../src/plugins/mix.js';
+import hwb from '../src/plugins/hwb.js';
 import names from '../src/plugins/names.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, harmonies, lab, lch, minify, mix, names, rec2020]);
+  extend([a11y, cmyk, harmonies, hwb, lab, lch, minify, mix, names, p3, rec2020]);
 });
 
 // Deterministic LCG — results are reproducible across runs

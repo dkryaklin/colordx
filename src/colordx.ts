@@ -1,23 +1,10 @@
 import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { rgbToHwb } from './colorModels/hwb.js';
-import { oklabToRgb, rgbToOklab } from './colorModels/oklab.js';
+import { rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
-import { rgbToP3 } from './colorModels/p3.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
-import { srgbToLinear } from './transfer.js';
-import type {
-  AnyColor,
-  ColorFormat,
-  ColorParser,
-  HslColor,
-  HwbColor,
-  OklabColor,
-  OklchColor,
-  P3Color,
-  RgbColor,
-} from './types.js';
+import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
 
@@ -85,16 +72,6 @@ export class Colordx {
     return alpha < 1 ? `hsla(${h}, ${s}%, ${l}%, ${alpha})` : `hsl(${h}, ${s}%, ${l}%)`;
   }
 
-  toHwb(precision = 0): HwbColor {
-    const { h, w, b, alpha } = rgbToHwb(this._rgb);
-    return { h: round(h, precision), w: round(w, precision), b: round(b, precision), alpha: round(alpha, 3) };
-  }
-
-  toHwbString(precision = 0): string {
-    const { h, w, b, alpha } = this.toHwb(precision);
-    return alpha < 1 ? `hwb(${h} ${w}% ${b}% / ${alpha})` : `hwb(${h} ${w}% ${b}%)`;
-  }
-
   toOklab(): OklabColor {
     return rgbToOklab(this._rgb);
   }
@@ -119,23 +96,9 @@ export class Colordx {
     return alpha < 1 ? `oklch(${L} ${C} ${H} / ${alpha})` : `oklch(${L} ${C} ${H})`;
   }
 
-  toP3(): P3Color {
-    return rgbToP3(this._rgb);
-  }
-
-  toP3String(): string {
-    const { r, g, b, alpha } = this.toP3();
-    return alpha < 1 ? `color(display-p3 ${r} ${g} ${b} / ${alpha})` : `color(display-p3 ${r} ${g} ${b})`;
-  }
-
   brightness(): number {
     const { r, g, b } = this._rgb;
     return round((r * 299 + g * 587 + b * 114) / 255000, 2);
-  }
-
-  luminance(): number {
-    const { r, g, b } = this._rgb;
-    return round(0.2126 * srgbToLinear(r / 255) + 0.7152 * srgbToLinear(g / 255) + 0.0722 * srgbToLinear(b / 255), 4);
   }
 
   isDark(): boolean {
@@ -211,52 +174,6 @@ export class Colordx {
 
   rotate(amount = 15): Colordx {
     return this.hue(this.hue() + amount);
-  }
-
-  mix(color: AnyColor | Colordx, ratio = 0.5): Colordx {
-    const other = new Colordx(color).toRgb();
-    const self = this._rgb;
-    const w = clamp(ratio, 0, 1);
-    return Colordx._make({
-      r: round(self.r * (1 - w) + other.r * w),
-      g: round(self.g * (1 - w) + other.g * w),
-      b: round(self.b * (1 - w) + other.b * w),
-      alpha: round(self.alpha * (1 - w) + other.alpha * w, 3),
-    });
-  }
-
-  mixOklab(color: AnyColor | Colordx, ratio = 0.5): Colordx {
-    const oklab1 = rgbToOklab(this._rgb);
-    const oklab2 = rgbToOklab(new Colordx(color)._rgb);
-    const w = clamp(ratio, 0, 1);
-    return Colordx._make(
-      oklabToRgb({
-        l: oklab1.l * (1 - w) + oklab2.l * w,
-        a: oklab1.a * (1 - w) + oklab2.a * w,
-        b: oklab1.b * (1 - w) + oklab2.b * w,
-        alpha: round(oklab1.alpha * (1 - w) + oklab2.alpha * w, 3),
-      })
-    );
-  }
-
-  contrast(color: AnyColor = '#fff'): number {
-    const bg = new Colordx(color);
-    const bgRgb = bg._rgb;
-    const fgRgb = this._rgb;
-    const effectiveFg =
-      fgRgb.alpha < 1
-        ? Colordx._make({
-            r: fgRgb.alpha * fgRgb.r + (1 - fgRgb.alpha) * bgRgb.r,
-            g: fgRgb.alpha * fgRgb.g + (1 - fgRgb.alpha) * bgRgb.g,
-            b: fgRgb.alpha * fgRgb.b + (1 - fgRgb.alpha) * bgRgb.b,
-            alpha: 1,
-          })
-        : this;
-    const l1 = effectiveFg.luminance();
-    const l2 = bg.luminance();
-    const lighter = Math.max(l1, l2);
-    const darker = Math.min(l1, l2);
-    return round((lighter + 0.05) / (darker + 0.05), 2);
   }
 
   isEqual(color: AnyColor): boolean {
