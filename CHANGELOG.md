@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 4.1.0
+
+### Minor Changes
+
+- 7338bb6: Add `oklchToLinearAndSrgb` export that converts OKLCH to both linear and gamma-encoded sRGB channels in a single pass
+
 ## 4.0.0
 
 ### Major Changes
