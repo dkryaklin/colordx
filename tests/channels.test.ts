@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { oklchToRgbChannels } from '../src/channels.js';
+import { colordx, extend } from '../src/index.js';
+import p3 from '../src/plugins/p3.js';
 import { oklchToP3Channels } from '../src/plugins/p3.js';
 import { oklchToRec2020Channels } from '../src/plugins/rec2020.js';
-import { colordx, inGamutSrgb } from '../src/index.js';
+
+extend([p3]);
 
 describe('oklchToRgbChannels', () => {
   it('returns [1,1,1] for white', () => {
@@ -19,21 +22,21 @@ describe('oklchToRgbChannels', () => {
     expect(b).toBeCloseTo(0, 5);
   });
 
-  it('matches colordx class API for in-gamut colors (round-trip)', () => {
-    const cases: [number, number, number][] = [
-      [0.7, 0.1, 120],
-      [0.5, 0.05, 250],
-      [0.9, 0.08, 60],
-      [0.5, 0.06, 330],
-    ];
-    for (const [l, c, h] of cases) {
-      if (!inGamutSrgb({ l, c, h, alpha: 1 })) continue;
-      const [r, g, b] = oklchToRgbChannels(l, c, h);
-      const rgb = colordx({ l, c, h, alpha: 1 }).toRgb();
-      expect(Math.round(r * 255)).toBe(rgb.r);
-      expect(Math.round(g * 255)).toBe(rgb.g);
-      expect(Math.round(b * 255)).toBe(rgb.b);
-    }
+  it('returns known channel values for in-gamut colors', () => {
+    const [r1, g1, b1] = oklchToRgbChannels(0.7, 0.1, 120);
+    expect(r1).toBeCloseTo(0.5894, 4);
+    expect(g1).toBeCloseTo(0.6578, 4);
+    expect(b1).toBeCloseTo(0.3703, 4);
+
+    const [r2, g2, b2] = oklchToRgbChannels(0.5, 0.05, 250);
+    expect(r2).toBeCloseTo(0.3038, 4);
+    expect(g2).toBeCloseTo(0.3988, 4);
+    expect(b2).toBeCloseTo(0.4983, 4);
+
+    const [r3, g3, b3] = oklchToRgbChannels(0.5, 0.06, 330);
+    expect(r3).toBeCloseTo(0.4667, 4);
+    expect(g3).toBeCloseTo(0.3405, 4);
+    expect(b3).toBeCloseTo(0.4535, 4);
   });
 
   it('handles hue of 0 and 360 identically', () => {
@@ -44,8 +47,13 @@ describe('oklchToRgbChannels', () => {
     expect(b0).toBeCloseTo(b360, 10);
   });
 
-  it('returns values outside [0,1] for out-of-gamut colors', () => {
-    // Very saturated green — outside sRGB
+  it('returns unclamped r > 1 for slightly out-of-gamut color', () => {
+    // (0.9, 0.08, 60) is just outside sRGB — r exceeds 1
+    const [r] = oklchToRgbChannels(0.9, 0.08, 60);
+    expect(r).toBeGreaterThan(1);
+  });
+
+  it('returns values outside [0,1] for strongly out-of-gamut colors', () => {
     const [r, g, b] = oklchToRgbChannels(0.5, 0.4, 145);
     const outOfGamut = r < 0 || r > 1 || g < 0 || g > 1 || b < 0 || b > 1;
     expect(outOfGamut).toBe(true);
