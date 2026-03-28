@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { oklchToP3Channels, oklchToRec2020Channels, oklchToRgbChannels } from '../src/channels.js';
+import { oklchToRgbChannels } from '../src/channels.js';
+import { oklchToP3Channels } from '../src/plugins/p3.js';
+import { oklchToRec2020Channels } from '../src/plugins/rec2020.js';
 import { colordx, inGamutSrgb } from '../src/index.js';
 
 describe('oklchToRgbChannels', () => {

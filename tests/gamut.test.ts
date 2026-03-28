@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { inGamutP3, inGamutRec2020, inGamutSrgb, toGamutP3, toGamutRec2020, toGamutSrgb } from '../src/gamut.js';
+import { inGamutSrgb, toGamutSrgb } from '../src/gamut.js';
+import { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
+import { inGamutRec2020, toGamutRec2020 } from '../src/plugins/rec2020.js';
 
 describe('inGamutSrgb', () => {
   it('returns true for hex colors', () => {

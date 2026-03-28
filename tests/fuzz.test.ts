@@ -9,7 +9,9 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { colordx, extend } from '../src/index.js';
-import { inGamutSrgb, toGamutSrgb, inGamutP3, toGamutP3, inGamutRec2020, toGamutRec2020 } from '../src/gamut.js';
+import { inGamutSrgb, toGamutSrgb } from '../src/gamut.js';
+import { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
+import { inGamutRec2020, toGamutRec2020 } from '../src/plugins/rec2020.js';
 import a11y from '../src/plugins/a11y.js';
 import cmyk from '../src/plugins/cmyk.js';
 import harmonies from '../src/plugins/harmonies.js';

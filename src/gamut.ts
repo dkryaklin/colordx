@@ -1,7 +1,5 @@
 import { labToXyz } from './colorModels/lab.js';
 import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
-import { oklabToLinearP3 } from './colorModels/p3.js';
-import { oklabToLinearRec2020 } from './colorModels/rec2020.js';
 import { xyzD50ToLinearSrgb } from './colorModels/xyz.js';
 import { Colordx } from './colordx.js';
 import { ANGLE_UNITS, clamp } from './helpers.js';
@@ -133,9 +131,9 @@ export const toGamutSrgb = (input: AnyColor): Colordx => {
   return new Colordx(oklab);
 };
 
-type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
+export type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
 
-const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
+export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
   const raw = getRawOklab(input);
   // sRGB-bounded inputs (hex, rgb, hsl, etc.) are always inside the wider P3/Rec.2020 gamut
   if (raw === null) return true;
@@ -143,7 +141,7 @@ const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
   return isLinearInGamut(r, g, b);
 };
 
-const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
+export const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
   const raw = getRawOklab(input);
   if (raw === null) return new Colordx(input);
 
@@ -174,27 +172,3 @@ const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
   };
   return new Colordx(oklab);
 };
-
-/**
- * Returns true if the color is within the Display-P3 gamut.
- * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ P3).
- */
-export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearP3);
-
-/**
- * Maps an out-of-P3-gamut color into Display-P3 by reducing chroma (constant lightness and hue).
- * Colors already in P3 gamut are returned as-is. sRGB inputs are passed through.
- */
-export const toGamutP3 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearP3);
-
-/**
- * Returns true if the color is within the Rec.2020 gamut.
- * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ Rec.2020).
- */
-export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020);
-
-/**
- * Maps an out-of-Rec.2020-gamut color into Rec.2020 by reducing chroma (constant lightness and hue).
- * Colors already in Rec.2020 gamut are returned as-is. sRGB inputs are passed through.
- */
-export const toGamutRec2020 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearRec2020);

@@ -60,7 +60,8 @@ colordx({ h: 0, s: 100, l: 50, alpha: 1 });
 colordx({ h: 0, w: 0, b: 0, alpha: 1 });
 colordx({ l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }); // OKLab
 colordx({ l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }); // OKLch
-colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string (core, no plugin needed)
+// With p3 plugin loaded:
+colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
 colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
 // With hsv plugin loaded:
@@ -92,6 +93,7 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 .toOklabString()   // 'oklab(0.6279 0.2249 0.1257)'
 .toOklch()         // { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }
 .toOklchString()   // 'oklch(0.6279 0.2577 29.23)'
+// With p3 plugin loaded:
 .toP3()            // { r: 0.9176, g: 0.2003, b: 0.1386, alpha: 1 }
 .toP3String()      // 'color(display-p3 0.9176 0.2003 0.1386)'
 ```
@@ -137,7 +139,7 @@ colordx('#3d7a9f').toHwbString(2)  // 'hwb(205.71 23.92% 37.65%)'
 ### Utilities
 
 ```ts
-import { getFormat, linearToP3Channels, linearToRec2020Channels, nearest, oklchToLinear, oklchToP3Channels, oklchToRec2020Channels, oklchToRgbChannels, random } from '@colordx/core';
+import { getFormat, nearest, oklchToLinear, oklchToRgbChannels, random } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255, 0, 0)'); // 'rgb'
@@ -145,12 +147,11 @@ getFormat('hsl(0, 100%, 50%)'); // 'hsl'
 getFormat('hwb(0 0% 0%)'); // 'hwb'
 getFormat('oklch(0.5 0.2 240)'); // 'oklch'
 getFormat('oklab(0.6279 0.2249 0.1257)'); // 'oklab'
-getFormat('color(display-p3 0.9176 0.2003 0.1386)'); // 'p3'
 getFormat({ r: 255, g: 0, b: 0, alpha: 1 }); // 'rgb'
 getFormat({ h: 0, s: 100, l: 50, alpha: 1 }); // 'hsl'
 getFormat('notacolor'); // undefined
 // Plugin-added parsers register their own format:
-// hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020'
+// p3 → 'p3', hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020'
 
 nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via OKLab
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
@@ -158,25 +159,32 @@ nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
 random(); // random Colordx instance
 
 // Low-level functional converters — no object allocation, for hot paths (canvas gradients, etc.)
-oklchToRgbChannels(0.5, 0.2, 240);     // [r, g, b] gamma-encoded sRGB in [0, 1]
-oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3 in [0, 1]
-oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (BT.2020 gamma)
+oklchToRgbChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded sRGB in [0, 1]
 // Out-of-gamut channels may exceed [0, 1] — callers clamp before byte encoding
 
-// Split-step API: when rendering one color to multiple spaces, compute the shared
-// expensive OKLCH→linear sRGB step once, then apply the cheap per-space steps.
-// Avoids repeating 3× Math.cbrt + OKLab matrix per additional color space.
 const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a free sRGB gamut check
-linearToP3Channels(...linear);               // linear sRGB → gamma-encoded P3
-linearToRec2020Channels(...linear);          // linear sRGB → gamma-encoded Rec.2020 (BT.2020 gamma)
+
+// P3/Rec.2020 channel functions live in their plugins:
+import { linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
+import { linearToRec2020Channels, oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
+
+oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3 in [0, 1]
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (BT.2020 gamma)
+
+// Split-step API: compute the shared expensive OKLCH→linear sRGB step once,
+// then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
+linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
+linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (BT.2020 gamma)
 ```
 
 ### Gamut
 
-OKLCH and OKLab can describe colors outside the sRGB gamut. colordx includes standalone utilities for checking and mapping colors into sRGB, Display-P3, and Rec.2020:
+OKLCH and OKLab can describe colors outside the sRGB gamut. colordx includes standalone utilities for checking and mapping colors into sRGB (core) and Display-P3 / Rec.2020 (plugins):
 
 ```ts
-import { inGamutP3, inGamutRec2020, inGamutSrgb, toGamutP3, toGamutRec2020, toGamutSrgb } from '@colordx/core';
+import { inGamutSrgb, toGamutSrgb } from '@colordx/core';
+import { inGamutP3, toGamutP3 } from '@colordx/core/plugins/p3';
+import { inGamutRec2020, toGamutRec2020 } from '@colordx/core/plugins/rec2020';
 
 // Check: is this color displayable in sRGB?
 inGamutSrgb('#ff0000'); // true  — hex is always sRGB
@@ -197,7 +205,7 @@ inGamutRec2020('oklch(0.5 0.4 180)'); // false — outside Rec.2020
 toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 ```
 
-Gamut containment is hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020. All three `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
+Gamut containment is hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
 
 ## Plugins
 
@@ -223,10 +231,12 @@ import mix from '@colordx/core/plugins/mix';
 // tints(), shades(), tones(), palette()
 import names from '@colordx/core/plugins/names';
 // toName(), parses CSS color names
+import p3 from '@colordx/core/plugins/p3';
+// toP3(), toP3String(), inGamutP3(), toGamutP3(), linearToP3Channels(), oklchToP3Channels(), parses color(display-p3 ...) strings
 import rec2020 from '@colordx/core/plugins/rec2020';
-// toRec2020(), toRec2020String(), parses color(rec2020 ...) strings
+// toRec2020(), toRec2020String(), inGamutRec2020(), toGamutRec2020(), linearToRec2020Channels(), oklchToRec2020Channels(), parses color(rec2020 ...) strings
 
-extend([lab, lch, cmyk, names, a11y, harmonies, hsv, mix, minify, rec2020]);
+extend([lab, lch, cmyk, names, a11y, harmonies, hsv, mix, minify, p3, rec2020]);
 ```
 
 ### lab plugin
@@ -403,6 +413,36 @@ colordx('#777').isReadableApca('#fff', { size: 'large' }); // true
 
 APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.
 
+### p3 plugin
+
+Adds Display-P3 color space support. P3 has a wider gamut than sRGB and is natively supported by all modern browsers and most Mac/iOS displays.
+
+```ts
+import p3 from '@colordx/core/plugins/p3';
+
+extend([p3]);
+
+colordx('#ff0000').toP3(); // { r: 0.9176, g: 0.2003, b: 0.1386, alpha: 1 }
+colordx('#ff0000').toP3String(); // 'color(display-p3 0.9176 0.2003 0.1386)'
+
+// Parse Display-P3 strings (alpha optional)
+colordx('color(display-p3 0.9176 0.2003 0.1386)').toHex(); // '#ff0000'
+colordx('color(display-p3 0.9176 0.2003 0.1386 / 0.5)').toHex(); // '#ff000080'
+```
+
+The plugin also exports standalone gamut utilities and low-level channel functions (no `extend()` needed for these):
+
+```ts
+import { inGamutP3, toGamutP3, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
+
+inGamutP3('oklch(0.64 0.27 29)'); // true — inside P3 but outside sRGB
+toGamutP3('oklch(0.5 0.4 180)');  // → Colordx at the P3 boundary
+
+oklchToP3Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded P3 in [0, 1]
+```
+
+> **Note:** Object parsing is not supported for Display-P3 — the shape `{ r, g, b }` is identical to sRGB and would be ambiguous. Use string format.
+
 ### rec2020 plugin
 
 Adds Rec.2020 (BT.2020) color space support. Rec.2020 has the widest gamut of the three — it covers most of the visible spectrum.
@@ -418,6 +458,17 @@ colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.7919 0.2307 0.0739)'
 // Parse Rec.2020 strings (alpha optional)
 colordx('color(rec2020 0.7919 0.2307 0.0739)').toHex(); // '#ff0000'
 colordx('color(rec2020 0.7919 0.2307 0.0739 / 0.5)').toHex(); // '#ff000080'
+```
+
+The plugin also exports standalone gamut utilities and low-level channel functions (no `extend()` needed for these):
+
+```ts
+import { inGamutRec2020, toGamutRec2020, linearToRec2020Channels, oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
+
+inGamutRec2020('oklch(0.5 0.4 180)'); // false — outside Rec.2020
+toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
+
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1]
 ```
 
 > **Note:** Object parsing is not supported for Rec.2020 — the shape is identical to sRGB and would be ambiguous. Use string format.
