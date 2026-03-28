@@ -65,33 +65,33 @@ describe('CMYK — parseCmykString', () => {
   it('percentage values', () => {
     const a = parseCmykString('device-cmyk(50% 50% 50% 50%)');
     const b = parseCmykString('device-cmyk(0.5 0.5 0.5 0.5)');
-    expect(a!.r).toBeCloseTo(b!.r, 0);
-    expect(a!.g).toBeCloseTo(b!.g, 0);
-    expect(a!.b).toBeCloseTo(b!.b, 0);
+    expect(a!.r).toBe(b!.r);
+    expect(a!.g).toBe(b!.g);
+    expect(a!.b).toBe(b!.b);
   });
 
   it('pure black unitless → rgb(0,0,0)', () => {
     const rgb = parseCmykString('device-cmyk(0 0 0 1)');
-    expect(rgb!.r).toBeCloseTo(0, 0);
-    expect(rgb!.g).toBeCloseTo(0, 0);
-    expect(rgb!.b).toBeCloseTo(0, 0);
+    expect(rgb!.r).toBe(0);
+    expect(rgb!.g).toBe(0);
+    expect(rgb!.b).toBe(0);
   });
 
   it('pure black percentage → rgb(0,0,0)', () => {
     const rgb = parseCmykString('device-cmyk(0% 0% 0% 100%)');
-    expect(rgb!.r).toBeCloseTo(0, 0);
-    expect(rgb!.g).toBeCloseTo(0, 0);
-    expect(rgb!.b).toBeCloseTo(0, 0);
+    expect(rgb!.r).toBe(0);
+    expect(rgb!.g).toBe(0);
+    expect(rgb!.b).toBe(0);
   });
 
   it('with decimal alpha', () => {
     const rgb = parseCmykString('device-cmyk(0 0 0 0 / 0.5)');
-    expect(rgb!.alpha).toBeCloseTo(0.5, 2);
+    expect(rgb!.alpha).toBe(0.5);
   });
 
   it('with percentage alpha', () => {
     const rgb = parseCmykString('device-cmyk(0% 0% 0% 0% / 50%)');
-    expect(rgb!.alpha).toBeCloseTo(0.5, 2);
+    expect(rgb!.alpha).toBe(0.5);
   });
 
   it('negative values clamp, not crash', () => {
@@ -126,11 +126,11 @@ describe('HEX — parseHex', () => {
   });
 
   it('#ffff → alpha 1.0', () => {
-    expect(parseHex('#ffff')!.alpha).toBeCloseTo(1, 2);
+    expect(parseHex('#ffff')!.alpha).toBe(1);
   });
 
   it('#fff0 → alpha 0.0', () => {
-    expect(parseHex('#fff0')!.alpha).toBeCloseTo(0, 2);
+    expect(parseHex('#fff0')!.alpha).toBe(0);
   });
 
   it('#0000 → transparent black', () => {
@@ -138,11 +138,11 @@ describe('HEX — parseHex', () => {
     expect(rgb.r).toBe(0);
     expect(rgb.g).toBe(0);
     expect(rgb.b).toBe(0);
-    expect(rgb.alpha).toBeCloseTo(0, 2);
+    expect(rgb.alpha).toBe(0);
   });
 
   it('#ffffff80 → alpha ~0.502, not 0.5', () => {
-    expect(parseHex('#ffffff80')!.alpha).toBeCloseTo(0.502, 2);
+    expect(parseHex('#ffffff80')!.alpha).toBe(0.502);
   });
 
   it('#ffffffff → alpha exactly 1', () => {
@@ -194,44 +194,44 @@ describe('HSL — hslToRgb edge cases', () => {
   it('h=0 and h=360 produce same color', () => {
     const a = hslToRgb({ h: 0, s: 50, l: 50, alpha: 1 });
     const b = hslToRgb({ h: 360, s: 50, l: 50, alpha: 1 });
-    expect(a.r).toBeCloseTo(b.r, 0);
-    expect(a.g).toBeCloseTo(b.g, 0);
-    expect(a.b).toBeCloseTo(b.b, 0);
+    expect(a.r).toBe(b.r);
+    expect(a.g).toBe(b.g);
+    expect(a.b).toBe(b.b);
   });
 
   it('h=720 wraps same as h=0', () => {
     const a = hslToRgb({ h: 720, s: 50, l: 50, alpha: 1 });
     const b = hslToRgb({ h: 0, s: 50, l: 50, alpha: 1 });
-    expect(a.r).toBeCloseTo(b.r, 0);
-    expect(a.g).toBeCloseTo(b.g, 0);
-    expect(a.b).toBeCloseTo(b.b, 0);
+    expect(a.r).toBe(b.r);
+    expect(a.g).toBe(b.g);
+    expect(a.b).toBe(b.b);
   });
 
   it('h=-30 wraps same as h=330', () => {
     const a = hslToRgb({ h: -30, s: 50, l: 50, alpha: 1 });
     const b = hslToRgb({ h: 330, s: 50, l: 50, alpha: 1 });
-    expect(a.r).toBeCloseTo(b.r, 0);
-    expect(a.g).toBeCloseTo(b.g, 0);
-    expect(a.b).toBeCloseTo(b.b, 0);
+    expect(a.r).toBe(b.r);
+    expect(a.g).toBe(b.g);
+    expect(a.b).toBe(b.b);
   });
 
   it('s=0 → grey regardless of hue', () => {
     const a = hslToRgb({ h: 180, s: 0, l: 50, alpha: 1 });
     const b = hslToRgb({ h: 0, s: 0, l: 50, alpha: 1 });
-    expect(a.r).toBeCloseTo(b.r, 0);
+    expect(a.r).toBe(b.r);
   });
 
   it('l=0 → black regardless of s and h', () => {
     const rgb = hslToRgb({ h: 180, s: 100, l: 0, alpha: 1 });
-    expect(rgb.r).toBeCloseTo(0, 0);
-    expect(rgb.g).toBeCloseTo(0, 0);
-    expect(rgb.b).toBeCloseTo(0, 0);
+    expect(rgb.r).toBe(0);
+    expect(rgb.g).toBe(0);
+    expect(rgb.b).toBe(0);
   });
 
   it('l=100 → white regardless of s and h', () => {
     const rgb = hslToRgb({ h: 180, s: 100, l: 100, alpha: 1 });
-    expect(rgb.r).toBeCloseTo(255, 0);
-    expect(rgb.g).toBeCloseTo(255, 0);
+    expect(rgb.r).toBe(255);
+    expect(rgb.g).toBe(255);
     expect(rgb.b).toBeCloseTo(255, 0);
   });
 });
@@ -292,38 +292,38 @@ describe('HWB', () => {
   it('w+b=100 → grey', () => {
     const a = hwbToRgb({ h: 0,   w: 50, b: 50, alpha: 1 });
     const b = hwbToRgb({ h: 180, w: 50, b: 50, alpha: 1 });
-    expect(a.r).toBeCloseTo(b.r, 0);
-    expect(a.g).toBeCloseTo(b.g, 0);
-    expect(a.b).toBeCloseTo(b.b, 0);
+    expect(a.r).toBe(b.r);
+    expect(a.g).toBe(b.g);
+    expect(a.b).toBe(b.b);
   });
 
   it('w+b>100 normalizes: w=60,b=60 same as w=50,b=50 (via clampHwb)', () => {
     // hwbToRgb precondition: w+b ≤ 100. Must call clampHwb first for overflow values.
     const a = hwbToRgb(clampHwb({ h: 0, w: 60, b: 60, alpha: 1 }));
     const b = hwbToRgb(clampHwb({ h: 0, w: 50, b: 50, alpha: 1 }));
-    expect(a.r).toBeCloseTo(b.r, 0);
-    expect(a.g).toBeCloseTo(b.g, 0);
-    expect(a.b).toBeCloseTo(b.b, 0);
+    expect(a.r).toBe(b.r);
+    expect(a.g).toBe(b.g);
+    expect(a.b).toBe(b.b);
   });
 
   it('w=100,b=100 normalizes to grey (via clampHwb)', () => {
     const rgb = hwbToRgb(clampHwb({ h: 0, w: 100, b: 100, alpha: 1 }));
-    expect(rgb.r).toBeCloseTo(rgb.g, 0);
-    expect(rgb.g).toBeCloseTo(rgb.b, 0);
+    expect(rgb.r).toBe(rgb.g);
+    expect(rgb.g).toBe(rgb.b);
   });
 
   it('w=100,b=0 → white', () => {
     const rgb = hwbToRgb({ h: 0, w: 100, b: 0, alpha: 1 });
-    expect(rgb.r).toBeCloseTo(255, 0);
-    expect(rgb.g).toBeCloseTo(255, 0);
-    expect(rgb.b).toBeCloseTo(255, 0);
+    expect(rgb.r).toBe(255);
+    expect(rgb.g).toBe(255);
+    expect(rgb.b).toBe(255);
   });
 
   it('w=0,b=100 → black', () => {
     const rgb = hwbToRgb({ h: 0, w: 0, b: 100, alpha: 1 });
-    expect(rgb.r).toBeCloseTo(0, 0);
-    expect(rgb.g).toBeCloseTo(0, 0);
-    expect(rgb.b).toBeCloseTo(0, 0);
+    expect(rgb.r).toBe(0);
+    expect(rgb.g).toBe(0);
+    expect(rgb.b).toBe(0);
   });
 
   it('round-trip {r:255,g:128,b:0}', () => {
@@ -440,9 +440,10 @@ describe('OKLCH — achromatic and hue continuity', () => {
   it('h=360 same as h=0', () => {
     const a = oklchToRgb({ l: 0.5, c: 0.1, h: 360, alpha: 1 });
     const b = oklchToRgb({ l: 0.5, c: 0.1, h: 0,   alpha: 1 });
-    expect(a.r).toBeCloseTo(b.r, 0);
-    expect(a.g).toBeCloseTo(b.g, 0);
-    expect(a.b).toBeCloseTo(b.b, 0);
+    // cos(2π) ≠ cos(0) in IEEE 754 — last-bit difference is expected for raw functions
+    expect(a.r).toBeCloseTo(b.r, 5);
+    expect(a.g).toBeCloseTo(b.g, 5);
+    expect(a.b).toBeCloseTo(b.b, 5);
   });
 
   it('hue continuity: h=359.99 close to h=0', () => {
@@ -475,9 +476,9 @@ describe('OKLab / OKLCH string — none keyword', () => {
 
   it('oklab(none none none) → all zero → black', () => {
     const rgb = parseOklabString('oklab(none none none)');
-    expect(rgb!.r).toBeCloseTo(0, 0);
-    expect(rgb!.g).toBeCloseTo(0, 0);
-    expect(rgb!.b).toBeCloseTo(0, 0);
+    expect(rgb!.r).toBe(0);
+    expect(rgb!.g).toBe(0);
+    expect(rgb!.b).toBe(0);
   });
 });
 
@@ -485,17 +486,17 @@ describe('OKLab / OKLCH string — percentage syntax', () => {
   it('oklch(50% 25% 180) → l=0.5, c=0.1', () => {
     const a = parseOklchString('oklch(50% 25% 180)');
     const b = parseOklchString('oklch(0.5 0.1 180)');
-    expect(a!.r).toBeCloseTo(b!.r, 0);
-    expect(a!.g).toBeCloseTo(b!.g, 0);
-    expect(a!.b).toBeCloseTo(b!.b, 0);
+    expect(a!.r).toBe(b!.r);
+    expect(a!.g).toBe(b!.g);
+    expect(a!.b).toBe(b!.b);
   });
 
   it('oklab(50% 25% -25%) → l=0.5, a=0.1, b=-0.1', () => {
     const a = parseOklabString('oklab(50% 25% -25%)');
     const b = parseOklabString('oklab(0.5 0.1 -0.1)');
-    expect(a!.r).toBeCloseTo(b!.r, 0);
-    expect(a!.g).toBeCloseTo(b!.g, 0);
-    expect(a!.b).toBeCloseTo(b!.b, 0);
+    expect(a!.r).toBe(b!.r);
+    expect(a!.g).toBe(b!.g);
+    expect(a!.b).toBe(b!.b);
   });
 });
 
@@ -520,7 +521,8 @@ describe('Gamut', () => {
     const mapped = toGamutSrgb('oklch(0.7 0.35 145)');
     const lch = colordx(mapped.toHex()).toOklch();
     expect(lch.l).toBeCloseTo(0.7, 1);
-    expect(lch.h).toBeCloseTo(145, 0);
+    // CSS Color 4 returns a clipped result — hue may shift slightly from the gamut boundary
+    expect(Math.abs(lch.h - 145)).toBeLessThan(5);
     expect(inGamutSrgb(mapped.toHex())).toBe(true);
   });
 

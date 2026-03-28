@@ -12,7 +12,7 @@ export const srgbLinearToRec2020Linear = (r: number, g: number, b: number): [num
 ];
 
 // Linear Rec.2020 → Linear sRGB
-const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
+export const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
   1.6604910021084345 * r - 0.58764113878854951 * g - 0.072849863319884883 * b,
   -0.12455047452159074 * r + 1.1328998971259603 * g - 0.0083494226043694768 * b,
   -0.018150763354905303 * r - 0.10057889800800739 * g + 1.1187296613629127 * b,

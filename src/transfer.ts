@@ -1,7 +1,17 @@
 /** sRGB / Display-P3 transfer function (IEC 61966-2-1). Input: 0–1 normalized float. */
 export const srgbToLinear = (c: number): number => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 
-export const srgbFromLinear = (n: number): number => (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
+/**
+ * Linear → gamma-encoded sRGB (extended piecewise, per CSS Color 4).
+ * For in-gamut values [0, 1] this is the standard IEC 61966-2-1 curve.
+ * Extended to negative values using the mirror of the power curve (not the linear piece),
+ * matching the CSS Color 4 spec and display-p3 behaviour for out-of-gamut channels.
+ */
+export const srgbFromLinear = (n: number): number => {
+  const abs = Math.abs(n);
+  const encoded = abs <= 0.0031308 ? 12.92 * abs : 1.055 * abs ** (1 / 2.4) - 0.055;
+  return n < 0 ? -encoded : encoded;
+};
 
 /** BT.2020 transfer function constants. */
 export const REC2020_ALPHA = 1.09929682680944;

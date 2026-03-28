@@ -75,12 +75,16 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
   return null;
 };
 
-// Tolerance for floating point rounding introduced by limited-precision OKLCH strings
+// Tolerance for floating point rounding introduced by limited-precision OKLCH strings.
 // (4 decimal places in L/C and 2 in H can cause linear sRGB to deviate by up to ~2e-3)
+// Used only for inGamut* checks — NOT in gamut mapping, which uses strict bounds.
 const EPS = 2e-3;
 
 const isLinearInGamut = (r: number, g: number, b: number): boolean =>
   r >= -EPS && r <= 1 + EPS && g >= -EPS && g <= 1 + EPS && b >= -EPS && b <= 1 + EPS;
+
+const strictInGamut = (r: number, g: number, b: number): boolean =>
+  r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
 
 /**
  * Returns true if the color is within the sRGB gamut.
@@ -94,44 +98,99 @@ export const inGamutSrgb = (input: AnyColor): boolean => {
   return isLinearInGamut(r, g, b);
 };
 
+// CSS Color 4 gamut mapping constants
+// https://www.w3.org/TR/css-color-4/#css-gamut-mapping
+const JND = 0.02;
+const GAMUT_EPSILON = 0.0001;
+
+/** Euclidean distance in OKLab — the CSS Color 4 deltaEOK metric. */
+const deltaEOK = (lab1: readonly [number, number, number], lab2: readonly [number, number, number]): number => {
+  const dl = lab1[0] - lab2[0];
+  const da = lab1[1] - lab2[1];
+  const db = lab1[2] - lab2[2];
+  return Math.sqrt(dl * dl + da * da + db * db);
+};
+
+export type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
+export type FromLinearConverter = (r: number, g: number, b: number) => [number, number, number];
+
 /**
- * Maps an out-of-gamut color into sRGB by reducing chroma (CSS Color 4 gamut mapping).
- * Colors already in gamut are returned as-is. sRGB inputs (hex, rgb, hsl, etc.) are passed through.
+ * CSS Color 4 gamut mapping algorithm.
+ * Binary-searches for the highest chroma where clip(color) is within JND (0.02 deltaEOK)
+ * of the chroma-reduced color, then returns the clipped result.
+ * This preserves lightness and hue while accepting only perceptually negligible clip error.
+ *
+ * toLinear: OKLab → unclamped linear target-space channels
+ * fromLinear: linear target-space channels → OKLab (used to measure deltaEOK of clipped color)
  */
-export const toGamutSrgb = (input: AnyColor): Colordx => {
-  const raw = getRawOklab(input);
-  if (raw === null) return new Colordx(input);
+const cssGamutMap = (
+  l: number,
+  a: number,
+  b: number,
+  alpha: number,
+  toLinear: LinearConverter,
+  fromLinear: FromLinearConverter
+): OklabColor => {
+  if (l >= 1) return { l: 1, a: 0, b: 0, alpha };
+  if (l <= 0) return { l: 0, a: 0, b: 0, alpha };
 
-  const { l, a, b, alpha } = raw;
-  const [r, g, bv] = oklabToLinear(l, a, b);
-  if (isLinearInGamut(r, g, bv)) return new Colordx(input);
+  const [r0, g0, b0] = toLinear(l, a, b);
+  if (strictInGamut(r0, g0, b0)) return { l, a, b, alpha };
 
-  // Binary search: reduce chroma while keeping lightness and hue
+  // Early exit: if the simple clip is already within JND, use it directly
+  const clip0 = fromLinear(clamp(r0, 0, 1), clamp(g0, 0, 1), clamp(b0, 0, 1));
+  if (deltaEOK(clip0, [l, a, b]) <= JND) {
+    return { l: clip0[0], a: clip0[1], b: clip0[2], alpha };
+  }
+
   const hRad = Math.atan2(b, a);
+  const C = Math.sqrt(a * a + b * b);
   let lo = 0;
-  let hi = Math.sqrt(a ** 2 + b ** 2);
+  let hi = C;
+  let minInGamut = true;
+  let lastClip: readonly [number, number, number] = clip0;
 
-  for (let i = 0; i < 24; i++) {
+  while (hi - lo > GAMUT_EPSILON) {
     const mid = (lo + hi) / 2;
-    const [lr, lg, lb] = oklabToLinear(l, mid * Math.cos(hRad), mid * Math.sin(hRad));
-    if (isLinearInGamut(lr, lg, lb)) {
+    const ma = mid * Math.cos(hRad);
+    const mb = mid * Math.sin(hRad);
+    const [lr, lg, lb] = toLinear(l, ma, mb);
+
+    if (minInGamut && strictInGamut(lr, lg, lb)) {
       lo = mid;
+      continue;
+    }
+
+    const clipOklab = fromLinear(clamp(lr, 0, 1), clamp(lg, 0, 1), clamp(lb, 0, 1));
+    lastClip = clipOklab;
+    const E = deltaEOK(clipOklab, [l, ma, mb]);
+
+    if (Math.abs(E - JND) <= GAMUT_EPSILON) {
+      return { l: clipOklab[0], a: clipOklab[1], b: clipOklab[2], alpha };
+    }
+
+    if (E < JND) {
+      lo = mid;
+      minInGamut = false;
     } else {
       hi = mid;
     }
   }
 
-  const cFinal = (lo + hi) / 2;
-  const oklab: OklabColor = {
-    l: clamp(l, 0, 1),
-    a: cFinal * Math.cos(hRad),
-    b: cFinal * Math.sin(hRad),
-    alpha: clamp(alpha, 0, 1),
-  };
-  return new Colordx(oklab);
+  return { l: lastClip[0], a: lastClip[1], b: lastClip[2], alpha };
 };
 
-export type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
+/**
+ * Maps an out-of-gamut color into sRGB using the CSS Color 4 gamut mapping algorithm.
+ * Colors already in gamut are returned as-is. sRGB inputs (hex, rgb, hsl, etc.) are passed through.
+ */
+export const toGamutSrgb = (input: AnyColor): Colordx => {
+  const raw = getRawOklab(input);
+  if (raw === null) return new Colordx(input);
+  const { l, a, b, alpha } = raw;
+  const mapped = cssGamutMap(l, a, b, alpha, oklabToLinear, linearSrgbToOklab);
+  return new Colordx(mapped);
+};
 
 export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
   const raw = getRawOklab(input);
@@ -141,34 +200,15 @@ export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boole
   return isLinearInGamut(r, g, b);
 };
 
-export const toGamutCustom = (input: AnyColor, toLinear: LinearConverter): Colordx => {
+/**
+ * Maps an out-of-gamut color into a custom gamut using the CSS Color 4 gamut mapping algorithm.
+ * toLinear: OKLab → unclamped linear target-space channels
+ * fromLinear: linear target-space channels → OKLab (for deltaEOK of clipped colors)
+ */
+export const toGamutCustom = (input: AnyColor, toLinear: LinearConverter, fromLinear: FromLinearConverter): Colordx => {
   const raw = getRawOklab(input);
   if (raw === null) return new Colordx(input);
-
   const { l, a, b, alpha } = raw;
-  const [r, g, bv] = toLinear(l, a, b);
-  if (isLinearInGamut(r, g, bv)) return new Colordx(input);
-
-  const hRad = Math.atan2(b, a);
-  let lo = 0;
-  let hi = Math.sqrt(a ** 2 + b ** 2);
-
-  for (let i = 0; i < 24; i++) {
-    const mid = (lo + hi) / 2;
-    const [lr, lg, lb] = toLinear(l, mid * Math.cos(hRad), mid * Math.sin(hRad));
-    if (isLinearInGamut(lr, lg, lb)) {
-      lo = mid;
-    } else {
-      hi = mid;
-    }
-  }
-
-  const cFinal = (lo + hi) / 2;
-  const oklab: OklabColor = {
-    l: clamp(l, 0, 1),
-    a: cFinal * Math.cos(hRad),
-    b: cFinal * Math.sin(hRad),
-    alpha: clamp(alpha, 0, 1),
-  };
-  return new Colordx(oklab);
+  const mapped = cssGamutMap(l, a, b, alpha, toLinear, fromLinear);
+  return new Colordx(mapped);
 };

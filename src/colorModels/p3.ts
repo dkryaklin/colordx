@@ -13,7 +13,7 @@ export const srgbLinearToP3Linear = (r: number, g: number, b: number): [number, 
 ];
 
 // Linear Display-P3 → Linear sRGB
-const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
+export const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
   1.2249401762805598 * r - 0.22494017628055996 * g,
   -0.042056954709688163 * r + 1.0420569547096881 * g,
   -0.019637554590334432 * r - 0.078636045550631889 * g + 1.0982736001409663 * b,

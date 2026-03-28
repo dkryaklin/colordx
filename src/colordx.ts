@@ -64,7 +64,8 @@ export class Colordx {
 
   toHsl(precision = 2): HslColor {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
-    return { h: round(h, precision), s: round(s, precision), l: round(l, precision), alpha };
+    const hr = round(h, precision);
+    return { h: hr >= 360 ? 0 : hr, s: round(s, precision), l: round(l, precision), alpha };
   }
 
   toHslString(precision = 2): string {

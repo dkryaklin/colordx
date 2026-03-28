@@ -1,5 +1,7 @@
 import { oklchToLinear } from '../channels.js';
+import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import {
+  linearRec2020ToSrgb,
   oklabToLinearRec2020,
   parseRec2020Object,
   parseRec2020String,
@@ -11,6 +13,9 @@ import type { Colordx } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { rec2020FromLinear } from '../transfer.js';
 import type { AnyColor, Rec2020Color } from '../types.js';
+
+const rec2020FromLinearConverter = (r: number, g: number, b: number): [number, number, number] =>
+  linearSrgbToOklab(...linearRec2020ToSrgb(r, g, b));
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -47,7 +52,8 @@ export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input,
  * Maps an out-of-Rec.2020-gamut color into Rec.2020 by reducing chroma (constant lightness and hue).
  * Colors already in Rec.2020 gamut are returned as-is. sRGB inputs are passed through.
  */
-export const toGamutRec2020 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearRec2020);
+export const toGamutRec2020 = (input: AnyColor): Colordx =>
+  toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter);
 
 const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toRec2020 = function () {

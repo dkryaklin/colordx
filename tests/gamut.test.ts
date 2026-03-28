@@ -53,6 +53,59 @@ describe('inGamutSrgb', () => {
   });
 });
 
+describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {
+  // Reference values verified against culori (which implements the same CSS Color 4 spec):
+  // https://www.w3.org/TR/css-color-4/#css-gamut-mapping
+
+  it('matches culori for oklch(0.2591 0.1511 28.95) — slightly out of sRGB', () => {
+    // Linear sRGB channels: r=0.098, g=-0.009, b=-0.004
+    // Simple clip gives rgb(88,0,0); CSS Color 4 gamut map gives rgb(81,0,0)
+    const result = toGamutSrgb('oklch(0.2591 0.1511 28.95)');
+    const { r, g, b } = result.toRgb();
+    expect(r).toBe(81);
+    expect(g).toBe(0);
+    expect(b).toBe(0);
+  });
+
+  it('returns clipped color within JND of chroma-reduced color', () => {
+    // The algorithm finds the highest chroma where clip(color) is within JND=0.02 deltaEOK
+    const result = toGamutSrgb('oklch(0.5 0.4 180)');
+    const { r, g, b } = result.toRgb();
+    // Result must be strictly in sRGB
+    expect(r).toBeGreaterThanOrEqual(0);
+    expect(r).toBeLessThanOrEqual(255);
+    expect(g).toBeGreaterThanOrEqual(0);
+    expect(g).toBeLessThanOrEqual(255);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThanOrEqual(255);
+  });
+
+  it('returns more chroma than simple clip for deeply out-of-gamut colors', () => {
+    // Simple channel clip (old behavior) would shift hue; CSS Color 4 allows more chroma
+    const deepOutOfGamut = 'oklch(0.7 0.4 145)';
+    const mapped = toGamutSrgb(deepOutOfGamut);
+    // The chroma-preserving result should be a saturated green, not a dull gray
+    const { g } = mapped.toRgb();
+    expect(g).toBeGreaterThan(100);
+  });
+
+  it('maps L=1 to white', () => {
+    const result = toGamutSrgb({ l: 1, c: 0.5, h: 100, alpha: 1 });
+    const { r, g, b } = result.toRgb();
+    expect(r).toBe(255);
+    expect(g).toBe(255);
+    expect(b).toBe(255);
+  });
+
+  it('maps L=0 to black', () => {
+    const result = toGamutSrgb({ l: 0, c: 0.5, h: 100, alpha: 1 });
+    const { r, g, b } = result.toRgb();
+    expect(r).toBe(0);
+    expect(g).toBe(0);
+    expect(b).toBe(0);
+  });
+});
+
 describe('toGamutSrgb', () => {
   it('passes through sRGB inputs unchanged', () => {
     const result = toGamutSrgb('#ff0000');
@@ -62,11 +115,11 @@ describe('toGamutSrgb', () => {
   it('passes through in-gamut oklch unchanged', () => {
     const result = toGamutSrgb('oklch(0.6279 0.2577 29.23)');
     expect(result.isValid()).toBe(true);
-    // Should match red closely
+    // toRgb() rounds to integers, so the result is exact
     const { r, g, b } = result.toRgb();
-    expect(r).toBeCloseTo(255, -1);
-    expect(g).toBeCloseTo(0, -1);
-    expect(b).toBeCloseTo(0, -1);
+    expect(r).toBe(255);
+    expect(g).toBe(0);
+    expect(b).toBe(0);
   });
 
   it('maps out-of-gamut oklch to nearest in-gamut color', () => {
@@ -93,9 +146,10 @@ describe('toGamutSrgb', () => {
     const mapped = toGamutSrgb(outOfGamut);
     const oklch = mapped.toOklch();
 
-    // Lightness and hue should be approximately preserved
+    // Lightness should be approximately preserved
     expect(oklch.l).toBeCloseTo(0.7, 1);
-    expect(oklch.h).toBeCloseTo(145, 0);
+    // Hue is approximately preserved — CSS Color 4 returns a clipped color so hue may shift slightly
+    expect(Math.abs(oklch.h - 145)).toBeLessThan(5);
     // Chroma should be reduced
     expect(oklch.c).toBeLessThan(0.4);
   });
@@ -115,7 +169,7 @@ describe('toGamutSrgb', () => {
   it('handles oklch string with alpha', () => {
     const result = toGamutSrgb('oklch(0.5 0.4 180 / 0.5)');
     const { alpha } = result.toRgb();
-    expect(alpha).toBeCloseTo(0.5, 2);
+    expect(alpha).toBe(0.5);
   });
 
   it('handles achromatic out-of-lightness-range oklch', () => {
@@ -231,7 +285,7 @@ describe('toGamutP3', () => {
 
   it('preserves alpha', () => {
     const result = toGamutP3('oklch(0.7 0.5 145 / 0.5)');
-    expect(result.toRgb().alpha).toBeCloseTo(0.5, 2);
+    expect(result.toRgb().alpha).toBe(0.5);
   });
 });
 
@@ -335,7 +389,7 @@ describe('toGamutRec2020', () => {
 
   it('preserves alpha', () => {
     const result = toGamutRec2020('oklch(0.5 0.8 145 / 0.7)');
-    expect(result.toRgb().alpha).toBeCloseTo(0.7, 2);
+    expect(result.toRgb().alpha).toBe(0.7);
   });
 });
 

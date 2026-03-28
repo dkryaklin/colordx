@@ -1,10 +1,21 @@
 import { oklchToLinear } from '../channels.js';
-import { oklabToLinearP3, parseP3Object, parseP3String, rgbToP3, srgbLinearToP3Linear } from '../colorModels/p3.js';
+import { linearSrgbToOklab } from '../colorModels/oklab.js';
+import {
+  linearP3ToSrgb,
+  oklabToLinearP3,
+  parseP3Object,
+  parseP3String,
+  rgbToP3,
+  srgbLinearToP3Linear,
+} from '../colorModels/p3.js';
 import type { Plugin } from '../colordx.js';
 import type { Colordx } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { srgbFromLinear } from '../transfer.js';
 import type { AnyColor, P3Color } from '../types.js';
+
+const p3FromLinear = (r: number, g: number, b: number): [number, number, number] =>
+  linearSrgbToOklab(...linearP3ToSrgb(r, g, b));
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -43,7 +54,7 @@ export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, okla
  * Maps an out-of-P3-gamut color into Display-P3 by reducing chroma (constant lightness and hue).
  * Colors already in P3 gamut are returned as-is. sRGB inputs are passed through.
  */
-export const toGamutP3 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearP3);
+export const toGamutP3 = (input: AnyColor): Colordx => toGamutCustom(input, oklabToLinearP3, p3FromLinear);
 
 const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toP3 = function () {

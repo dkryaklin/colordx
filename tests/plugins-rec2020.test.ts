@@ -20,17 +20,17 @@ describe('toRec2020 known values', () => {
   it('white is (1, 1, 1) in Rec.2020', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec = (colordx('#ffffff') as any).toRec2020();
-    expect(rec.r).toBeCloseTo(1, 3);
-    expect(rec.g).toBeCloseTo(1, 3);
-    expect(rec.b).toBeCloseTo(1, 3);
+    expect(rec.r).toBe(1);
+    expect(rec.g).toBe(1);
+    expect(rec.b).toBe(1);
   });
 
   it('black is (0, 0, 0) in Rec.2020', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec = (colordx('#000000') as any).toRec2020();
-    expect(rec.r).toBeCloseTo(0, 3);
-    expect(rec.g).toBeCloseTo(0, 3);
-    expect(rec.b).toBeCloseTo(0, 3);
+    expect(rec.r).toBe(0);
+    expect(rec.g).toBe(0);
+    expect(rec.b).toBe(0);
   });
 
   it('sRGB red r channel < 1 in Rec.2020 (Rec.2020 red primary is more saturated)', () => {
@@ -45,7 +45,7 @@ describe('toRec2020 known values', () => {
   it('alpha is preserved', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec = (colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }) as any).toRec2020();
-    expect(rec.alpha).toBeCloseTo(0.5, 3);
+    expect(rec.alpha).toBe(0.5);
   });
 });
 
@@ -87,11 +87,11 @@ describe('Rec.2020 string parsing', () => {
   });
 
   it('parses color(rec2020 r g b / alpha)', () => {
-    expect(colordx('color(rec2020 1 0 0 / 0.5)').alpha()).toBeCloseTo(0.5, 3);
+    expect(colordx('color(rec2020 1 0 0 / 0.5)').alpha()).toBe(0.5);
   });
 
   it('parses color(rec2020 r g b / alpha%)', () => {
-    expect(colordx('color(rec2020 1 0 0 / 50%)').alpha()).toBeCloseTo(0.5, 2);
+    expect(colordx('color(rec2020 1 0 0 / 50%)').alpha()).toBe(0.5);
   });
 
   it('Rec.2020 primary red converts to sRGB with clamped full red', () => {
@@ -143,7 +143,7 @@ describe('toRec2020: channel value properties', () => {
   });
 
   it('percentage alpha parses correctly', () => {
-    expect(colordx('color(rec2020 1 0 0 / 75%)').alpha()).toBeCloseTo(0.75, 2);
+    expect(colordx('color(rec2020 1 0 0 / 75%)').alpha()).toBe(0.75);
   });
 
   it('Rec.2020 green (0 1 0) maps to full green in sRGB', () => {
@@ -184,7 +184,7 @@ describe('Rec.2020 object parsing', () => {
   });
 
   it('alpha is preserved from Rec.2020 object', () => {
-    expect(colordx({ r: 1, g: 0, b: 0, alpha: 0.5, colorSpace: 'rec2020' } as any).alpha()).toBeCloseTo(0.5, 3);
+    expect(colordx({ r: 1, g: 0, b: 0, alpha: 0.5, colorSpace: 'rec2020' } as any).alpha()).toBe(0.5);
   });
 
   it('defaults alpha to 1 when omitted', () => {
