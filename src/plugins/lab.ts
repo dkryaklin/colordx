@@ -17,7 +17,7 @@ declare module '@colordx/core' {
 
 const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLab = function () {
-    const { l, a, b, alpha } = rgbToLab(this.toRgb());
+    const { l, a, b, alpha } = rgbToLab(this._rawRgb());
     return { l: round(l, 2), a: round(a, 2) || 0, b: round(b, 2) || 0, alpha, colorSpace: 'lab' as const }; // || 0 suppresses −0
   };
   ColordxClass.prototype.toLabString = function (this: Colordx) {
@@ -25,7 +25,7 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     return alpha < 1 ? `lab(${l}% ${a} ${b} / ${alpha})` : `lab(${l}% ${a} ${b})`;
   };
   ColordxClass.prototype.toXyz = function () {
-    const { x, y, z, alpha } = rgbToXyz(this.toRgb());
+    const { x, y, z, alpha } = rgbToXyz(this._rawRgb());
     return { x: round(x, 2), y: round(y, 2), z: round(z, 2), alpha };
   };
   ColordxClass.prototype.toXyzString = function (this: Colordx) {
@@ -33,8 +33,8 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     return alpha < 1 ? `color(xyz-d65 ${x} ${y} ${z} / ${alpha})` : `color(xyz-d65 ${x} ${y} ${z})`;
   };
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {
-    const lab1 = rgbToLab(this.toRgb());
-    const lab2 = rgbToLab(new ColordxClass(color).toRgb());
+    const lab1 = rgbToLab(this._rawRgb());
+    const lab2 = rgbToLab(new ColordxClass(color)._rawRgb());
     const w = clamp(ratio, 0, 1);
     return new ColordxClass(
       labToRgb({
@@ -48,7 +48,7 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   /** Returns ΔE2000 color difference normalized to [0, 1] (divide by 100). 0 = identical, 1 = maximally different. */
   ColordxClass.prototype.delta = function (color: AnyColor = '#fff') {
-    return round(deltaE2000(rgbToLab(this.toRgb()), rgbToLab(new ColordxClass(color).toRgb())) / 100, 3);
+    return round(deltaE2000(rgbToLab(this._rawRgb()), rgbToLab(new ColordxClass(color)._rawRgb())) / 100, 3);
   };
   parsers.push(parseLabObject, parseXyzObject);
   formatParsers.push([parseLabObject, 'lab'], [parseXyzObject, 'xyz']);

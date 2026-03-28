@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { colordx } from '../src/index.js';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { colordx, extend } from '../src/index.js';
+import hsv from '../src/plugins/hsv.js';
+
+beforeAll(() => extend([hsv]));
 import { xyzD50ToLinearSrgb } from '../src/colorModels/xyz.js';
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];

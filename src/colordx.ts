@@ -1,6 +1,5 @@
 import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { rgbToHsv } from './colorModels/hsv.js';
 import { rgbToHwb } from './colorModels/hwb.js';
 import { oklabToRgb, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
@@ -13,7 +12,6 @@ import type {
   ColorFormat,
   ColorParser,
   HslColor,
-  HsvColor,
   HwbColor,
   OklabColor,
   OklchColor,
@@ -54,6 +52,11 @@ export class Colordx {
     return { r: round(r), g: round(g), b: round(b), alpha };
   }
 
+  /** Returns the internal unrounded RGB. Intended for plugin use where deferred rounding matters. */
+  _rawRgb(): RgbColor {
+    return this._rgb;
+  }
+
   toRgbString(): string {
     const { r, g, b, alpha } = this._rgb;
     const ri = round(r),
@@ -80,16 +83,6 @@ export class Colordx {
   toHslString(precision = 2): string {
     const { h, s, l, alpha } = this.toHsl(precision);
     return alpha < 1 ? `hsla(${h}, ${s}%, ${l}%, ${alpha})` : `hsl(${h}, ${s}%, ${l}%)`;
-  }
-
-  toHsv(): HsvColor {
-    return rgbToHsv(this._rgb);
-  }
-
-  // Non-standard syntax — HSV is not in any CSS spec. Format is library-defined.
-  toHsvString(): string {
-    const { h, s, v, alpha } = this.toHsv();
-    return alpha < 1 ? `hsva(${h}, ${s}%, ${v}%, ${alpha})` : `hsv(${h}, ${s}%, ${v}%)`;
   }
 
   toHwb(precision = 0): HwbColor {

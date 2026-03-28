@@ -4,9 +4,12 @@
  * Ensures colordx produces the same output as colord for all shared APIs.
  * Any intentional deviation (e.g. bug fix) should be noted with a comment.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll } from 'vitest';
 import { colord } from 'colord';
-import { colordx } from '../src/index.js';
+import { colordx, extend } from '../src/index.js';
+import hsv from '../src/plugins/hsv.js';
+
+beforeAll(() => extend([hsv]));
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#ff000080', '#c06060'];
 

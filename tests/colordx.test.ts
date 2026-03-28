@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { colordx, nearest, random, Colordx, getFormat } from "../src/index.js";
+import { describe, it, expect, beforeAll } from "vitest";
+import { colordx, nearest, random, Colordx, getFormat, extend } from "../src/index.js";
+import hsv from "../src/plugins/hsv.js";
+
+beforeAll(() => extend([hsv]));
 
 describe("parsing", () => {
   it("parses hex colors", () => {

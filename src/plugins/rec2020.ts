@@ -11,7 +11,7 @@ declare module '@colordx/core' {
 
 const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toRec2020 = function () {
-    return rgbToRec2020(this.toRgb());
+    return rgbToRec2020(this._rawRgb());
   };
   ColordxClass.prototype.toRec2020String = function () {
     const { r, g, b, alpha } = this.toRec2020();
