@@ -14,12 +14,12 @@ Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwa
 
 | Benchmark | **colordx** | colord | culori | chroma-js | color | tinycolor2 |
 |---|---|---|---|---|---|---|
-| HEX → toHsl | **27.1M** | 10M | 6.5M | 3.2M | 2.5M | 2.4M |
-| HEX → lighten → toHex | **15M** | 5.7M | 4.8M | 1.1M | 990K | 960K |
-| Mix two colors | **8.7M** | 1.3M | 714K | 1.1M | 505K | 1.1M |
-| HEX → toOklch | **3.6M** | — | 3.4M | 980K | 1.8M | — |
-| inGamutP3 | **3.7M** | — | 1M | — | — | — |
-| inGamutRec2020 | **3.9M** | — | 943K | — | — | — |
+| HEX → toHsl | **25M** | 11M | 6.6M | 3.4M | 2.8M | 2.4M |
+| HEX → lighten → toHex | **15M** | 5.9M | 4.9M | 1.3M | 1.0M | 1.0M |
+| Mix two colors | **7.7M** | 1.3M | 1.1M | 1.2M | 546K | 1.1M |
+| HEX → toOklch | **5.4M** | — | 3.4M | 1.0M | 2.0M | — |
+| inGamutP3 | **3.7M** | — | 1.1M | — | — | — |
+| inGamutRec2020 | **4.6M** | — | 1.1M | — | — | — |
 
 ## Install
 

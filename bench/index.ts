@@ -3,7 +3,11 @@ import { colord, extend as colordExtend } from 'colord';
 // @ts-ignore
 import colordMixPlugin from 'colord/plugins/mix';
 colordExtend([colordMixPlugin]);
-import { colordx, inGamutP3, inGamutRec2020 } from '../src/index.js';
+import { colordx, extend, inGamutSrgb } from '../src/index.js';
+import { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
+import { inGamutRec2020 } from '../src/plugins/rec2020.js';
+import mix from '../src/plugins/mix.js';
+extend([mix]);
 // @ts-ignore
 import tinycolor2 from 'tinycolor2';
 // @ts-ignore
