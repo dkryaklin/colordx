@@ -400,6 +400,7 @@ hr.div {
 }
 
 .sc {
+  flex: 1;
   padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
@@ -454,7 +455,6 @@ hr.div {
   position: relative;
   border-radius: 10px;
   overflow: hidden;
-  min-height: 72px;
 }
 
 .sw-bg {
@@ -919,6 +919,14 @@ input[type='range'].rng::-moz-range-thumb {
   color: rgba(255, 255, 255, 0.85);
 }
 
+.section-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.38);
+  max-width: 600px;
+  margin-top: -16px;
+}
+
 .gs-steps {
   display: flex;
   flex-direction: column;
@@ -1104,9 +1112,14 @@ input[type='range'].rng::-moz-range-thumb {
     height: 80px;
   }
 
+  .harm-tabs {
+    flex-wrap: wrap;
+  }
+
   .harm-tab {
-    font-size: 9px;
-    padding: 5px 0;
+    flex: 0 0 auto;
+    font-size: 10px;
+    padding: 6px 10px;
   }
 
   .gs-section {

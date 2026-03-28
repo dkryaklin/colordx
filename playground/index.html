@@ -93,6 +93,7 @@
     <section class="manip-section">
       <div class="section-wrap">
         <h2 class="section-title">Manipulation</h2>
+        <p class="section-desc">Adjust lightness, chroma, and hue independently in OKLCH space — producing perceptually uniform steps that HSL cannot. Mix colors in sRGB or OKLab, apply grayscale, invert, and more. All methods are immutable and chainable.</p>
         <div class="manip-grid">
           <div class="card manip-row-card">
             <div class="manip-row-label">Lightness</div>
@@ -117,6 +118,7 @@
     <section class="harm-section">
       <div class="section-wrap">
         <h2 class="section-title">Harmonies</h2>
+        <p class="section-desc">Generate color palettes using hue rotation in OKLCH space. Seven schemes: complementary, analogous, triadic, tetradic, split-complementary, rectangle, and double-split-complementary. Click any swatch to set it as the active color.</p>
         <div class="card harm-wrap">
           <div class="harm-tabs" id="harm-tabs">
             <button class="harm-tab on" data-harm="complementary">Complementary</button>
@@ -124,6 +126,8 @@
             <button class="harm-tab" data-harm="triadic">Triadic</button>
             <button class="harm-tab" data-harm="tetradic">Tetradic</button>
             <button class="harm-tab" data-harm="split-complementary">Split</button>
+            <button class="harm-tab" data-harm="rectangle">Rectangle</button>
+            <button class="harm-tab" data-harm="double-split-complementary">Double Split</button>
           </div>
           <div class="harm-swatches" id="harm-swatches"></div>
         </div>
@@ -133,6 +137,7 @@
     <section class="a11y-section">
       <div class="section-wrap">
         <h2 class="section-title">Accessibility</h2>
+        <p class="section-desc">Check contrast between any two colors against WCAG 2.x (AA and AAA) and APCA — the perceptually accurate contrast model proposed for WCAG 3.0. The active color is automatically used as the background.</p>
         <div class="a11y-wrap">
           <div class="card a11y-left">
             <div class="a11y-preview" id="a11y-preview">
@@ -319,6 +324,86 @@ mapped.toHex()  // '#00866e'</code></pre>
               colordx is API-compatible with colord and designed as a drop-in upgrade. It adds first-class OKLCH/OKLab
               support, gamut utilities, and a fully-typed plugin system. Most colord usage can be migrated by replacing
               the import.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section">
+      <div class="section-wrap">
+        <h2 class="section-title">Color Formats</h2>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3 class="faq-q">OKLab</h3>
+            <p class="faq-a">
+              OKLab uses Cartesian coordinates — L (lightness), a (green–red axis), and b (blue–yellow axis) — in a
+              perceptually uniform space. Equal numeric distances correspond to equal perceived color differences, making
+              it ideal for color interpolation, palette generation, and any operation where consistency matters more than
+              intuition. Use <code>toOklab()</code> or <code>toOklabString()</code> to convert.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">HEX</h3>
+            <p class="faq-a">
+              Hexadecimal (<code>#rrggbb</code>) is the most compact CSS color notation and the default format for
+              design tools, HTML attributes, and image editors. colordx parses both 3-digit (<code>#f00</code>) and
+              6-digit forms and always outputs lowercase 6-digit hex. Use <code>toHex()</code> to convert from any
+              input format.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">RGB</h3>
+            <p class="faq-a">
+              <code>rgb()</code> expresses colors as red, green, and blue channel values from 0 to 255 — the native
+              encoding of the sRGB color space used by screens. It is the most direct format for canvas operations,
+              WebGL, and any API that consumes integer channels. colordx outputs rounded integer channels via
+              <code>toRgb()</code> and <code>toRgbString()</code>.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">HSL</h3>
+            <p class="faq-a">
+              <code>hsl()</code> describes colors by Hue (0–360°), Saturation (0–100%), and Lightness (0–100%). It maps
+              more intuitively to how designers think about color than RGB does, making it popular in CSS theming and
+              design tokens. Note that HSL lightness is not perceptually uniform — OKLCH is a better choice when
+              consistent brightness steps matter.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">HSV</h3>
+            <p class="faq-a">
+              HSV (Hue, Saturation, Value) is the color model used internally by most design tools — Photoshop,
+              Figma, and Sketch all show HSV pickers. Value represents the brightness of the fully saturated hue,
+              which maps well to the concept of "how much color" is present. colordx exposes it via the
+              <code>hsv</code> plugin with <code>toHsv()</code> and <code>toHsvString()</code>.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">HWB</h3>
+            <p class="faq-a">
+              HWB (Hue, Whiteness, Blackness) is a CSS Color Level 4 format designed to be the most human-readable
+              color model. You start with a pure hue and mix in white or black to lighten or darken it. All modern
+              browsers support <code>hwb()</code> natively. colordx adds <code>toHwb()</code> and
+              <code>toHwbString()</code> via the <code>hwb</code> plugin.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">Display P3</h3>
+            <p class="faq-a">
+              Display P3 is a wide-gamut color space used by Apple displays, modern smartphones, and high-end monitors.
+              Its gamut is roughly 25% larger than sRGB, allowing more vivid reds, greens, and cyans that sRGB cannot
+              reproduce. CSS supports it via <code>color(display-p3 r g b)</code>. colordx converts to P3 with
+              <code>toP3()</code> and <code>toP3String()</code> via the <code>p3</code> plugin.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-q">toNumber / integer format</h3>
+            <p class="faq-a">
+              <code>toNumber()</code> returns the color as a 24-bit integer (<code>0xff0000</code> for red) — the
+              format used by PixiJS, Discord embeds, Three.js, and other libraries that encode color as a single
+              number. It is equivalent to parsing the hex string as a base-16 integer and works for any fully opaque
+              sRGB color.
             </p>
           </div>
         </div>

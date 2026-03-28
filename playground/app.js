@@ -1,9 +1,14 @@
-import { colordx, extend, inGamutSrgb, toGamutSrgb } from '/index.mjs';
+import { colordx, extend, inGamutSrgb, toGamutSrgb, oklchToLinear } from '/index.mjs';
 import a11y from '/plugins/a11y.mjs';
 import harmoniesPlugin from '/plugins/harmonies.mjs';
-import p3Plugin from '/plugins/p3.mjs';
+import hsvPlugin from '/plugins/hsv.mjs';
+import hwbPlugin from '/plugins/hwb.mjs';
+import labPlugin from '/plugins/lab.mjs';
+import lchPlugin from '/plugins/lch.mjs';
+import mixPlugin from '/plugins/mix.mjs';
+import p3Plugin, { oklchToP3Channels } from '/plugins/p3.mjs';
 
-extend([a11y, harmoniesPlugin, p3Plugin]);
+extend([a11y, harmoniesPlugin, hsvPlugin, hwbPlugin, labPlugin, lchPlugin, mixPlugin, p3Plugin]);
 
 // Always stored as OKLCH
 let S = { l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 };
@@ -216,15 +221,29 @@ function updateLeft({ skipBg = false } = {}) {
   gamutLbl.className = `gamut-lbl${inGamut ? '' : ' out'}`;
   document.getElementById('gamut-map').style.display = inGamut ? 'none' : '';
 
+  // Normalize through hex so sRGB-based formats use exact integer channels,
+  // avoiding precision artifacts (e.g. 99.99%) from the rounded OKLCH storage.
+  const cs = colordx(c.toHex());
+
+  // Raw (unclamped) channel values direct from OKLCH — may exceed [0, 1] for out-of-gamut colors
+  const [linR, linG, linB] = oklchToLinear(S.l, S.c, S.h);
+  const [p3R, p3G, p3B] = oklchToP3Channels(S.l, S.c, S.h);
+  const toHex2 = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, '0');
+
   const rows = [
     { lbl: 'OKLCH', val: `oklch(${f(S.l)} ${f(S.c)} ${f(S.h, 2)})` },
+    { lbl: 'OKLCH bare', val: `${f(S.l, 2)}, ${f(S.c, 2)}, ${f(S.h, 2)}` },
     { lbl: 'OKLab', val: `oklab(${f(ob.l)} ${f(ob.a)} ${f(ob.b)})` },
-    { lbl: 'HEX', val: c.toHex() },
-    { lbl: 'RGB', val: c.toRgbString() },
-    { lbl: 'HSL', val: c.toHslString() },
-    { lbl: 'HSV', val: c.toHsvString() },
-    { lbl: 'HWB', val: c.toHwbString() },
-    { lbl: 'P3', val: c.toP3String() },
+    { lbl: 'HEX', val: cs.toHex() },
+    { lbl: 'RGB', val: cs.toRgbString() },
+    { lbl: 'HSL', val: cs.toHslString() },
+    { lbl: 'HSV', val: cs.toHsvString() },
+    { lbl: 'HWB', val: cs.toHwbString() },
+    { lbl: 'LCH', val: cs.toLchString() },
+    { lbl: 'Lab', val: cs.toLabString() },
+    { lbl: 'P3', val: `color(display-p3 ${f(p3R, 4)} ${f(p3G, 4)} ${f(p3B, 4)})` },
+    { lbl: 'Linear RGB', val: `color(srgb-linear ${f(linR, 5)} ${f(linG, 5)} ${f(linB, 5)})` },
+    { lbl: 'Figma P3', val: `#${toHex2(p3R)}${toHex2(p3G)}${toHex2(p3B)}${toHex2(S.alpha)}` },
   ];
 
   document.getElementById('outputs').innerHTML = rows
