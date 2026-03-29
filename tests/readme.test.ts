@@ -190,7 +190,7 @@ describe('README — p3/rec2020 channel functions', () => {
 
 describe('README — Gamut (sRGB)', () => {
   it('hex is always in sRGB', () => expect(inGamutSrgb('#ff0000')).toBe(true));
-  it('red oklch is in sRGB', () => expect(inGamutSrgb('oklch(0.6279 0.2577 29.23)')).toBe(true));
+  it('red oklch is in sRGB', () => expect(inGamutSrgb('oklch(0.5 0.1 30)')).toBe(true));
   it('out-of-gamut oklch is not in sRGB', () => expect(inGamutSrgb('oklch(0.5 0.4 180)')).toBe(false));
   it('toGamutSrgb out-of-gamut → valid color', () => expect(toGamutSrgb('oklch(0.5 0.4 180)').isValid()).toBe(true));
   it('toGamutSrgb already in gamut → unchanged', () => expect(toGamutSrgb('#ff0000').toHex()).toBe('#ff0000'));
@@ -215,6 +215,9 @@ describe('README — lab plugin', () => {
   });
   it('toLabString', () => {
     expect((colordx('#ff0000') as any).toLabString()).toBe('lab(54.29% 80.8 69.89)');
+  });
+  it('parse lab string', () => {
+    expect(colordx('lab(54.29% 80.8 69.89)').toHex()).toBe('#ff0000');
   });
   it('toXyz', () => {
     expect((colordx('#ff0000') as any).toXyz()).toEqual({ x: 43.61, y: 22.25, z: 1.39, alpha: 1 });

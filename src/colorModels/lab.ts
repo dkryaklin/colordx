@@ -88,6 +88,23 @@ export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
 
 export const labToRgb = (lab: LabColor): RgbColor => xyzToRgb(labToXyz(lab));
 
+const LAB_RE =
+  /^lab\(\s*([+-]?\d*\.?\d+)%\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+
+export const parseLabString = (input: unknown): RgbColor | null => {
+  if (typeof input !== 'string') return null;
+  const m = LAB_RE.exec(input.trim());
+  if (!m) return null;
+  const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
+  return labToRgb({
+    l: clamp(Number(m[1]), 0, 100),
+    a: Number(m[2]),
+    b: Number(m[3]),
+    alpha: clamp(alpha, 0, 1),
+    colorSpace: 'lab',
+  });
+};
+
 export const parseLabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'lab') return null;

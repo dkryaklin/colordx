@@ -187,7 +187,7 @@ import { inGamutRec2020, toGamutRec2020 } from '@colordx/core/plugins/rec2020';
 
 // Check: is this color displayable in sRGB?
 inGamutSrgb('#ff0000'); // true  — hex is always sRGB
-inGamutSrgb('oklch(0.628 0.2577 29.23)'); // true  — red
+inGamutSrgb('oklch(0.5 0.1 30)'); // true  — clearly in sRGB
 inGamutSrgb('oklch(0.5 0.4 180)'); // false — too much cyan chroma
 
 // Map: reduce chroma until in-gamut (preserves lightness and hue)
@@ -251,6 +251,7 @@ extend([lab]);
 
 colordx('#ff0000').toLab(); // { l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' }
 colordx('#ff0000').toLabString(); // 'lab(54.29% 80.8 69.89)'
+colordx('lab(54.29% 80.8 69.89)').toHex(); // '#ff0000'  — lab strings are parseable
 colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
 colordx('#ff0000').toXyzString(); // 'color(xyz-d65 43.61 22.25 1.39)'
 

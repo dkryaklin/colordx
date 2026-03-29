@@ -75,10 +75,11 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
   return null;
 };
 
-// Tolerance for floating point rounding introduced by limited-precision OKLCH strings.
-// (4 decimal places in L/C and 2 in H can cause linear sRGB to deviate by up to ~2e-3)
+// Tolerance for floating-point rounding in the OKLab → linear sRGB matrix.
+// The accumulated cbrt + matrix error for boundary colors (e.g. white) is ~3e-10,
+// so 1e-7 is ample without accepting visibly out-of-gamut colors.
 // Used only for inGamut* checks — NOT in gamut mapping, which uses strict bounds.
-const EPS = 2e-3;
+const EPS = 1e-7;
 
 const isLinearInGamut = (r: number, g: number, b: number): boolean =>
   r >= -EPS && r <= 1 + EPS && g >= -EPS && g <= 1 + EPS && b >= -EPS && b <= 1 + EPS;
@@ -165,11 +166,7 @@ const cssGamutMap = (
     lastClip = clipOklab;
     const E = deltaEOK(clipOklab, [l, ma, mb]);
 
-    if (Math.abs(E - JND) <= GAMUT_EPSILON) {
-      return { l: clipOklab[0], a: clipOklab[1], b: clipOklab[2], alpha };
-    }
-
-    if (E < JND) {
+    if (E <= JND) {
       lo = mid;
       minInGamut = false;
     } else {

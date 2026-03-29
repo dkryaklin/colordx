@@ -24,12 +24,12 @@ describe('inGamutSrgb', () => {
   });
 
   it('returns true for oklch colors in sRGB gamut', () => {
-    // Pure red in oklch — should be in gamut
-    expect(inGamutSrgb('oklch(0.6279 0.2577 29.23)')).toBe(true);
+    // A warm mid-tone clearly inside sRGB gamut
+    expect(inGamutSrgb('oklch(0.5 0.1 30)')).toBe(true);
   });
 
   it('returns true for oklab colors in sRGB gamut', () => {
-    expect(inGamutSrgb('oklab(0.6279 0.2249 0.1257)')).toBe(true);
+    expect(inGamutSrgb('oklab(0.5 0.05 0.03)')).toBe(true);
   });
 
   it('returns false for out-of-gamut oklch colors', () => {

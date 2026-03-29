@@ -82,6 +82,40 @@ describe('LCH string parsing', () => {
   });
 });
 
+describe('Lab string parsing', () => {
+  it('round-trips through toLabString', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx((colordx('#ff0000') as any).toLabString()).toHex()).toBe('#ff0000');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx((colordx('#0000ff') as any).toLabString()).toHex()).toBe('#0000ff');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx((colordx('#000000') as any).toLabString()).toHex()).toBe('#000000');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(colordx((colordx('#ffffff') as any).toLabString()).toHex()).toBe('#ffffff');
+  });
+
+  it('parses known lab string directly', () => {
+    expect(colordx('lab(54.29% 80.8 69.89)').toHex()).toBe('#ff0000');
+  });
+
+  it('parses lab string with alpha as decimal', () => {
+    expect(colordx('lab(54.29% 80.8 69.89 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
+  });
+
+  it('parses lab string with alpha as percentage', () => {
+    expect(colordx('lab(54.29% 80.8 69.89 / 50%)').alpha()).toBeCloseTo(0.5, 2);
+  });
+
+  it('toLabString produces a parseable string for all primaries', () => {
+    for (const hex of inputs) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const str = (colordx(hex) as any).toLabString();
+      expect(colordx(str).isValid()).toBe(true);
+      expect(colordx(str).toHex()).toBe(colordx(hex).toHex());
+    }
+  });
+});
+
 describe('toCmyk round-trip', () => {
   it.each(inputs)('%s', (input) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
