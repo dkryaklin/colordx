@@ -8,10 +8,9 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { colordx, extend } from '../src/index.js';
-import { inGamutSrgb, toGamutSrgb } from '../src/gamut.js';
-import p3, { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
-import { inGamutRec2020, toGamutRec2020 } from '../src/plugins/rec2020.js';
+import { Colordx, colordx, extend, inGamutSrgb } from '../src/index.js';
+import p3, { inGamutP3 } from '../src/plugins/p3.js';
+import rec2020, { inGamutRec2020 } from '../src/plugins/rec2020.js';
 import a11y from '../src/plugins/a11y.js';
 import cmyk from '../src/plugins/cmyk.js';
 import harmonies from '../src/plugins/harmonies.js';
@@ -21,7 +20,6 @@ import minify from '../src/plugins/minify.js';
 import mix from '../src/plugins/mix.js';
 import hwb from '../src/plugins/hwb.js';
 import names from '../src/plugins/names.js';
-import rec2020 from '../src/plugins/rec2020.js';
 
 beforeAll(() => {
   extend([a11y, cmyk, harmonies, hwb, lab, lch, minify, mix, names, p3, rec2020]);
@@ -218,19 +216,19 @@ describe('fuzz: gamut — sRGB colors are always in-gamut', () => {
 
   it('toGamutSrgb returns a valid color', () => {
     for (const c of colors) {
-      expect(toGamutSrgb(c).isValid()).toBe(true);
+      expect(Colordx.toGamutSrgb(c).isValid()).toBe(true);
     }
   });
 
   it('toGamutP3 returns a valid color', () => {
     for (const c of colors) {
-      expect(toGamutP3(c).isValid()).toBe(true);
+      expect(Colordx.toGamutP3(c).isValid()).toBe(true);
     }
   });
 
   it('toGamutRec2020 returns a valid color', () => {
     for (const c of colors) {
-      expect(toGamutRec2020(c).isValid()).toBe(true);
+      expect(Colordx.toGamutRec2020(c).isValid()).toBe(true);
     }
   });
 

@@ -2,7 +2,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era. The successor to [colord](https://github.com/omgovich/colord) with first-class support for **OKLCH** and **OKLab**. **5 KB gzipped. More than 2× faster than colord.**
+A modern color manipulation library built for the CSS Color 4 era. The successor to [colord](https://github.com/omgovich/colord) with first-class support for **OKLCH** and **OKLab**. **3 KB gzipped. More than 2× faster than colord.**
 
 ## Why colordx?
 
@@ -181,9 +181,12 @@ linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (B
 OKLCH and OKLab can describe colors outside the sRGB gamut. colordx includes standalone utilities for checking and mapping colors into sRGB (core) and Display-P3 / Rec.2020 (plugins):
 
 ```ts
-import { inGamutSrgb, toGamutSrgb } from '@colordx/core';
-import { inGamutP3, toGamutP3 } from '@colordx/core/plugins/p3';
-import { inGamutRec2020, toGamutRec2020 } from '@colordx/core/plugins/rec2020';
+import { Colordx, inGamutSrgb } from '@colordx/core';
+import { inGamutP3 } from '@colordx/core/plugins/p3';
+import { inGamutRec2020 } from '@colordx/core/plugins/rec2020';
+import p3 from '@colordx/core/plugins/p3';
+import rec2020 from '@colordx/core/plugins/rec2020';
+extend([p3, rec2020]);
 
 // Check: is this color displayable in sRGB?
 inGamutSrgb('#ff0000'); // true  — hex is always sRGB
@@ -191,17 +194,17 @@ inGamutSrgb('oklch(0.5 0.1 30)'); // true  — clearly in sRGB
 inGamutSrgb('oklch(0.5 0.4 180)'); // false — too much cyan chroma
 
 // Map: reduce chroma until in-gamut (preserves lightness and hue)
-toGamutSrgb('oklch(0.5 0.4 180)'); // → Colordx at the sRGB boundary
-toGamutSrgb('#ff0000'); // → unchanged, already in sRGB
+Colordx.toGamutSrgb('oklch(0.5 0.4 180)'); // → Colordx at the sRGB boundary
+Colordx.toGamutSrgb('#ff0000'); // → unchanged, already in sRGB
 
-// Display-P3 gamut (wider than sRGB)
+// Display-P3 gamut (wider than sRGB) — available after extend([p3])
 inGamutP3('oklch(0.64 0.27 29)'); // true  — inside P3 but outside sRGB
 inGamutP3('oklch(0.5 0.4 180)'); // false — outside P3
-toGamutP3('oklch(0.5 0.4 180)'); // → Colordx at the P3 boundary
+Colordx.toGamutP3('oklch(0.5 0.4 180)'); // → Colordx at the P3 boundary
 
-// Rec.2020 gamut (wider than P3)
+// Rec.2020 gamut (wider than P3) — available after extend([rec2020])
 inGamutRec2020('oklch(0.5 0.4 180)'); // false — outside Rec.2020
-toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
+Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 ```
 
 Gamut containment is hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
@@ -233,9 +236,9 @@ import mix from '@colordx/core/plugins/mix';
 import names from '@colordx/core/plugins/names';
 // toName(), parses CSS color names
 import p3 from '@colordx/core/plugins/p3';
-// toP3(), toP3String(), inGamutP3(), toGamutP3(), linearToP3Channels(), oklchToP3Channels(), parses color(display-p3 ...) strings
+// toP3(), toP3String(), inGamutP3(), Colordx.toGamutP3(), linearToP3Channels(), oklchToP3Channels(), parses color(display-p3 ...) strings
 import rec2020 from '@colordx/core/plugins/rec2020';
-// toRec2020(), toRec2020String(), inGamutRec2020(), toGamutRec2020(), linearToRec2020Channels(), oklchToRec2020Channels(), parses color(rec2020 ...) strings
+// toRec2020(), toRec2020String(), inGamutRec2020(), Colordx.toGamutRec2020(), linearToRec2020Channels(), oklchToRec2020Channels(), parses color(rec2020 ...) strings
 
 extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020]);
 ```
@@ -456,13 +459,16 @@ colordx('color(display-p3 0.9175 0.2003 0.1386)').toHex(); // '#ff0000'
 colordx('color(display-p3 0.9175 0.2003 0.1386 / 0.5)').toHex(); // '#ff000080'
 ```
 
-The plugin also exports standalone gamut utilities and low-level channel functions (no `extend()` needed for these):
+The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutP3` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutP3` after `extend([p3])`:
 
 ```ts
-import { inGamutP3, toGamutP3, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
+import { Colordx, extend } from '@colordx/core';
+import p3, { inGamutP3, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
 
-inGamutP3('oklch(0.64 0.27 29)'); // true — inside P3 but outside sRGB
-toGamutP3('oklch(0.5 0.4 180)');  // → Colordx at the P3 boundary
+extend([p3]);
+
+inGamutP3('oklch(0.64 0.27 29)');        // true — inside P3 but outside sRGB
+Colordx.toGamutP3('oklch(0.5 0.4 180)'); // → Colordx at the P3 boundary
 
 oklchToP3Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded P3 in [0, 1]
 ```
@@ -490,13 +496,16 @@ colordx('color(rec2020 0.792 0.231 0.0738)').toHex(); // '#ff0000'
 colordx('color(rec2020 0.792 0.231 0.0738 / 0.5)').toHex(); // '#ff000080'
 ```
 
-The plugin also exports standalone gamut utilities and low-level channel functions (no `extend()` needed for these):
+The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutRec2020` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutRec2020` after `extend([rec2020])`:
 
 ```ts
-import { inGamutRec2020, toGamutRec2020, linearToRec2020Channels, oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
+import { Colordx, extend } from '@colordx/core';
+import rec2020, { inGamutRec2020, linearToRec2020Channels, oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
 
-inGamutRec2020('oklch(0.5 0.4 180)'); // false — outside Rec.2020
-toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
+extend([rec2020]);
+
+inGamutRec2020('oklch(0.5 0.4 180)');        // false — outside Rec.2020
+Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 
 oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1]
 ```

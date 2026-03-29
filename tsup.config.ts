@@ -15,7 +15,7 @@ export default defineConfig({
   clean: true,
   minify: true,
   treeshake: true,
-  splitting: false,
+  splitting: true,
   sourcemap: true,
   outExtension({ format }) {
     return {

@@ -1,4 +1,4 @@
-import { colordx, extend, inGamutSrgb, toGamutSrgb, oklchToLinear } from '/index.mjs';
+import { Colordx, colordx, extend, inGamutSrgb, oklchToLinear } from '/index.mjs';
 import a11y from '/plugins/a11y.mjs';
 import harmoniesPlugin from '/plugins/harmonies.mjs';
 import hsvPlugin from '/plugins/hsv.mjs';
@@ -456,7 +456,7 @@ document.getElementById('any-in').addEventListener('input', (e) => {
 });
 
 document.getElementById('gamut-map').addEventListener('click', () => {
-  const mapped = toGamutSrgb({ l: S.l, c: S.c, h: S.h, a: S.alpha });
+  const mapped = Colordx.toGamutSrgb({ l: S.l, c: S.c, h: S.h, a: S.alpha });
   const ok = mapped.toOklch();
   S = { l: ok.l, c: ok.c, h: ok.h, alpha: ok.a };
   updateGrid();

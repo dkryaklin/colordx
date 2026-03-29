@@ -9,7 +9,7 @@ import { clampHwb, hwbToRgb, rgbToHwb } from '../src/colorModels/hwb.js';
 import { deltaE2000, labToRgb, rgbToLab } from '../src/colorModels/lab.js';
 import { oklabToRgb, parseOklabString, rgbToOklab } from '../src/colorModels/oklab.js';
 import { oklchToRgb, parseOklchString, rgbToOklch } from '../src/colorModels/oklch.js';
-import { inGamutSrgb, toGamutSrgb } from '../src/gamut.js';
+import { Colordx, inGamutSrgb } from '../src/index.js';
 import { inGamutP3 } from '../src/plugins/p3.js';
 import { inGamutRec2020 } from '../src/plugins/rec2020.js';
 import { colordx, extend, nearest } from '../src/index.js';
@@ -518,7 +518,7 @@ describe('Gamut', () => {
   });
 
   it('toGamutSrgb preserves lightness and hue', () => {
-    const mapped = toGamutSrgb('oklch(0.7 0.35 145)');
+    const mapped = Colordx.toGamutSrgb('oklch(0.7 0.35 145)');
     const lch = colordx(mapped.toHex()).toOklch();
     expect(lch.l).toBeCloseTo(0.7, 1);
     // CSS Color 4 returns a clipped result — hue may shift slightly from the gamut boundary
@@ -530,12 +530,12 @@ describe('Gamut', () => {
     // toGamutSrgb routes through OKLab intermediate; direct parse uses the string parser.
     // Different conversion paths can give ±1 channel difference due to floating-point.
     const input = 'oklch(0.5 0.1 180)';
-    const a = toGamutSrgb(input).toRgb();
+    const a = Colordx.toGamutSrgb(input).toRgb();
     const b = colordx(input).toRgb();
     expect(Math.abs(a.r - b.r)).toBeLessThanOrEqual(1);
     expect(Math.abs(a.g - b.g)).toBeLessThanOrEqual(1);
     expect(Math.abs(a.b - b.b)).toBeLessThanOrEqual(1);
-    expect(inGamutSrgb(toGamutSrgb(input).toHex())).toBe(true);
+    expect(inGamutSrgb(Colordx.toGamutSrgb(input).toHex())).toBe(true);
   });
 });
 

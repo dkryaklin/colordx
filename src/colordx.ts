@@ -1,9 +1,11 @@
 import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { rgbToOklab } from './colorModels/oklab.js';
+import { oklabToLinear, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
+import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
+import { srgbFromLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
@@ -30,13 +32,29 @@ export class Colordx {
     return new Colordx(_SENTINEL, rgb);
   }
 
+  /**
+   * Construct a Colordx from OKLab values, storing unclamped gamma-encoded sRGB internally.
+   * Unlike new Colordx(oklabObject), this does NOT clamp channels to [0, 1] before gamma encoding,
+   * so wide-gamut P3/Rec2020 colors are preserved accurately for toP3() / toRec2020() output.
+   * sRGB output methods (toRgb, toHex, etc.) clamp to [0, 255] before returning.
+   */
+  static _makeFromOklab({ l, a, b, alpha }: OklabColor): Colordx {
+    const [lr, lg, lb] = oklabToLinear(l, a, b);
+    return Colordx._make({
+      r: srgbFromLinear(lr) * 255,
+      g: srgbFromLinear(lg) * 255,
+      b: srgbFromLinear(lb) * 255,
+      alpha,
+    });
+  }
+
   isValid(): boolean {
     return this._valid;
   }
 
   toRgb(): RgbColor {
     const { r, g, b, alpha } = this._rgb;
-    return { r: round(r), g: round(g), b: round(b), alpha };
+    return { r: clamp(round(r), 0, 255), g: clamp(round(g), 0, 255), b: clamp(round(b), 0, 255), alpha };
   }
 
   /** Returns the internal unrounded RGB. Intended for plugin use where deferred rounding matters. */
@@ -46,9 +64,9 @@ export class Colordx {
 
   toRgbString(): string {
     const { r, g, b, alpha } = this._rgb;
-    const ri = round(r),
-      gi = round(g),
-      bi = round(b);
+    const ri = clamp(round(r), 0, 255),
+      gi = clamp(round(g), 0, 255),
+      bi = clamp(round(b), 0, 255);
     return alpha < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${alpha})` : `rgb(${ri}, ${gi}, ${bi})`;
   }
 
@@ -59,7 +77,7 @@ export class Colordx {
   /** Returns a 24-bit RGB integer (0x000000–0xFFFFFF). Alpha is not included. */
   toNumber(): number {
     const { r, g, b } = this._rgb;
-    return (round(r) << 16) | (round(g) << 8) | round(b);
+    return (clamp(round(r), 0, 255) << 16) | (clamp(round(g), 0, 255) << 8) | clamp(round(b), 0, 255);
   }
 
   toHsl(precision = 2): HslColor {
@@ -183,6 +201,12 @@ export class Colordx {
   toString(): string {
     return this.toHex();
   }
+
+  /**
+   * Maps an out-of-sRGB-gamut color into sRGB using the CSS Color 4 gamut mapping algorithm.
+   * Colors already in gamut are returned as-is. sRGB inputs (hex, rgb, hsl, etc.) are passed through.
+   */
+  static toGamutSrgb: (input: AnyColor) => Colordx;
 }
 
 export type Plugin = (
@@ -220,3 +244,8 @@ export const random = (): Colordx =>
     b: Math.round(Math.random() * 255),
     alpha: 1,
   });
+
+Colordx.toGamutSrgb = (input: AnyColor): Colordx => {
+  const mapped = toGamutSrgbRaw(input);
+  return mapped !== null ? Colordx._makeFromOklab(mapped) : new Colordx(input);
+};

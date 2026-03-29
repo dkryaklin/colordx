@@ -9,7 +9,6 @@ import {
   srgbLinearToRec2020Linear,
 } from '../colorModels/rec2020.js';
 import type { Plugin } from '../colordx.js';
-import type { Colordx } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { rec2020FromLinear } from '../transfer.js';
 import type { AnyColor, Rec2020Color } from '../types.js';
@@ -21,6 +20,10 @@ declare module '@colordx/core' {
   interface Colordx {
     toRec2020(): Rec2020Color;
     toRec2020String(): string;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Colordx {
+    function toGamutRec2020(input: AnyColor): Colordx;
   }
 }
 
@@ -48,14 +51,11 @@ export const oklchToRec2020Channels = (l: number, c: number, h: number): [number
  */
 export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020);
 
-/**
- * Maps an out-of-Rec.2020-gamut color into Rec.2020 by reducing chroma (constant lightness and hue).
- * Colors already in Rec.2020 gamut are returned as-is. sRGB inputs are passed through.
- */
-export const toGamutRec2020 = (input: AnyColor): Colordx =>
-  toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter);
-
 const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
+  ColordxClass.toGamutRec2020 = (input: AnyColor) => {
+    const mapped = toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter);
+    return mapped !== null ? ColordxClass._makeFromOklab(mapped) : new ColordxClass(input);
+  };
   ColordxClass.prototype.toRec2020 = function () {
     return rgbToRec2020(this._rawRgb());
   };

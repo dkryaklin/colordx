@@ -4,7 +4,7 @@ import { colord, extend as colordExtend } from 'colord';
 import colordMixPlugin from 'colord/plugins/mix';
 colordExtend([colordMixPlugin]);
 import { colordx, extend, inGamutSrgb } from '../src/index.js';
-import { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
+import { inGamutP3 } from '../src/plugins/p3.js';
 import { inGamutRec2020 } from '../src/plugins/rec2020.js';
 import mix from '../src/plugins/mix.js';
 extend([mix]);

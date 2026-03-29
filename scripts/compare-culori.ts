@@ -1,17 +1,19 @@
 import { converter, toGamut } from 'culori';
-import { colordx, extend, toGamutSrgb, oklchToLinear } from '../src/index.js';
+import { Colordx, colordx, extend, inGamutSrgb, oklchToLinear } from '../src/index.js';
 import hsvPlugin from '../src/plugins/hsv.js';
 import hwbPlugin from '../src/plugins/hwb.js';
 import labPlugin from '../src/plugins/lab.js';
 import lchPlugin from '../src/plugins/lch.js';
 import mixPlugin from '../src/plugins/mix.js';
 import p3Plugin, { inGamutP3, oklchToP3Channels } from '../src/plugins/p3.js';
-import rec2020Plugin, { inGamutRec2020 } from '../src/plugins/rec2020.js';
+import rec2020Plugin, { inGamutRec2020, oklchToRec2020Channels } from '../src/plugins/rec2020.js';
 
 extend([labPlugin, lchPlugin, p3Plugin, rec2020Plugin, mixPlugin, hsvPlugin, hwbPlugin]);
 
 // culori converters
-const culoriGamutMap  = toGamut('rgb', 'oklch');   // CSS Color 4 gamut map to sRGB
+const culoriGamutMap      = toGamut('rgb',    'oklch');  // CSS Color 4 gamut map to sRGB
+const culoriP3GamutMap    = toGamut('p3',     'oklch');  // CSS Color 4 gamut map to P3
+const culoriRec2020GamutMap = toGamut('rec2020', 'oklch'); // CSS Color 4 gamut map to Rec.2020
 const culoriToHsl     = converter('hsl');
 const culoriToHsv     = converter('hsv');
 const culoriToHwb     = converter('hwb');
@@ -45,7 +47,6 @@ type FormatStats = { matched: number; offBy1: number; larger: number; skipped: n
 const mkStats = (): FormatStats => ({ matched: 0, offBy1: 0, larger: 0, skipped: 0, worstDelta: 0, worstColor: '' });
 
 const stats: Record<string, FormatStats> = {
-  // ── OKLCH-sourced (gamut-mapped) ──────────────────────────────────────────
   RGB:            mkStats(),
   HSL:            mkStats(),
   HSV:            mkStats(),
@@ -54,6 +55,9 @@ const stats: Record<string, FormatStats> = {
   'HEX→lighten':  mkStats(),
   'Mix OKLab':    mkStats(),
   'P3 raw':       mkStats(),
+  'P3 gamut':     mkStats(),
+  'Rec.2020 raw': mkStats(),
+  'Rec.2020 gamut': mkStats(),
   LCH:            mkStats(),
   Lab:            mkStats(),
   OKLab:          mkStats(),
@@ -67,7 +71,6 @@ const stats: Record<string, FormatStats> = {
   'RT:Lab':       mkStats(),
   'RT:OKLch':     mkStats(),
   'RT:OKLab':     mkStats(),
-  // ── Random 8-bit RGB sources ──────────────────────────────────────────────
   'RGB8:RGB':     mkStats(),
   'RGB8:HEX':     mkStats(),
   'RGB8:HSL':     mkStats(),
@@ -89,6 +92,7 @@ const recordSkip = (key: string) => { stats[key].skipped++; };
 type BoolStats = { agree: number; cxOnly: number; cuOnly: number };
 const mkBool = (): BoolStats => ({ agree: 0, cxOnly: 0, cuOnly: 0 });
 const boolStats: Record<string, BoolStats> = {
+  inGamutSrgb:    mkBool(),
   inGamutP3:      mkBool(),
   inGamutRec2020: mkBool(),
 };
@@ -107,10 +111,10 @@ for (let i = 0; i < COUNT; i++) {
 
   // Second color for mix comparison
   const l2 = rand(), c2 = rand() * 0.4, h2 = rand() * 360;
-  const cxHex2 = toGamutSrgb({ l: l2, c: c2, h: h2, alpha: 1 }).toHex();
+  const cxHex2 = Colordx.toGamutSrgb({ l: l2, c: c2, h: h2, alpha: 1 }).toHex();
 
   // --- Gamut-mapped sRGB (basis for sRGB-derived formats) ---
-  const cxGamut = toGamutSrgb(oklchObj);
+  const cxGamut = Colordx.toGamutSrgb(oklchObj);
   const cxHex   = cxGamut.toHex();
   const cxCs    = colordx(cxHex);               // normalized through hex
 
@@ -281,6 +285,36 @@ for (let i = 0; i < COUNT; i++) {
     [round(cxLinB, 5), round(cuLinB, 5)],
   ), color);
 
+  // Rec.2020 raw — direct OKLCH → Rec.2020, no gamut mapping (channels may be out of [0,1])
+  const [cxRec20R, cxRec20G, cxRec20B] = oklchToRec2020Channels(l, c, h);
+  const cuRec20 = culoriToRec2020({ mode: 'oklch', l, c, h })!;
+  record('Rec.2020 raw', maxDiff(
+    [round(cxRec20R, 4), round(cuRec20.r ?? 0, 4)],
+    [round(cxRec20G, 4), round(cuRec20.g ?? 0, 4)],
+    [round(cxRec20B, 4), round(cuRec20.b ?? 0, 4)],
+  ), color);
+
+  // P3 gamut mapping — compare P3 channels after mapping to P3 boundary
+  const cxGamutP3 = (Colordx.toGamutP3(oklchObj) as any).toP3();
+  const cuGamutP3 = culoriP3GamutMap({ mode: 'oklch', l, c, h })!;
+  record('P3 gamut', maxDiff(
+    [round(cxGamutP3.r, 4), round(cuGamutP3.r ?? 0, 4)],
+    [round(cxGamutP3.g, 4), round(cuGamutP3.g ?? 0, 4)],
+    [round(cxGamutP3.b, 4), round(cuGamutP3.b ?? 0, 4)],
+  ), color);
+
+  // Rec.2020 gamut mapping — compare Rec.2020 channels after mapping to Rec.2020 boundary
+  const cxGamutRec = (Colordx.toGamutRec2020(oklchObj) as any).toRec2020();
+  const cuGamutRec = culoriRec2020GamutMap({ mode: 'oklch', l, c, h })!;
+  record('Rec.2020 gamut', maxDiff(
+    [round(cxGamutRec.r, 4), round(cuGamutRec.r ?? 0, 4)],
+    [round(cxGamutRec.g, 4), round(cuGamutRec.g ?? 0, 4)],
+    [round(cxGamutRec.b, 4), round(cuGamutRec.b ?? 0, 4)],
+  ), color);
+
+  // inGamutSrgb — boolean agreement; reuse already-computed linear sRGB channels
+  recordBool('inGamutSrgb', inGamutSrgb(oklchObj), cuLinR >= 0 && cuLinR <= 1 && cuLinG >= 0 && cuLinG <= 1 && cuLinB >= 0 && cuLinB <= 1);
+
   // inGamutP3 — boolean agreement; reuse already-computed cuP3 channels
   recordBool('inGamutP3', inGamutP3(oklchObj), cuP3R >= 0 && cuP3R <= 1 && cuP3G >= 0 && cuP3G <= 1 && cuP3B >= 0 && cuP3B <= 1);
 
@@ -290,7 +324,6 @@ for (let i = 0; i < COUNT; i++) {
   recordBool('inGamutRec2020', inGamutRec2020(oklchObj), cuRecR >= 0 && cuRecR <= 1 && cuRecG >= 0 && cuRecG <= 1 && cuRecB >= 0 && cuRecB <= 1);
 }
 
-// ── Random 8-bit RGB section ────────────────────────────────────────────────
 // Generate random R,G,B byte triples and compare common sRGB-native conversions.
 const COUNT_RGB = 100_000;
 for (let i = 0; i < COUNT_RGB; i++) {

@@ -4,6 +4,7 @@
     { "source": "/app.js", "destination": "/playground/app.js" },
     { "source": "/manifest.webmanifest", "destination": "/playground/manifest.webmanifest" },
     { "source": "/index.mjs", "destination": "/dist/index.mjs" },
+    { "source": "/chunk-:name.mjs", "destination": "/dist/chunk-:name.mjs" },
     { "source": "/plugins/a11y.mjs", "destination": "/dist/plugins/a11y.mjs" },
     { "source": "/plugins/harmonies.mjs", "destination": "/dist/plugins/harmonies.mjs" },
     { "source": "/plugins/hsv.mjs", "destination": "/dist/plugins/hsv.mjs" },

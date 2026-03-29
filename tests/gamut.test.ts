@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { inGamutSrgb, toGamutSrgb } from '../src/gamut.js';
-import { inGamutP3, toGamutP3 } from '../src/plugins/p3.js';
-import { inGamutRec2020, toGamutRec2020 } from '../src/plugins/rec2020.js';
+import { Colordx, extend, inGamutSrgb } from '../src/index.js';
+import p3, { inGamutP3 } from '../src/plugins/p3.js';
+import rec2020, { inGamutRec2020 } from '../src/plugins/rec2020.js';
+
+extend([p3, rec2020]);
 
 describe('inGamutSrgb', () => {
   it('returns true for hex colors', () => {
@@ -60,7 +62,7 @@ describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {
   it('matches culori for oklch(0.2591 0.1511 28.95) — slightly out of sRGB', () => {
     // Linear sRGB channels: r=0.098, g=-0.009, b=-0.004
     // Simple clip gives rgb(88,0,0); CSS Color 4 gamut map gives rgb(81,0,0)
-    const result = toGamutSrgb('oklch(0.2591 0.1511 28.95)');
+    const result = Colordx.toGamutSrgb('oklch(0.2591 0.1511 28.95)');
     const { r, g, b } = result.toRgb();
     expect(r).toBe(81);
     expect(g).toBe(0);
@@ -69,7 +71,7 @@ describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {
 
   it('returns clipped color within JND of chroma-reduced color', () => {
     // The algorithm finds the highest chroma where clip(color) is within JND=0.02 deltaEOK
-    const result = toGamutSrgb('oklch(0.5 0.4 180)');
+    const result = Colordx.toGamutSrgb('oklch(0.5 0.4 180)');
     const { r, g, b } = result.toRgb();
     // Result must be strictly in sRGB
     expect(r).toBeGreaterThanOrEqual(0);
@@ -83,14 +85,14 @@ describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {
   it('returns more chroma than simple clip for deeply out-of-gamut colors', () => {
     // Simple channel clip (old behavior) would shift hue; CSS Color 4 allows more chroma
     const deepOutOfGamut = 'oklch(0.7 0.4 145)';
-    const mapped = toGamutSrgb(deepOutOfGamut);
+    const mapped = Colordx.toGamutSrgb(deepOutOfGamut);
     // The chroma-preserving result should be a saturated green, not a dull gray
     const { g } = mapped.toRgb();
     expect(g).toBeGreaterThan(100);
   });
 
   it('maps L=1 to white', () => {
-    const result = toGamutSrgb({ l: 1, c: 0.5, h: 100, alpha: 1 });
+    const result = Colordx.toGamutSrgb({ l: 1, c: 0.5, h: 100, alpha: 1 });
     const { r, g, b } = result.toRgb();
     expect(r).toBe(255);
     expect(g).toBe(255);
@@ -98,7 +100,7 @@ describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {
   });
 
   it('maps L=0 to black', () => {
-    const result = toGamutSrgb({ l: 0, c: 0.5, h: 100, alpha: 1 });
+    const result = Colordx.toGamutSrgb({ l: 0, c: 0.5, h: 100, alpha: 1 });
     const { r, g, b } = result.toRgb();
     expect(r).toBe(0);
     expect(g).toBe(0);
@@ -108,12 +110,12 @@ describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {
 
 describe('toGamutSrgb', () => {
   it('passes through sRGB inputs unchanged', () => {
-    const result = toGamutSrgb('#ff0000');
+    const result = Colordx.toGamutSrgb('#ff0000');
     expect(result.toHex()).toBe('#ff0000');
   });
 
   it('passes through in-gamut oklch unchanged', () => {
-    const result = toGamutSrgb('oklch(0.6279 0.2577 29.23)');
+    const result = Colordx.toGamutSrgb('oklch(0.6279 0.2577 29.23)');
     expect(result.isValid()).toBe(true);
     // toRgb() rounds to integers, so the result is exact
     const { r, g, b } = result.toRgb();
@@ -126,7 +128,7 @@ describe('toGamutSrgb', () => {
     const outOfGamut = 'oklch(0.5 0.4 180)';
     expect(inGamutSrgb(outOfGamut)).toBe(false);
 
-    const mapped = toGamutSrgb(outOfGamut);
+    const mapped = Colordx.toGamutSrgb(outOfGamut);
     expect(mapped.isValid()).toBe(true);
 
     // The resulting color should be in gamut (all RGB channels 0-255)
@@ -143,7 +145,7 @@ describe('toGamutSrgb', () => {
     const outOfGamut = { l: 0.7, c: 0.4, h: 145, alpha: 1 };
     expect(inGamutSrgb(outOfGamut)).toBe(false);
 
-    const mapped = toGamutSrgb(outOfGamut);
+    const mapped = Colordx.toGamutSrgb(outOfGamut);
     const oklch = mapped.toOklch();
 
     // Lightness should be approximately preserved
@@ -158,7 +160,7 @@ describe('toGamutSrgb', () => {
     const outOfGamut = { l: 0.5, a: 0.35, b: 0.0, alpha: 1 };
     expect(inGamutSrgb(outOfGamut)).toBe(false);
 
-    const mapped = toGamutSrgb(outOfGamut);
+    const mapped = Colordx.toGamutSrgb(outOfGamut);
     expect(mapped.isValid()).toBe(true);
     const { r, g, b } = mapped.toRgb();
     expect(r).toBeLessThanOrEqual(255);
@@ -167,14 +169,14 @@ describe('toGamutSrgb', () => {
   });
 
   it('handles oklch string with alpha', () => {
-    const result = toGamutSrgb('oklch(0.5 0.4 180 / 0.5)');
+    const result = Colordx.toGamutSrgb('oklch(0.5 0.4 180 / 0.5)');
     const { alpha } = result.toRgb();
     expect(alpha).toBe(0.5);
   });
 
   it('handles achromatic out-of-lightness-range oklch', () => {
     // L=0, C=0 — black, always in gamut
-    const result = toGamutSrgb('oklch(0 0 0)');
+    const result = Colordx.toGamutSrgb('oklch(0 0 0)');
     expect(result.isValid()).toBe(true);
   });
 });
@@ -230,12 +232,12 @@ describe('inGamutP3', () => {
 
 describe('toGamutP3', () => {
   it('passes through sRGB inputs unchanged', () => {
-    const result = toGamutP3('#ff0000');
+    const result = Colordx.toGamutP3('#ff0000');
     expect(result.toHex()).toBe('#ff0000');
   });
 
   it('passes through in-gamut oklch unchanged', () => {
-    const result = toGamutP3('oklch(0.6279 0.2577 29.23)');
+    const result = Colordx.toGamutP3('oklch(0.6279 0.2577 29.23)');
     expect(result.isValid()).toBe(true);
   });
 
@@ -243,7 +245,7 @@ describe('toGamutP3', () => {
     const outOfGamut = 'oklch(0.7 0.33 145)';
     expect(inGamutP3(outOfGamut)).toBe(false);
 
-    const mapped = toGamutP3(outOfGamut);
+    const mapped = Colordx.toGamutP3(outOfGamut);
     expect(mapped.isValid()).toBe(true);
     const { r, g, b } = mapped.toRgb();
     expect(r).toBeGreaterThanOrEqual(0);
@@ -258,7 +260,7 @@ describe('toGamutP3', () => {
     const outOfGamut = { l: 0.7, c: 0.5, h: 145, alpha: 1 };
     expect(inGamutP3(outOfGamut)).toBe(false);
 
-    const mapped = toGamutP3(outOfGamut);
+    const mapped = Colordx.toGamutP3(outOfGamut);
     const oklch = mapped.toOklch();
 
     // Lightness should be approximately preserved (within 0.05)
@@ -269,22 +271,28 @@ describe('toGamutP3', () => {
 
   it('result of toGamutP3 is within P3 gamut', () => {
     const outOfGamut = 'oklch(0.7 0.33 145)';
-    const mapped = toGamutP3(outOfGamut);
-    // Mapped color is sRGB (subset of P3), so always in P3
-    expect(inGamutP3(mapped.toOklch())).toBe(true);
+    const mapped = Colordx.toGamutP3(outOfGamut);
+    // Verify via P3 gamma channels — gamut-mapped color has all channels in [0, 1]
+    const { r, g, b } = (mapped as any).toP3() as { r: number; g: number; b: number };
+    expect(r).toBeGreaterThanOrEqual(-1e-4);
+    expect(r).toBeLessThanOrEqual(1 + 1e-4);
+    expect(g).toBeGreaterThanOrEqual(-1e-4);
+    expect(g).toBeLessThanOrEqual(1 + 1e-4);
+    expect(b).toBeGreaterThanOrEqual(-1e-4);
+    expect(b).toBeLessThanOrEqual(1 + 1e-4);
   });
 
   it('allows more chroma than toGamutSrgb for out-of-sRGB colors', () => {
     // toGamutP3 should preserve more chroma than toGamutSrgb since P3 > sRGB
     const outOfSrgb = 'oklch(0.64 0.3 29)';
-    const srgbMapped = toGamutSrgb(outOfSrgb);
-    const p3Mapped = toGamutP3(outOfSrgb);
+    const srgbMapped = Colordx.toGamutSrgb(outOfSrgb);
+    const p3Mapped = Colordx.toGamutP3(outOfSrgb);
     // P3 allows at least as much chroma as sRGB
     expect(p3Mapped.toOklch().c).toBeGreaterThanOrEqual(srgbMapped.toOklch().c - 0.01);
   });
 
   it('preserves alpha', () => {
-    const result = toGamutP3('oklch(0.7 0.5 145 / 0.5)');
+    const result = Colordx.toGamutP3('oklch(0.7 0.5 145 / 0.5)');
     expect(result.toRgb().alpha).toBe(0.5);
   });
 });
@@ -335,12 +343,12 @@ describe('inGamutRec2020', () => {
 
 describe('toGamutRec2020', () => {
   it('passes through sRGB inputs unchanged', () => {
-    const result = toGamutRec2020('#ff0000');
+    const result = Colordx.toGamutRec2020('#ff0000');
     expect(result.toHex()).toBe('#ff0000');
   });
 
   it('passes through in-gamut oklch unchanged', () => {
-    const result = toGamutRec2020('oklch(0.6279 0.2577 29.23)');
+    const result = Colordx.toGamutRec2020('oklch(0.6279 0.2577 29.23)');
     expect(result.isValid()).toBe(true);
   });
 
@@ -348,7 +356,7 @@ describe('toGamutRec2020', () => {
     const outOfGamut = 'oklch(0.5 0.8 145)';
     expect(inGamutRec2020(outOfGamut)).toBe(false);
 
-    const mapped = toGamutRec2020(outOfGamut);
+    const mapped = Colordx.toGamutRec2020(outOfGamut);
     expect(mapped.isValid()).toBe(true);
     const { r, g, b } = mapped.toRgb();
     expect(r).toBeGreaterThanOrEqual(0);
@@ -363,7 +371,7 @@ describe('toGamutRec2020', () => {
     const outOfGamut = { l: 0.7, c: 0.8, h: 145, alpha: 1 };
     expect(inGamutRec2020(outOfGamut)).toBe(false);
 
-    const mapped = toGamutRec2020(outOfGamut);
+    const mapped = Colordx.toGamutRec2020(outOfGamut);
     const oklch = mapped.toOklch();
 
     // Lightness should be approximately preserved
@@ -374,7 +382,7 @@ describe('toGamutRec2020', () => {
 
   it('result of toGamutRec2020 is within Rec.2020 gamut', () => {
     const outOfGamut = 'oklch(0.5 0.8 145)';
-    const mapped = toGamutRec2020(outOfGamut);
+    const mapped = Colordx.toGamutRec2020(outOfGamut);
     expect(inGamutRec2020(mapped.toOklch())).toBe(true);
   });
 
@@ -382,13 +390,13 @@ describe('toGamutRec2020', () => {
     // For highly saturated colors, Rec.2020 allows more chroma than P3
     const extreme = 'oklch(0.83 0.4 145)';
     expect(inGamutP3(extreme)).toBe(false);
-    const p3Mapped = toGamutP3(extreme);
-    const rec2020Mapped = toGamutRec2020(extreme);
+    const p3Mapped = Colordx.toGamutP3(extreme);
+    const rec2020Mapped = Colordx.toGamutRec2020(extreme);
     expect(rec2020Mapped.toOklch().c).toBeGreaterThanOrEqual(p3Mapped.toOklch().c - 0.01);
   });
 
   it('preserves alpha', () => {
-    const result = toGamutRec2020('oklch(0.5 0.8 145 / 0.7)');
+    const result = Colordx.toGamutRec2020('oklch(0.5 0.8 145 / 0.7)');
     expect(result.toRgb().alpha).toBe(0.7);
   });
 });
@@ -418,14 +426,14 @@ describe('inGamutSrgb: additional hue and lightness coverage', () => {
 
 describe('toGamutSrgb: additional coverage', () => {
   it('passes through black and white unchanged', () => {
-    expect(toGamutSrgb('#000000').toHex()).toBe('#000000');
-    expect(toGamutSrgb('#ffffff').toHex()).toBe('#ffffff');
+    expect(Colordx.toGamutSrgb('#000000').toHex()).toBe('#000000');
+    expect(Colordx.toGamutSrgb('#ffffff').toHex()).toBe('#ffffff');
   });
 
   it('maps out-of-gamut colors at L=0.3 while preserving lightness', () => {
     const outOfGamut = { l: 0.3, c: 0.4, h: 200, alpha: 1 };
     if (!inGamutSrgb(outOfGamut)) {
-      const mapped = toGamutSrgb(outOfGamut);
+      const mapped = Colordx.toGamutSrgb(outOfGamut);
       expect(mapped.toOklch().l).toBeCloseTo(0.3, 1);
     }
   });
@@ -433,7 +441,7 @@ describe('toGamutSrgb: additional coverage', () => {
   it('maps out-of-gamut colors at L=0.9 while preserving lightness', () => {
     const outOfGamut = { l: 0.9, c: 0.4, h: 145, alpha: 1 };
     if (!inGamutSrgb(outOfGamut)) {
-      const mapped = toGamutSrgb(outOfGamut);
+      const mapped = Colordx.toGamutSrgb(outOfGamut);
       expect(mapped.toOklch().l).toBeCloseTo(0.9, 1);
     }
   });
@@ -445,7 +453,7 @@ describe('toGamutSrgb: additional coverage', () => {
     ];
     for (const c of testColors) {
       if (!inGamutSrgb(c)) {
-        const { r, g, b } = toGamutSrgb(c).toRgb();
+        const { r, g, b } = Colordx.toGamutSrgb(c).toRgb();
         expect(r).toBeGreaterThanOrEqual(0);
         expect(r).toBeLessThanOrEqual(255);
         expect(g).toBeGreaterThanOrEqual(0);
@@ -476,14 +484,14 @@ describe('inGamutP3: additional coverage', () => {
 describe('toGamutP3: additional coverage', () => {
   it('passes through all standard sRGB colors unchanged', () => {
     for (const c of ['#ff0000', '#00ff00', '#0000ff', '#808080', '#c06060']) {
-      expect(toGamutP3(c).toHex()).toBe(c);
+      expect(Colordx.toGamutP3(c).toHex()).toBe(c);
     }
   });
 
   it('reduces chroma when mapping from out-of-P3 to P3', () => {
     const outOfGamut = 'oklch(0.7 0.45 145)';
     if (!inGamutP3(outOfGamut)) {
-      const mapped = toGamutP3(outOfGamut);
+      const mapped = Colordx.toGamutP3(outOfGamut);
       expect(mapped.toOklch().c).toBeLessThan(0.45);
     }
   });
@@ -501,22 +509,22 @@ describe('inGamutRec2020: additional coverage', () => {
 describe('toGamutRec2020: additional coverage', () => {
   it('passes through all standard sRGB colors unchanged', () => {
     for (const c of ['#ff0000', '#00ff00', '#0000ff', '#808080']) {
-      expect(toGamutRec2020(c).toHex()).toBe(c);
+      expect(Colordx.toGamutRec2020(c).toHex()).toBe(c);
     }
   });
 
   it('all extreme out-of-gamut colors produce valid results', () => {
     const testColors = ['oklch(0.5 0.9 0)', 'oklch(0.7 0.9 145)', 'oklch(0.3 0.8 270)'];
     for (const c of testColors) {
-      expect(toGamutRec2020(c).isValid()).toBe(true);
+      expect(Colordx.toGamutRec2020(c).isValid()).toBe(true);
     }
   });
 
   it('Rec.2020 allows at least as much chroma as sRGB for same hue', () => {
     const outOfSrgb = 'oklch(0.7 0.35 145)';
     if (!inGamutSrgb(outOfSrgb)) {
-      const srgbMapped = toGamutSrgb(outOfSrgb);
-      const rec2020Mapped = toGamutRec2020(outOfSrgb);
+      const srgbMapped = Colordx.toGamutSrgb(outOfSrgb);
+      const rec2020Mapped = Colordx.toGamutRec2020(outOfSrgb);
       expect(rec2020Mapped.toOklch().c).toBeGreaterThanOrEqual(srgbMapped.toOklch().c - 0.01);
     }
   });
@@ -578,7 +586,7 @@ describe('CIE Lab object gamut checking', () => {
   });
 
   it('toGamutSrgb maps out-of-sRGB CIE Lab to a valid sRGB color', () => {
-    const mapped = toGamutSrgb({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    const mapped = Colordx.toGamutSrgb({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
     const rgb = mapped.toRgb();
     expect(rgb.r).toBeGreaterThanOrEqual(0);
     expect(rgb.r).toBeLessThanOrEqual(255);
@@ -605,7 +613,7 @@ describe('CIE Lab object gamut checking', () => {
 
   it('toGamutP3 maps out-of-P3 CIE Lab to a valid color', () => {
     // lab(50,100,0) has linear sRGB r≈1.017 — outside sRGB and P3
-    const mapped = toGamutP3({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    const mapped = Colordx.toGamutP3({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
     const rgb = mapped.toRgb();
     expect(rgb.r).toBeGreaterThanOrEqual(0);
     expect(rgb.r).toBeLessThanOrEqual(255);
@@ -616,7 +624,7 @@ describe('CIE Lab object gamut checking', () => {
   });
 
   it('toGamutRec2020 maps out-of-Rec.2020 CIE Lab to a valid color', () => {
-    const mapped = toGamutRec2020({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
+    const mapped = Colordx.toGamutRec2020({ l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' } as any);
     const rgb = mapped.toRgb();
     expect(rgb.r).toBeGreaterThanOrEqual(0);
     expect(rgb.r).toBeLessThanOrEqual(255);
@@ -624,5 +632,76 @@ describe('CIE Lab object gamut checking', () => {
     expect(rgb.g).toBeLessThanOrEqual(255);
     expect(rgb.b).toBeGreaterThanOrEqual(0);
     expect(rgb.b).toBeLessThanOrEqual(255);
+  });
+});
+
+// Regression tests for the bug where toGamutP3/toGamutRec2020 used an isolated
+// Colordx copy that lacked plugin parsers, causing plugin-format inputs to be
+// silently treated as invalid (returning black).
+describe('toGamutP3 / toGamutRec2020 — plugin-format inputs', () => {
+  it('toGamutP3 accepts a P3 color string and returns a valid color', () => {
+    // Before the fix, the P3 parser was not registered on the bundled Colordx
+    // copy, so this would silently produce isValid()===false (black).
+    const result = Colordx.toGamutP3('color(display-p3 0.9 0.3 0.2)');
+    expect(result.isValid()).toBe(true);
+    const rgb = result.toRgb();
+    expect(rgb.r).toBeGreaterThan(0);
+  });
+
+  it('toGamutP3 accepts a P3 color object and returns a valid color', () => {
+    const p3Color = { r: 0.9, g: 0.3, b: 0.2, alpha: 1, colorSpace: 'display-p3' as const };
+    const result = Colordx.toGamutP3(p3Color as any);
+    expect(result.isValid()).toBe(true);
+  });
+
+  it('toGamutP3 on an in-P3-gamut P3 string returns the same color (pass-through)', () => {
+    // An in-gamut P3 color — should pass through unchanged
+    const input = 'color(display-p3 0.5 0.4 0.3)';
+    const result = Colordx.toGamutP3(input);
+    expect(result.isValid()).toBe(true);
+    expect(inGamutP3(input)).toBe(true);
+  });
+
+  it('toGamutRec2020 accepts a Rec.2020 color string and returns a valid color', () => {
+    // Before the fix, the rec2020 parser was missing on the isolated Colordx
+    // copy, causing this to silently return an invalid color.
+    const result = Colordx.toGamutRec2020('color(rec2020 0.9 0.3 0.2)');
+    expect(result.isValid()).toBe(true);
+    const rgb = result.toRgb();
+    expect(rgb.r).toBeGreaterThan(0);
+  });
+
+  it('toGamutRec2020 accepts a Rec.2020 color object and returns a valid color', () => {
+    const rec2020Color = { r: 0.9, g: 0.3, b: 0.2, alpha: 1, colorSpace: 'rec2020' as const };
+    const result = Colordx.toGamutRec2020(rec2020Color as any);
+    expect(result.isValid()).toBe(true);
+  });
+
+  it('toGamutP3 result supports plugin methods from the registered Colordx class', () => {
+    // The returned instance must come from the same class extend() was called on,
+    // not an isolated copy — so plugin prototype methods must be present.
+    const result = Colordx.toGamutP3('oklch(0.8 0.4 145)');
+    expect(typeof result.toP3).toBe('function');
+    const p3 = result.toP3();
+    expect(p3.colorSpace).toBe('display-p3');
+  });
+
+  it('toGamutRec2020 result supports plugin methods from the registered Colordx class', () => {
+    const result = Colordx.toGamutRec2020('oklch(0.8 0.4 145)');
+    expect(typeof result.toRec2020).toBe('function');
+    const rec = result.toRec2020();
+    expect(rec.colorSpace).toBe('rec2020');
+  });
+
+  it('toGamutP3 preserves alpha from a P3 string input', () => {
+    const result = Colordx.toGamutP3('color(display-p3 0.9 0.3 0.2 / 0.6)' as any);
+    expect(result.isValid()).toBe(true);
+    expect(result.toRgb().alpha).toBeCloseTo(0.6, 2);
+  });
+
+  it('toGamutRec2020 preserves alpha from a Rec.2020 string input', () => {
+    const result = Colordx.toGamutRec2020('color(rec2020 0.9 0.3 0.2 / 0.4)' as any);
+    expect(result.isValid()).toBe(true);
+    expect(result.toRgb().alpha).toBeCloseTo(0.4, 2);
   });
 });

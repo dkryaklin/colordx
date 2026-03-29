@@ -1,7 +1,6 @@
 import { labToXyz } from './colorModels/lab.js';
 import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
 import { xyzD50ToLinearSrgb } from './colorModels/xyz.js';
-import { Colordx } from './colordx.js';
 import { ANGLE_UNITS, clamp } from './helpers.js';
 import type { AnyColor, LabColor, OklabColor, OklchColor } from './types.js';
 
@@ -178,15 +177,15 @@ const cssGamutMap = (
 };
 
 /**
- * Maps an out-of-gamut color into sRGB using the CSS Color 4 gamut mapping algorithm.
- * Colors already in gamut are returned as-is. sRGB inputs (hex, rgb, hsl, etc.) are passed through.
+ * Maps an out-of-sRGB-gamut color using the CSS Color 4 algorithm.
+ * Returns null for sRGB-bounded inputs (hex, rgb, hsl, etc.) — pass through unchanged.
+ * Returns the mapped OklabColor otherwise.
  */
-export const toGamutSrgb = (input: AnyColor): Colordx => {
+export const toGamutSrgbRaw = (input: AnyColor): OklabColor | null => {
   const raw = getRawOklab(input);
-  if (raw === null) return new Colordx(input);
+  if (raw === null) return null;
   const { l, a, b, alpha } = raw;
-  const mapped = cssGamutMap(l, a, b, alpha, oklabToLinear, linearSrgbToOklab);
-  return new Colordx(mapped);
+  return cssGamutMap(l, a, b, alpha, oklabToLinear, linearSrgbToOklab);
 };
 
 export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
@@ -199,13 +198,18 @@ export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boole
 
 /**
  * Maps an out-of-gamut color into a custom gamut using the CSS Color 4 gamut mapping algorithm.
+ * Returns null for sRGB-bounded inputs (hex, rgb, hsl, etc.) — pass through unchanged.
+ * Returns the mapped OklabColor otherwise.
  * toLinear: OKLab → unclamped linear target-space channels
  * fromLinear: linear target-space channels → OKLab (for deltaEOK of clipped colors)
  */
-export const toGamutCustom = (input: AnyColor, toLinear: LinearConverter, fromLinear: FromLinearConverter): Colordx => {
+export const toGamutCustom = (
+  input: AnyColor,
+  toLinear: LinearConverter,
+  fromLinear: FromLinearConverter
+): OklabColor | null => {
   const raw = getRawOklab(input);
-  if (raw === null) return new Colordx(input);
+  if (raw === null) return null;
   const { l, a, b, alpha } = raw;
-  const mapped = cssGamutMap(l, a, b, alpha, toLinear, fromLinear);
-  return new Colordx(mapped);
+  return cssGamutMap(l, a, b, alpha, toLinear, fromLinear);
 };

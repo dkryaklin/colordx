@@ -215,15 +215,15 @@ color.toOklab()         // { l: 0.68, a: 0.149, b: 0.118 }</code></pre>
           <div class="gs-step">
             <div class="gs-step-label">Gamut checking &amp; mapping</div>
             <div class="code-block">
-              <pre><code>import { inGamutSrgb, toGamutSrgb } from '@colordx/core';
+              <pre><code>import { Colordx, inGamutSrgb } from '@colordx/core';
 
 inGamutSrgb('oklch(0.5 0.4 180)')   // false — out of sRGB
 inGamutSrgb('oklch(0.5 0.1 180)')   // true  — in sRGB
 
 // Map out-of-gamut color to nearest sRGB boundary
-const mapped = toGamutSrgb('oklch(0.5 0.4 180)');
+const mapped = Colordx.toGamutSrgb('oklch(0.5 0.4 180)');
 mapped.toHex()  // '#00866e'</code></pre>
-              <button class="code-copy" data-code="import { inGamutSrgb, toGamutSrgb } from '@colordx/core';">⎘</button>
+              <button class="code-copy" data-code="import { Colordx, inGamutSrgb } from '@colordx/core';">⎘</button>
             </div>
           </div>
         </div>
@@ -307,7 +307,7 @@ mapped.toHex()  // '#00866e'</code></pre>
             <h3 class="faq-q">Does colordx support gamut mapping?</h3>
             <p class="faq-a">
               Yes. colordx exports <code>inGamutSrgb()</code> to check whether a color is within the sRGB gamut, and
-              <code>toGamutSrgb()</code> to map an out-of-gamut color to the nearest sRGB boundary via chroma-reduction
+              <code>Colordx.toGamutSrgb()</code> to map an out-of-gamut color to the nearest sRGB boundary via chroma-reduction
               binary search — the approach recommended by the CSS Color 4 specification.
             </p>
           </div>
