@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 4.1.1
+
+### Patch Changes
+
+- fcf0e94: Improve gamut mapping accuracy by tightening EPS tolerance, add parseLabString to enable parsing lab() CSS strings, update README examples, and expand culori comparison script.
+
 ## 4.1.0
 
 ### Minor Changes
