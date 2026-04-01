@@ -20,6 +20,17 @@ export const rgbToOklab = ({ r, g, b, alpha }: RgbColor): OklabColor => {
   return { l, a, b: bv, alpha };
 };
 
+/** Unclamped OKLab → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
+export const oklabToRgbUnclamped = ({ l, a, b, alpha }: OklabColor): RgbColor => {
+  const [lr, lg, lb] = oklabToLinear(l, a, b);
+  return {
+    r: srgbFromLinear(lr) * 255,
+    g: srgbFromLinear(lg) * 255,
+    b: srgbFromLinear(lb) * 255,
+    alpha,
+  };
+};
+
 export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
   const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
   const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
@@ -65,7 +76,7 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   if (sanitize(l) > 1) return null; // OKLab L is always [0, 1]; reject CIE Lab values passed without colorSpace branding
-  return oklabToRgb({
+  return oklabToRgbUnclamped({
     l: sanitize(l),
     a: sanitize(a),
     b: sanitize(b),
@@ -86,5 +97,5 @@ export const parseOklabString = (input: unknown): RgbColor | null => {
   const a = m[4] ? val(m[3]!) * 0.004 : val(m[3]!); // CSS Color 4: 100% = 0.4, so 1% = 0.004
   const b = m[6] ? val(m[5]!) * 0.004 : val(m[5]!);
   const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
-  return oklabToRgb({ l: L, a, b, alpha: clamp(alpha, 0, 1) });
+  return oklabToRgbUnclamped({ l: L, a, b, alpha: clamp(alpha, 0, 1) });
 };

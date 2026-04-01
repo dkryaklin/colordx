@@ -1,6 +1,6 @@
 import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
-import { oklabToRgb, rgbToOklab } from './oklab.js';
+import { oklabToRgb, oklabToRgbUnclamped, rgbToOklab } from './oklab.js';
 
 const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
   l,
@@ -18,6 +18,7 @@ export const rgbToOklch = (rgb: RgbColor): OklchColor => {
 };
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));
+const oklchToRgbUnclamped = (oklch: OklchColor): RgbColor => oklabToRgbUnclamped(oklchToOklab(oklch));
 
 export const parseOklchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
@@ -27,7 +28,7 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   if (sanitize(l) > 1) return null; // OKLCH L is always [0, 1]; reject CIE LCH values passed without colorSpace branding
-  return oklchToRgb({
+  return oklchToRgbUnclamped({
     l: sanitize(l),
     c: Math.max(0, sanitize(c)),
     h: normalizeHue(sanitize(h)),
@@ -49,7 +50,7 @@ export const parseOklchString = (input: unknown): RgbColor | null => {
   const unit = m[6]?.toLowerCase() ?? 'deg';
   const H = val(m[5]!) * (ANGLE_UNITS[unit] ?? 1);
   const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
-  return oklchToRgb({
+  return oklchToRgbUnclamped({
     l: L,
     c: C,
     h: normalizeHue(H),

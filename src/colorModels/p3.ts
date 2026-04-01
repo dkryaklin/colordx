@@ -42,13 +42,24 @@ export const p3ToRgb = ({ r, g, b, alpha }: P3Color): RgbColor => {
   });
 };
 
+/** Unclamped P3 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
+const p3ToRgbUnclamped = ({ r, g, b, alpha }: P3Color): RgbColor => {
+  const [sr, sg, sb] = linearP3ToSrgb(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
+  return {
+    r: srgbFromLinear(sr) * 255,
+    g: srgbFromLinear(sg) * 255,
+    b: srgbFromLinear(sb) * 255,
+    alpha,
+  };
+};
+
 export const parseP3Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'display-p3') return null;
   if (!hasKeys(input, ['r', 'g', 'b'])) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
-  return p3ToRgb({
+  return p3ToRgbUnclamped({
     r: sanitize(r),
     g: sanitize(g),
     b: sanitize(b),
@@ -65,7 +76,7 @@ export const parseP3String = (input: unknown): RgbColor | null => {
   const m = P3_RE.exec(input.trim());
   if (!m) return null;
   const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
-  return p3ToRgb({
+  return p3ToRgbUnclamped({
     r: Number(m[1]),
     g: Number(m[2]),
     b: Number(m[3]),

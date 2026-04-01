@@ -1,4 +1,5 @@
-import { converter, toGamut } from 'culori';
+import { converter, differenceCiede2000, toGamut } from 'culori';
+const culoriDeltaE2000 = differenceCiede2000();  // curried — call once to get distance fn
 import { Colordx, colordx, extend, inGamutSrgb, oklchToLinear } from '../src/index.js';
 import hsvPlugin from '../src/plugins/hsv.js';
 import hwbPlugin from '../src/plugins/hwb.js';
@@ -25,6 +26,7 @@ const culoriToOklab   = converter('oklab');
 const culoriToOklch   = converter('oklch');
 const culoriToRgb     = converter('rgb');
 const culoriToLrgb    = converter('lrgb');          // linear sRGB
+const culoriToXyz50   = converter('xyz50');          // CIE XYZ D50, 0-1 scale
 
 const COUNT = 100_000;
 
@@ -58,9 +60,21 @@ const stats: Record<string, FormatStats> = {
   'P3 gamut':     mkStats(),
   'Rec.2020 raw': mkStats(),
   'Rec.2020 gamut': mkStats(),
+  // Wide-gamut parse issue: parse oklch/p3/rec2020 CSS string → convert back to that space
+  // For out-of-sRGB colors, the parser clips to sRGB first, so the output differs from a direct conversion.
+  // culori reference: direct OKLCH → P3 / Rec.2020 conversion with no intermediate sRGB clip.
+  'StrParse→P3':           mkStats(),
+  'StrParse→Rec2020':      mkStats(),
+  'StrParse(oklab)→P3':    mkStats(),
+  'StrParse(oklab)→Rec20': mkStats(),
+  'P3str→P3':              mkStats(),
+  'Rec2020str→Rec2020':    mkStats(),
   LCH:            mkStats(),
   Lab:            mkStats(),
   OKLab:          mkStats(),
+  XYZ:            mkStats(),
+  'mixLab()':     mkStats(),
+  'delta()':      mkStats(),
   'Linear RGB':   mkStats(),
   // Round-trip: hex → string format → parse back → integer RGB
   // Compares colordx's round-trip (lossy: string output is rounded) vs culori's (lossless: direct conversion)
@@ -125,6 +139,9 @@ for (let i = 0; i < COUNT; i++) {
   const cuR = Math.round(cuGamut.r * 255), cuG = Math.round(cuGamut.g * 255), cuB = Math.round(cuGamut.b * 255);
   record('RGB', maxDiff([cxR, cuR], [cxG, cuG], [cxB, cuB]), color);
 
+  // Second color RGB — needed for mix/delta tests both inside and outside the rgbMatch block.
+  const { r: r2, g: g2, b: b2 } = colordx(cxHex2).toRgb();
+
   // For format comparisons below, both libraries start from the same 8-bit sRGB base.
   // When gamut mapping disagrees, there is no common base — skip those comparisons.
   const rgbMatch = cxR === cuR && cxG === cuG && cxB === cuB;
@@ -145,6 +162,9 @@ for (let i = 0; i < COUNT; i++) {
     recordSkip('RT:Lab');
     recordSkip('RT:OKLch');
     recordSkip('RT:OKLab');
+    recordSkip('XYZ');
+    recordSkip('mixLab()');
+    recordSkip('delta()');
   } else {
     const cuBase = { mode: 'rgb' as const, r: cuR / 255, g: cuG / 255, b: cuB / 255 };
 
@@ -211,6 +231,34 @@ for (let i = 0; i < COUNT; i++) {
       [cxOklab.b, round(cuOklab.b ?? 0, 4)],
     ), color);
 
+    // XYZ D50 — colordx uses 0-100 scale, culori xyz50 uses 0-1 scale; multiply culori by 100.
+    // culori requires an intermediate Lab step: rgb→lab→xyz50 (rgb→xyz50 not directly registered).
+    const cxXyz = (cxCs as any).toXyz();
+    const cuXyz = culoriToXyz50(cuLab)!;
+    record('XYZ', maxDiff(
+      [cxXyz.x, round((cuXyz.x ?? 0) * 100, 2)],
+      [cxXyz.y, round((cuXyz.y ?? 0) * 100, 2)],
+      [cxXyz.z, round((cuXyz.z ?? 0) * 100, 2)],
+    ), color);
+
+    // mixLab() — blend in CIE Lab space at 50%; reference is culori Lab lerp + convert back
+    const { r: cxMlR, g: cxMlG, b: cxMlB } = (cxCs as any).mixLab(cxHex2).toRgb();
+    const cuLab2 = culoriToLab({ mode: 'rgb' as const, r: r2 / 255, g: g2 / 255, b: b2 / 255 })!;
+    const cuLabMixed = culoriToRgb({ mode: 'lab' as const,
+      l: ((cuLab.l ?? 0) + (cuLab2.l ?? 0)) / 2,
+      a: ((cuLab.a ?? 0) + (cuLab2.a ?? 0)) / 2,
+      b: ((cuLab.b ?? 0) + (cuLab2.b ?? 0)) / 2,
+    })!;
+    const cuMlR = Math.round(Math.max(0, Math.min(1, cuLabMixed.r ?? 0)) * 255);
+    const cuMlG = Math.round(Math.max(0, Math.min(1, cuLabMixed.g ?? 0)) * 255);
+    const cuMlB = Math.round(Math.max(0, Math.min(1, cuLabMixed.b ?? 0)) * 255);
+    record('mixLab()', maxDiff([cxMlR, cuMlR], [cxMlG, cuMlG], [cxMlB, cuMlB]), color);
+
+    // delta() — ΔE2000 / 100; colordx normalizes to [0,1], culori returns raw ΔE2000
+    const cxDelta = (cxCs as any).delta(cxHex2);
+    const cuDelta = round(culoriDeltaE2000(culoriToLab(cuBase)!, culoriToLab({ mode: 'rgb' as const, r: r2 / 255, g: g2 / 255, b: b2 / 255 })!) / 100, 3);
+    record('delta()', absDiff(cxDelta, cuDelta), color);
+
     // Round-trips: hex → string format → parse back → integer RGB
     // colordx round-trips through its own rounded string output.
     // culori round-trips via direct conversion (lossless — no intermediate string rounding).
@@ -252,7 +300,6 @@ for (let i = 0; i < COUNT; i++) {
 
   // Mix OKLab — blend cxHex + cxHex2 in OKLab space at 50%; both sides use the same hex inputs
   const { r: cxMR, g: cxMG, b: cxMB } = colordx(cxHex).mixOklab(cxHex2).toRgb();
-  const { r: r2, g: g2, b: b2 } = colordx(cxHex2).toRgb();
   const cuOk1 = culoriToOklab({ mode: 'rgb' as const, r: cxR / 255, g: cxG / 255, b: cxB / 255 })!;
   const cuOk2 = culoriToOklab({ mode: 'rgb' as const, r: r2 / 255, g: g2 / 255, b: b2 / 255 })!;
   const blended = culoriToRgb({ mode: 'oklab' as const,
@@ -311,6 +358,91 @@ for (let i = 0; i < COUNT; i++) {
     [round(cxGamutRec.g, 4), round(cuGamutRec.g ?? 0, 4)],
     [round(cxGamutRec.b, 4), round(cuGamutRec.b ?? 0, 4)],
   ), color);
+
+  // Wide-gamut string parse issue: parse the OKLCH CSS string, then convert to P3/Rec.2020.
+  // For out-of-sRGB colors the parser clips to sRGB before storing, so toP3()/toRec2020() operates
+  // on the clipped color — producing different channels than a direct OKLCH→P3/Rec.2020 conversion.
+  // Reference: culori's direct conversion (cuP3R/G/B and cuRec20R/G/B, already computed above).
+  // Only meaningful for out-of-sRGB colors; skip in-gamut ones (no clipping, so no discrepancy).
+  if (!inGamutSrgb(oklchObj)) {
+    const cxStrP3 = (colordx(color) as any).toP3();
+    record('StrParse→P3', maxDiff(
+      [round(cxStrP3.r, 4), round(cuP3R, 4)],
+      [round(cxStrP3.g, 4), round(cuP3G, 4)],
+      [round(cxStrP3.b, 4), round(cuP3B, 4)],
+    ), color);
+
+    const cxStrRec = (colordx(color) as any).toRec2020();
+    record('StrParse→Rec2020', maxDiff(
+      [round(cxStrRec.r, 4), round(cuRec20.r ?? 0, 4)],
+      [round(cxStrRec.g, 4), round(cuRec20.g ?? 0, 4)],
+      [round(cxStrRec.b, 4), round(cuRec20.b ?? 0, 4)],
+    ), color);
+  } else {
+    recordSkip('StrParse→P3');
+    recordSkip('StrParse→Rec2020');
+  }
+
+  // OKLab string parse → P3/Rec.2020 — same sRGB-clip issue as OKLCH string parse, different entry point.
+  // Construct an oklab() CSS string from raw (non-gamut-mapped) OKLab values derived from the OKLCH color.
+  // culori reference: direct OKLCH→P3 / OKLCH→Rec.2020 (cuP3R/G/B and cuRec20 already computed above).
+  {
+    const rawOklab = culoriToOklab({ mode: 'oklch', l, c, h })!;
+    const oklabStr = `oklab(${(rawOklab.l ?? 0).toFixed(6)} ${(rawOklab.a ?? 0).toFixed(6)} ${(rawOklab.b ?? 0).toFixed(6)})`;
+    if (!inGamutSrgb(oklchObj)) {
+      const cxOklabP3 = (colordx(oklabStr) as any).toP3();
+      record('StrParse(oklab)→P3', maxDiff(
+        [round(cxOklabP3.r, 4), round(cuP3R, 4)],
+        [round(cxOklabP3.g, 4), round(cuP3G, 4)],
+        [round(cxOklabP3.b, 4), round(cuP3B, 4)],
+      ), color);
+      const cxOklabRec = (colordx(oklabStr) as any).toRec2020();
+      record('StrParse(oklab)→Rec20', maxDiff(
+        [round(cxOklabRec.r, 4), round(cuRec20.r ?? 0, 4)],
+        [round(cxOklabRec.g, 4), round(cuRec20.g ?? 0, 4)],
+        [round(cxOklabRec.b, 4), round(cuRec20.b ?? 0, 4)],
+      ), color);
+    } else {
+      recordSkip('StrParse(oklab)→P3');
+      recordSkip('StrParse(oklab)→Rec20');
+    }
+  }
+
+  // P3 string → toP3() round-trip — parse a color(display-p3 ...) string and read P3 channels back.
+  // For in-P3-gamut colors the channels should survive parse→toP3() unchanged.
+  // For out-of-sRGB-but-in-P3 colors the parser clips to sRGB, so toP3() returns wrong channels.
+  // culori reference: the raw P3 channels used to construct the string (cuP3R/G/B).
+  {
+    const inP3Gamut = cuP3R >= 0 && cuP3R <= 1 && cuP3G >= 0 && cuP3G <= 1 && cuP3B >= 0 && cuP3B <= 1;
+    if (inP3Gamut) {
+      const p3Str = `color(display-p3 ${round(cuP3R, 6)} ${round(cuP3G, 6)} ${round(cuP3B, 6)})`;
+      const cxP3rt = (colordx(p3Str) as any).toP3();
+      record('P3str→P3', maxDiff(
+        [round(cxP3rt.r, 4), round(cuP3R, 4)],
+        [round(cxP3rt.g, 4), round(cuP3G, 4)],
+        [round(cxP3rt.b, 4), round(cuP3B, 4)],
+      ), color);
+    } else {
+      recordSkip('P3str→P3');
+    }
+  }
+
+  // Rec.2020 string → toRec2020() round-trip — same pattern as P3str→P3.
+  {
+    const cuRec20R = cuRec20.r ?? 0, cuRec20G = cuRec20.g ?? 0, cuRec20B = cuRec20.b ?? 0;
+    const inRec2020Gamut = cuRec20R >= 0 && cuRec20R <= 1 && cuRec20G >= 0 && cuRec20G <= 1 && cuRec20B >= 0 && cuRec20B <= 1;
+    if (inRec2020Gamut) {
+      const rec2020Str = `color(rec2020 ${round(cuRec20R, 6)} ${round(cuRec20G, 6)} ${round(cuRec20B, 6)})`;
+      const cxRecrt = (colordx(rec2020Str) as any).toRec2020();
+      record('Rec2020str→Rec2020', maxDiff(
+        [round(cxRecrt.r, 4), round(cuRec20R, 4)],
+        [round(cxRecrt.g, 4), round(cuRec20G, 4)],
+        [round(cxRecrt.b, 4), round(cuRec20B, 4)],
+      ), color);
+    } else {
+      recordSkip('Rec2020str→Rec2020');
+    }
+  }
 
   // inGamutSrgb — boolean agreement; reuse already-computed linear sRGB channels
   recordBool('inGamutSrgb', inGamutSrgb(oklchObj), cuLinR >= 0 && cuLinR <= 1 && cuLinG >= 0 && cuLinG <= 1 && cuLinB >= 0 && cuLinB <= 1);

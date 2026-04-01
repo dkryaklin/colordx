@@ -48,15 +48,26 @@ export const xyzToRgb = ({ x, y, z, alpha }: XyzColor): RgbColor => {
   });
 };
 
+/** Unclamped XYZ D50 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
+const xyzToRgbUnclamped = ({ x, y, z, alpha }: XyzColor): RgbColor => {
+  const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
+  return {
+    r: srgbFromLinear(lr) * 255,
+    g: srgbFromLinear(lg) * 255,
+    b: srgbFromLinear(lb) * 255,
+    alpha,
+  };
+};
+
 export const parseXyzObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!hasKeys(input, ['x', 'y', 'z'])) return null;
   const { x, y, z, alpha = 1 } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
   if (!isNumber(x) || !isNumber(y) || !isNumber(z) || !isNumber(alpha)) return null;
-  return xyzToRgb({
-    x: clamp(x, 0, D50_WX),
-    y: clamp(y, 0, D50_WY),
-    z: clamp(z, 0, D50_WZ),
+  return xyzToRgbUnclamped({
+    x,
+    y,
+    z,
     alpha: clamp(alpha, 0, 1),
   });
 };

@@ -39,13 +39,24 @@ export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
   });
 };
 
+/** Unclamped Rec.2020 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
+const rec2020ToRgbUnclamped = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
+  const [sr, sg, sb] = linearRec2020ToSrgb(rec2020ToLinear(r), rec2020ToLinear(g), rec2020ToLinear(b));
+  return {
+    r: srgbFromLinear(sr) * 255,
+    g: srgbFromLinear(sg) * 255,
+    b: srgbFromLinear(sb) * 255,
+    alpha,
+  };
+};
+
 export const parseRec2020Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'rec2020') return null;
   if (!hasKeys(input, ['r', 'g', 'b'])) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
-  return rec2020ToRgb({
+  return rec2020ToRgbUnclamped({
     r: sanitize(r),
     g: sanitize(g),
     b: sanitize(b),
@@ -62,7 +73,7 @@ export const parseRec2020String = (input: unknown): RgbColor | null => {
   const m = REC2020_RE.exec(input.trim());
   if (!m) return null;
   const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
-  return rec2020ToRgb({
+  return rec2020ToRgbUnclamped({
     r: Number(m[1]),
     g: Number(m[2]),
     b: Number(m[3]),
