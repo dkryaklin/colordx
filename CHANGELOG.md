@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.0.1
+
+### Patch Changes
+
+- 7d88fe0: Fix wide-gamut color data loss by using unclamped parse paths for oklch, oklab, p3, rec2020, and xyz inputs; out-of-sRGB-gamut channel values are now preserved instead of being clipped to sRGB on parse.
+
 ## 5.0.0
 
 ### Major Changes
