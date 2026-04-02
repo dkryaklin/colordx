@@ -1,5 +1,5 @@
 import { converter, differenceCiede2000, toGamut } from 'culori';
-const culoriDeltaE2000 = differenceCiede2000();  // curried — call once to get distance fn
+const culoriDeltaE2000 = differenceCiede2000();
 import { Colordx, colordx, extend, inGamutSrgb, oklchToLinear } from '../src/index.js';
 import hsvPlugin from '../src/plugins/hsv.js';
 import hwbPlugin from '../src/plugins/hwb.js';
@@ -254,9 +254,9 @@ for (let i = 0; i < COUNT; i++) {
     const cuMlB = Math.round(Math.max(0, Math.min(1, cuLabMixed.b ?? 0)) * 255);
     record('mixLab()', maxDiff([cxMlR, cuMlR], [cxMlG, cuMlG], [cxMlB, cuMlB]), color);
 
-    // delta() — ΔE2000 / 100; colordx normalizes to [0,1], culori returns raw ΔE2000
-    const cxDelta = (cxCs as any).delta(cxHex2);
-    const cuDelta = round(culoriDeltaE2000(culoriToLab(cuBase)!, culoriToLab({ mode: 'rgb' as const, r: r2 / 255, g: g2 / 255, b: b2 / 255 })!) / 100, 3);
+    // delta() — ΔE2000/100 vs culori; both use D65 Lab, both from integer-rounded RGB base
+    const cxDelta = (colordx({ r: cuR, g: cuG, b: cuB }) as any).delta(cxHex2);
+    const cuDelta = round(culoriDeltaE2000(cuBase, { mode: 'rgb' as const, r: r2 / 255, g: g2 / 255, b: b2 / 255 }) / 100, 3);
     record('delta()', absDiff(cxDelta, cuDelta), color);
 
     // Round-trips: hex → string format → parse back → integer RGB

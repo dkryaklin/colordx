@@ -1,6 +1,12 @@
 import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { srgbToLinear } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzToRgb } from './xyz.js';
+
+// D65 white point derived from CIE chromaticity (x=0.3127, y=0.329)
+const D65_WX = (0.3127 / 0.329) * 100;
+const D65_WY = 100;
+const D65_WZ = ((1 - 0.3127 - 0.329) / 0.329) * 100;
 
 const EPSILON = 216 / 24389;
 const KAPPA = 24389 / 27;
@@ -31,6 +37,24 @@ export const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
 };
 
 export const rgbToLab = (rgb: RgbColor): LabColor => xyzToLab(rgbToXyz(rgb));
+
+/** RGB → CIE Lab using D65 white point (screen-native; used for perceptual difference). */
+export const rgbToLabD65 = ({ r, g, b, alpha }: RgbColor): LabColor => {
+  const lr = srgbToLinear(r / 255),
+    lg = srgbToLinear(g / 255),
+    lb = srgbToLinear(b / 255);
+  const x = 100 * (0.41239079926595951 * lr + 0.35758433938387796 * lg + 0.18048078840183429 * lb);
+  const y = 100 * (0.21263900587151036 * lr + 0.71516867876775592 * lg + 0.072192315360733714 * lb);
+  const z = 100 * (0.019330818715591849 * lr + 0.11919477979462599 * lg + 0.95053215224966059 * lb);
+  const fy = f(y / D65_WY);
+  return {
+    l: 116 * fy - 16,
+    a: 500 * (f(x / D65_WX) - fy) || 0,
+    b: 200 * (fy - f(z / D65_WZ)) || 0,
+    alpha: round(alpha, 3),
+    colorSpace: 'lab' as const,
+  };
+};
 
 export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
   const { l: L1, a: a1, b: b1 } = lab1;

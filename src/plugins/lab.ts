@@ -1,4 +1,4 @@
-import { deltaE2000, labToRgb, parseLabObject, parseLabString, rgbToLab } from '../colorModels/lab.js';
+import { deltaE2000, labToRgb, parseLabObject, parseLabString, rgbToLab, rgbToLabD65 } from '../colorModels/lab.js';
 import { parseXyzObject, rgbToXyz } from '../colorModels/xyz.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { clamp, round } from '../helpers.js';
@@ -48,7 +48,7 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   /** Returns ΔE2000 color difference normalized to [0, 1] (divide by 100). 0 = identical, 1 = maximally different. */
   ColordxClass.prototype.delta = function (color: AnyColor = '#fff') {
-    return round(deltaE2000(rgbToLab(this._rawRgb()), rgbToLab(new ColordxClass(color)._rawRgb())) / 100, 3);
+    return round(deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(new ColordxClass(color)._rawRgb())) / 100, 3);
   };
   parsers.push(parseLabString, parseLabObject, parseXyzObject);
   formatParsers.push([parseLabString, 'lab'], [parseLabObject, 'lab'], [parseXyzObject, 'xyz']);
