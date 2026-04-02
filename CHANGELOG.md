@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.0.3
+
+### Patch Changes
+
+- b5b21d4: Add roadmap section to README covering planned CSS Color 4/5 features and internal improvements; add comprehensive isValid test coverage for all supported color formats.
+
 ## 5.0.2
 
 ### Patch Changes
