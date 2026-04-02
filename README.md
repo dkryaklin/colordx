@@ -662,6 +662,18 @@ colordx('#a35050').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 44% (rel
 
 The same flag works on `.darken()` and `.desaturate()`.
 
+## Roadmap
+
+### CSS Color 4/5 completeness
+
+- **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`)
+- **`color()` for remaining spaces** — `color(srgb ...)`, `color(srgb-linear ...)`, `color(a98-rgb ...)`, `color(prophoto-rgb ...)`, `color(xyz-d50 ...)`, `color(xyz-d65 ...)` string parsing (`display-p3` and `rec2020` already supported)
+- **Relative color syntax** — `oklch(from red l c h)` and channel arithmetic like `oklch(from red l calc(c + 0.1) h)`
+
+### Internals
+
+- Deduplicate the sRGB→XYZ D65 matrix shared between `xyz.ts` and `lab.ts`
+
 ## License
 
 MIT
