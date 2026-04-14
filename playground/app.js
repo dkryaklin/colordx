@@ -533,3 +533,8 @@ document.getElementById('random-btn').addEventListener('click', () => {
   updateLeft({ skipBg: true });
   updateA11yFromColor();
 });
+
+// ── Export section ──
+
+globalThis.Colordx = Colordx;
+globalThis.colordx = colordx;
