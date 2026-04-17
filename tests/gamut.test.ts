@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Colordx, extend, inGamutSrgb } from '../src/index.js';
+import { Colordx, colordx, extend, inGamutSrgb } from '../src/index.js';
 import p3, { inGamutP3 } from '../src/plugins/p3.js';
 import rec2020, { inGamutRec2020 } from '../src/plugins/rec2020.js';
 
@@ -178,6 +178,155 @@ describe('toGamutSrgb', () => {
     // L=0, C=0 — black, always in gamut
     const result = Colordx.toGamutSrgb('oklch(0 0 0)');
     expect(result.isValid()).toBe(true);
+  });
+});
+
+describe('.mapSrgb() instance method', () => {
+  it('produces the same rgb output as Colordx.toGamutSrgb static', () => {
+    const inputs = [
+      'oklch(0.5 0.4 180)',
+      'oklch(0.7 0.37 145)',
+      'oklch(0.3 0.3 30)',
+      'oklab(0.5 0.35 0.0)',
+      { l: 0.5, c: 0.4, h: 180, alpha: 1 },
+      { l: 0.5, a: 0.35, b: 0.0, alpha: 1 },
+    ];
+    for (const input of inputs) {
+      expect(colordx(input).mapSrgb().toRgbString()).toBe(Colordx.toGamutSrgb(input).toRgbString());
+    }
+  });
+
+  it('matches static for alpha preservation', () => {
+    const input = 'oklch(0.5 0.4 180 / 0.5)';
+    expect(colordx(input).mapSrgb().alpha()).toBe(Colordx.toGamutSrgb(input).alpha());
+  });
+
+  it('returns the same instance when already in gamut (reference equality)', () => {
+    const red = colordx('#ff0000');
+    expect(red.mapSrgb()).toBe(red);
+
+    const hsl = colordx('hsl(120, 100%, 50%)');
+    expect(hsl.mapSrgb()).toBe(hsl);
+
+    const inGamutOklch = colordx('oklch(0.5 0.1 30)');
+    expect(inGamutOklch.mapSrgb()).toBe(inGamutOklch);
+  });
+
+  it('preserves lightness and hue when mapping', () => {
+    const mapped = colordx('oklch(0.5 0.4 180)').mapSrgb().toOklch();
+    expect(mapped.l).toBeCloseTo(0.5, 1);
+    expect(Math.abs(mapped.h - 180)).toBeLessThan(5);
+    expect(mapped.c).toBeLessThan(0.4);
+  });
+
+  it('maps L=1 input to white', () => {
+    const result = colordx({ l: 1, c: 0.5, h: 100, alpha: 1 }).mapSrgb().toRgb();
+    expect(result.r).toBe(255);
+    expect(result.g).toBe(255);
+    expect(result.b).toBe(255);
+  });
+
+  it('maps L=0 input to black', () => {
+    const result = colordx({ l: 0, c: 0.5, h: 100, alpha: 1 }).mapSrgb().toRgb();
+    expect(result.r).toBe(0);
+    expect(result.g).toBe(0);
+    expect(result.b).toBe(0);
+  });
+
+  it('is idempotent — mapping twice gives the same result', () => {
+    const once = colordx('oklch(0.5 0.4 180)').mapSrgb();
+    const twice = once.mapSrgb();
+    expect(twice.toOklchString()).toBe(once.toOklchString());
+    // Once mapped into gamut, the second call should hit the fast path
+    expect(twice).toBe(once);
+  });
+
+  it('chains with output methods to produce in-gamut oklch string', () => {
+    const result = colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString();
+    // Matches the static form — both roads lead to the same oklch
+    expect(result).toBe(Colordx.toGamutSrgb('oklch(0.5 0.4 180)').toOklchString());
+  });
+
+  it('does not throw on invalid input', () => {
+    const invalid = colordx('not-a-color');
+    expect(() => invalid.mapSrgb()).not.toThrow();
+    expect(invalid.mapSrgb().isValid()).toBe(false);
+  });
+});
+
+describe('.clampSrgb() instance method', () => {
+  it('produces naive-clip output matching .toRgbString() on out-of-gamut colors', () => {
+    const input = 'oklch(0.5 0.4 180)';
+    // The whole point of clampSrgb is "matches what .toRgbString() would emit"
+    expect(colordx(input).clampSrgb().toRgbString()).toBe(colordx(input).toRgbString());
+    expect(colordx(input).clampSrgb().toHex()).toBe(colordx(input).toHex());
+  });
+
+  it('produces an oklch string representing the clipped color (hue shifts)', () => {
+    const result = colordx('oklch(0.5 0.4 180)').clampSrgb().toOklch();
+    // Naive clip drifts lightness upward and hue off 180°
+    expect(result.l).toBeGreaterThan(0.5);
+    expect(Math.abs(result.h - 180)).toBeGreaterThan(10);
+  });
+
+  it('returns the same instance when already in gamut (reference equality)', () => {
+    const red = colordx('#ff0000');
+    expect(red.clampSrgb()).toBe(red);
+
+    const mid = colordx('rgb(100, 150, 200)');
+    expect(mid.clampSrgb()).toBe(mid);
+
+    const inGamutOklch = colordx('oklch(0.5 0.1 30)');
+    expect(inGamutOklch.clampSrgb()).toBe(inGamutOklch);
+  });
+
+  it('preserves alpha when clamping', () => {
+    expect(colordx('oklch(0.5 0.4 180 / 0.5)').clampSrgb().alpha()).toBe(0.5);
+    expect(colordx('oklch(0.5 0.4 180 / 0)').clampSrgb().alpha()).toBe(0);
+    expect(colordx('oklch(0.5 0.4 180)').clampSrgb().alpha()).toBe(1);
+  });
+
+  it('is idempotent — clamping a clamped color is a no-op', () => {
+    const once = colordx('oklch(0.5 0.4 180)').clampSrgb();
+    expect(once.clampSrgb()).toBe(once);
+  });
+
+  it('chained with .mapSrgb() is a no-op — clamped color is already in gamut', () => {
+    const clamped = colordx('oklch(0.5 0.4 180)').clampSrgb();
+    expect(clamped.mapSrgb()).toBe(clamped);
+  });
+
+  it('does not throw on invalid input', () => {
+    const invalid = colordx('not-a-color');
+    expect(() => invalid.clampSrgb()).not.toThrow();
+    expect(invalid.clampSrgb().isValid()).toBe(false);
+  });
+});
+
+describe('gamut strategies — the three distinct outputs', () => {
+  // This codifies the exact scenario from the bug report / user confusion:
+  // for the same out-of-gamut input, each strategy produces a different in-gamut result.
+  const input = 'oklch(0.5 0.4 180)';
+
+  it('preserve → original oklch, naive-clipped rgb on output', () => {
+    expect(colordx(input).toOklchString()).toBe('oklch(0.5 0.4 180)');
+    expect(colordx(input).toRgbString()).toBe('rgb(0, 152, 108)');
+  });
+
+  it('map → hue-preserving chroma reduction (CSS Color 4)', () => {
+    const mapped = colordx(input).mapSrgb();
+    expect(mapped.toOklchString()).toBe('oklch(0.5091 0.0938 177.85)');
+    expect(mapped.toRgbString()).toBe('rgb(0, 119, 102)');
+  });
+
+  it('clamp → browser-matching naive clip, oklch drifts', () => {
+    const clamped = colordx(input).clampSrgb();
+    expect(clamped.toOklchString()).toBe('oklch(0.6012 0.1276 164.3)');
+    expect(clamped.toRgbString()).toBe('rgb(0, 152, 108)');
+  });
+
+  it('clamp and preserve render identically (both emit rgb(0, 152, 108))', () => {
+    expect(colordx(input).toRgbString()).toBe(colordx(input).clampSrgb().toRgbString());
   });
 });
 

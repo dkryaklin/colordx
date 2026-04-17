@@ -215,15 +215,18 @@ color.toOklab()         // { l: 0.68, a: 0.149, b: 0.118 }</code></pre>
           <div class="gs-step">
             <div class="gs-step-label">Gamut checking &amp; mapping</div>
             <div class="code-block">
-              <pre><code>import { Colordx, inGamutSrgb } from '@colordx/core';
+              <pre><code>import { colordx, inGamutSrgb } from '@colordx/core';
 
 inGamutSrgb('oklch(0.5 0.4 180)')   // false — out of sRGB
 inGamutSrgb('oklch(0.5 0.1 180)')   // true  — in sRGB
 
-// Map out-of-gamut color to nearest sRGB boundary
-const mapped = Colordx.toGamutSrgb('oklch(0.5 0.4 180)');
-mapped.toHex()  // '#00866e'</code></pre>
-              <button class="code-copy" data-code="import { Colordx, inGamutSrgb } from '@colordx/core';">⎘</button>
+// .toRgbString() / .toHex() already naive-clip to match the browser:
+colordx('oklch(0.5 0.4 180)').toRgbString()         // 'rgb(0, 152, 108)'
+
+// .mapSrgb() — CSS Color 4 gamut mapping (preserves lightness + hue)
+colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString()
+// → 'oklch(0.5091 0.0938 177.85)'</code></pre>
+              <button class="code-copy" data-code="import { colordx, inGamutSrgb } from '@colordx/core';">⎘</button>
             </div>
           </div>
         </div>
@@ -306,9 +309,12 @@ mapped.toHex()  // '#00866e'</code></pre>
           <div class="faq-item">
             <h3 class="faq-q">Does colordx support gamut mapping?</h3>
             <p class="faq-a">
-              Yes. colordx exports <code>inGamutSrgb()</code> to check whether a color is within the sRGB gamut, and
-              <code>Colordx.toGamutSrgb()</code> to map an out-of-gamut color to the nearest sRGB boundary via chroma-reduction
-              binary search — the approach recommended by the CSS Color 4 specification.
+              Yes. <code>inGamutSrgb()</code> checks whether a color is within the sRGB gamut. For conversion,
+              <code>.toRgbString()</code> and <code>.toHex()</code> already naive-clip to match browser rendering — no
+              explicit gamut mapping needed for the common case. When you want hue stability,
+              <code>.mapSrgb()</code> applies the CSS Color 4 chroma-reduction algorithm (preserves lightness and hue,
+              reduces chroma). <code>.clampSrgb()</code> returns a Colordx at the naive-clip boundary for when you need
+              the browser's clipped color expressed as oklch.
             </p>
           </div>
           <div class="faq-item">

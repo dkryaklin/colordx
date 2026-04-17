@@ -1,11 +1,11 @@
 import { rgbToHex } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { oklabToLinear, rgbToOklab } from './colorModels/oklab.js';
+import { linearSrgbToOklab, oklabToLinear, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, round } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
-import { srgbFromLinear } from './transfer.js';
+import { srgbFromLinear, srgbToLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
@@ -200,6 +200,40 @@ export class Colordx {
 
   toString(): string {
     return this.toHex();
+  }
+
+  /**
+   * Clips this color into the sRGB gamut by clamping out-of-range channels to [0, 255].
+   * Matches the naive-clip strategy browsers use when rendering out-of-gamut `oklch()` / `oklab()`.
+   * Hue and lightness may shift noticeably for colors far outside sRGB.
+   * Returns `this` when already in gamut.
+   */
+  clampSrgb(): Colordx {
+    const { r, g, b, alpha } = this._rgb;
+    if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
+    return Colordx._make({
+      r: clamp(r, 0, 255),
+      g: clamp(g, 0, 255),
+      b: clamp(b, 0, 255),
+      alpha,
+    });
+  }
+
+  /**
+   * Maps this color into the sRGB gamut using the CSS Color 4 gamut mapping algorithm
+   * (chroma-reduction binary search). Preserves lightness and hue; sacrifices chroma.
+   * Useful when hue stability matters — design tokens, palettes, color pickers.
+   * Returns `this` when already in gamut.
+   */
+  mapSrgb(): Colordx {
+    const { r, g, b, alpha } = this._rgb;
+    if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
+    const [lRaw, a, bv] = linearSrgbToOklab(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+    // The gamma-encoded round-trip drifts L by ~1e-9 at boundaries; snap so that inputs with
+    // exact L=0 or L=1 hit the same white/black shortcut the static gamut map uses.
+    const l = lRaw > 1 - 1e-7 ? 1 : lRaw < 1e-7 ? 0 : lRaw;
+    const mapped = toGamutSrgbRaw({ l, a, b: bv, alpha });
+    return mapped !== null ? Colordx._makeFromOklab(mapped) : this;
   }
 
   /**

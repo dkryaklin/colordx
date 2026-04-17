@@ -27,16 +27,27 @@ Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwa
 npm install @colordx/core
 ```
 
-## Usage
+## Quick start
 
 ```ts
 import { colordx } from '@colordx/core';
 
-colordx('#ff0000').toOklch(); // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
-colordx('#ff0000').toOklchString(); // 'oklch(0.628 0.2577 29.23)'
-colordx('#ff0000').lighten(0.1).toHex(); // '#ff3333'
-colordx('oklch(0.5 0.2 240)').toHex(); // '#0069c7'
+// Parse any CSS color string or color object, then chain conversions:
+colordx('#ff0000').toRgbString();     // 'rgb(255, 0, 0)'
+colordx('#ff0000').toHex();           // '#ff0000'
+colordx('#ff0000').toOklch();         // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
+colordx('#ff0000').toOklchString();   // 'oklch(0.628 0.2577 29.23)'
+
+// Works from any input format — hex, rgb(), hsl(), oklch(), oklab(), plain objects:
+colordx('oklch(0.5 0.2 240)').toHex();                     // '#0069c7'
+colordx({ r: 255, g: 0, b: 0, alpha: 1 }).toHslString();   // 'hsl(0, 100%, 50%)'
+
+// Chain manipulations — each call returns a new immutable Colordx:
+colordx('#ff0000').lighten(0.1).saturate(0.2).toHex();
+colordx('#3d7a9f').rotate(30).darken(0.1).toRgbString();
 ```
+
+The `colordx()` factory is all you need for day-to-day work. For out-of-gamut `oklch()` / `oklab()` inputs, `.toHex()` / `.toRgbString()` clip in linear sRGB — the same strategy browsers use when rendering `background: oklch(...)` — so your output matches what users see on screen. If you need stricter hue/lightness preservation for authoring workflows, see [Gamut](#gamut).
 
 ## API
 
@@ -178,7 +189,32 @@ linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (B
 
 ### Gamut
 
-OKLCH and OKLab can describe colors outside the sRGB gamut. colordx includes standalone utilities for checking and mapping colors into sRGB (core) and Display-P3 / Rec.2020 (plugins):
+`oklch()` and `oklab()` can describe colors outside the sRGB gamut. **For everyday conversion, `.toRgbString()` / `.toHex()` already do the right thing** — they naive-clip in linear sRGB to match browser rendering, so your output matches what `background: oklch(...)` displays on screen. You only need the methods below when that default isn't what you want.
+
+Internally, out-of-gamut `oklch()` / `oklab()` inputs are stored **unclamped**, so the authored color is preserved losslessly. That means `.toOklchString()` round-trips the original, and you can choose when (and how) to fold the color into sRGB:
+
+```ts
+const input = 'oklch(0.5 0.4 180)';  // out of sRGB gamut
+
+// 1. Preserve — keep the authored oklch as-is, clip only at sRGB output time
+colordx(input).toOklchString();          // 'oklch(0.5 0.4 180)'
+colordx(input).toRgbString();            // 'rgb(0, 152, 108)' — naive clip, matches browser
+
+// 2. Map — CSS Color 4 gamut mapping (preserves lightness + hue, reduces chroma)
+colordx(input).mapSrgb().toOklchString();   // 'oklch(0.5091 0.0938 177.85)'
+colordx(input).mapSrgb().toRgbString();     // 'rgb(0, 119, 102)'
+
+// 3. Clamp — naive-clip into sRGB as a Colordx (matches browser, but hue drifts)
+colordx(input).clampSrgb().toOklchString(); // 'oklch(0.6012 0.1276 164.3)'
+colordx(input).clampSrgb().toRgbString();   // 'rgb(0, 152, 108)' — same bytes as (1)
+```
+
+- **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Preserves lightness and hue; sacrifices chroma. Use when hue stability matters — design tokens, palettes, programmatic harmonies, OKLCH pickers.
+- **`.clampSrgb()`** — naive clip in linear sRGB. Hue and lightness may drift. Use when you want a `Colordx` whose `.toOklchString()` describes what browsers actually render.
+
+A static form is also available for one-shot conversion without wrapping first — `Colordx.toGamutSrgb(input)` is equivalent to `colordx(input).mapSrgb()`.
+
+colordx also includes standalone utilities for checking and mapping into wider gamuts (Display-P3 / Rec.2020, via plugins):
 
 ```ts
 import { Colordx, inGamutSrgb } from '@colordx/core';
