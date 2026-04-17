@@ -388,6 +388,7 @@ __metadata:
     "@anthropic-ai/sdk": "npm:^0.80.0"
     "@changesets/changelog-github": "npm:^0.6.0"
     "@changesets/cli": "npm:^2.30.0"
+    "@texel/color": "npm:^1.1.11"
     "@trivago/prettier-plugin-sort-imports": "npm:^6.0.2"
     "@types/chroma-js": "npm:^3"
     "@types/culori": "npm:^4.0.1"
@@ -1215,6 +1216,13 @@ __metadata:
   version: 1.1.0
   resolution: "@standard-schema/spec@npm:1.1.0"
   checksum: 10c0/d90f55acde4b2deb983529c87e8025fa693de1a5e8b49ecc6eb84d1fd96328add0e03d7d551442156c7432fd78165b2c26ff561b970a9a881f046abb78d6a526
+  languageName: node
+  linkType: hard
+
+"@texel/color@npm:^1.1.11":
+  version: 1.1.11
+  resolution: "@texel/color@npm:1.1.11"
+  checksum: 10c0/f2a0976d5f9da000d76eafbb154961462897280d16984fda4d7009b230b224ad79d606b747d23099ad50e9dc07321e0d9f2dd51a1114a1cf03621c8253dc2239
   languageName: node
   linkType: hard
 

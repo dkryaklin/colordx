@@ -98,6 +98,7 @@
     "@anthropic-ai/sdk": "^0.80.0",
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.30.0",
+    "@texel/color": "^1.1.11",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/chroma-js": "^3",
     "@types/culori": "^4.0.1",

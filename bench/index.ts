@@ -15,6 +15,16 @@ import chroma from 'chroma-js';
 // @ts-ignore
 import ColorLib from 'color';
 import * as culori from 'culori';
+import {
+  DisplayP3Linear,
+  OKLCH as TexelOKLCH,
+  Rec2020Linear,
+  convert as texelConvert,
+  isRGBInGamut as texelIsRGBInGamut,
+  parse as texelParse,
+  serialize as texelSerialize,
+  sRGB as TexelSRGB,
+} from '@texel/color';
 
 
 group('Parse HEX → toHsl', () => {
@@ -44,6 +54,11 @@ group('Mix two colors', () => {
   bench('chroma-js', () => chroma.mix('#ff0000', '#0000ff', 0.5).hex());
   bench('color', () => ColorLib('#ff0000').mix(ColorLib('#0000ff'), 0.5).hex());
   bench('culori', () => culori.formatHex(culori.interpolate(['#ff0000', '#0000ff'])(0.5)));
+  bench('@texel/color', () => {
+    const a = texelParse('#ff0000', TexelSRGB);
+    const b = texelParse('#0000ff', TexelSRGB);
+    return texelSerialize([(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, (a[2] + b[2]) * 0.5], TexelSRGB);
+  });
 });
 
 
@@ -52,6 +67,7 @@ group('Parse HEX → toOklch', () => {
   bench('chroma-js', () => chroma('#3498db').oklch());
   bench('color', () => ColorLib('#3498db').oklch().object());
   bench('culori', () => culori.oklch(culori.parse('#3498db')));
+  bench('@texel/color', () => texelConvert(texelParse('#3498db', TexelSRGB), TexelSRGB, TexelOKLCH));
 });
 
 
@@ -63,12 +79,18 @@ const WIDE_GAMUT = 'oklch(0.75 0.25 180)';
 group('inGamutP3', () => {
   bench('colordx', () => inGamutP3(WIDE_GAMUT));
   bench('culori', () => culoriInGamutP3(culori.parse(WIDE_GAMUT)));
+  bench('@texel/color', () =>
+    texelIsRGBInGamut(texelConvert(texelParse(WIDE_GAMUT, TexelOKLCH), TexelOKLCH, DisplayP3Linear))
+  );
 });
 
 
 group('inGamutRec2020', () => {
   bench('colordx', () => inGamutRec2020(WIDE_GAMUT));
   bench('culori', () => culoriInGamutRec2020(culori.parse(WIDE_GAMUT)));
+  bench('@texel/color', () =>
+    texelIsRGBInGamut(texelConvert(texelParse(WIDE_GAMUT, TexelOKLCH), TexelOKLCH, Rec2020Linear))
+  );
 });
 
 

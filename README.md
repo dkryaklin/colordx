@@ -12,14 +12,14 @@ A modern color manipulation library built for the CSS Color 4 era. The successor
 
 Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwashere/mitata). Operations per second — higher is better.
 
-| Benchmark | **colordx** | colord | culori | chroma-js | color | tinycolor2 |
-|---|---|---|---|---|---|---|
-| HEX → toHsl | **25M** | 11M | 6.6M | 3.4M | 2.8M | 2.4M |
-| HEX → lighten → toHex | **15M** | 5.9M | 4.9M | 1.3M | 1.0M | 1.0M |
-| Mix two colors | **7.7M** | 1.3M | 1.1M | 1.2M | 546K | 1.1M |
-| HEX → toOklch | **5.4M** | — | 3.4M | 1.0M | 2.0M | — |
-| inGamutP3 | **3.7M** | — | 1.1M | — | — | — |
-| inGamutRec2020 | **4.6M** | — | 1.1M | — | — | — |
+| Benchmark | **colordx** | @texel/color | colord | culori | chroma-js | color | tinycolor2 |
+|---|---|---|---|---|---|---|---|
+| HEX → toHsl | **13M** | — | 5.2M | 3.4M | 2.4M | 1.7M | 1.7M |
+| HEX → lighten → toHex | **9.9M** | — | 3.8M | 3.1M | 780K | 650K | 650K |
+| Mix two colors | **6.3M** | 4.8M | 1.4M | 920K | 1.0M | 460K | 1.1M |
+| HEX → toOklch | **5.6M** | 4.2M | — | 3.3M | 1.0M | 1.8M | — |
+| inGamutP3 | **4.4M** | 3.0M | — | 960K | — | — | — |
+| inGamutRec2020 | **4.1M** | 3.0M | — | 1.0M | — | — | — |
 
 ## Install
 
