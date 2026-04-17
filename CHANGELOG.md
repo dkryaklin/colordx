@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.1.0
+
+### Minor Changes
+
+- 80011b8: Add `.clampSrgb()` and `.mapSrgb()` instance methods for gamut mapping; expand README with gamut strategy guide and updated benchmark table including @texel/color.
+
 ## 5.0.3
 
 ### Patch Changes
