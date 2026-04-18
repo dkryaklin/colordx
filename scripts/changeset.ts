@@ -5,17 +5,20 @@ import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const PACKAGE_NAME = '@colordx/core';
-const BASE_BRANCH = process.env.BASE_BRANCH ?? 'main';
+const VALID_BUMPS = new Set(['major', 'minor', 'patch']);
 
-// SHA refs (direct push) don't need origin/ prefix; branch names do
-const baseRef = /^[0-9a-f]{7,40}$/.test(BASE_BRANCH) ? BASE_BRANCH : `origin/${BASE_BRANCH}`;
+// Caller decides the bump; AI only writes the summary.
+const BUMP = process.env.BUMP;
+// Ref to diff against (last release tag, branch name, or SHA).
+const BASE_REF = process.env.BASE_REF ?? process.env.BASE_BRANCH ?? 'main';
 
-const VALID_BUMPS = new Set(['major', 'minor', 'patch', 'none']);
+// Paths that actually ship to npm or affect the built artifact.
+const PUBLISHABLE_PATHS = ['src', 'package.json', 'README.md', 'tsup.config.ts'];
 
 function getGitDiff(): string {
   try {
     return execSync(
-      `git diff ${baseRef}...HEAD -- ':(exclude)*.lock' ':(exclude).yarn'`,
+      `git diff ${BASE_REF}...HEAD -- ${PUBLISHABLE_PATHS.join(' ')}`,
       { encoding: 'utf8' },
     );
   } catch {
@@ -25,7 +28,7 @@ function getGitDiff(): string {
 
 function getCommits(): string {
   try {
-    return execSync(`git log ${baseRef}...HEAD --pretty=format:"%s"`, { encoding: 'utf8' });
+    return execSync(`git log ${BASE_REF}...HEAD --pretty=format:"%s"`, { encoding: 'utf8' });
   } catch {
     return '';
   }
@@ -47,6 +50,10 @@ function randomName(): string {
 }
 
 async function main() {
+  if (!BUMP || !VALID_BUMPS.has(BUMP)) {
+    throw new Error(`BUMP env must be one of: ${[...VALID_BUMPS].join(', ')} (got "${BUMP}")`);
+  }
+
   if (hasExistingChangeset()) {
     console.log('Changeset already exists, skipping.');
     return;
@@ -64,52 +71,38 @@ async function main() {
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    max_tokens: 512,
     messages: [
       {
         role: 'user',
-        content: `Analyze these changes to the ${PACKAGE_NAME} npm package and produce a changelog entry.
+        content: `Write a single-line changelog entry for this release of ${PACKAGE_NAME}.
 
-Rules for bump type:
-- "major" — breaking changes to the public API
-- "minor" — new features, backwards compatible
-- "patch" — anything else visible to users: bug fixes, docs updates (README), performance improvements, new examples
-- "none" — truly invisible changes only: CI config, internal scripts, test-only changes, tooling
+Rules:
+- Present tense, imperative ("Add X", "Fix Y", not "Added" / "Fixes")
+- Be specific about user-visible changes (e.g. "Add support for oklch none keyword in string parsing" not "Update source files")
+- Ignore internal refactors unless they change behavior
+- One line, no markdown, no quotes, no trailing period
 
-When in doubt between "none" and "patch", choose "patch". A README update ships to npm and is visible to users.
-
-For the summary, write a clear human-readable changelog line. Be specific about what changed (e.g. "Add support for oklch none keyword in string parsing" not "Update source files"). Use present tense.
-
-Commit messages:
+Commit messages since last release:
 ${commits}
 
-Git diff (lock files excluded):
+Git diff of publishable files (${PUBLISHABLE_PATHS.join(', ')}):
 ${diff}
 
-Respond with JSON only, no markdown:
-{"bump": "major|minor|patch|none", "summary": "..."}`,
+Respond with the changelog line only.`,
       },
     ],
   });
 
-  const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
-  const { bump, summary } = JSON.parse(text) as { bump: string; summary: string };
+  const summary = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+  if (!summary) throw new Error('AI returned empty summary');
 
-  if (!VALID_BUMPS.has(bump)) {
-    throw new Error(`Invalid bump value from AI: "${bump}"`);
-  }
-
-  if (bump === 'none') {
-    console.log('No release needed for this PR.');
-    return;
-  }
-
-  const content = `---\n"${PACKAGE_NAME}": ${bump}\n---\n\n${summary}\n`;
+  const content = `---\n"${PACKAGE_NAME}": ${BUMP}\n---\n\n${summary}\n`;
   const filename = join(process.cwd(), '.changeset', `${randomName()}.md`);
 
   writeFileSync(filename, content);
   console.log(`Created: ${filename}`);
-  console.log(`Bump: ${bump}`);
+  console.log(`Bump: ${BUMP}`);
   console.log(`Summary: ${summary}`);
 }
 

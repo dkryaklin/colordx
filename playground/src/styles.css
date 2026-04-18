@@ -203,7 +203,7 @@ body.bg-anim {
 
 .row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 6px;
 }
 
@@ -249,13 +249,15 @@ body.bg-anim {
   background: var(--surface2);
   border: 1.5px solid var(--border);
   border-radius: var(--r-sm);
-  padding: 6px 9px;
+  padding: 0 10px;
   cursor: pointer;
   color: var(--t2);
-  font-size: 14px;
   line-height: 1;
   flex-shrink: 0;
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ibtn:hover {
@@ -269,9 +271,9 @@ body.bg-anim {
   background: #f0faf4;
 }
 
-.hint {
+.color-error {
   font-size: 10.5px;
-  color: var(--t2);
+  color: var(--red);
   padding: 0 2px;
 }
 
@@ -452,9 +454,15 @@ hr.div {
 
 .sw {
   flex: 1;
+  min-height: 52px;
   position: relative;
   border-radius: 10px;
   overflow: hidden;
+  transition: min-height 0.2s ease;
+}
+
+.sw.sw--out {
+  min-height: 64px;
 }
 
 .sw-bg {
@@ -481,6 +489,17 @@ hr.div {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.gamut-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  transform: translateX(-50%);
+  z-index: 1;
 }
 
 input[type='range'].rng {

@@ -1,66 +1,25 @@
-name: Changeset & Release
+name: Release
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize]
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  auto-changeset:
-    name: Generate Changeset
-    runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Cache yarn global cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.yarn/berry/cache
-          key: yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: yarn-
-
-      - run: yarn install --immutable
-
-      - name: Generate changeset
-        run: yarn tsx scripts/changeset.ts
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BASE_BRANCH: ${{ github.base_ref || github.event.before }}
-
-      - name: Commit changeset
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .changeset/
-          git diff --staged --quiet || git commit -m "chore: add auto-generated changeset"
-          git push
-
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [auto-changeset]
-    # always() lets this run even when auto-changeset is skipped (bot push)
-    if: always() && github.event_name == 'push'
     permissions:
       contents: write
       id-token: write
@@ -90,24 +49,32 @@ jobs:
           restore-keys: yarn-
 
       - run: yarn install --immutable
-
       - run: yarn build
       - run: yarn publint
 
-      - name: Check for changesets
-        id: check
+      - name: Find last release ref
+        id: last
         run: |
-          COUNT=$(find .changeset -name '*.md' ! -name 'README.md' | wc -l)
-          echo "has_changesets=$([ $COUNT -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          TAG=$(git describe --tags --abbrev=0 --match '@colordx/core@*' 2>/dev/null || echo "")
+          if [ -z "$TAG" ]; then
+            TAG=$(git rev-list --max-parents=0 HEAD | head -1)
+          fi
+          echo "ref=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Diffing against: $TAG"
+
+      - name: Generate changeset via AI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BUMP: ${{ inputs.bump }}
+          BASE_REF: ${{ steps.last.outputs.ref }}
+        run: yarn tsx scripts/changeset.ts
 
       - name: Version packages
-        if: steps.check.outputs.has_changesets == 'true'
         run: yarn changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and push version bump
-        if: steps.check.outputs.has_changesets == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -115,11 +82,9 @@ jobs:
           git diff --staged --quiet || (git commit -m "chore: release" && git push)
 
       - name: Publish to npm
-        if: steps.check.outputs.has_changesets == 'true'
         run: yarn changeset publish --provenance
 
-      - name: Create GitHub releases
-        if: steps.check.outputs.has_changesets == 'true'
+      - name: Create GitHub release
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="@colordx/core@${VERSION}"

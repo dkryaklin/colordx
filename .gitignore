@@ -1,5 +1,5 @@
 node_modules/
 dist/
-dist-playground/
 coverage/
 *.tsbuildinfo
+**/.yarn/install-state.gz

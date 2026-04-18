@@ -71,8 +71,6 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "playground": "npx serve . -p 3000 --config serve.json",
-    "deploy:playground": "yarn build && tsx scripts/deploy-playground.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
