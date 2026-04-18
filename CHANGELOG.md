@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.2.0
+
+### Minor Changes
+
+- Add zero-allocation \*Into variants for all channel conversion functions (oklchToLinearInto, oklchToRgbChannelsInto, oklchToP3ChannelsInto, oklchToRec2020ChannelsInto, and related primitives) to eliminate GC pressure in hot pixel loops
+
 ## 5.1.1
 
 ### Patch Changes
