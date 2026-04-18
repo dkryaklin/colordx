@@ -1,17 +1,17 @@
 @property --gh1 {
   syntax: '<number>';
   inherits: false;
-  initial-value: 29;
+  initial-value: 30;
 }
 @property --gh2 {
   syntax: '<number>';
   inherits: false;
-  initial-value: 179;
+  initial-value: 85;
 }
 @property --gh3 {
   syntax: '<number>';
   inherits: false;
-  initial-value: 239;
+  initial-value: 290;
 }
 
 *,
@@ -40,11 +40,11 @@
 
 body {
   font-family: var(--sans);
-  background-color: #0d0c0a;
+  background-color: oklch(0.22 0.09 290);
   background-image:
-    radial-gradient(ellipse 70% 50% at 8% 20%, oklch(0.44 0.22 var(--gh1) / 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 40% at 92% 12%, oklch(0.47 0.22 var(--gh2) / 0.48) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 40% at 42% 72%, oklch(0.5 0.18 var(--gh3) / 0.32) 0%, transparent 48%);
+    radial-gradient(ellipse 90% 65% at 10% 18%, oklch(0.72 0.24 var(--gh1) / 0.85) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 55% at 92% 10%, oklch(0.78 0.2 var(--gh2) / 0.8) 0%, transparent 55%),
+    radial-gradient(ellipse 75% 60% at 50% 85%, oklch(0.62 0.24 var(--gh3) / 0.78) 0%, transparent 55%);
   background-attachment: fixed;
   color: var(--t1);
   min-height: 100vh;
@@ -83,6 +83,19 @@ body {
 
 .hero-link:hover {
   color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-heading {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.hero-logo {
+  width: 96px;
+  height: 96px;
+  display: block;
+  filter: drop-shadow(0 8px 32px rgba(118, 75, 229, 0.25));
 }
 
 .hero-title {
@@ -1100,6 +1113,15 @@ input[type='range'].rng::-moz-range-thumb {
 
   .hero-inner {
     gap: 14px;
+  }
+
+  .hero-heading {
+    gap: 14px;
+  }
+
+  .hero-logo {
+    width: 56px;
+    height: 56px;
   }
 
   .hero-title {

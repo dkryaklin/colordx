@@ -23,16 +23,16 @@ function CodeCopyButton({ code }) {
 }
 
 export default function App() {
-  const [S, setS] = useState({ l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 });
+  const [S, setS] = useState({ l: 0.7, c: 0.1, h: 220, alpha: 1 });
 
   const bgH1 = useRef(S.h);
-  const bgH2 = useRef((S.h + 150) % 360);
-  const bgH3 = useRef((S.h + 210) % 360);
+  const bgH2 = useRef((S.h + 55) % 360);
+  const bgH3 = useRef((S.h + 260) % 360);
 
   useEffect(() => {
     bgH1.current = shortestArc(bgH1.current, S.h);
-    bgH2.current = shortestArc(bgH2.current, (S.h + 150) % 360);
-    bgH3.current = shortestArc(bgH3.current, (S.h + 210) % 360);
+    bgH2.current = shortestArc(bgH2.current, (S.h + 55) % 360);
+    bgH3.current = shortestArc(bgH3.current, (S.h + 260) % 360);
 
     document.body.style.setProperty('--gh1', f(bgH1.current, 1));
     document.body.style.setProperty('--gh2', f(bgH2.current, 1));
@@ -44,8 +44,8 @@ export default function App() {
     setS(next);
 
     bgH1.current = shortestArc(bgH1.current, next.h);
-    bgH2.current = shortestArc(bgH2.current, (next.h + 150) % 360);
-    bgH3.current = shortestArc(bgH3.current, (next.h + 210) % 360);
+    bgH2.current = shortestArc(bgH2.current, (next.h + 55) % 360);
+    bgH3.current = shortestArc(bgH3.current, (next.h + 260) % 360);
 
     document.body.classList.add('bg-anim');
     document.body.style.setProperty('--gh1', f(bgH1.current, 1));
@@ -63,7 +63,10 @@ export default function App() {
     <>
       <section className="hero">
         <div className="hero-inner">
-          <h1 className="hero-title">colordx</h1>
+          <div className="hero-heading">
+            <img className="hero-logo" src="/favicon.svg" alt="" width="96" height="96" />
+            <h1 className="hero-title">colordx</h1>
+          </div>
           <div className="hero-links">
             <a className="hero-link" href="https://www.npmjs.com/package/@colordx/core" target="_blank" rel="noopener noreferrer">npm ↗</a>
             <a className="hero-link" href="https://github.com/dkryaklin/colordx" target="_blank" rel="noopener noreferrer">GitHub ↗</a>

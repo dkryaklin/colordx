@@ -1,11 +1,15 @@
+<p align="center">
+  <img src="assets/logo.svg" width="128" height="128" alt="colordx" />
+</p>
+
 # @colordx/core
 
-[![npm version](https://img.shields.io/npm/v/@colordx/core)](https://www.npmjs.com/package/@colordx/core)
-[![bundle size](https://img.shields.io/bundlejs/size/@colordx/core)](https://bundlejs.com/?q=@colordx/core)
-[![used by cssnano](https://img.shields.io/badge/used_by-cssnano-1f6feb)](https://github.com/cssnano/cssnano)
-[![npm downloads](https://img.shields.io/npm/dw/@colordx/core)](https://www.npmjs.com/package/@colordx/core)
-[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://github.com/dkryaklin/colordx/blob/main/package.json)
-[![CI](https://img.shields.io/github/actions/workflow/status/dkryaklin/colordx/ci.yml?branch=main&label=ci)](https://github.com/dkryaklin/colordx/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@colordx/core?labelColor=764be5&color=ffc200)](https://www.npmjs.com/package/@colordx/core)
+[![used by cssnano](https://img.shields.io/badge/used_by-cssnano-ffc200?labelColor=764be5)](https://github.com/cssnano/cssnano)
+[![bundle size](https://img.shields.io/bundlejs/size/@colordx/core?labelColor=764be5&color=ffc200)](https://bundlejs.com/?q=@colordx/core)
+[![npm downloads](https://img.shields.io/npm/dw/@colordx/core?labelColor=764be5&color=ffc200)](https://www.npmjs.com/package/@colordx/core)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-ffc200?labelColor=764be5)](https://github.com/dkryaklin/colordx/blob/main/package.json)
+[![CI](https://img.shields.io/github/actions/workflow/status/dkryaklin/colordx/ci.yml?branch=main&label=ci&labelColor=764be5&color=ffc200)](https://github.com/dkryaklin/colordx/actions/workflows/ci.yml)
 
 **[Try it on colordx.dev](https://colordx.dev)**
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="103.07204737232328" x2="0" y2="448.92795262767675" gradientUnits="userSpaceOnUse">
+      <stop offset="0.00%" stop-color="#ff806b"/><stop offset="3.45%" stop-color="#ff8462"/><stop offset="6.90%" stop-color="#ff885a"/><stop offset="10.34%" stop-color="#ff8c52"/><stop offset="13.79%" stop-color="#ff9049"/><stop offset="17.24%" stop-color="#ff9440"/><stop offset="20.69%" stop-color="#ff9936"/><stop offset="24.14%" stop-color="#ff9e2b"/><stop offset="27.59%" stop-color="#ffa21f"/><stop offset="31.03%" stop-color="#ffa70f"/><stop offset="34.48%" stop-color="#ffac00"/><stop offset="37.93%" stop-color="#ffb100"/><stop offset="41.38%" stop-color="#ffb600"/><stop offset="44.83%" stop-color="#ffbb00"/><stop offset="48.28%" stop-color="#ffc000"/><stop offset="51.72%" stop-color="#ffba00"/><stop offset="55.17%" stop-color="#ffaa00"/><stop offset="58.62%" stop-color="#ff9913"/><stop offset="62.07%" stop-color="#ff8a36"/><stop offset="65.52%" stop-color="#ff7b4f"/><stop offset="68.97%" stop-color="#ff6e65"/><stop offset="72.41%" stop-color="#ff6379"/><stop offset="75.86%" stop-color="#fc5a8c"/><stop offset="79.31%" stop-color="#ef539f"/><stop offset="82.76%" stop-color="#e04fb0"/><stop offset="86.21%" stop-color="#cf4cbf"/><stop offset="89.66%" stop-color="#bb4bcd"/><stop offset="93.10%" stop-color="#a64ad8"/><stop offset="96.55%" stop-color="#8f4ae1"/><stop offset="100.00%" stop-color="#764be5"/>
+    </linearGradient>
+  </defs>
+  <path d="M 256 103.07204737232328 L 56.31999999999999 448.92795262767675 L 455.68 448.92795262767675 Z"
+        fill="url(#g)"
+        stroke="url(#g)" stroke-width="20" stroke-linejoin="round"/>
+  <text x="256" y="333.64265087589223" text-anchor="middle" dominant-baseline="central"
+        font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-weight="800" font-size="130" fill="white" letter-spacing="-4">DX</text>
+</svg>
