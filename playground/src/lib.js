@@ -10,4 +10,9 @@ import p3Plugin, { oklchToP3Channels } from '@colordx/core/plugins/p3';
 
 extend([a11y, harmoniesPlugin, hsvPlugin, hwbPlugin, labPlugin, lchPlugin, mixPlugin, p3Plugin]);
 
+// ── Export section ──
+
+globalThis.Colordx = Colordx;
+globalThis.colordx = colordx;
+
 export { Colordx, colordx, inGamutSrgb, oklchToLinear, oklchToP3Channels };
