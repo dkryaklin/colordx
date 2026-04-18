@@ -25,16 +25,46 @@ export const rgbToXyz = ({ r, g, b, alpha }: RgbColor): XyzColor => {
   };
 };
 
+// Bradford D50→D65 and XYZ(D65)→linear sRGB matrices (CSS Color 4).
+// Shared between the allocating and *Into variants to keep coefficients in one place.
+const B_XR = 0.955473421488075,
+  B_XG = -0.02309845494876471,
+  B_XB = 0.06325924320057072;
+const B_YR = -0.0283697093338637,
+  B_YG = 1.0099953980813041,
+  B_YB = 0.021041441191917323;
+const B_ZR = 0.012314014864481998,
+  B_ZG = -0.020507649298898964,
+  B_ZB = 1.330365926242124;
+const X_RX = 0.032409699419045213,
+  X_RY = -0.015373831775700935,
+  X_RZ = -0.0049861076029300327;
+const X_GX = -0.0096924363628087984,
+  X_GY = 0.018759675015077206,
+  X_GZ = 0.00041555057407175612;
+const X_BX = 0.00055630079696993608,
+  X_BY = -0.0020397695888897657,
+  X_BZ = 0.010569715142428786;
+
+/** Zero-allocation sibling of xyzD50ToLinearSrgb — writes [lr, lg, lb] into `out`. */
+export const xyzD50ToLinearSrgbInto = (out: Float64Array | number[], x: number, y: number, z: number): void => {
+  const xd65 = B_XR * x + B_XG * y + B_XB * z;
+  const yd65 = B_YR * x + B_YG * y + B_YB * z;
+  const zd65 = B_ZR * x + B_ZG * y + B_ZB * z;
+  out[0] = X_RX * xd65 + X_RY * yd65 + X_RZ * zd65;
+  out[1] = X_GX * xd65 + X_GY * yd65 + X_GZ * zd65;
+  out[2] = X_BX * xd65 + X_BY * yd65 + X_BZ * zd65;
+};
+
 /** XYZ D50 → linear sRGB (no gamma, no clamping). x/y/z are in 0–100 scale. */
 export const xyzD50ToLinearSrgb = (x: number, y: number, z: number): [number, number, number] => {
-  // D50 → D65 (Bradford inverse, CSS Color 4)
-  const xd65 = 0.955473421488075 * x - 0.02309845494876471 * y + 0.06325924320057072 * z;
-  const yd65 = -0.0283697093338637 * x + 1.0099953980813041 * y + 0.021041441191917323 * z;
-  const zd65 = 0.012314014864481998 * x - 0.020507649298898964 * y + 1.330365926242124 * z;
+  const xd65 = B_XR * x + B_XG * y + B_XB * z;
+  const yd65 = B_YR * x + B_YG * y + B_YB * z;
+  const zd65 = B_ZR * x + B_ZG * y + B_ZB * z;
   return [
-    0.032409699419045213 * xd65 - 0.015373831775700935 * yd65 - 0.0049861076029300327 * zd65,
-    -0.0096924363628087984 * xd65 + 0.018759675015077206 * yd65 + 0.00041555057407175612 * zd65,
-    0.00055630079696993608 * xd65 - 0.0020397695888897657 * yd65 + 0.010569715142428786 * zd65,
+    X_RX * xd65 + X_RY * yd65 + X_RZ * zd65,
+    X_GX * xd65 + X_GY * yd65 + X_GZ * zd65,
+    X_BX * xd65 + X_BY * yd65 + X_BZ * zd65,
   ];
 };
 

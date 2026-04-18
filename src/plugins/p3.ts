@@ -1,4 +1,4 @@
-import { oklchToLinear } from '../channels.js';
+import { oklchToLinear, oklchToLinearInto } from '../channels.js';
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import {
   linearP3ToSrgb,
@@ -7,6 +7,7 @@ import {
   parseP3String,
   rgbToP3,
   srgbLinearToP3Linear,
+  srgbLinearToP3LinearInto,
 } from '../colorModels/p3.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
@@ -38,6 +39,14 @@ export const linearToP3Channels = (lr: number, lg: number, lb: number): [number,
   return [srgbFromLinear(r), srgbFromLinear(g), srgbFromLinear(b)];
 };
 
+/** Zero-allocation sibling of linearToP3Channels — writes [pr, pg, pb] (gamma-encoded, 0–1) into `out`. */
+export const linearToP3ChannelsInto = (out: Float64Array | number[], lr: number, lg: number, lb: number): void => {
+  srgbLinearToP3LinearInto(out, lr, lg, lb);
+  out[0] = srgbFromLinear(out[0]!);
+  out[1] = srgbFromLinear(out[1]!);
+  out[2] = srgbFromLinear(out[2]!);
+};
+
 /**
  * Convert OKLCH to gamma-encoded Display-P3 channels without object allocation.
  * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
@@ -46,6 +55,12 @@ export const linearToP3Channels = (lr: number, lg: number, lb: number): [number,
  */
 export const oklchToP3Channels = (l: number, c: number, h: number): [number, number, number] =>
   linearToP3Channels(...oklchToLinear(l, c, h));
+
+/** Zero-allocation sibling of oklchToP3Channels — writes [pr, pg, pb] into `out`. */
+export const oklchToP3ChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  oklchToLinearInto(out, l, c, h);
+  linearToP3ChannelsInto(out, out[0]!, out[1]!, out[2]!);
+};
 
 /**
  * Returns true if the color is within the Display-P3 gamut.

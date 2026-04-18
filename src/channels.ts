@@ -1,4 +1,4 @@
-import { oklabToLinear } from './colorModels/oklab.js';
+import { oklabToLinear, oklabToLinearInto } from './colorModels/oklab.js';
 import { srgbFromLinear } from './transfer.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -17,6 +17,12 @@ export const oklchToLinear = (l: number, c: number, h: number): [number, number,
   return oklabToLinear(l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
+/** Zero-allocation sibling of oklchToLinear — writes [lr, lg, lb] into `out`. */
+export const oklchToLinearInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  const hRad = h * DEG_TO_RAD;
+  oklabToLinearInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
 /**
  * Convert OKLCH to gamma-encoded sRGB channels without object allocation.
  * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
@@ -25,6 +31,14 @@ export const oklchToLinear = (l: number, c: number, h: number): [number, number,
 export const oklchToRgbChannels = (l: number, c: number, h: number): [number, number, number] => {
   const [r, g, b] = oklchToLinear(l, c, h);
   return [srgbFromLinear(r), srgbFromLinear(g), srgbFromLinear(b)];
+};
+
+/** Zero-allocation sibling of oklchToRgbChannels — writes [r, g, b] (gamma-encoded, 0–1) into `out`. */
+export const oklchToRgbChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  oklchToLinearInto(out, l, c, h);
+  out[0] = srgbFromLinear(out[0]!);
+  out[1] = srgbFromLinear(out[1]!);
+  out[2] = srgbFromLinear(out[2]!);
 };
 
 /**
@@ -47,4 +61,21 @@ export const oklchToLinearAndSrgb = (
     [lr, lg, lb],
     [srgbFromLinear(lr), srgbFromLinear(lg), srgbFromLinear(lb)],
   ];
+};
+
+/**
+ * Zero-allocation sibling of oklchToLinearAndSrgb — writes linear channels into `linOut`
+ * and gamma-encoded sRGB channels into `srgbOut`. The two buffers must be distinct.
+ */
+export const oklchToLinearAndSrgbInto = (
+  linOut: Float64Array | number[],
+  srgbOut: Float64Array | number[],
+  l: number,
+  c: number,
+  h: number
+): void => {
+  oklchToLinearInto(linOut, l, c, h);
+  srgbOut[0] = srgbFromLinear(linOut[0]!);
+  srgbOut[1] = srgbFromLinear(linOut[1]!);
+  srgbOut[2] = srgbFromLinear(linOut[2]!);
 };

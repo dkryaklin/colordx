@@ -1,4 +1,4 @@
-import { oklchToLinear } from '../channels.js';
+import { oklchToLinear, oklchToLinearInto } from '../channels.js';
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import {
   linearRec2020ToSrgb,
@@ -7,6 +7,7 @@ import {
   parseRec2020String,
   rgbToRec2020,
   srgbLinearToRec2020Linear,
+  srgbLinearToRec2020LinearInto,
 } from '../colorModels/rec2020.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
@@ -36,6 +37,14 @@ export const linearToRec2020Channels = (lr: number, lg: number, lb: number): [nu
   return [rec2020FromLinear(r), rec2020FromLinear(g), rec2020FromLinear(b)];
 };
 
+/** Zero-allocation sibling of linearToRec2020Channels — writes [rr, rg, rb] (gamma-encoded, 0–1) into `out`. */
+export const linearToRec2020ChannelsInto = (out: Float64Array | number[], lr: number, lg: number, lb: number): void => {
+  srgbLinearToRec2020LinearInto(out, lr, lg, lb);
+  out[0] = rec2020FromLinear(out[0]!);
+  out[1] = rec2020FromLinear(out[1]!);
+  out[2] = rec2020FromLinear(out[2]!);
+};
+
 /**
  * Convert OKLCH to gamma-encoded Rec.2020 channels without object allocation.
  * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
@@ -44,6 +53,12 @@ export const linearToRec2020Channels = (lr: number, lg: number, lb: number): [nu
  */
 export const oklchToRec2020Channels = (l: number, c: number, h: number): [number, number, number] =>
   linearToRec2020Channels(...oklchToLinear(l, c, h));
+
+/** Zero-allocation sibling of oklchToRec2020Channels — writes [rr, rg, rb] into `out`. */
+export const oklchToRec2020ChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  oklchToLinearInto(out, l, c, h);
+  linearToRec2020ChannelsInto(out, out[0]!, out[1]!, out[2]!);
+};
 
 /**
  * Returns true if the color is within the Rec.2020 gamut.

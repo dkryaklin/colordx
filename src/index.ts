@@ -2,7 +2,14 @@ export { Colordx, colordx, extend, nearest, random } from './colordx.js';
 export type { Plugin } from './colordx.js';
 export { getFormat } from './parse.js';
 export { inGamutSrgb } from './gamut.js';
-export { oklchToLinear, oklchToRgbChannels, oklchToLinearAndSrgb } from './channels.js';
+export {
+  oklchToLinear,
+  oklchToLinearInto,
+  oklchToRgbChannels,
+  oklchToRgbChannelsInto,
+  oklchToLinearAndSrgb,
+  oklchToLinearAndSrgbInto,
+} from './channels.js';
 export type {
   AnyColor,
   ColorFormat,

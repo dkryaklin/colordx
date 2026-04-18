@@ -198,6 +198,60 @@ linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
 linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (BT.2020 gamma)
 ```
 
+**Zero-allocation tight-loop variants (`*Into`).** Every channel function has an `*Into` sibling that writes into a caller-provided `Float64Array | number[]` instead of allocating a new tuple. For per-pixel work (canvas renderers, gradient grids, wide-gamut data viz), this eliminates ~10× the GC pressure and makes interactive redraws smoother. Output is bit-for-bit identical to the allocating version.
+
+```ts
+import {
+  oklchToLinearInto,
+  oklchToRgbChannelsInto,
+  oklchToLinearAndSrgbInto,
+} from '@colordx/core';
+import { linearToP3ChannelsInto, oklchToP3ChannelsInto } from '@colordx/core/plugins/p3';
+import { linearToRec2020ChannelsInto, oklchToRec2020ChannelsInto } from '@colordx/core/plugins/rec2020';
+
+// Pixel-renderer pattern: allocate one buffer, reuse for every pixel.
+const buf = new Float64Array(3);
+for (let y = 0; y < height; y++) {
+  for (let x = 0; x < width; x++) {
+    const [l, c, h] = getOklch(x, y);
+    oklchToP3ChannelsInto(buf, l, c, h);
+    imageData[i++] = Math.floor(buf[0] * 255);
+    imageData[i++] = Math.floor(buf[1] * 255);
+    imageData[i++] = Math.floor(buf[2] * 255);
+    imageData[i++] = 255;
+  }
+}
+```
+
+Full `*Into` surface (15 functions, all tree-shakable — unused ones have zero bundle cost):
+
+```ts
+// from '@colordx/core'
+oklchToLinearInto(out, l, c, h);           // → [lr, lg, lb] linear sRGB
+oklchToRgbChannelsInto(out, l, c, h);      // → [r, g, b] gamma-encoded sRGB
+oklchToLinearAndSrgbInto(linOut, srgbOut, l, c, h); // both at once (distinct buffers)
+
+// from '@colordx/core/plugins/p3'
+linearToP3ChannelsInto(out, lr, lg, lb);
+oklchToP3ChannelsInto(out, l, c, h);
+
+// from '@colordx/core/plugins/rec2020'
+linearToRec2020ChannelsInto(out, lr, lg, lb);
+oklchToRec2020ChannelsInto(out, l, c, h);
+
+// Lower-level matrix / color-space primitives also have *Into siblings:
+// linearSrgbToOklabInto, oklabToLinearInto (from '@colordx/core')
+// xyzD50ToLinearSrgbInto, srgbLinearToP3LinearInto, linearP3ToSrgbInto,
+// oklabToLinearP3Into, srgbLinearToRec2020LinearInto, linearRec2020ToSrgbInto,
+// oklabToLinearRec2020Into
+```
+
+Guidance:
+- Use `Float64Array(3)` for the buffer when you can — it's the convention and keeps the V8 call site monomorphic. `number[]` also works.
+- One buffer per loop is plenty; don't allocate per iteration.
+- `linOut` and `srgbOut` in `oklchToLinearAndSrgbInto` **must be distinct buffers** (the function writes to both).
+- If you're outside a hot loop, the regular allocating versions are more ergonomic — reach for `*Into` only when you've profiled and GC is the bottleneck.
+
 ### Gamut
 
 `oklch()` and `oklab()` can describe colors outside the sRGB gamut. **For everyday conversion, `.toRgbString()` / `.toHex()` already do the right thing** — they naive-clip in linear sRGB to match browser rendering, so your output matches what `background: oklch(...)` displays on screen. You only need the methods below when that default isn't what you want.

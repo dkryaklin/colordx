@@ -1,22 +1,51 @@
 import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
-import { oklabToLinear } from './oklab.js';
+import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
 
-// Linear sRGB → Linear Display-P3 (D65 white point for both, from CSS Color 4)
-// The r and g rows have zero blue coefficients — this is correct per the spec, not a bug.
+// Linear sRGB ↔ Linear Display-P3 (D65, CSS Color 4). The forward matrix has zero
+// blue-output coefficients on the r/g rows — correct per spec, not a bug.
+// Shared between the allocating and *Into variants.
+const SP3_RR = 0.8224619687,
+  SP3_RG = 0.1775380313;
+const SP3_GR = 0.0331941989,
+  SP3_GG = 0.9668058011;
+const SP3_BR = 0.0170826307,
+  SP3_BG = 0.0723974407,
+  SP3_BB = 0.9105199286;
+const P3S_RR = 1.2249401762805598,
+  P3S_RG = -0.22494017628055996;
+const P3S_GR = -0.042056954709688163,
+  P3S_GG = 1.0420569547096881;
+const P3S_BR = -0.019637554590334432,
+  P3S_BG = -0.078636045550631889,
+  P3S_BB = 1.0982736001409663;
+
+/** Zero-allocation sibling of srgbLinearToP3Linear — writes into `out`. Safe when out === input arg. */
+export const srgbLinearToP3LinearInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
+  out[0] = SP3_RR * r + SP3_RG * g;
+  out[1] = SP3_GR * r + SP3_GG * g;
+  out[2] = SP3_BR * r + SP3_BG * g + SP3_BB * b;
+};
+
 export const srgbLinearToP3Linear = (r: number, g: number, b: number): [number, number, number] => [
-  0.8224619687 * r + 0.1775380313 * g,
-  0.0331941989 * r + 0.9668058011 * g,
-  0.0170826307 * r + 0.0723974407 * g + 0.9105199286 * b,
+  SP3_RR * r + SP3_RG * g,
+  SP3_GR * r + SP3_GG * g,
+  SP3_BR * r + SP3_BG * g + SP3_BB * b,
 ];
 
-// Linear Display-P3 → Linear sRGB
+/** Zero-allocation sibling of linearP3ToSrgb — writes into `out`. */
+export const linearP3ToSrgbInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
+  out[0] = P3S_RR * r + P3S_RG * g;
+  out[1] = P3S_GR * r + P3S_GG * g;
+  out[2] = P3S_BR * r + P3S_BG * g + P3S_BB * b;
+};
+
 export const linearP3ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
-  1.2249401762805598 * r - 0.22494017628055996 * g,
-  -0.042056954709688163 * r + 1.0420569547096881 * g,
-  -0.019637554590334432 * r - 0.078636045550631889 * g + 1.0982736001409663 * b,
+  P3S_RR * r + P3S_RG * g,
+  P3S_GR * r + P3S_GG * g,
+  P3S_BR * r + P3S_BG * g + P3S_BB * b,
 ];
 
 // No clamping on output: P3 is wide-gamut, sRGB values can legitimately sit outside [0,1] in P3 space.
@@ -88,3 +117,9 @@ export const parseP3String = (input: unknown): RgbColor | null => {
 /** Unclamped linear Display-P3 channels from OKLab values. */
 export const oklabToLinearP3 = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToP3Linear(...oklabToLinear(l, a, b));
+
+/** Zero-allocation sibling of oklabToLinearP3 — writes [pr, pg, pb] into `out`. */
+export const oklabToLinearP3Into = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  oklabToLinearInto(out, l, a, b);
+  srgbLinearToP3LinearInto(out, out[0]!, out[1]!, out[2]!);
+};

@@ -11,7 +11,10 @@ import {
   getFormat,
   nearest,
   oklchToLinear,
+  oklchToLinearAndSrgbInto,
+  oklchToLinearInto,
   oklchToRgbChannels,
+  oklchToRgbChannelsInto,
   inGamutSrgb,
 } from '../src/index.js';
 import a11y from '../src/plugins/a11y.js';
@@ -24,11 +27,19 @@ import lch from '../src/plugins/lch.js';
 import minify from '../src/plugins/minify.js';
 import mix from '../src/plugins/mix.js';
 import names from '../src/plugins/names.js';
-import p3, { inGamutP3, linearToP3Channels, oklchToP3Channels } from '../src/plugins/p3.js';
+import p3, {
+  inGamutP3,
+  linearToP3Channels,
+  linearToP3ChannelsInto,
+  oklchToP3Channels,
+  oklchToP3ChannelsInto,
+} from '../src/plugins/p3.js';
 import rec2020, {
   inGamutRec2020,
   linearToRec2020Channels,
+  linearToRec2020ChannelsInto,
   oklchToRec2020Channels,
+  oklchToRec2020ChannelsInto,
 } from '../src/plugins/rec2020.js';
 
 beforeAll(() => {
@@ -177,6 +188,71 @@ describe('README — p3/rec2020 channel functions', () => {
     const linear = oklchToLinear(0.5, 0.2, 240);
     const result = linearToRec2020Channels(...linear);
     expect(result).toHaveLength(3);
+  });
+});
+
+
+describe('README — Zero-allocation *Into variants', () => {
+  it('pixel-renderer pattern: reuse one buffer across calls', () => {
+    const buf = new Float64Array(3);
+    const first: [number, number, number] = [0, 0, 0];
+    oklchToP3ChannelsInto(buf, 0.5, 0.15, 30);
+    first[0] = buf[0]!;
+    first[1] = buf[1]!;
+    first[2] = buf[2]!;
+    oklchToP3ChannelsInto(buf, 0.7, 0.1, 200);
+    // Second call overwrites the buffer (not appends).
+    expect([buf[0], buf[1], buf[2]]).not.toEqual(first);
+  });
+
+  it('*Into output matches allocating sibling', () => {
+    const buf = new Float64Array(3);
+    const want = oklchToRgbChannels(0.5, 0.2, 240);
+    oklchToRgbChannelsInto(buf, 0.5, 0.2, 240);
+    expect(buf[0]).toBe(want[0]);
+    expect(buf[1]).toBe(want[1]);
+    expect(buf[2]).toBe(want[2]);
+  });
+
+  it('oklchToLinearInto writes 3 channels', () => {
+    const buf = new Float64Array(3);
+    oklchToLinearInto(buf, 0.5, 0.2, 240);
+    expect(Number.isFinite(buf[0])).toBe(true);
+    expect(Number.isFinite(buf[1])).toBe(true);
+    expect(Number.isFinite(buf[2])).toBe(true);
+  });
+
+  it('oklchToLinearAndSrgbInto fills two distinct buffers', () => {
+    const lin = new Float64Array(3);
+    const srgb = new Float64Array(3);
+    oklchToLinearAndSrgbInto(lin, srgb, 0.5, 0.15, 120);
+    // Linear and gamma-encoded channels differ for mid-range values.
+    expect(lin[0]).not.toBe(srgb[0]);
+  });
+
+  it('accepts plain number[] as the out buffer', () => {
+    const buf: number[] = [0, 0, 0];
+    oklchToP3ChannelsInto(buf, 0.5, 0.15, 30);
+    expect(buf).toHaveLength(3);
+    expect(Number.isFinite(buf[0])).toBe(true);
+  });
+
+  it('linearToP3ChannelsInto / linearToRec2020ChannelsInto', () => {
+    const linBuf = new Float64Array(3);
+    const outBuf = new Float64Array(3);
+    oklchToLinearInto(linBuf, 0.6, 0.12, 200);
+    linearToP3ChannelsInto(outBuf, linBuf[0]!, linBuf[1]!, linBuf[2]!);
+    expect(Number.isFinite(outBuf[0])).toBe(true);
+    linearToRec2020ChannelsInto(outBuf, linBuf[0]!, linBuf[1]!, linBuf[2]!);
+    expect(Number.isFinite(outBuf[0])).toBe(true);
+  });
+
+  it('oklchToRec2020ChannelsInto', () => {
+    const buf = new Float64Array(3);
+    oklchToRec2020ChannelsInto(buf, 0.5, 0.2, 240);
+    expect(Number.isFinite(buf[0])).toBe(true);
+    expect(Number.isFinite(buf[1])).toBe(true);
+    expect(Number.isFinite(buf[2])).toBe(true);
   });
 });
 

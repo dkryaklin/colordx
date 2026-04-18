@@ -3,15 +3,65 @@ import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
+// Björn Ottosson's OKLab matrix coefficients. Referenced by both the allocating
+// and zero-alloc (*Into) variants so the math lives in one place.
+// sRGB linear → LMS (cubed roots taken at M1 stage)
+const M1_LR = 0.4122214708,
+  M1_LG = 0.5363325363,
+  M1_LB = 0.0514459929;
+const M1_MR = 0.2119034982,
+  M1_MG = 0.6806995451,
+  M1_MB = 0.1073969566;
+const M1_SR = 0.0883024619,
+  M1_SG = 0.2817188376,
+  M1_SB = 0.6299787005;
+// LMS' → OKLab
+const M2_L_L = 0.2104542553,
+  M2_M_L = 0.793617785,
+  M2_S_L = -0.0040720468;
+const M2_L_A = 1.9779984951,
+  M2_M_A = -2.428592205,
+  M2_S_A = 0.4505937099;
+const M2_L_B = 0.0259040371,
+  M2_M_B = 0.7827717662,
+  M2_S_B = -0.808675766;
+// OKLab → LMS' (inverse of M2)
+const M2I_A_L = 0.3963377774,
+  M2I_B_L = 0.2158037573;
+const M2I_A_M = -0.1055613458,
+  M2I_B_M = -0.0638541728;
+const M2I_A_S = -0.0894841775,
+  M2I_B_S = -1.291485548;
+// LMS → linear sRGB (inverse of M1)
+const M1I_L_R = 4.0767416613,
+  M1I_M_R = -3.3077115904,
+  M1I_S_R = 0.2309699287;
+const M1I_L_G = -1.2684380041,
+  M1I_M_G = 2.6097574007,
+  M1I_S_G = -0.3413193963;
+const M1I_L_B = -0.0041960865,
+  M1I_M_B = -0.7034186145,
+  M1I_S_B = 1.7076147009;
+
+/** Zero-allocation sibling of linearSrgbToOklab — writes [l, a, b] into `out`. */
+export const linearSrgbToOklabInto = (out: Float64Array | number[], lr: number, lg: number, lb: number): void => {
+  const lv = Math.cbrt(M1_LR * lr + M1_LG * lg + M1_LB * lb);
+  const mv = Math.cbrt(M1_MR * lr + M1_MG * lg + M1_MB * lb);
+  const sv = Math.cbrt(M1_SR * lr + M1_SG * lg + M1_SB * lb);
+  out[0] = M2_L_L * lv + M2_M_L * mv + M2_S_L * sv;
+  out[1] = M2_L_A * lv + M2_M_A * mv + M2_S_A * sv;
+  out[2] = M2_L_B * lv + M2_M_B * mv + M2_S_B * sv;
+};
+
 /** Convert linear sRGB channels to OKLab (Björn Ottosson). No gamma, no clamping. */
 export const linearSrgbToOklab = (lr: number, lg: number, lb: number): [number, number, number] => {
-  const lv = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
-  const mv = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
-  const sv = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  const lv = Math.cbrt(M1_LR * lr + M1_LG * lg + M1_LB * lb);
+  const mv = Math.cbrt(M1_MR * lr + M1_MG * lg + M1_MB * lb);
+  const sv = Math.cbrt(M1_SR * lr + M1_SG * lg + M1_SB * lb);
   return [
-    0.2104542553 * lv + 0.793617785 * mv - 0.0040720468 * sv,
-    1.9779984951 * lv - 2.428592205 * mv + 0.4505937099 * sv,
-    0.0259040371 * lv + 0.7827717662 * mv - 0.808675766 * sv,
+    M2_L_L * lv + M2_M_L * mv + M2_S_L * sv,
+    M2_L_A * lv + M2_M_A * mv + M2_S_A * sv,
+    M2_L_B * lv + M2_M_B * mv + M2_S_B * sv,
   ];
 };
 
@@ -52,18 +102,31 @@ export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
   });
 };
 
+/** Zero-allocation sibling of oklabToLinear — writes [lr, lg, lb] into `out`. */
+export const oklabToLinearInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  const l_ = l + M2I_A_L * a + M2I_B_L * b;
+  const m_ = l + M2I_A_M * a + M2I_B_M * b;
+  const s_ = l + M2I_A_S * a + M2I_B_S * b;
+  const lv = l_ ** 3,
+    mv = m_ ** 3,
+    sv = s_ ** 3;
+  out[0] = M1I_L_R * lv + M1I_M_R * mv + M1I_S_R * sv;
+  out[1] = M1I_L_G * lv + M1I_M_G * mv + M1I_S_G * sv;
+  out[2] = M1I_L_B * lv + M1I_M_B * mv + M1I_S_B * sv;
+};
+
 /** Unclamped linear sRGB channels from OKLab values. Channels may exceed [0, 1] for out-of-gamut colors. */
 export const oklabToLinear = (l: number, a: number, b: number): [number, number, number] => {
-  const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
-  const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
-  const s_ = l - 0.0894841775 * a - 1.291485548 * b;
+  const l_ = l + M2I_A_L * a + M2I_B_L * b;
+  const m_ = l + M2I_A_M * a + M2I_B_M * b;
+  const s_ = l + M2I_A_S * a + M2I_B_S * b;
   const lv = l_ ** 3,
     mv = m_ ** 3,
     sv = s_ ** 3;
   return [
-    4.0767416613 * lv - 3.3077115904 * mv + 0.2309699287 * sv,
-    -1.2684380041 * lv + 2.6097574007 * mv - 0.3413193963 * sv,
-    -0.0041960865 * lv - 0.7034186145 * mv + 1.7076147009 * sv,
+    M1I_L_R * lv + M1I_M_R * mv + M1I_S_R * sv,
+    M1I_L_G * lv + M1I_M_G * mv + M1I_S_G * sv,
+    M1I_L_B * lv + M1I_M_B * mv + M1I_S_B * sv,
   ];
 };
 
