@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.yarn/cache
+**/.yarn/install-state.gz
+.git
+.github
+.changeset
+bench
+coverage
+test
+scripts/oklch-slice-264.png
+*.log
+.DS_Store
