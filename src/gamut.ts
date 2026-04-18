@@ -74,11 +74,15 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
   return null;
 };
 
-// Tolerance for floating-point rounding in the OKLab → linear sRGB matrix.
-// The accumulated cbrt + matrix error for boundary colors (e.g. white) is ~3e-10,
-// so 1e-7 is ample without accepting visibly out-of-gamut colors.
-// Used only for inGamut* checks — NOT in gamut mapping, which uses strict bounds.
-const EPS = 1e-7;
+// Tolerance for inGamut* checks — NOT used in gamut mapping, which uses strict bounds.
+// Covers two sources of error:
+//   1. Matrix floating-point noise: accumulated cbrt + matrix error is ~3e-10
+//   2. Value rounding: OKLCH stored at 4 dp (L, C) / 2 dp (H) produces linear-sRGB
+//      deviations up to 4.4e-4 on sRGB boundary colors (exhaustive scan of all 256^3 sRGB
+//      values confirms this). EPS = 5e-4 absorbs all rounding artifacts while staying below
+//      ~1.6 gamma-encoded steps (imperceptible), and correctly rejects genuine out-of-gamut
+//      colors (typically 1e-3 and above).
+const EPS = 5e-4;
 
 const isLinearInGamut = (r: number, g: number, b: number): boolean =>
   r >= -EPS && r <= 1 + EPS && g >= -EPS && g <= 1 + EPS && b >= -EPS && b <= 1 + EPS;
