@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.1.1
+
+### Patch Changes
+
+- Fix inGamutSrgb false negatives for OKLCH round-trip values by widening EPS tolerance to absorb 4-decimal-place precision artifacts
+
 ## 5.1.0
 
 ### Minor Changes
