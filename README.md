@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@colordx/core)](https://www.npmjs.com/package/@colordx/core)
 [![npm downloads](https://img.shields.io/npm/dw/@colordx/core)](https://www.npmjs.com/package/@colordx/core)
-[![bundle size](https://deno.bundlejs.com/badge?q=@colordx/core&treeshake=[{colordx}])](https://bundlejs.com/?q=@colordx/core&treeshake=%5B%7Bcolordx%7D%5D)
+[![bundle size](https://img.shields.io/bundlejs/size/@colordx/core)](https://bundlejs.com/?q=@colordx/core)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://github.com/dkryaklin/colordx/blob/main/package.json)
 [![CI](https://img.shields.io/github/actions/workflow/status/dkryaklin/colordx/ci.yml?branch=main&label=ci)](https://github.com/dkryaklin/colordx/actions/workflows/ci.yml)
 [![used by cssnano](https://img.shields.io/badge/used_by-cssnano-1f6feb)](https://github.com/cssnano/cssnano)
