@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.3.1
+
+### Patch Changes
+
+- Fix phantom hue appearing on achromatic OKLab colors when converting to HSL by short-circuiting the OKLab→sRGB matrix multiply for zero chroma inputs
+
 ## 5.3.0
 
 ### Minor Changes
