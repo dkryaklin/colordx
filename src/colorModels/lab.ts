@@ -24,16 +24,31 @@ export const xyzToLab = ({ x, y, z, alpha }: XyzColor): LabColor => {
   };
 };
 
-export const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
+/** Primitives-only Lab → XYZ D50. x/y/z in 0–100 scale. Shared with channels.ts hot paths. */
+export const labToXyzValues = (l: number, a: number, b: number): [number, number, number] => {
   const fy = (l + 16) / 116;
   const fx = a / 500 + fy;
   const fz = fy - b / 200;
-  return {
-    x: (fx ** 3 > EPSILON ? fx ** 3 : (116 * fx - 16) / KAPPA) * WX,
-    y: (l > 8 ? fy ** 3 : l / KAPPA) * WY,
-    z: (fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA) * WZ,
-    alpha,
-  };
+  return [
+    (fx ** 3 > EPSILON ? fx ** 3 : (116 * fx - 16) / KAPPA) * WX,
+    (l > 8 ? fy ** 3 : l / KAPPA) * WY,
+    (fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA) * WZ,
+  ];
+};
+
+/** Zero-allocation sibling of labToXyzValues — writes [x, y, z] into `out`. */
+export const labToXyzValuesInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  const fy = (l + 16) / 116;
+  const fx = a / 500 + fy;
+  const fz = fy - b / 200;
+  out[0] = (fx ** 3 > EPSILON ? fx ** 3 : (116 * fx - 16) / KAPPA) * WX;
+  out[1] = (l > 8 ? fy ** 3 : l / KAPPA) * WY;
+  out[2] = (fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA) * WZ;
+};
+
+export const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
+  const [x, y, z] = labToXyzValues(l, a, b);
+  return { x, y, z, alpha };
 };
 
 export const rgbToLab = (rgb: RgbColor): LabColor => xyzToLab(rgbToXyz(rgb));

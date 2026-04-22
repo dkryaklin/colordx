@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  labToLinearSrgb,
+  labToLinearSrgbInto,
+  lchToLinearSrgb,
+  lchToLinearSrgbInto,
   oklchToLinear,
   oklchToLinearAndSrgb,
   oklchToLinearAndSrgbInto,
   oklchToLinearInto,
   oklchToRgbChannels,
   oklchToRgbChannelsInto,
+  rgbToLinear,
+  rgbToLinearInto,
 } from '../src/channels.js';
 import {
   linearSrgbToOklab,
@@ -57,6 +63,30 @@ const OKLCH_CASES: Array<[number, number, number]> = [
   [0.5, 0.37, 30],
   [0.8, 0.1, 60],
   [0.3, 0.08, 300],
+];
+
+// CIE Lab (D50) triplets: L in [0,100], a/b natural range.
+const LAB_CASES: Array<[number, number, number]> = [
+  [0, 0, 0],
+  [100, 0, 0],
+  [50, 0, 0],
+  [54.29, 80.8, 69.89], // red
+  [87.82, -79.29, 80.99], // green
+  [29.57, 68.3, -112.03], // blue
+  [50, -50, 50],
+  [60, 40, -20],
+];
+
+// CIE LCH (D50) triplets: L in [0,100], C in [0,~150], H in degrees.
+const LCH_CASES: Array<[number, number, number]> = [
+  [0, 0, 0],
+  [100, 0, 0],
+  [50, 0, 180],
+  [54.29, 106.84, 40.86], // red
+  [87.82, 113.33, 134.39], // green
+  [29.57, 131.2, 301.37], // blue
+  [60, 30, 120],
+  [40, 80, 270],
 ];
 
 // Corresponding OKLab triplets (l, a, b) covering similar regions.
@@ -142,6 +172,38 @@ describe('oklab *Into parity', () => {
     for (const [lr, lg, lb] of LINEAR_CASES) {
       const want = linearSrgbToOklab(lr, lg, lb);
       linearSrgbToOklabInto(out, lr, lg, lb);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('rgbToLinearInto matches rgbToLinear', () => {
+    // Cover in-gamut, out-of-gamut, and the linear/power-curve crossover near 0.04045.
+    const cases: Array<[number, number, number]> = [
+      [0, 0, 0],
+      [1, 1, 1],
+      [0.5, 0.5, 0.5],
+      [0.04, 0.045, 0.5], // straddles the linear/power-curve threshold
+      [-0.2, 0.7, 1.3], // out-of-gamut
+    ];
+    for (const [r, g, b] of cases) {
+      const want = rgbToLinear(r, g, b);
+      rgbToLinearInto(out, r, g, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('labToLinearSrgbInto matches labToLinearSrgb', () => {
+    for (const [l, a, b] of LAB_CASES) {
+      const want = labToLinearSrgb(l, a, b);
+      labToLinearSrgbInto(out, l, a, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('lchToLinearSrgbInto matches lchToLinearSrgb', () => {
+    for (const [l, c, h] of LCH_CASES) {
+      const want = lchToLinearSrgb(l, c, h);
+      lchToLinearSrgbInto(out, l, c, h);
       expectTripleEqual(out, want);
     }
   });

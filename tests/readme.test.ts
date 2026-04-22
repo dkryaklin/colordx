@@ -9,12 +9,15 @@ import {
   colordx,
   extend,
   getFormat,
+  labToLinearSrgb,
+  lchToLinearSrgb,
   nearest,
   oklchToLinear,
   oklchToLinearAndSrgbInto,
   oklchToLinearInto,
   oklchToRgbChannels,
   oklchToRgbChannelsInto,
+  rgbToLinear,
   inGamutSrgb,
 } from '../src/index.js';
 import a11y from '../src/plugins/a11y.js';
@@ -168,6 +171,34 @@ describe('README — oklchToRgbChannels / oklchToLinear', () => {
   it('oklchToLinear returns array of 3 numbers', () => {
     const linear = oklchToLinear(0.5, 0.2, 240);
     expect(linear).toHaveLength(3);
+  });
+});
+
+describe('README — rgbToLinear / labToLinearSrgb / lchToLinearSrgb', () => {
+  it('rgbToLinear(1, 0, 0) → [1, 0, 0]', () => {
+    const [lr, lg, lb] = rgbToLinear(1, 0, 0);
+    expect(lr).toBeCloseTo(1, 6);
+    expect(lg).toBeCloseTo(0, 6);
+    expect(lb).toBeCloseTo(0, 6);
+  });
+  it('labToLinearSrgb reconstructs red', () => {
+    const [lr, lg, lb] = labToLinearSrgb(54.29, 80.8, 69.89);
+    expect(lr).toBeCloseTo(1, 1);
+    expect(lg).toBeCloseTo(0, 1);
+    expect(lb).toBeCloseTo(0, 1);
+  });
+  it('lchToLinearSrgb reconstructs red', () => {
+    const [lr, lg, lb] = lchToLinearSrgb(54.29, 106.84, 40.86);
+    expect(lr).toBeCloseTo(1, 1);
+    expect(lg).toBeCloseTo(0, 1);
+    expect(lb).toBeCloseTo(0, 1);
+  });
+  it('rgbToLinear via toRgb() divided by 255', () => {
+    const { r, g, b } = colordx('#ff0000').toRgb();
+    const [lr, lg, lb] = rgbToLinear(r / 255, g / 255, b / 255);
+    expect(lr).toBeCloseTo(1, 6);
+    expect(lg).toBeCloseTo(0, 6);
+    expect(lb).toBeCloseTo(0, 6);
   });
 });
 

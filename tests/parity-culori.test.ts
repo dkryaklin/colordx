@@ -1,6 +1,14 @@
 import { converter, differenceCiede2000, toGamut } from 'culori';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Colordx, colordx, extend, inGamutSrgb, oklchToLinear } from '../src/index.js';
+import {
+  Colordx,
+  colordx,
+  extend,
+  inGamutSrgb,
+  labToLinearSrgb,
+  lchToLinearSrgb,
+  oklchToLinear,
+} from '../src/index.js';
 import hsvPlugin from '../src/plugins/hsv.js';
 import hwbPlugin from '../src/plugins/hwb.js';
 import labPlugin from '../src/plugins/lab.js';
@@ -80,6 +88,8 @@ const stats: Record<string, FormatStats> = {
   OKLab: mkStats(),
   XYZ: mkStats(),
   'XYZ D65': mkStats(),
+  'Lab→LinSRGB': mkStats(),
+  'LCH→LinSRGB': mkStats(),
   'mixLab()': mkStats(),
   'delta()': mkStats(),
   'Linear RGB': mkStats(),
@@ -167,6 +177,8 @@ const runParity = () => {
         'OKLab',
         'XYZ',
         'XYZ D65',
+        'Lab→LinSRGB',
+        'LCH→LinSRGB',
         'mixLab()',
         'delta()',
         'RT:HSL',
@@ -279,6 +291,33 @@ const runParity = () => {
           [cxXyz65.x, round((cuXyz65.x ?? 0) * 100, 2)],
           [cxXyz65.y, round((cuXyz65.y ?? 0) * 100, 2)],
           [cxXyz65.z, round((cuXyz65.z ?? 0) * 100, 2)]
+        ),
+        color
+      );
+
+      // labToLinearSrgb: Lab D50 → linear sRGB via XYZ D50 / Bradford. Uses cuLab from above
+      // so a culori Lab regression tests here, not in the feeder.
+      const [cxLabLR, cxLabLG, cxLabLB] = labToLinearSrgb(cuLabL, cuLabA, cuLabB);
+      const cuLabLrgb = culoriToLrgb({ mode: 'lab' as const, l: cuLabL, a: cuLabA, b: cuLabB })!;
+      record(
+        'Lab→LinSRGB',
+        maxDiff(
+          [round(cxLabLR, 5), round(cuLabLrgb.r ?? 0, 5)],
+          [round(cxLabLG, 5), round(cuLabLrgb.g ?? 0, 5)],
+          [round(cxLabLB, 5), round(cuLabLrgb.b ?? 0, 5)]
+        ),
+        color
+      );
+
+      // lchToLinearSrgb: LCH → Lab → linear sRGB. Uses cuLch from above.
+      const [cxLchLR, cxLchLG, cxLchLB] = lchToLinearSrgb(cuLchL, cuLchC, cuLchH);
+      const cuLchLrgb = culoriToLrgb({ mode: 'lch' as const, l: cuLchL, c: cuLchC, h: cuLchH })!;
+      record(
+        'LCH→LinSRGB',
+        maxDiff(
+          [round(cxLchLR, 5), round(cuLchLrgb.r ?? 0, 5)],
+          [round(cxLchLG, 5), round(cuLchLrgb.g ?? 0, 5)],
+          [round(cxLchLB, 5), round(cuLchLrgb.b ?? 0, 5)]
         ),
         color
       );
@@ -657,6 +696,8 @@ const ceilings: Record<string, number> = {
   OKLab: 0.001,
   XYZ: 1,
   'XYZ D65': 1,
+  'Lab→LinSRGB': 0.001,
+  'LCH→LinSRGB': 0.001,
   'mixLab()': 2,
   'delta()': 0.01,
   'Linear RGB': 0.0001,

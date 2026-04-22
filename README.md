@@ -192,6 +192,18 @@ oklchToRgbChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded sRGB in [0, 1]
 
 const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a free sRGB gamut check
 
+// Non-OKLCH inputs → linear sRGB (same output scale and gamut-check behavior as oklchToLinear).
+// Use these when you already have RGB/Lab/LCH values and want linear pixels without round-tripping through OKLCH.
+import { labToLinearSrgb, lchToLinearSrgb, rgbToLinear } from '@colordx/core';
+
+rgbToLinear(1, 0, 0);          // [1, 0, 0]           — vector sibling of srgbToLinear (0–1 input)
+labToLinearSrgb(54.29, 80.8, 69.89); // Lab D50 → linear sRGB (via XYZ D50)
+lchToLinearSrgb(54.29, 106.84, 40.86); // LCH D50 → Lab → linear sRGB
+
+// Hex/RGB input? Parse once, then divide by 255:
+const { r, g, b } = colordx('#ff0000').toRgb();
+rgbToLinear(r / 255, g / 255, b / 255); // [1, 0, 0]
+
 // P3/Rec.2020 channel functions live in their plugins:
 import { linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
 import { linearToRec2020Channels, oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
@@ -230,13 +242,18 @@ for (let y = 0; y < height; y++) {
 }
 ```
 
-Full `*Into` surface (15 functions, all tree-shakable — unused ones have zero bundle cost):
+Full `*Into` surface (all tree-shakable — unused ones have zero bundle cost):
 
 ```ts
-// from '@colordx/core'
+// from '@colordx/core' — OKLCH → linear / sRGB
 oklchToLinearInto(out, l, c, h);           // → [lr, lg, lb] linear sRGB
 oklchToRgbChannelsInto(out, l, c, h);      // → [r, g, b] gamma-encoded sRGB
 oklchToLinearAndSrgbInto(linOut, srgbOut, l, c, h); // both at once (distinct buffers)
+
+// from '@colordx/core' — non-OKLCH inputs → linear sRGB (complements oklchToLinear)
+rgbToLinearInto(out, r, g, b);             // 0–1 gamma sRGB → linear sRGB
+labToLinearSrgbInto(out, l, a, b);         // CIE Lab (D50) → linear sRGB (via XYZ D50)
+lchToLinearSrgbInto(out, l, c, h);         // CIE LCH (D50) → linear sRGB
 
 // from '@colordx/core/plugins/p3'
 linearToP3ChannelsInto(out, lr, lg, lb);

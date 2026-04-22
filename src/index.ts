@@ -10,6 +10,12 @@ export {
   oklchToRgbChannelsInto,
   oklchToLinearAndSrgb,
   oklchToLinearAndSrgbInto,
+  rgbToLinear,
+  rgbToLinearInto,
+  labToLinearSrgb,
+  labToLinearSrgbInto,
+  lchToLinearSrgb,
+  lchToLinearSrgbInto,
 } from './channels.js';
 export type {
   AnyColor,

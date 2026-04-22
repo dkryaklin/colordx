@@ -1,5 +1,7 @@
+import { labToXyzValues, labToXyzValuesInto } from './colorModels/lab.js';
 import { oklabToLinear, oklabToLinearInto } from './colorModels/oklab.js';
-import { srgbFromLinear } from './transfer.js';
+import { xyzD50ToLinearSrgb, xyzD50ToLinearSrgbInto } from './colorModels/xyz.js';
+import { srgbFromLinear, srgbToLinear } from './transfer.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -78,4 +80,54 @@ export const oklchToLinearAndSrgbInto = (
   srgbOut[0] = srgbFromLinear(linOut[0]!);
   srgbOut[1] = srgbFromLinear(linOut[1]!);
   srgbOut[2] = srgbFromLinear(linOut[2]!);
+};
+
+/**
+ * Gamma-encoded sRGB (0–1) → linear sRGB (0–1). Vector sibling of `srgbToLinear`.
+ * For byte-scale RGB, pass `r/255, g/255, b/255`. Output range tracks input:
+ * channels outside [0, 1] are preserved with the CSS Color 4 extended transfer curve.
+ */
+export const rgbToLinear = (r: number, g: number, b: number): [number, number, number] => [
+  srgbToLinear(r),
+  srgbToLinear(g),
+  srgbToLinear(b),
+];
+
+/** Zero-allocation sibling of rgbToLinear — writes [lr, lg, lb] into `out`. */
+export const rgbToLinearInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
+  out[0] = srgbToLinear(r);
+  out[1] = srgbToLinear(g);
+  out[2] = srgbToLinear(b);
+};
+
+/**
+ * CIE Lab (D50) → unclamped linear sRGB (0–1). Goes via XYZ D50 with Bradford adaptation.
+ * L in [0, 100]; a/b typically in [-128, 128]. Out-of-sRGB-gamut colors return channels
+ * outside [0, 1] — use as a free gamut check or pass to `srgbFromLinear` for display.
+ */
+export const labToLinearSrgb = (l: number, a: number, b: number): [number, number, number] => {
+  const [x, y, z] = labToXyzValues(l, a, b);
+  return xyzD50ToLinearSrgb(x, y, z);
+};
+
+/** Zero-allocation sibling of labToLinearSrgb — writes [lr, lg, lb] into `out`. */
+export const labToLinearSrgbInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  labToXyzValuesInto(out, l, a, b);
+  xyzD50ToLinearSrgbInto(out, out[0]!, out[1]!, out[2]!);
+};
+
+/**
+ * CIE LCH (D50) → unclamped linear sRGB (0–1). Polar-to-rectangular to Lab, then Lab → linear sRGB.
+ * L in [0, 100]; C is the chroma (0–~150); H in degrees. Out-of-gamut colors return channels
+ * outside [0, 1] — useful in LCH render hot paths where you want linear pixels and a gamut check in one step.
+ */
+export const lchToLinearSrgb = (l: number, c: number, h: number): [number, number, number] => {
+  const hRad = h * DEG_TO_RAD;
+  return labToLinearSrgb(l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
+/** Zero-allocation sibling of lchToLinearSrgb — writes [lr, lg, lb] into `out`. */
+export const lchToLinearSrgbInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  const hRad = h * DEG_TO_RAD;
+  labToLinearSrgbInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
