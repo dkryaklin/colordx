@@ -131,3 +131,94 @@ export const lchToLinearSrgbInto = (out: Float64Array | number[], l: number, c: 
   const hRad = h * DEG_TO_RAD;
   labToLinearSrgbInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
+
+/**
+ * CIE Lab (D50) → gamma-encoded sRGB (0–1). Convenience wrapper over `labToLinearSrgb` + `srgbFromLinear`.
+ * In-gamut colors return channels in [0, 1]; out-of-gamut channels may exceed this range — clamp before byte encoding.
+ */
+export const labToRgbChannels = (l: number, a: number, b: number): [number, number, number] => {
+  const [lr, lg, lb] = labToLinearSrgb(l, a, b);
+  return [srgbFromLinear(lr), srgbFromLinear(lg), srgbFromLinear(lb)];
+};
+
+/** Zero-allocation sibling of labToRgbChannels — writes [r, g, b] (gamma-encoded, 0–1) into `out`. */
+export const labToRgbChannelsInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  labToLinearSrgbInto(out, l, a, b);
+  out[0] = srgbFromLinear(out[0]!);
+  out[1] = srgbFromLinear(out[1]!);
+  out[2] = srgbFromLinear(out[2]!);
+};
+
+/**
+ * CIE LCH (D50) → gamma-encoded sRGB (0–1). Polar-to-rectangular to Lab, then Lab → gamma sRGB.
+ * In-gamut colors return channels in [0, 1]; out-of-gamut channels may exceed this range.
+ */
+export const lchToRgbChannels = (l: number, c: number, h: number): [number, number, number] => {
+  const hRad = h * DEG_TO_RAD;
+  return labToRgbChannels(l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
+/** Zero-allocation sibling of lchToRgbChannels — writes [r, g, b] (gamma-encoded, 0–1) into `out`. */
+export const lchToRgbChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  const hRad = h * DEG_TO_RAD;
+  labToRgbChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
+/**
+ * CIE Lab (D50) → both linear and gamma-encoded sRGB in a single pass.
+ * Avoids recomputing Lab → XYZ D50 → linear sRGB when you need both (e.g. gamut check + pixel).
+ * Returns [[lr, lg, lb], [sr, sg, sb]].
+ */
+export const labToLinearAndSrgb = (
+  l: number,
+  a: number,
+  b: number
+): [[number, number, number], [number, number, number]] => {
+  const [lr, lg, lb] = labToLinearSrgb(l, a, b);
+  return [
+    [lr, lg, lb],
+    [srgbFromLinear(lr), srgbFromLinear(lg), srgbFromLinear(lb)],
+  ];
+};
+
+/**
+ * Zero-allocation sibling of labToLinearAndSrgb — writes linear channels into `linOut`
+ * and gamma-encoded sRGB channels into `srgbOut`. The two buffers must be distinct.
+ */
+export const labToLinearAndSrgbInto = (
+  linOut: Float64Array | number[],
+  srgbOut: Float64Array | number[],
+  l: number,
+  a: number,
+  b: number
+): void => {
+  labToLinearSrgbInto(linOut, l, a, b);
+  srgbOut[0] = srgbFromLinear(linOut[0]!);
+  srgbOut[1] = srgbFromLinear(linOut[1]!);
+  srgbOut[2] = srgbFromLinear(linOut[2]!);
+};
+
+/**
+ * CIE LCH (D50) → both linear and gamma-encoded sRGB in a single pass.
+ * Polar-to-rectangular to Lab, then Lab → linear + gamma sRGB. Returns [[lr, lg, lb], [sr, sg, sb]].
+ */
+export const lchToLinearAndSrgb = (
+  l: number,
+  c: number,
+  h: number
+): [[number, number, number], [number, number, number]] => {
+  const hRad = h * DEG_TO_RAD;
+  return labToLinearAndSrgb(l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
+/** Zero-allocation sibling of lchToLinearAndSrgb — same buffer rules as labToLinearAndSrgbInto. */
+export const lchToLinearAndSrgbInto = (
+  linOut: Float64Array | number[],
+  srgbOut: Float64Array | number[],
+  l: number,
+  c: number,
+  h: number
+): void => {
+  const hRad = h * DEG_TO_RAD;
+  labToLinearAndSrgbInto(linOut, srgbOut, l, c * Math.cos(hRad), c * Math.sin(hRad));
+};

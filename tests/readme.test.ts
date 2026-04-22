@@ -202,6 +202,40 @@ describe('README — rgbToLinear / labToLinearSrgb / lchToLinearSrgb', () => {
   });
 });
 
+describe('README — lab/lch channel helpers (gamma sRGB + P3 + Rec.2020)', () => {
+  it('labToRgbChannels returns gamma sRGB in [0, 1] for red', async () => {
+    const { labToRgbChannels } = await import('../src/channels.js');
+    const [r, g, b] = labToRgbChannels(54.29, 80.8, 69.89);
+    expect(r).toBeCloseTo(1, 1);
+    expect(g).toBeCloseTo(0, 1);
+    expect(b).toBeCloseTo(0, 1);
+  });
+  it('lchToRgbChannels matches labToRgbChannels after polar→rect', async () => {
+    const { labToRgbChannels, lchToRgbChannels } = await import('../src/channels.js');
+    const [r, g, b] = lchToRgbChannels(54.29, 106.84, 40.86);
+    const [r2, g2, b2] = labToRgbChannels(54.29, 80.8, 69.89);
+    expect(r).toBeCloseTo(r2, 1);
+    expect(g).toBeCloseTo(g2, 1);
+    expect(b).toBeCloseTo(b2, 1);
+  });
+  it('labToLinearAndSrgb returns both pairs', async () => {
+    const { labToLinearAndSrgb } = await import('../src/channels.js');
+    const [lin, srgb] = labToLinearAndSrgb(54.29, 80.8, 69.89);
+    expect(lin).toHaveLength(3);
+    expect(srgb).toHaveLength(3);
+  });
+  it('labToP3Channels / lchToP3Channels return 3 channels', async () => {
+    const { labToP3Channels, lchToP3Channels } = await import('../src/plugins/p3.js');
+    expect(labToP3Channels(54.29, 80.8, 69.89)).toHaveLength(3);
+    expect(lchToP3Channels(54.29, 106.84, 40.86)).toHaveLength(3);
+  });
+  it('labToRec2020Channels / lchToRec2020Channels return 3 channels', async () => {
+    const { labToRec2020Channels, lchToRec2020Channels } = await import('../src/plugins/rec2020.js');
+    expect(labToRec2020Channels(54.29, 80.8, 69.89)).toHaveLength(3);
+    expect(lchToRec2020Channels(54.29, 106.84, 40.86)).toHaveLength(3);
+  });
+});
+
 describe('README — p3/rec2020 channel functions', () => {
   it('oklchToP3Channels returns [r, g, b]', () => {
     const result = oklchToP3Channels(0.5, 0.2, 240);

@@ -194,22 +194,48 @@ const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a
 
 // Non-OKLCH inputs → linear sRGB (same output scale and gamut-check behavior as oklchToLinear).
 // Use these when you already have RGB/Lab/LCH values and want linear pixels without round-tripping through OKLCH.
-import { labToLinearSrgb, lchToLinearSrgb, rgbToLinear } from '@colordx/core';
+import {
+  labToLinearAndSrgb,
+  labToLinearSrgb,
+  labToRgbChannels,
+  lchToLinearAndSrgb,
+  lchToLinearSrgb,
+  lchToRgbChannels,
+  rgbToLinear,
+} from '@colordx/core';
 
 rgbToLinear(1, 0, 0);          // [1, 0, 0]           — vector sibling of srgbToLinear (0–1 input)
 labToLinearSrgb(54.29, 80.8, 69.89); // Lab D50 → linear sRGB (via XYZ D50)
 lchToLinearSrgb(54.29, 106.84, 40.86); // LCH D50 → Lab → linear sRGB
+
+// Gamma-encoded sRGB in one call (skips the manual srgbFromLinear step):
+labToRgbChannels(54.29, 80.8, 69.89); // → [r, g, b] gamma sRGB in [0, 1]
+lchToRgbChannels(54.29, 106.84, 40.86);
+
+// Both linear (for gamut check) and gamma (for display) in a single pass:
+const [lin, srgb] = labToLinearAndSrgb(54.29, 80.8, 69.89); // or lchToLinearAndSrgb
 
 // Hex/RGB input? Parse once, then divide by 255:
 const { r, g, b } = colordx('#ff0000').toRgb();
 rgbToLinear(r / 255, g / 255, b / 255); // [1, 0, 0]
 
 // P3/Rec.2020 channel functions live in their plugins:
-import { linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
-import { linearToRec2020Channels, oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
+import { labToP3Channels, lchToP3Channels, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
+import {
+  labToRec2020Channels,
+  lchToRec2020Channels,
+  linearToRec2020Channels,
+  oklchToRec2020Channels,
+} from '@colordx/core/plugins/rec2020';
 
 oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3 in [0, 1]
 oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (BT.2020 gamma)
+
+// CIE Lab/LCH → P3 / Rec.2020 (hot path for LCH renderers without OKLCH detour):
+labToP3Channels(54.29, 80.8, 69.89);      // [r, g, b] gamma P3
+lchToP3Channels(54.29, 106.84, 40.86);
+labToRec2020Channels(54.29, 80.8, 69.89); // [r, g, b] gamma Rec.2020
+lchToRec2020Channels(54.29, 106.84, 40.86);
 
 // Split-step API: compute the shared expensive OKLCH→linear sRGB step once,
 // then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
@@ -250,18 +276,26 @@ oklchToLinearInto(out, l, c, h);           // → [lr, lg, lb] linear sRGB
 oklchToRgbChannelsInto(out, l, c, h);      // → [r, g, b] gamma-encoded sRGB
 oklchToLinearAndSrgbInto(linOut, srgbOut, l, c, h); // both at once (distinct buffers)
 
-// from '@colordx/core' — non-OKLCH inputs → linear sRGB (complements oklchToLinear)
+// from '@colordx/core' — non-OKLCH inputs → linear / gamma sRGB (complements oklchToLinear)
 rgbToLinearInto(out, r, g, b);             // 0–1 gamma sRGB → linear sRGB
 labToLinearSrgbInto(out, l, a, b);         // CIE Lab (D50) → linear sRGB (via XYZ D50)
+labToRgbChannelsInto(out, l, a, b);        // CIE Lab (D50) → gamma sRGB
+labToLinearAndSrgbInto(linOut, srgbOut, l, a, b); // both (distinct buffers)
 lchToLinearSrgbInto(out, l, c, h);         // CIE LCH (D50) → linear sRGB
+lchToRgbChannelsInto(out, l, c, h);        // CIE LCH (D50) → gamma sRGB
+lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
 
 // from '@colordx/core/plugins/p3'
 linearToP3ChannelsInto(out, lr, lg, lb);
 oklchToP3ChannelsInto(out, l, c, h);
+labToP3ChannelsInto(out, l, a, b);
+lchToP3ChannelsInto(out, l, c, h);
 
 // from '@colordx/core/plugins/rec2020'
 linearToRec2020ChannelsInto(out, lr, lg, lb);
 oklchToRec2020ChannelsInto(out, l, c, h);
+labToRec2020ChannelsInto(out, l, a, b);
+lchToRec2020ChannelsInto(out, l, c, h);
 
 // Lower-level matrix / color-space primitives also have *Into siblings:
 // linearSrgbToOklabInto, oklabToLinearInto (from '@colordx/core')

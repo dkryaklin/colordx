@@ -14,8 +14,18 @@ import hwbPlugin from '../src/plugins/hwb.js';
 import labPlugin from '../src/plugins/lab.js';
 import lchPlugin from '../src/plugins/lch.js';
 import mixPlugin from '../src/plugins/mix.js';
-import p3Plugin, { inGamutP3, oklchToP3Channels } from '../src/plugins/p3.js';
-import rec2020Plugin, { inGamutRec2020, oklchToRec2020Channels } from '../src/plugins/rec2020.js';
+import p3Plugin, {
+  inGamutP3,
+  labToP3Channels,
+  lchToP3Channels,
+  oklchToP3Channels,
+} from '../src/plugins/p3.js';
+import rec2020Plugin, {
+  inGamutRec2020,
+  labToRec2020Channels,
+  lchToRec2020Channels,
+  oklchToRec2020Channels,
+} from '../src/plugins/rec2020.js';
 
 // External-reference parity suite. For each format/operation we run N random
 // inputs through colordx and culori, then assert that the worst per-color
@@ -90,6 +100,10 @@ const stats: Record<string, FormatStats> = {
   'XYZ D65': mkStats(),
   'Lab→LinSRGB': mkStats(),
   'LCH→LinSRGB': mkStats(),
+  'Lab→P3': mkStats(),
+  'LCH→P3': mkStats(),
+  'Lab→Rec2020': mkStats(),
+  'LCH→Rec2020': mkStats(),
   'mixLab()': mkStats(),
   'delta()': mkStats(),
   'Linear RGB': mkStats(),
@@ -179,6 +193,10 @@ const runParity = () => {
         'XYZ D65',
         'Lab→LinSRGB',
         'LCH→LinSRGB',
+        'Lab→P3',
+        'LCH→P3',
+        'Lab→Rec2020',
+        'LCH→Rec2020',
         'mixLab()',
         'delta()',
         'RT:HSL',
@@ -318,6 +336,55 @@ const runParity = () => {
           [round(cxLchLR, 5), round(cuLchLrgb.r ?? 0, 5)],
           [round(cxLchLG, 5), round(cuLchLrgb.g ?? 0, 5)],
           [round(cxLchLB, 5), round(cuLchLrgb.b ?? 0, 5)]
+        ),
+        color
+      );
+
+      // labToP3Channels: Lab → XYZ D50 → linear sRGB → linear P3 → gamma P3.
+      const [cxLabP3R, cxLabP3G, cxLabP3B] = labToP3Channels(cuLabL, cuLabA, cuLabB);
+      const cuLabP3 = culoriToP3({ mode: 'lab' as const, l: cuLabL, a: cuLabA, b: cuLabB })!;
+      record(
+        'Lab→P3',
+        maxDiff(
+          [round(cxLabP3R, 4), round(cuLabP3.r ?? 0, 4)],
+          [round(cxLabP3G, 4), round(cuLabP3.g ?? 0, 4)],
+          [round(cxLabP3B, 4), round(cuLabP3.b ?? 0, 4)]
+        ),
+        color
+      );
+
+      const [cxLchP3R, cxLchP3G, cxLchP3B] = lchToP3Channels(cuLchL, cuLchC, cuLchH);
+      const cuLchP3 = culoriToP3({ mode: 'lch' as const, l: cuLchL, c: cuLchC, h: cuLchH })!;
+      record(
+        'LCH→P3',
+        maxDiff(
+          [round(cxLchP3R, 4), round(cuLchP3.r ?? 0, 4)],
+          [round(cxLchP3G, 4), round(cuLchP3.g ?? 0, 4)],
+          [round(cxLchP3B, 4), round(cuLchP3.b ?? 0, 4)]
+        ),
+        color
+      );
+
+      const [cxLabRecR, cxLabRecG, cxLabRecB] = labToRec2020Channels(cuLabL, cuLabA, cuLabB);
+      const cuLabRec = culoriToRec2020({ mode: 'lab' as const, l: cuLabL, a: cuLabA, b: cuLabB })!;
+      record(
+        'Lab→Rec2020',
+        maxDiff(
+          [round(cxLabRecR, 4), round(cuLabRec.r ?? 0, 4)],
+          [round(cxLabRecG, 4), round(cuLabRec.g ?? 0, 4)],
+          [round(cxLabRecB, 4), round(cuLabRec.b ?? 0, 4)]
+        ),
+        color
+      );
+
+      const [cxLchRecR, cxLchRecG, cxLchRecB] = lchToRec2020Channels(cuLchL, cuLchC, cuLchH);
+      const cuLchRec = culoriToRec2020({ mode: 'lch' as const, l: cuLchL, c: cuLchC, h: cuLchH })!;
+      record(
+        'LCH→Rec2020',
+        maxDiff(
+          [round(cxLchRecR, 4), round(cuLchRec.r ?? 0, 4)],
+          [round(cxLchRecG, 4), round(cuLchRec.g ?? 0, 4)],
+          [round(cxLchRecB, 4), round(cuLchRec.b ?? 0, 4)]
         ),
         color
       );
@@ -698,6 +765,10 @@ const ceilings: Record<string, number> = {
   'XYZ D65': 1,
   'Lab→LinSRGB': 0.001,
   'LCH→LinSRGB': 0.001,
+  'Lab→P3': 0.001,
+  'LCH→P3': 0.001,
+  'Lab→Rec2020': 0.001,
+  'LCH→Rec2020': 0.001,
   'mixLab()': 2,
   'delta()': 0.01,
   'Linear RGB': 0.0001,

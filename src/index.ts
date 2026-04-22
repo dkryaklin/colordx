@@ -16,6 +16,14 @@ export {
   labToLinearSrgbInto,
   lchToLinearSrgb,
   lchToLinearSrgbInto,
+  labToRgbChannels,
+  labToRgbChannelsInto,
+  lchToRgbChannels,
+  lchToRgbChannelsInto,
+  labToLinearAndSrgb,
+  labToLinearAndSrgbInto,
+  lchToLinearAndSrgb,
+  lchToLinearAndSrgbInto,
 } from './channels.js';
 export type {
   AnyColor,

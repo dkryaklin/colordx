@@ -1,4 +1,4 @@
-import { oklchToLinear, oklchToLinearInto } from '../channels.js';
+import { labToLinearSrgb, labToLinearSrgbInto, oklchToLinear, oklchToLinearInto } from '../channels.js';
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import {
   linearRec2020ToSrgb,
@@ -59,6 +59,37 @@ export const oklchToRec2020Channels = (l: number, c: number, h: number): [number
 export const oklchToRec2020ChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
   oklchToLinearInto(out, l, c, h);
   linearToRec2020ChannelsInto(out, out[0]!, out[1]!, out[2]!);
+};
+
+const DEG_TO_RAD = Math.PI / 180;
+
+/**
+ * Convert CIE Lab (D50) to gamma-encoded Rec.2020 channels without object allocation.
+ * Returns [r, g, b] in [0, 1] for in-gamut colors; out-of-gamut channels may exceed [0, 1].
+ * Goes Lab → XYZ D50 → linear sRGB → linear Rec.2020 → BT.2020 gamma.
+ */
+export const labToRec2020Channels = (l: number, a: number, b: number): [number, number, number] =>
+  linearToRec2020Channels(...labToLinearSrgb(l, a, b));
+
+/** Zero-allocation sibling of labToRec2020Channels — writes [rr, rg, rb] into `out`. */
+export const labToRec2020ChannelsInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  labToLinearSrgbInto(out, l, a, b);
+  linearToRec2020ChannelsInto(out, out[0]!, out[1]!, out[2]!);
+};
+
+/**
+ * Convert CIE LCH (D50) to gamma-encoded Rec.2020 channels without object allocation.
+ * Polar-to-rectangular to Lab, then Lab → gamma Rec.2020.
+ */
+export const lchToRec2020Channels = (l: number, c: number, h: number): [number, number, number] => {
+  const hRad = h * DEG_TO_RAD;
+  return labToRec2020Channels(l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
+/** Zero-allocation sibling of lchToRec2020Channels — writes [rr, rg, rb] into `out`. */
+export const lchToRec2020ChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  const hRad = h * DEG_TO_RAD;
+  labToRec2020ChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
 /**

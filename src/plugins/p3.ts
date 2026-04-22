@@ -1,4 +1,4 @@
-import { oklchToLinear, oklchToLinearInto } from '../channels.js';
+import { labToLinearSrgb, labToLinearSrgbInto, oklchToLinear, oklchToLinearInto } from '../channels.js';
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import {
   linearP3ToSrgb,
@@ -61,6 +61,37 @@ export const oklchToP3Channels = (l: number, c: number, h: number): [number, num
 export const oklchToP3ChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
   oklchToLinearInto(out, l, c, h);
   linearToP3ChannelsInto(out, out[0]!, out[1]!, out[2]!);
+};
+
+const DEG_TO_RAD = Math.PI / 180;
+
+/**
+ * Convert CIE Lab (D50) to gamma-encoded Display-P3 channels without object allocation.
+ * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may exceed [0, 1].
+ * Goes Lab → XYZ D50 → linear sRGB → linear P3 → gamma P3.
+ */
+export const labToP3Channels = (l: number, a: number, b: number): [number, number, number] =>
+  linearToP3Channels(...labToLinearSrgb(l, a, b));
+
+/** Zero-allocation sibling of labToP3Channels — writes [pr, pg, pb] into `out`. */
+export const labToP3ChannelsInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  labToLinearSrgbInto(out, l, a, b);
+  linearToP3ChannelsInto(out, out[0]!, out[1]!, out[2]!);
+};
+
+/**
+ * Convert CIE LCH (D50) to gamma-encoded Display-P3 channels without object allocation.
+ * Polar-to-rectangular to Lab, then Lab → gamma P3. Out-of-gamut channels may exceed [0, 1].
+ */
+export const lchToP3Channels = (l: number, c: number, h: number): [number, number, number] => {
+  const hRad = h * DEG_TO_RAD;
+  return labToP3Channels(l, c * Math.cos(hRad), c * Math.sin(hRad));
+};
+
+/** Zero-allocation sibling of lchToP3Channels — writes [pr, pg, pb] into `out`. */
+export const lchToP3ChannelsInto = (out: Float64Array | number[], l: number, c: number, h: number): void => {
+  const hRad = h * DEG_TO_RAD;
+  labToP3ChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
 /**

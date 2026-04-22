@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  labToLinearAndSrgb,
+  labToLinearAndSrgbInto,
   labToLinearSrgb,
   labToLinearSrgbInto,
+  labToRgbChannels,
+  labToRgbChannelsInto,
+  lchToLinearAndSrgb,
+  lchToLinearAndSrgbInto,
   lchToLinearSrgb,
   lchToLinearSrgbInto,
+  lchToRgbChannels,
+  lchToRgbChannelsInto,
   oklchToLinear,
   oklchToLinearAndSrgb,
   oklchToLinearAndSrgbInto,
@@ -37,12 +45,20 @@ import {
 } from '../src/colorModels/rec2020.js';
 import { xyzD50ToLinearSrgb, xyzD50ToLinearSrgbInto } from '../src/colorModels/xyz.js';
 import {
+  labToP3Channels,
+  labToP3ChannelsInto,
+  lchToP3Channels,
+  lchToP3ChannelsInto,
   linearToP3Channels,
   linearToP3ChannelsInto,
   oklchToP3Channels,
   oklchToP3ChannelsInto,
 } from '../src/plugins/p3.js';
 import {
+  labToRec2020Channels,
+  labToRec2020ChannelsInto,
+  lchToRec2020Channels,
+  lchToRec2020ChannelsInto,
   linearToRec2020Channels,
   linearToRec2020ChannelsInto,
   oklchToRec2020Channels,
@@ -207,6 +223,44 @@ describe('oklab *Into parity', () => {
       expectTripleEqual(out, want);
     }
   });
+
+  it('labToRgbChannelsInto matches labToRgbChannels', () => {
+    for (const [l, a, b] of LAB_CASES) {
+      const want = labToRgbChannels(l, a, b);
+      labToRgbChannelsInto(out, l, a, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('lchToRgbChannelsInto matches lchToRgbChannels', () => {
+    for (const [l, c, h] of LCH_CASES) {
+      const want = lchToRgbChannels(l, c, h);
+      lchToRgbChannelsInto(out, l, c, h);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('labToLinearAndSrgbInto matches labToLinearAndSrgb', () => {
+    const linOut = new Float64Array(3);
+    const srgbOut = new Float64Array(3);
+    for (const [l, a, b] of LAB_CASES) {
+      const [wantLin, wantSrgb] = labToLinearAndSrgb(l, a, b);
+      labToLinearAndSrgbInto(linOut, srgbOut, l, a, b);
+      expectTripleEqual(linOut, wantLin);
+      expectTripleEqual(srgbOut, wantSrgb);
+    }
+  });
+
+  it('lchToLinearAndSrgbInto matches lchToLinearAndSrgb', () => {
+    const linOut = new Float64Array(3);
+    const srgbOut = new Float64Array(3);
+    for (const [l, c, h] of LCH_CASES) {
+      const [wantLin, wantSrgb] = lchToLinearAndSrgb(l, c, h);
+      lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
+      expectTripleEqual(linOut, wantLin);
+      expectTripleEqual(srgbOut, wantSrgb);
+    }
+  });
 });
 
 describe('xyz *Into parity', () => {
@@ -295,6 +349,22 @@ describe('p3 plugin *Into parity', () => {
       expectTripleEqual(out, want);
     }
   });
+
+  it('labToP3ChannelsInto matches labToP3Channels', () => {
+    for (const [l, a, b] of LAB_CASES) {
+      const want = labToP3Channels(l, a, b);
+      labToP3ChannelsInto(out, l, a, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('lchToP3ChannelsInto matches lchToP3Channels', () => {
+    for (const [l, c, h] of LCH_CASES) {
+      const want = lchToP3Channels(l, c, h);
+      lchToP3ChannelsInto(out, l, c, h);
+      expectTripleEqual(out, want);
+    }
+  });
 });
 
 describe('rec2020 plugin *Into parity', () => {
@@ -312,6 +382,22 @@ describe('rec2020 plugin *Into parity', () => {
     for (const [l, c, h] of OKLCH_CASES) {
       const want = oklchToRec2020Channels(l, c, h);
       oklchToRec2020ChannelsInto(out, l, c, h);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('labToRec2020ChannelsInto matches labToRec2020Channels', () => {
+    for (const [l, a, b] of LAB_CASES) {
+      const want = labToRec2020Channels(l, a, b);
+      labToRec2020ChannelsInto(out, l, a, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('lchToRec2020ChannelsInto matches lchToRec2020Channels', () => {
+    for (const [l, c, h] of LCH_CASES) {
+      const want = lchToRec2020Channels(l, c, h);
+      lchToRec2020ChannelsInto(out, l, c, h);
       expectTripleEqual(out, want);
     }
   });
