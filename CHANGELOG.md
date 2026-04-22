@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.4.0
+
+### Minor Changes
+
+- Add XYZ D65 support (toXyzD65, toXyzD65String, color(xyz-d65) parsing), fix toXyzString to emit xyz-d50, add Lab/LCH channel helpers for sRGB, P3, and Rec.2020, add rgbToLinear, add legacy comma-syntax option to toRgbString, and accept optional precision on all formatter methods
+
 ## 5.3.3
 
 ### Patch Changes
