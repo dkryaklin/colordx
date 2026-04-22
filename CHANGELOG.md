@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.3.2
+
+### Patch Changes
+
+- Fix float precision leak by snapping alpha to 3 decimal places in Colordx constructor
+
 ## 5.3.1
 
 ### Patch Changes
