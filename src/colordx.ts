@@ -21,11 +21,15 @@ export class Colordx {
     } else if (input instanceof Colordx) {
       this._valid = input._valid;
       this._rgb = input._rgb;
+      return;
     } else {
       const parsed = parse(input);
       this._valid = parsed !== null;
       this._rgb = parsed ?? { r: 0, g: 0, b: 0, alpha: 1 };
     }
+    // Single chokepoint for alpha precision: parsers and _make() callers may hand us
+    // raw floats (e.g. 1/255, 0.1+0.2). Snapping here keeps every formatter consistent.
+    this._rgb.alpha = clamp(round(this._rgb.alpha, 3), 0, 1);
   }
 
   private static _make(rgb: RgbColor): Colordx {
