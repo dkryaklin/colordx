@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.3.3
+
+### Patch Changes
+
+- Add `toHex8` method and `toHexByte` utility, split color types into `*Color` output and `*ColorInput` input variants with optional alpha
+
 ## 5.3.2
 
 ### Patch Changes
