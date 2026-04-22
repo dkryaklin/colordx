@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.3.0
+
+### Minor Changes
+
+- Update toRgbString, toHslString, toHsvString, toLabString, and toLchString output to CSS Color 4 space-separated syntax and extend string parsers to accept the none keyword and percentage channels across all color models
+
 ## 5.2.0
 
 ### Minor Changes
