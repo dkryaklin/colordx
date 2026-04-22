@@ -19,7 +19,7 @@ const opaque = colordx('#3d7a9f');
 const alpha = colordx({ r: 61, g: 122, b: 159, alpha: 0.5 });
 
 interface WithStrings {
-  toRgbString(): string;
+  toRgbString(options?: { legacy?: boolean }): string;
   toHslString(): string;
   toOklabString(): string;
   toOklchString(): string;
@@ -80,4 +80,26 @@ describe('output format — no legacy comma syntax', () => {
 describe('output format — lab/lch L without %', () => {
   it('toLabString L is bare number', () => expect(o.toLabString()).toMatch(/^lab\(\d+(\.\d+)? /));
   it('toLchString L is bare number', () => expect(o.toLchString()).toMatch(/^lch\(\d+(\.\d+)? /));
+});
+
+describe('toRgbString legacy option — CSS Color 3 comma syntax', () => {
+  it('opaque: rgb(r, g, b)', () => expect(o.toRgbString({ legacy: true })).toBe('rgb(61, 122, 159)'));
+  it('with alpha: rgba(r, g, b, a)', () =>
+    expect(a.toRgbString({ legacy: true })).toBe('rgba(61, 122, 159, 0.5)'));
+  it('alpha=0 still uses rgba()', () => {
+    const a0 = colordx({ r: 0, g: 0, b: 0, alpha: 0 }) as unknown as WithStrings;
+    expect(a0.toRgbString({ legacy: true })).toBe('rgba(0, 0, 0, 0)');
+  });
+  it('legacy: false behaves like default modern syntax', () => {
+    expect(o.toRgbString({ legacy: false })).toBe(o.toRgbString());
+    expect(a.toRgbString({ legacy: false })).toBe(a.toRgbString());
+  });
+  it('the library still parses its own legacy output back', () => {
+    expect(colordx(o.toRgbString({ legacy: true })).toHex()).toBe(opaque.toHex());
+    expect(colordx(a.toRgbString({ legacy: true })).toHex8()).toBe(alpha.toHex8());
+  });
+  it('default (no options) remains modern', () => {
+    expect(o.toRgbString()).toBe('rgb(61 122 159)');
+    expect(a.toRgbString()).toBe('rgb(61 122 159 / 0.5)');
+  });
 });

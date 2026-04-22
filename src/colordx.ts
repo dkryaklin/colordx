@@ -66,11 +66,22 @@ export class Colordx {
     return this._rgb;
   }
 
-  toRgbString(): string {
+  /**
+   * Format as a `rgb()` / `rgba()` CSS string.
+   * Default is CSS Color 4 modern syntax (space-separated, slash-delimited alpha):
+   *   `rgb(255 0 0)` / `rgb(255 0 0 / 0.5)`
+   * Pass `{ legacy: true }` for CSS Color 3 comma-separated syntax, which also
+   * switches the function name to `rgba()` when alpha < 1:
+   *   `rgb(255, 0, 0)` / `rgba(255, 0, 0, 0.5)`
+   */
+  toRgbString(options?: { legacy?: boolean }): string {
     const { r, g, b, alpha } = this._rgb;
     const ri = clamp(round(r), 0, 255),
       gi = clamp(round(g), 0, 255),
       bi = clamp(round(b), 0, 255);
+    if (options?.legacy) {
+      return alpha < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${alpha})` : `rgb(${ri}, ${gi}, ${bi})`;
+    }
     return alpha < 1 ? `rgb(${ri} ${gi} ${bi} / ${alpha})` : `rgb(${ri} ${gi} ${bi})`;
   }
 

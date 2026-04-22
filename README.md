@@ -102,7 +102,10 @@ const output: RgbColor = colordx(input).toRgb();           // alpha guaranteed
 
 ```ts
 .toRgb()           // { r: 255, g: 0, b: 0, alpha: 1 }
-.toRgbString()     // 'rgb(255 0 0)'
+.toRgbString()                    // 'rgb(255 0 0)'                — CSS Color 4 (default)
+.toRgbString({ legacy: true })    // 'rgb(255, 0, 0)'              — CSS Color 3 comma syntax
+// Legacy form also switches to `rgba()` when alpha < 1:
+colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString({ legacy: true }); // 'rgba(255, 0, 0, 0.5)'
 .toHex()           // '#ff0000'
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
 .toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
