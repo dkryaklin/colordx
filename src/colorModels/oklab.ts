@@ -82,6 +82,12 @@ export const oklabToRgbUnclamped = ({ l, a, b, alpha }: OklabColor): RgbColor =>
 };
 
 export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
+  if (a === 0 && b === 0) {
+    const v = l ** 3;
+    const srgb = srgbFromLinear(clamp(v, 0, 1)) * 255;
+    return clampRgb({ r: srgb, g: srgb, b: srgb, alpha });
+  }
+
   const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
   const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
   const s_ = l - 0.0894841775 * a - 1.291485548 * b;
@@ -104,6 +110,16 @@ export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {
 
 /** Zero-allocation sibling of oklabToLinear — writes [lr, lg, lb] into `out`. */
 export const oklabToLinearInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
+  // Achromatic short-circuit: M1⁻¹ rows sum to 1 mathematically, but floating-point
+  // rounding leaves lr/lg/lb ~1 ULP apart, which gets amplified into a phantom hue
+  // downstream in rgbToHslRaw. Explicitly return lv for all channels.
+  if (a === 0 && b === 0) {
+    const v = l ** 3;
+    out[0] = v;
+    out[1] = v;
+    out[2] = v;
+    return;
+  }
   const l_ = l + M2I_A_L * a + M2I_B_L * b;
   const m_ = l + M2I_A_M * a + M2I_B_M * b;
   const s_ = l + M2I_A_S * a + M2I_B_S * b;
@@ -117,6 +133,10 @@ export const oklabToLinearInto = (out: Float64Array | number[], l: number, a: nu
 
 /** Unclamped linear sRGB channels from OKLab values. Channels may exceed [0, 1] for out-of-gamut colors. */
 export const oklabToLinear = (l: number, a: number, b: number): [number, number, number] => {
+  if (a === 0 && b === 0) {
+    const v = l ** 3;
+    return [v, v, v];
+  }
   const l_ = l + M2I_A_L * a + M2I_B_L * b;
   const m_ = l + M2I_A_M * a + M2I_B_M * b;
   const s_ = l + M2I_A_S * a + M2I_B_S * b;
