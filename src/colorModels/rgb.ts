@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import type { RgbColor } from '../types.js';
 
 export const clampRgb = (rgb: RgbColor): RgbColor => ({
@@ -19,44 +19,47 @@ export const parseRgbObject = (input: unknown): RgbColor | null => {
 };
 
 // Matches both legacy comma syntax: rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
-// and modern space syntax: rgb(255 0 0) / rgb(255 0 0 / 0.5)
-// Also supports percentage-based channels: rgb(100%, 0%, 0%) / rgb(100% 0% 0%)
-const N = '[+-]?\\d*\\.?\\d+';
+// and modern space syntax: rgb(255 0 0) / rgb(255 0 0 / 0.5).
+// Supports percentage-based channels and the CSS Color 4 `none` keyword.
+// Named groups are suffixed `_c` (comma/legacy branch) or `_s` (space/modern branch)
+// because ES2022 regex requires distinct names across alternation branches.
 const RGB_RE = new RegExp(
-  `^rgba?\\(\\s*(${N})(%?)\\s*(?:` +
-    // comma branch: r,g,b and optional alpha
-    `,\\s*(${N})(%?)\\s*,\\s*(${N})(%?)(?:\\s*,\\s*(${N})(%?))?\\s*` +
+  `^rgba?\\(\\s*(?<r>${NUM_OR_NONE})(?<rp>%?)\\s*(?:` +
+    `,\\s*(?<g_c>${NUM_OR_NONE})(?<gp_c>%?)\\s*,\\s*(?<b_c>${NUM_OR_NONE})(?<bp_c>%?)` +
+    `(?:\\s*,\\s*(?<al_c>${NUM_OR_NONE})(?<alp_c>%?))?\\s*` +
     `|` +
-    // space branch: r g b and optional /alpha
-    `\\s+(${N})(%?)\\s+(${N})(%?)(?:\\s*/\\s*(${N})(%?))?\\s*` +
+    `\\s+(?<g_s>${NUM_OR_NONE})(?<gp_s>%?)\\s+(?<b_s>${NUM_OR_NONE})(?<bp_s>%?)` +
+    `(?:\\s*/\\s*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?))?\\s*` +
     `)\\)$`,
   'i'
 );
 
 export const parseRgbString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = RGB_RE.exec(input.trim());
-  if (!m) return null;
+  const g = RGB_RE.exec(input.trim())?.groups;
+  if (!g) return null;
 
-  // comma branch: m[1]r m[2]r% m[3]g m[4]g% m[5]b m[6]b% m[7]a m[8]a%
-  // space branch:  m[1]r m[2]r% m[9]g m[10]g% m[11]b m[12]b% m[13]a m[14]a%
-  const rPct = !!m[2];
-  const r = rPct ? (Number(m[1]) / 100) * 255 : Number(m[1]);
+  const isComma = g.g_c !== undefined;
+  const gRaw = g.g_c ?? g.g_s!;
+  const bRaw = g.b_c ?? g.b_s!;
+  const rPct = !!g.rp;
+  const gPct = !!(g.gp_c ?? g.gp_s);
+  const bPct = !!(g.bp_c ?? g.bp_s);
 
-  const gRaw = m[3] ?? m[9];
-  const gPct = !!(m[4] ?? m[10]);
-  const g = gPct ? (Number(gRaw) / 100) * 255 : Number(gRaw);
+  const r = rPct ? (parseNum(g.r!) / 100) * 255 : parseNum(g.r!);
+  const gc = gPct ? (parseNum(gRaw) / 100) * 255 : parseNum(gRaw);
+  const b = bPct ? (parseNum(bRaw) / 100) * 255 : parseNum(bRaw);
 
-  const bRaw = m[5] ?? m[11];
-  const bPct = !!(m[6] ?? m[12]);
-  const b = bPct ? (Number(bRaw) / 100) * 255 : Number(bRaw);
+  // Legacy: channels must match type, no `none`. Modern: mixing + `none` allowed.
+  if (isComma) {
+    if (rPct !== gPct || gPct !== bPct) return null;
+    if (/^none$/i.test(g.r!) || /^none$/i.test(gRaw) || /^none$/i.test(bRaw)) return null;
+  }
 
-  // CSS requires r/g/b to be all-numbers or all-percentages, not mixed
-  if (rPct !== gPct || gPct !== bPct) return null;
+  const rawA = g.al_c ?? g.al_s;
+  const aPct = !!(g.alp_c ?? g.alp_s);
+  if (isComma && rawA !== undefined && /^none$/i.test(rawA)) return null;
+  const alpha = rawA === undefined ? 1 : parseNum(rawA) / (aPct ? 100 : 1);
 
-  const rawA = m[7] ?? m[13];
-  const aPct = !!(m[8] ?? m[14]);
-  const alpha = rawA === undefined ? 1 : Number(rawA) / (aPct ? 100 : 1);
-
-  return clampRgb({ r, g, b, alpha });
+  return clampRgb({ r, g: gc, b, alpha });
 };

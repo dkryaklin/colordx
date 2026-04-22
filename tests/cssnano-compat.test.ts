@@ -176,3 +176,38 @@ describe('cssnano — hsl() float-to-hex exact conversion', () => {
   it('hsl(270,80%,50%) → #7f19e6', () => expect(min('hsl(270, 80%, 50%)')).toBe('#7f19e6'));
   it('hsl(320,80%,50%) → #e619a1', () => expect(min('hsl(320, 80%, 50%)')).toBe('#e619a1'));
 });
+
+// IE11 / pre-2019 browser safety: minify() must never emit CSS Color 4 modern
+// space syntax (rgb(r g b), slash-alpha, `none` keyword). cssnano pipelines feed
+// this output directly into output CSS where legacy browsers must still parse it.
+// These assertions sweep a variety of sRGB colors and pin that rule.
+
+describe('cssnano — minify() output is IE11-safe (no modern CSS Color 4 syntax)', () => {
+  const inputs = [
+    '#ff0000',
+    '#123456',
+    '#abcdef',
+    'rgb(255 0 0 / 0.5)',
+    'rgb(143 101 98 / 43%)',
+    'hsl(220 80% 50%)',
+    'hsl(0 100% 50% / 0.25)',
+    'oklch(0.5 0.2 240)',
+    'hwb(120 0% 0%)',
+    'rgba(130, 138, 145, 0.5)',
+    'rgba(255, 255, 255, 0)', // transparent
+  ];
+
+  for (const input of inputs) {
+    it(`${input} — output contains no slash separator or space-only channel list`, () => {
+      const out = min(input);
+      // Slash-alpha would indicate modern CSS Color 4 form.
+      expect(out).not.toMatch(/\//);
+      // `rgb(` or `hsl(` without a comma would indicate modern space syntax; accept only
+      // if no rgb/hsl open-paren is present at all (hex / name / transparent outputs).
+      const isFnForm = /^(rgba?|hsla?)\(/i.test(out);
+      if (isFnForm) expect(out).toMatch(/,/);
+      // The `none` keyword is CSS Color 4-only and not legacy-safe.
+      expect(out).not.toMatch(/\bnone\b/i);
+    });
+  }
+});

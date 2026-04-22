@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import type { CmykColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -49,21 +49,26 @@ export const parseCmykObject = (input: unknown): RgbColor | null => {
   );
 };
 
-const CMYK_RE =
-  /^device-cmyk\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+const CMYK_RE = new RegExp(
+  `^device-cmyk\\(\\s*(?<c>${NUM_OR_NONE})(?<cp>%?)\\s+(?<m>${NUM_OR_NONE})(?<mp>%?)` +
+    `\\s+(?<y>${NUM_OR_NONE})(?<yp>%?)\\s+(?<k>${NUM_OR_NONE})(?<kp>%?)` +
+    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  'i'
+);
 
 export const parseCmykString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = CMYK_RE.exec(input.trim());
-  if (!m) return null;
-  const toPercent = (val: string, pct: string) => Number(val) * (pct ? 1 : 100);
+  const g = CMYK_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  // Numbers are treated as 0-1 fractions, percentages as 0-100; normalize both to the internal 0-100 range.
+  const toPercent = (v: string, pct: string) => parseNum(v) * (pct ? 1 : 100);
   return cmykToRgb(
     clampCmyk({
-      c: toPercent(m[1]!, m[2]!),
-      m: toPercent(m[3]!, m[4]!),
-      y: toPercent(m[5]!, m[6]!),
-      k: toPercent(m[7]!, m[8]!),
-      alpha: m[9] === undefined ? 1 : Number(m[9]) / (m[10] ? 100 : 1),
+      c: toPercent(g.c!, g.cp!),
+      m: toPercent(g.m!, g.mp!),
+      y: toPercent(g.y!, g.yp!),
+      k: toPercent(g.k!, g.kp!),
+      alpha: g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1),
     })
   );
 };

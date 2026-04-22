@@ -105,8 +105,8 @@ export default function App() {
 
 const color = colordx('#ff6b35');
 color.toHex()           // '#ff6b35'
-color.toRgbString()     // 'rgb(255, 107, 53)'
-color.toHslString()     // 'hsl(19.2, 100%, 60%)'
+color.toRgbString()     // 'rgb(255 107 53)'
+color.toHslString()     // 'hsl(19.2 100% 60%)'
 color.toOklch()         // { l: 0.68, c: 0.19, h: 38.18 }
 color.toOklchString()   // 'oklch(0.6827 0.1946 38.18)'
 color.toOklab()         // { l: 0.68, a: 0.149, b: 0.118 }`}</code></pre>
@@ -123,7 +123,7 @@ inGamutSrgb('oklch(0.5 0.4 180)')   // false — out of sRGB
 inGamutSrgb('oklch(0.5 0.1 180)')   // true  — in sRGB
 
 // .toRgbString() / .toHex() already naive-clip to match the browser:
-colordx('oklch(0.5 0.4 180)').toRgbString()         // 'rgb(0, 152, 108)'
+colordx('oklch(0.5 0.4 180)').toRgbString()         // 'rgb(0 152 108)'
 
 // .mapSrgb() — CSS Color 4 gamut mapping (preserves lightness + hue)
 colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString()

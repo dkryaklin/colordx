@@ -17,7 +17,7 @@ const hsv: Plugin = (ColordxClass, parsers, formatParsers) => {
 
   ColordxClass.prototype.toHsvString = function (this: Colordx): string {
     const { h, s, v, alpha } = this.toHsv();
-    return alpha < 1 ? `hsva(${h}, ${s}%, ${v}%, ${alpha})` : `hsv(${h}, ${s}%, ${v}%)`;
+    return alpha < 1 ? `hsv(${h} ${s}% ${v}% / ${alpha})` : `hsv(${h} ${s}% ${v}%)`;
   };
 
   parsers.push(parseHsvString, parseHsvObject);

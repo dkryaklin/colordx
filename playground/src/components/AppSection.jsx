@@ -273,10 +273,7 @@ export default function AppSection({ S, setS, onRandom }) {
       .padStart(2, '0');
 
   const hexAlpha = S.alpha < 1 ? Math.round(S.alpha * 255).toString(16).padStart(2, '0') : '';
-  const rgbVal =
-    S.alpha < 1
-      ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${f(S.alpha, 2)})`
-      : cs.toRgbString();
+  const rgbVal = cs.toRgbString();
 
   const inGamut = inGamutSrgb({ l: S.l, c: S.c, h: S.h, alpha: S.alpha });
 

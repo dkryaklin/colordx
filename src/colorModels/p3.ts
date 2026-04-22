@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
@@ -97,18 +97,25 @@ export const parseP3Object = (input: unknown): RgbColor | null => {
   });
 };
 
-const P3_RE =
-  /^color\(\s*display-p3\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+// CSS Color 4: color(display-p3 r g b / alpha). Channels accept number|percentage|none; 100% = 1.
+const P3_RE = new RegExp(
+  `^color\\(\\s*display-p3\\s+(?<r>${NUM_OR_NONE})(?<rp>%?)\\s+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
+    `\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  'i'
+);
 
 export const parseP3String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = P3_RE.exec(input.trim());
-  if (!m) return null;
-  const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
+  const g = P3_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
+  const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);
+  const b = g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!);
+  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return p3ToRgbUnclamped({
-    r: Number(m[1]),
-    g: Number(m[2]),
-    b: Number(m[3]),
+    r,
+    g: gc,
+    b,
     alpha: clamp(alpha, 0, 1),
     colorSpace: 'display-p3',
   });

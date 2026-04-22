@@ -50,6 +50,9 @@ const minifyPlugin: Plugin = (ColordxClass) => {
       candidates.push(short ?? targetHex);
     }
 
+    // Legacy comma syntax below is intentional — byte-optimal AND IE11-safe for the
+    // cssnano pipeline. Do NOT delegate to toRgbString() / toHslString(); those emit
+    // modern CSS Color 4 space syntax which pre-2019 browsers can't parse.
     if (opts.rgb) {
       const aa = shortenLeadingZero(alpha);
       candidates.push(alpha === 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${aa})`);

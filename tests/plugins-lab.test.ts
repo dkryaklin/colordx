@@ -52,11 +52,11 @@ describe('LCH string parsing', () => {
 
   it('toLchString hue is none for achromatic colors', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((colordx('#ffffff') as any).toLchString()).toMatch(/lch\([\d.]+% [\d.]+ none\)/);
+    expect((colordx('#ffffff') as any).toLchString()).toMatch(/lch\([\d.]+ [\d.]+ none\)/);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((colordx('#000000') as any).toLchString()).toMatch(/lch\([\d.]+% [\d.]+ none\)/);
+    expect((colordx('#000000') as any).toLchString()).toMatch(/lch\([\d.]+ [\d.]+ none\)/);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((colordx('#808080') as any).toLchString()).toMatch(/lch\([\d.]+% [\d.]+ none\)/);
+    expect((colordx('#808080') as any).toLchString()).toMatch(/lch\([\d.]+ [\d.]+ none\)/);
   });
 
   it('toLchString chromatic colors output real hue, not none', () => {

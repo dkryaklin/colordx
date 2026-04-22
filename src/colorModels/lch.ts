@@ -1,4 +1,15 @@
-import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import {
+  ANGLE_UNITS,
+  NUM_OR_NONE,
+  clamp,
+  hasKeys,
+  isAnyNumber,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+  sanitize,
+} from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, rgbToLab } from './lab.js';
 
@@ -49,15 +60,22 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
   );
 };
 
-const LCH_RE =
-  /^lch\(\s*([+-]?\d*\.?\d+)%\s+([+-]?\d*\.?\d+)\s+(none|[+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+// CSS Color 4: lch(L C H / alpha). L: 100%=100. C: 100%=150. H: number|angle|none.
+const LCH_RE = new RegExp(
+  `^lch\\(\\s*(?<l>${NUM_OR_NONE})(?<lp>%?)\\s+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
+    `\\s+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
+    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  'i'
+);
 
 export const parseLchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = LCH_RE.exec(input.trim());
-  if (!m) return null;
-  const unit = m[4]?.toLowerCase() ?? 'deg';
-  const h = m[3]!.toLowerCase() === 'none' ? 0 : Number(m[3]) * (ANGLE_UNITS[unit] ?? 1);
-  const alpha = m[5] === undefined ? 1 : Number(m[5]) / (m[6] ? 100 : 1);
-  return lchToRgb(clampLch({ l: Number(m[1]), c: Number(m[2]), h, alpha }));
+  const g = LCH_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const l = parseNum(g.l!); // 100% = 100
+  const c = g.cp ? parseNum(g.c!) * 1.5 : parseNum(g.c!); // 100% = 150
+  const unit = g.hu?.toLowerCase() ?? 'deg';
+  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
+  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
+  return lchToRgb(clampLch({ l, c, h, alpha }));
 };

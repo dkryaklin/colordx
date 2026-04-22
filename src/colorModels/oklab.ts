@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isAnyNumber, isObject, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -147,18 +147,19 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   });
 };
 
-const OKLAB_RE =
-  /^oklab\(\s*(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(%?)\s*(?:\/\s*(none|[+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
-
-const val = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
+const OKLAB_RE = new RegExp(
+  `^oklab\\(\\s*(?<l>${NUM_OR_NONE})(?<lp>%?)\\s+(?<a>${NUM_OR_NONE})(?<ap>%?)\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
+    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  'i'
+);
 
 export const parseOklabString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = OKLAB_RE.exec(input.trim());
-  if (!m) return null;
-  const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
-  const a = m[4] ? val(m[3]!) * 0.004 : val(m[3]!); // CSS Color 4: 100% = 0.4, so 1% = 0.004
-  const b = m[6] ? val(m[5]!) * 0.004 : val(m[5]!);
-  const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
+  const g = OKLAB_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const L = g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!); // 100% = 1
+  const a = g.ap ? parseNum(g.a!) * 0.004 : parseNum(g.a!); // 100% = 0.4
+  const b = g.bp ? parseNum(g.b!) * 0.004 : parseNum(g.b!);
+  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return oklabToRgbUnclamped({ l: L, a, b, alpha: clamp(alpha, 0, 1) });
 };

@@ -310,22 +310,22 @@ describe('gamut strategies — the three distinct outputs', () => {
 
   it('preserve → original oklch, naive-clipped rgb on output', () => {
     expect(colordx(input).toOklchString()).toBe('oklch(0.5 0.4 180)');
-    expect(colordx(input).toRgbString()).toBe('rgb(0, 152, 108)');
+    expect(colordx(input).toRgbString()).toBe('rgb(0 152 108)');
   });
 
   it('map → hue-preserving chroma reduction (CSS Color 4)', () => {
     const mapped = colordx(input).mapSrgb();
     expect(mapped.toOklchString()).toBe('oklch(0.5091 0.0938 177.85)');
-    expect(mapped.toRgbString()).toBe('rgb(0, 119, 102)');
+    expect(mapped.toRgbString()).toBe('rgb(0 119 102)');
   });
 
   it('clamp → browser-matching naive clip, oklch drifts', () => {
     const clamped = colordx(input).clampSrgb();
     expect(clamped.toOklchString()).toBe('oklch(0.6012 0.1276 164.3)');
-    expect(clamped.toRgbString()).toBe('rgb(0, 152, 108)');
+    expect(clamped.toRgbString()).toBe('rgb(0 152 108)');
   });
 
-  it('clamp and preserve render identically (both emit rgb(0, 152, 108))', () => {
+  it('clamp and preserve render identically (both emit rgb(0 152 108))', () => {
     expect(colordx(input).toRgbString()).toBe(colordx(input).clampSrgb().toRgbString());
   });
 });

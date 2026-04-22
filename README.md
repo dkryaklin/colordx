@@ -44,14 +44,14 @@ npm install @colordx/core
 import { colordx } from '@colordx/core';
 
 // Parse any CSS color string or color object, then chain conversions:
-colordx('#ff0000').toRgbString();     // 'rgb(255, 0, 0)'
+colordx('#ff0000').toRgbString();     // 'rgb(255 0 0)'
 colordx('#ff0000').toHex();           // '#ff0000'
 colordx('#ff0000').toOklch();         // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
 colordx('#ff0000').toOklchString();   // 'oklch(0.628 0.2577 29.23)'
 
 // Works from any input format — hex, rgb(), hsl(), oklch(), oklab(), plain objects:
 colordx('oklch(0.5 0.2 240)').toHex();                     // '#0069c7'
-colordx({ r: 255, g: 0, b: 0, alpha: 1 }).toHslString();   // 'hsl(0, 100%, 50%)'
+colordx({ r: 255, g: 0, b: 0, alpha: 1 }).toHslString();   // 'hsl(0 100% 50%)'
 
 // Chain manipulations — each call returns a new immutable Colordx:
 colordx('#ff0000').lighten(0.1).saturate(0.2).toHex();
@@ -71,9 +71,9 @@ Accepts any CSS color string or color object:
 ```ts
 colordx('#ff0000');
 colordx('#f00');
-colordx('rgb(255, 0, 0)');
+colordx('rgb(255 0 0)');
 colordx('rgba(255, 0, 0, 0.5)');
-colordx('hsl(0, 100%, 50%)');
+colordx('hsl(0 100% 50%)');
 colordx('oklab(0.6279 0.2249 0.1257)');
 colordx('oklch(0.6279 0.2577 29.23)');
 colordx({ r: 255, g: 0, b: 0, alpha: 1 });
@@ -95,17 +95,17 @@ colordx({ h: 0, s: 100, v: 100, alpha: 1 }); // HSV
 
 ```ts
 .toRgb()           // { r: 255, g: 0, b: 0, alpha: 1 }
-.toRgbString()     // 'rgb(255, 0, 0)'
+.toRgbString()     // 'rgb(255 0 0)'
 .toHex()           // '#ff0000'
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
 .toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
-.toHslString()     // 'hsl(0, 100%, 50%)'
+.toHslString()     // 'hsl(0 100% 50%)'
 // toHsl accepts an optional precision argument (decimal places):
 colordx('#3d7a9f').toHsl()         // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }      — default (2)
 colordx('#3d7a9f').toHsl(4)        // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
 colordx('#3d7a9f').toHsl(0)        // { h: 203, s: 45, l: 43, alpha: 1 }               — integers
-colordx('#3d7a9f').toHslString()   // 'hsl(202.65, 44.55%, 43.14%)'
-colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531, 44.5455%, 43.1373%)'
+colordx('#3d7a9f').toHslString()   // 'hsl(202.65 44.55% 43.14%)'
+colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 // With hwb plugin loaded:
 .toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
 .toHwbString()     // 'hwb(0 0% 0%)'
@@ -164,8 +164,8 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531, 44.5455%, 43.1373%)'
 import { getFormat, nearest, oklchToLinear, oklchToRgbChannels, random } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
-getFormat('rgb(255, 0, 0)'); // 'rgb'
-getFormat('hsl(0, 100%, 50%)'); // 'hsl'
+getFormat('rgb(255 0 0)'); // 'rgb'
+getFormat('hsl(0 100% 50%)'); // 'hsl'
 getFormat('oklch(0.5 0.2 240)'); // 'oklch'
 getFormat('oklab(0.6279 0.2249 0.1257)'); // 'oklab'
 getFormat({ r: 255, g: 0, b: 0, alpha: 1 }); // 'rgb'
@@ -263,15 +263,15 @@ const input = 'oklch(0.5 0.4 180)';  // out of sRGB gamut
 
 // 1. Preserve — keep the authored oklch as-is, clip only at sRGB output time
 colordx(input).toOklchString();          // 'oklch(0.5 0.4 180)'
-colordx(input).toRgbString();            // 'rgb(0, 152, 108)' — naive clip, matches browser
+colordx(input).toRgbString();            // 'rgb(0 152 108)' — naive clip, matches browser
 
 // 2. Map — CSS Color 4 gamut mapping (preserves lightness + hue, reduces chroma)
 colordx(input).mapSrgb().toOklchString();   // 'oklch(0.5091 0.0938 177.85)'
-colordx(input).mapSrgb().toRgbString();     // 'rgb(0, 119, 102)'
+colordx(input).mapSrgb().toRgbString();     // 'rgb(0 119 102)'
 
 // 3. Clamp — naive-clip into sRGB as a Colordx (matches browser, but hue drifts)
 colordx(input).clampSrgb().toOklchString(); // 'oklch(0.6012 0.1276 164.3)'
-colordx(input).clampSrgb().toRgbString();   // 'rgb(0, 152, 108)' — same bytes as (1)
+colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes as (1)
 ```
 
 - **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Preserves lightness and hue; sacrifices chroma. Use when hue stability matters — design tokens, palettes, programmatic harmonies, OKLCH pickers.
@@ -354,8 +354,8 @@ import lab from '@colordx/core/plugins/lab';
 extend([lab]);
 
 colordx('#ff0000').toLab(); // { l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' }
-colordx('#ff0000').toLabString(); // 'lab(54.29% 80.8 69.89)'
-colordx('lab(54.29% 80.8 69.89)').toHex(); // '#ff0000'  — lab strings are parseable
+colordx('#ff0000').toLabString(); // 'lab(54.29 80.8 69.89)'
+colordx('lab(54.29 80.8 69.89)').toHex(); // '#ff0000'  — lab strings are parseable
 colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
 colordx('#ff0000').toXyzString(); // 'color(xyz-d65 43.61 22.25 1.39)'
 
@@ -383,8 +383,8 @@ import lch from '@colordx/core/plugins/lch';
 extend([lch]);
 
 colordx('#ff0000').toLch(); // { l: 54.29, c: 106.84, h: 40.86, alpha: 1, colorSpace: 'lch' }
-colordx('#ff0000').toLchString(); // 'lch(54.29% 106.84 40.86)'
-colordx('lch(54.29% 106.84 40.86)').toHex(); // '#ff0000'
+colordx('#ff0000').toLchString(); // 'lch(54.29 106.84 40.86)'
+colordx('lch(54.29 106.84 40.86)').toHex(); // '#ff0000'
 // LCH objects require colorSpace: 'lch' to distinguish from OKLCH (which has the same l/c/h shape)
 colordx({ l: 50, c: 50, h: 180, alpha: 1, colorSpace: 'lch' as const }).toHex(); // parses as LCH object
 ```
@@ -430,8 +430,8 @@ import hsv from '@colordx/core/plugins/hsv';
 extend([hsv]);
 
 colordx('#ff0000').toHsv(); // { h: 0, s: 100, v: 100, alpha: 1 }
-colordx('#ff0000').toHsvString(); // 'hsv(0, 100%, 100%)'
-colordx('hsv(0, 100%, 100%)').toHex(); // '#ff0000'
+colordx('#ff0000').toHsvString(); // 'hsv(0 100% 100%)'
+colordx('hsv(0 100% 100%)').toHex(); // '#ff0000'
 colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex(); // '#ff0000'
 ```
 

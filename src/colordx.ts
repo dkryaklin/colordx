@@ -67,7 +67,7 @@ export class Colordx {
     const ri = clamp(round(r), 0, 255),
       gi = clamp(round(g), 0, 255),
       bi = clamp(round(b), 0, 255);
-    return alpha < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${alpha})` : `rgb(${ri}, ${gi}, ${bi})`;
+    return alpha < 1 ? `rgb(${ri} ${gi} ${bi} / ${alpha})` : `rgb(${ri} ${gi} ${bi})`;
   }
 
   toHex(): string {
@@ -88,7 +88,7 @@ export class Colordx {
 
   toHslString(precision = 2): string {
     const { h, s, l, alpha } = this.toHsl(precision);
-    return alpha < 1 ? `hsla(${h}, ${s}%, ${l}%, ${alpha})` : `hsl(${h}, ${s}%, ${l}%)`;
+    return alpha < 1 ? `hsl(${h} ${s}% ${l}% / ${alpha})` : `hsl(${h} ${s}% ${l}%)`;
   }
 
   toOklab(): OklabColor {

@@ -88,11 +88,11 @@ describe('README — Parsing (plugins)', () => {
 
 describe('README — Conversion', () => {
   it('toRgb', () => expect(colordx('#ff0000').toRgb()).toEqual({ r: 255, g: 0, b: 0, alpha: 1 }));
-  it('toRgbString', () => expect(colordx('#ff0000').toRgbString()).toBe('rgb(255, 0, 0)'));
+  it('toRgbString', () => expect(colordx('#ff0000').toRgbString()).toBe('rgb(255 0 0)'));
   it('toHex', () => expect(colordx('#ff0000').toHex()).toBe('#ff0000'));
   it('toNumber', () => expect(colordx('#ff0000').toNumber()).toBe(16711680));
   it('toHsl', () => expect(colordx('#ff0000').toHsl()).toEqual({ h: 0, s: 100, l: 50, alpha: 1 }));
-  it('toHslString', () => expect(colordx('#ff0000').toHslString()).toBe('hsl(0, 100%, 50%)'));
+  it('toHslString', () => expect(colordx('#ff0000').toHslString()).toBe('hsl(0 100% 50%)'));
 
   it('toHsl precision default (2)', () => {
     expect(colordx('#3d7a9f').toHsl()).toEqual({ h: 202.65, s: 44.55, l: 43.14, alpha: 1 });
@@ -104,10 +104,10 @@ describe('README — Conversion', () => {
     expect(colordx('#3d7a9f').toHsl(0)).toEqual({ h: 203, s: 45, l: 43, alpha: 1 });
   });
   it('toHslString default', () => {
-    expect(colordx('#3d7a9f').toHslString()).toBe('hsl(202.65, 44.55%, 43.14%)');
+    expect(colordx('#3d7a9f').toHslString()).toBe('hsl(202.65 44.55% 43.14%)');
   });
   it('toHslString precision 4', () => {
-    expect(colordx('#3d7a9f').toHslString(4)).toBe('hsl(202.6531, 44.5455%, 43.1373%)');
+    expect(colordx('#3d7a9f').toHslString(4)).toBe('hsl(202.6531 44.5455% 43.1373%)');
   });
 
   it('toHwb', () => expect((colordx('#ff0000') as any).toHwb()).toEqual({ h: 0, w: 0, b: 0, alpha: 1 }));
@@ -282,7 +282,7 @@ describe('README — lab plugin', () => {
     expect((colordx('#ff0000') as any).toLab()).toEqual({ l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' });
   });
   it('toLabString', () => {
-    expect((colordx('#ff0000') as any).toLabString()).toBe('lab(54.29% 80.8 69.89)');
+    expect((colordx('#ff0000') as any).toLabString()).toBe('lab(54.29 80.8 69.89)');
   });
   it('parse lab string', () => {
     expect(colordx('lab(54.29% 80.8 69.89)').toHex()).toBe('#ff0000');
@@ -322,7 +322,7 @@ describe('README — lch plugin', () => {
     });
   });
   it('toLchString', () => {
-    expect((colordx('#ff0000') as any).toLchString()).toBe('lch(54.29% 106.84 40.86)');
+    expect((colordx('#ff0000') as any).toLchString()).toBe('lch(54.29 106.84 40.86)');
   });
   it('parse lch string round-trip', () => {
     expect(colordx('lch(54.29% 106.84 40.86)').toHex()).toBe('#ff0000');
@@ -363,7 +363,7 @@ describe('README — hsv plugin', () => {
     expect((colordx('#ff0000') as any).toHsv()).toEqual({ h: 0, s: 100, v: 100, alpha: 1 });
   });
   it('toHsvString', () => {
-    expect((colordx('#ff0000') as any).toHsvString()).toBe('hsv(0, 100%, 100%)');
+    expect((colordx('#ff0000') as any).toHsvString()).toBe('hsv(0 100% 100%)');
   });
   it('parse hsv string', () => {
     expect(colordx('hsv(0, 100%, 100%)').toHex()).toBe('#ff0000');

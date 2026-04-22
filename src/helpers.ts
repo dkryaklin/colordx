@@ -24,3 +24,10 @@ export const isObject = (v: unknown): v is Record<string, unknown> =>
 
 export const hasKeys = <T extends string>(obj: Record<string, unknown>, keys: T[]): obj is Record<T, unknown> =>
   keys.every((k) => k in obj);
+
+// Shared regex fragments. NUM matches a signed decimal, NUM_OR_NONE adds the CSS Color 4 `none` keyword.
+export const NUM = '[+-]?\\d*\\.?\\d+';
+export const NUM_OR_NONE = `(?:none|${NUM})`;
+
+/** Parse a CSS Color 4 channel token. `none` → 0; a plain number is returned as-is. */
+export const parseNum = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));

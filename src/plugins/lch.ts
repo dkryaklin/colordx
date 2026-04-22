@@ -19,7 +19,7 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { l, c, h, alpha } = this.toLch();
     // c is already rounded to 2dp; c === 0 is the effective achromatic check at this precision.
     const H = c === 0 ? 'none' : h;
-    return alpha < 1 ? `lch(${l}% ${c} ${H} / ${alpha})` : `lch(${l}% ${c} ${H})`;
+    return alpha < 1 ? `lch(${l} ${c} ${H} / ${alpha})` : `lch(${l} ${c} ${H})`;
   };
   parsers.push(parseLchObject, parseLchString);
   formatParsers.push([parseLchObject, 'lch'], [parseLchString, 'lch']);

@@ -22,7 +22,7 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toLabString = function (this: Colordx) {
     const { l, a, b, alpha } = this.toLab();
-    return alpha < 1 ? `lab(${l}% ${a} ${b} / ${alpha})` : `lab(${l}% ${a} ${b})`;
+    return alpha < 1 ? `lab(${l} ${a} ${b} / ${alpha})` : `lab(${l} ${a} ${b})`;
   };
   ColordxClass.prototype.toXyz = function () {
     const { x, y, z, alpha } = rgbToXyz(this._rawRgb());

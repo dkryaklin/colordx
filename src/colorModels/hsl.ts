@@ -1,4 +1,16 @@
-import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import {
+  ANGLE_UNITS,
+  NUM,
+  NUM_OR_NONE,
+  clamp,
+  hasKeys,
+  isAnyNumber,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+  sanitize,
+} from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 export const clampHsl = (hsl: HslColor): HslColor => ({
@@ -83,26 +95,33 @@ export const parseHslObject = (input: unknown): RgbColor | null => {
   return hslToRgb(clampHsl({ h: sanitize(h), s: sanitize(s), l: sanitize(l), alpha: sanitize(alpha) }));
 };
 
-const N = '[+-]?\\d*\\.?\\d+';
+// Legacy comma form requires `%` on s/l and disallows `none`. Modern space form
+// allows optional `%` and the CSS Color 4 `none` keyword on any channel.
+// Named groups: `_c` = comma/legacy branch, `_s` = space/modern branch.
 const HSL_RE = new RegExp(
-  `^hsla?\\(\\s*(${N})(deg|rad|grad|turn)?\\s*(?:` +
-    `,\\s*(${N})%\\s*,\\s*(${N})%(?:\\s*,\\s*(${N})(%?)?\\s*)?` +
+  `^hsla?\\(\\s*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?\\s*(?:` +
+    `,\\s*(?<s_c>${NUM})%\\s*,\\s*(?<l_c>${NUM})%` +
+    `(?:\\s*,\\s*(?<al_c>${NUM})(?<alp_c>%?)?\\s*)?` +
     `|` +
-    `\\s+(${N})(%?)\\s+(${N})(%?)(?:\\s*/\\s*(${N})(%?)?\\s*)?` +
+    `\\s+(?<s_s>${NUM_OR_NONE})(?<sp_s>%?)\\s+(?<l_s>${NUM_OR_NONE})(?<lp_s>%?)` +
+    `(?:\\s*/\\s*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?)?\\s*)?` +
     `)\\)$`,
   'i'
 );
 
 export const parseHslString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = HSL_RE.exec(input.trim());
-  if (!m) return null;
-  const unit = m[2]?.toLowerCase() ?? 'deg';
-  const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);
-  const s = Number(m[3] ?? m[7]);
-  const l = Number(m[4] ?? m[9]);
-  const rawA = m[5] ?? m[11];
-  const isPercent = !!(m[6] ?? m[12]);
-  const alpha = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
+  const g = HSL_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const isComma = g.s_c !== undefined;
+  if (isComma && /^none$/i.test(g.h!)) return null; // legacy syntax has no `none`
+  const unit = g.hu?.toLowerCase() ?? 'deg';
+  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
+  const s = parseNum((g.s_c ?? g.s_s)!);
+  const l = parseNum((g.l_c ?? g.l_s)!);
+  const rawA = g.al_c ?? g.al_s;
+  const isPercent = !!(g.alp_c ?? g.alp_s);
+  if (isComma && rawA !== undefined && /^none$/i.test(rawA)) return null;
+  const alpha = rawA === undefined ? 1 : parseNum(rawA) / (isPercent ? 100 : 1);
   return hslToRgb(clampHsl({ h, s, l, alpha }));
 };

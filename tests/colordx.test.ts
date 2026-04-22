@@ -63,8 +63,8 @@ describe("conversion", () => {
   });
 
   it("converts to rgb string", () => {
-    expect(colordx("#ff0000").toRgbString()).toBe("rgb(255, 0, 0)");
-    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString()).toBe("rgba(255, 0, 0, 0.5)");
+    expect(colordx("#ff0000").toRgbString()).toBe("rgb(255 0 0)");
+    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString()).toBe("rgb(255 0 0 / 0.5)");
   });
 
   it("converts to hsl", () => {
@@ -76,8 +76,8 @@ describe("conversion", () => {
   });
 
   it("converts to hsl string", () => {
-    expect(colordx("#ff0000").toHslString()).toBe("hsl(0, 100%, 50%)");
-    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toHslString()).toBe("hsla(0, 100%, 50%, 0.5)");
+    expect(colordx("#ff0000").toHslString()).toBe("hsl(0 100% 50%)");
+    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toHslString()).toBe("hsl(0 100% 50% / 0.5)");
   });
 
   it("converts to hsv", () => {
@@ -88,8 +88,8 @@ describe("conversion", () => {
   });
 
   it("converts to hsv string", () => {
-    expect(colordx("#ff0000").toHsvString()).toBe("hsv(0, 100%, 100%)");
-    expect(colordx("rgba(255, 0, 0, 0.5)").toHsvString()).toBe("hsva(0, 100%, 100%, 0.5)");
+    expect(colordx("#ff0000").toHsvString()).toBe("hsv(0 100% 100%)");
+    expect(colordx("rgba(255, 0, 0, 0.5)").toHsvString()).toBe("hsv(0 100% 100% / 0.5)");
   });
 
   it("parses hsv strings (round-trip)", () => {
@@ -513,7 +513,7 @@ describe("string output precision", () => {
 
   it("toHslString produces the exact expected value for the reported case", () => {
     expect(colordx("oklab(0.746 -0.0469 -0.1278)").toHslString()).toBe(
-      "hsl(209.81, 100%, 69.61%)"
+      "hsl(209.81 100% 69.61%)"
     );
   });
 
@@ -638,11 +638,11 @@ describe("conversion: comprehensive", () => {
   });
 
   it("toHslString for green", () => {
-    expect(colordx("#00ff00").toHslString()).toBe("hsl(120, 100%, 50%)");
+    expect(colordx("#00ff00").toHslString()).toBe("hsl(120 100% 50%)");
   });
 
   it("toHslString for blue", () => {
-    expect(colordx("#0000ff").toHslString()).toBe("hsl(240, 100%, 50%)");
+    expect(colordx("#0000ff").toHslString()).toBe("hsl(240 100% 50%)");
   });
 
   it("toHsv for green", () => {
@@ -682,16 +682,16 @@ describe("conversion: comprehensive", () => {
   });
 
   it("toRgbString for opaque colors omits alpha", () => {
-    expect(colordx("#00ff00").toRgbString()).toBe("rgb(0, 255, 0)");
-    expect(colordx("#0000ff").toRgbString()).toBe("rgb(0, 0, 255)");
+    expect(colordx("#00ff00").toRgbString()).toBe("rgb(0 255 0)");
+    expect(colordx("#0000ff").toRgbString()).toBe("rgb(0 0 255)");
   });
 
-  it("toRgbString for transparent uses rgba", () => {
-    expect(colordx({ r: 0, g: 128, b: 255, alpha: 0.5 }).toRgbString()).toBe("rgba(0, 128, 255, 0.5)");
+  it("toRgbString for alpha < 1 uses slash syntax", () => {
+    expect(colordx({ r: 0, g: 128, b: 255, alpha: 0.5 }).toRgbString()).toBe("rgb(0 128 255 / 0.5)");
   });
 
   it("toHsvString for blue", () => {
-    expect(colordx("#0000ff").toHsvString()).toBe("hsv(240, 100%, 100%)");
+    expect(colordx("#0000ff").toHsvString()).toBe("hsv(240 100% 100%)");
   });
 
   it("toHwb for primary colors", () => {

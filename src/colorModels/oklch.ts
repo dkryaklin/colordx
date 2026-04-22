@@ -1,4 +1,14 @@
-import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
+import {
+  ANGLE_UNITS,
+  NUM_OR_NONE,
+  clamp,
+  hasKeys,
+  isAnyNumber,
+  isObject,
+  normalizeHue,
+  parseNum,
+  sanitize,
+} from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, oklabToRgbUnclamped, rgbToOklab } from './oklab.js';
 
@@ -36,20 +46,22 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   });
 };
 
-const OKLCH_RE =
-  /^oklch\(\s*(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(%?)\s+(none|[+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*(none|[+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
-
-const val = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
+const OKLCH_RE = new RegExp(
+  `^oklch\\(\\s*(?<l>${NUM_OR_NONE})(?<lp>%?)\\s+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
+    `\\s+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
+    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  'i'
+);
 
 export const parseOklchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = OKLCH_RE.exec(input.trim());
-  if (!m) return null;
-  const L = m[2] ? val(m[1]!) / 100 : val(m[1]!);
-  const C = Math.max(0, m[4] ? val(m[3]!) * 0.004 : val(m[3]!)); // CSS Color 4: 100% = 0.4, so 1% = 0.004
-  const unit = m[6]?.toLowerCase() ?? 'deg';
-  const H = val(m[5]!) * (ANGLE_UNITS[unit] ?? 1);
-  const alpha = m[7] === undefined ? 1 : val(m[7]) / (m[8] ? 100 : 1);
+  const g = OKLCH_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const L = g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!); // 100% = 1
+  const C = Math.max(0, g.cp ? parseNum(g.c!) * 0.004 : parseNum(g.c!)); // 100% = 0.4
+  const unit = g.hu?.toLowerCase() ?? 'deg';
+  const H = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
+  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return oklchToRgbUnclamped({
     l: L,
     c: C,

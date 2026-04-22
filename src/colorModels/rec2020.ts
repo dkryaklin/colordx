@@ -1,4 +1,4 @@
-import { clamp, hasKeys, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
@@ -98,18 +98,25 @@ export const parseRec2020Object = (input: unknown): RgbColor | null => {
   });
 };
 
-const REC2020_RE =
-  /^color\(\s*rec2020\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+// CSS Color 4: color(rec2020 r g b / alpha). Channels accept number|percentage|none; 100% = 1.
+const REC2020_RE = new RegExp(
+  `^color\\(\\s*rec2020\\s+(?<r>${NUM_OR_NONE})(?<rp>%?)\\s+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
+    `\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  'i'
+);
 
 export const parseRec2020String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = REC2020_RE.exec(input.trim());
-  if (!m) return null;
-  const alpha = m[4] === undefined ? 1 : Number(m[4]) / (m[5] ? 100 : 1);
+  const g = REC2020_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
+  const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);
+  const b = g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!);
+  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return rec2020ToRgbUnclamped({
-    r: Number(m[1]),
-    g: Number(m[2]),
-    b: Number(m[3]),
+    r,
+    g: gc,
+    b,
     alpha: clamp(alpha, 0, 1),
     colorSpace: 'rec2020',
   });

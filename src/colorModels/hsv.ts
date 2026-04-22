@@ -1,4 +1,16 @@
-import { ANGLE_UNITS, clamp, hasKeys, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import {
+  ANGLE_UNITS,
+  NUM,
+  NUM_OR_NONE,
+  clamp,
+  hasKeys,
+  isAnyNumber,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+  sanitize,
+} from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -98,29 +110,35 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
   return clampRgb({ r: _RGB[0] * 255, g: _RGB[1] * 255, b: _RGB[2] * 255, alpha });
 };
 
-const N = '[+-]?\\d*\\.?\\d+';
 // HSV/HSVA is a non-standard, library-defined syntax (not part of any CSS spec).
-// Format mirrors HSL for consistency: hsv(h, s%, v%) / hsv(h s% v% / alpha).
+// Format mirrors HSL for consistency. Legacy comma form kept for back-compat input;
+// modern space form supports optional `%` and the CSS Color 4 `none` keyword.
+// Named groups: `_c` = comma/legacy branch, `_s` = space/modern branch.
 const HSV_RE = new RegExp(
-  `^hsva?\\(\\s*(${N})(deg|rad|grad|turn)?\\s*(?:` +
-    `,\\s*(${N})%\\s*,\\s*(${N})%(?:\\s*,\\s*(${N})(%?)?\\s*)?` +
+  `^hsva?\\(\\s*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?\\s*(?:` +
+    `,\\s*(?<s_c>${NUM})%\\s*,\\s*(?<v_c>${NUM})%` +
+    `(?:\\s*,\\s*(?<al_c>${NUM})(?<alp_c>%?)?\\s*)?` +
     `|` +
-    `\\s+(${N})(%?)\\s+(${N})(%?)(?:\\s*/\\s*(${N})(%?)?\\s*)?` +
+    `\\s+(?<s_s>${NUM_OR_NONE})(?<sp_s>%?)\\s+(?<v_s>${NUM_OR_NONE})(?<vp_s>%?)` +
+    `(?:\\s*/\\s*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?)?\\s*)?` +
     `)\\)$`,
   'i'
 );
 
 export const parseHsvString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const m = HSV_RE.exec(input.trim());
-  if (!m) return null;
-  const unit = m[2]?.toLowerCase() ?? 'deg';
-  const h = Number(m[1]) * (ANGLE_UNITS[unit] ?? 1);
-  const s = Number(m[3] ?? m[7]);
-  const v = Number(m[4] ?? m[9]);
-  const rawA = m[5] ?? m[11];
-  const isPercent = !!(m[6] ?? m[12]);
-  const alpha = rawA === undefined ? 1 : Number(rawA) / (isPercent ? 100 : 1);
+  const g = HSV_RE.exec(input.trim())?.groups;
+  if (!g) return null;
+  const isComma = g.s_c !== undefined;
+  if (isComma && /^none$/i.test(g.h!)) return null;
+  const unit = g.hu?.toLowerCase() ?? 'deg';
+  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
+  const s = parseNum((g.s_c ?? g.s_s)!);
+  const v = parseNum((g.v_c ?? g.v_s)!);
+  const rawA = g.al_c ?? g.al_s;
+  if (isComma && rawA !== undefined && /^none$/i.test(rawA)) return null;
+  const isPercent = !!(g.alp_c ?? g.alp_s);
+  const alpha = rawA === undefined ? 1 : parseNum(rawA) / (isPercent ? 100 : 1);
   return hsvToRgb(clampHsv({ h, s, v, alpha }));
 };
 
