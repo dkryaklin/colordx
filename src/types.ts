@@ -64,7 +64,7 @@ export interface LchColor {
 }
 export type LchColorInput = Omit<LchColor, 'alpha'> & { alpha?: number };
 
-/** CIE XYZ (D65) */
+/** CIE XYZ (D50) */
 export interface XyzColor {
   x: number;
   y: number;
@@ -72,6 +72,16 @@ export interface XyzColor {
   alpha: number;
 }
 export type XyzColorInput = Omit<XyzColor, 'alpha'> & { alpha?: number };
+
+/** CIE XYZ (D65) */
+export interface XyzD65Color {
+  x: number;
+  y: number;
+  z: number;
+  alpha: number;
+  readonly colorSpace: 'xyz-d65';
+}
+export type XyzD65ColorInput = Omit<XyzD65Color, 'alpha'> & { alpha?: number };
 
 export interface CmykColor {
   c: number;
@@ -131,6 +141,7 @@ export type AnyColor =
   | LabColorInput
   | LchColorInput
   | XyzColorInput
+  | XyzD65ColorInput
   | CmykColorInput
   | OklabColorInput
   | OklchColorInput
@@ -150,6 +161,7 @@ export type ColorFormat =
   | 'lab'
   | 'lch'
   | 'xyz'
+  | 'xyz-d65'
   | 'cmyk'
   | 'p3'
   | 'rec2020'

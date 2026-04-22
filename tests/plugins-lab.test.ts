@@ -563,6 +563,11 @@ describe('XYZ D50 white point (CSS Color 4)', () => {
     expect(xyz.z).toBeCloseTo(82.51, 0);
   });
 
+  it('toXyzString emits xyz-d50 (not xyz-d65)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ff0000') as any).toXyzString()).toMatch(/^color\(xyz-d50 /);
+  });
+
   it('XYZ round-trip preserves RGB within ±1', () => {
     for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#c06060', '#3b82f6']) {
       const orig = colordx(hex).toRgb();
@@ -574,5 +579,78 @@ describe('XYZ D50 white point (CSS Color 4)', () => {
       expect(Math.abs(orig.g - back.g)).toBeLessThanOrEqual(1);
       expect(Math.abs(orig.b - back.b)).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe('XYZ D65 (CSS Color 4, screen-native, no Bradford adaptation)', () => {
+  it('white maps to XYZ D65 ≈ (95.05, 100, 108.88)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const xyz = (colordx('#ffffff') as any).toXyzD65();
+    expect(xyz.x).toBeCloseTo(95.05, 0);
+    expect(xyz.y).toBeCloseTo(100, 0);
+    expect(xyz.z).toBeCloseTo(108.88, 0);
+  });
+
+  it('red maps to XYZ D65 ≈ (41.24, 21.26, 1.93)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const xyz = (colordx('#ff0000') as any).toXyzD65();
+    expect(xyz.x).toBeCloseTo(41.24, 1);
+    expect(xyz.y).toBeCloseTo(21.26, 1);
+    expect(xyz.z).toBeCloseTo(1.93, 1);
+    expect(xyz.colorSpace).toBe('xyz-d65');
+  });
+
+  it('object return carries colorSpace discriminant', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#00ff00') as any).toXyzD65().colorSpace).toBe('xyz-d65');
+  });
+
+  it('toXyzD65String emits color(xyz-d65 ...)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ff0000') as any).toXyzD65String()).toMatch(/^color\(xyz-d65 /);
+  });
+
+  it('toXyzD65String includes alpha when < 1', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const str = (colordx('rgb(255 0 0 / 0.5)') as any).toXyzD65String();
+    expect(str).toMatch(/ \/ 0\.5\)$/);
+  });
+
+  it('XYZ D65 round-trip (object) preserves RGB within ±1', () => {
+    for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060', '#3b82f6']) {
+      const orig = colordx(hex).toRgb();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const xyz = (colordx(hex) as any).toXyzD65();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const back = (colordx(xyz) as any).toRgb();
+      expect(Math.abs(orig.r - back.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(orig.g - back.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(orig.b - back.b)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('XYZ D65 round-trip (string) preserves RGB within ±1', () => {
+    for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#3b82f6']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const str = (colordx(hex) as any).toXyzD65String(6);
+      expect(colordx(str).toHex()).toBe(hex);
+    }
+  });
+
+  it('XYZ D65 and D50 produce different values for chromatic colors', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d50 = (colordx('#ff0000') as any).toXyz();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d65 = (colordx('#ff0000') as any).toXyzD65();
+    expect(Math.abs(d50.x - d65.x)).toBeGreaterThan(0.5);
+    expect(Math.abs(d50.z - d65.z)).toBeGreaterThan(0.3);
+  });
+
+  it('object without colorSpace parses as D50 (not D65)', () => {
+    // { x, y, z } without discriminant keeps backward-compat as D50
+    // D65 object parser requires explicit colorSpace: 'xyz-d65'
+    // So D50 red values should give red, D65 red values should NOT.
+    expect(colordx({ x: 43.61, y: 22.25, z: 1.39 }).toHex()).toBe('#ff0000');
+    expect(colordx({ x: 41.24, y: 21.26, z: 1.93 }).toHex()).not.toBe('#ff0000');
   });
 });

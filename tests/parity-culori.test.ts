@@ -36,6 +36,7 @@ const culoriToOklch = converter('oklch');
 const culoriToRgb = converter('rgb');
 const culoriToLrgb = converter('lrgb');
 const culoriToXyz50 = converter('xyz50');
+const culoriToXyz65 = converter('xyz65');
 
 let seed = 0xdeadbeef;
 const rand = () => {
@@ -78,6 +79,7 @@ const stats: Record<string, FormatStats> = {
   Lab: mkStats(),
   OKLab: mkStats(),
   XYZ: mkStats(),
+  'XYZ D65': mkStats(),
   'mixLab()': mkStats(),
   'delta()': mkStats(),
   'Linear RGB': mkStats(),
@@ -164,6 +166,7 @@ const runParity = () => {
         'Lab',
         'OKLab',
         'XYZ',
+        'XYZ D65',
         'mixLab()',
         'delta()',
         'RT:HSL',
@@ -264,6 +267,18 @@ const runParity = () => {
           [cxXyz.x, round((cuXyz.x ?? 0) * 100, 2)],
           [cxXyz.y, round((cuXyz.y ?? 0) * 100, 2)],
           [cxXyz.z, round((cuXyz.z ?? 0) * 100, 2)]
+        ),
+        color
+      );
+
+      const cxXyz65 = (cxCs as unknown as { toXyzD65(): { x: number; y: number; z: number } }).toXyzD65();
+      const cuXyz65 = culoriToXyz65(cuBase)!;
+      record(
+        'XYZ D65',
+        maxDiff(
+          [cxXyz65.x, round((cuXyz65.x ?? 0) * 100, 2)],
+          [cxXyz65.y, round((cuXyz65.y ?? 0) * 100, 2)],
+          [cxXyz65.z, round((cuXyz65.z ?? 0) * 100, 2)]
         ),
         color
       );
@@ -641,6 +656,7 @@ const ceilings: Record<string, number> = {
   Lab: 1,
   OKLab: 0.001,
   XYZ: 1,
+  'XYZ D65': 1,
   'mixLab()': 2,
   'delta()': 0.01,
   'Linear RGB': 0.0001,

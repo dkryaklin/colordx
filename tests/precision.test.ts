@@ -27,6 +27,8 @@ interface WithAll {
   toLchString(p?: number): string;
   toXyz(p?: number): { x: number; y: number; z: number; alpha: number };
   toXyzString(p?: number): string;
+  toXyzD65(p?: number): { x: number; y: number; z: number; alpha: number };
+  toXyzD65String(p?: number): string;
   toCmyk(p?: number): { c: number; m: number; y: number; k: number; alpha: number };
   toCmykString(p?: number): string;
   toP3(p?: number): { r: number; g: number; b: number; alpha: number };
@@ -38,9 +40,13 @@ interface WithAll {
 // All channels of a CSS-function string, extracted to count fractional digits.
 const channelsOf = (s: string): string[] => {
   const inside = s.replace(/^[a-z-]+\(\s*/i, '').replace(/\s*\)$/, '');
-  const body = inside.startsWith('display-p3 ') || inside.startsWith('rec2020 ') || inside.startsWith('xyz-d65 ')
-    ? inside.replace(/^\S+\s+/, '')
-    : inside;
+  const body =
+    inside.startsWith('display-p3 ') ||
+    inside.startsWith('rec2020 ') ||
+    inside.startsWith('xyz-d65 ') ||
+    inside.startsWith('xyz-d50 ')
+      ? inside.replace(/^\S+\s+/, '')
+      : inside;
   return body.split(/\s*\/\s*|\s+/).map((t) => t.replace(/%$/, ''));
 };
 
@@ -56,7 +62,8 @@ describe('precision arg — per-format default dp matches prior behavior', () =>
   it('toCmykString default = 2dp', () => expect(c.toCmykString()).toBe('device-cmyk(61.64% 23.27% 0% 37.65%)'));
   it('toLabString default = 2dp', () => expect(c.toLabString()).toBe('lab(48.38 -11.65 -26.34)'));
   it('toLchString default = 2dp', () => expect(c.toLchString()).toBe('lch(48.38 28.8 246.13)'));
-  it('toXyzString default = 2dp', () => expect(c.toXyzString()).toBe('color(xyz-d65 14.49 17.09 26.71)'));
+  it('toXyzString default = 2dp', () => expect(c.toXyzString()).toBe('color(xyz-d50 14.49 17.09 26.71)'));
+  it('toXyzD65String default = 2dp', () => expect(c.toXyzD65String()).toMatch(/^color\(xyz-d65 \d/));
   it('toOklabString default = 4dp', () => expect(c.toOklabString()).toBe('oklab(0.5548 -0.0457 -0.0722)'));
   it('toOklchString default = 4dp', () => expect(c.toOklchString()).toBe('oklch(0.5548 0.0855 237.6561)'));
   it('toP3String default = 4dp', () => expect(c.toP3String()).toBe('color(display-p3 0.2994 0.4728 0.6102)'));
@@ -73,6 +80,7 @@ describe('precision arg — custom precision controls decimal places', () => {
     ['toLabString', (p) => c.toLabString(p)],
     ['toLchString', (p) => c.toLchString(p)],
     ['toXyzString', (p) => c.toXyzString(p)],
+    ['toXyzD65String', (p) => c.toXyzD65String(p)],
     ['toOklabString', (p) => c.toOklabString(p)],
     ['toOklchString', (p) => c.toOklchString(p)],
     ['toP3String', (p) => c.toP3String(p)],

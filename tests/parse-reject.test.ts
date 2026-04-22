@@ -539,9 +539,7 @@ rejectMany('color() — structural & unsupported spaces', [
   'color(srgb-linear 1 0 0)',
   'color(prophoto-rgb 1 0 0)',
   'color(a98-rgb 1 0 0)',
-  'color(xyz 1 0 0)', // xyz string parser not implemented
-  'color(xyz-d65 1 0 0)',
-  'color(xyz-d50 1 0 0)',
+  'color(xyz 1 0 0)', // bare xyz (no -d50/-d65 suffix) not supported
   'color(display-p3 red green blue)',
   'color(display-p31 0 0)', // no space after name
 ]);
@@ -568,6 +566,19 @@ acceptMany('p3 — valid forms', [
   'color(display-p3 -0.5 0 0)', // out-of-gamut negative
   'color(display-p3 1.5 0 0)', // over-1
   'color(  display-p3  1  0  0  )',
+]);
+
+acceptMany('xyz — valid forms', [
+  'color(xyz-d65 0 0 0)',
+  'color(xyz-d65 41.24 21.26 1.93)',
+  'color(xyz-d65 none 0 0)',
+  'color(xyz-d65 41.24 21.26 1.93 / 0.5)',
+  'color(xyz-d65 41.24 21.26 1.93 / 50%)',
+  'color(xyz-d65 41.24 21.26 1.93 / none)',
+  'color(xyz-d50 0 0 0)',
+  'color(xyz-d50 43.61 22.25 1.39)',
+  'color(xyz-d50 43.61 22.25 1.39 / 0.5)',
+  'color(  xyz-d65  41.24  21.26  1.93  )',
 ]);
 
 acceptMany('rec2020 — valid forms', [

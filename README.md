@@ -248,7 +248,7 @@ oklchToRec2020ChannelsInto(out, l, c, h);
 
 // Lower-level matrix / color-space primitives also have *Into siblings:
 // linearSrgbToOklabInto, oklabToLinearInto (from '@colordx/core')
-// xyzD50ToLinearSrgbInto, srgbLinearToP3LinearInto, linearP3ToSrgbInto,
+// xyzD50ToLinearSrgbInto, xyzD65ToLinearSrgbInto, srgbLinearToP3LinearInto, linearP3ToSrgbInto,
 // oklabToLinearP3Into, srgbLinearToRec2020LinearInto, linearRec2020ToSrgbInto,
 // oklabToLinearRec2020Into
 ```
@@ -334,7 +334,7 @@ import hwb from '@colordx/core/plugins/hwb';
 import hsv from '@colordx/core/plugins/hsv';
 // toHsv(), toHsvString(), parses hsv() strings and HSV objects
 import lab from '@colordx/core/plugins/lab';
-// toLab(), toLabString(), toXyz(), toXyzString(), mixLab(), delta(), parses Lab/XYZ objects
+// toLab(), toLabString(), toXyz(), toXyzString(), toXyzD65(), toXyzD65String(), mixLab(), delta(), parses Lab/XYZ(D50+D65) objects and strings
 import lch from '@colordx/core/plugins/lch';
 // toLch(), toLchString(), parses lch() strings and LCH objects
 import minify from '@colordx/core/plugins/minify';
@@ -353,7 +353,7 @@ extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec20
 
 ### lab plugin
 
-CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input (Lab requires a `colorSpace: 'lab'` discriminant). Also adds `.mixLab()` for perceptual mixing in CIE Lab, `.delta()` for CIEDE2000 color difference, and string conversion methods.
+CIE Lab (D50), CIE XYZ (D50), and CIE XYZ (D65) color models. Lab and XYZ objects are also accepted as color input (Lab requires a `colorSpace: 'lab'` discriminant; XYZ D65 requires `colorSpace: 'xyz-d65'`; plain `{ x, y, z }` parses as D50). Also adds `.mixLab()` for perceptual mixing in CIE Lab, `.delta()` for CIEDE2000 color difference, and string conversion methods.
 
 ```ts
 import lab from '@colordx/core/plugins/lab';
@@ -363,13 +363,24 @@ extend([lab]);
 colordx('#ff0000').toLab(); // { l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' }
 colordx('#ff0000').toLabString(); // 'lab(54.29 80.8 69.89)'
 colordx('lab(54.29 80.8 69.89)').toHex(); // '#ff0000'  — lab strings are parseable
+
+// XYZ D50 (chromatic-adapted; matches Lab's white point)
 colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
-colordx('#ff0000').toXyzString(); // 'color(xyz-d65 43.61 22.25 1.39)'
+colordx('#ff0000').toXyzString(); // 'color(xyz-d50 43.61 22.25 1.39)'
+
+// XYZ D65 (screen-native; no Bradford adaptation — same illuminant as sRGB/OKLab)
+colordx('#ff0000').toXyzD65(); // { x: 41.24, y: 21.26, z: 1.93, alpha: 1, colorSpace: 'xyz-d65' }
+colordx('#ff0000').toXyzD65String(); // 'color(xyz-d65 41.24 21.26 1.93)'
 
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
 // Lab objects require colorSpace: 'lab' to distinguish from OKLab (which has the same l/a/b shape)
 colordx({ l: 54.29, a: 80.8, b: 69.89, colorSpace: 'lab' as const }).toHex(); // '#ff0000'
-colordx({ x: 43.61, y: 22.25, z: 1.39 }).toHex(); // '#ff0000'
+colordx({ x: 43.61, y: 22.25, z: 1.39 }).toHex(); // '#ff0000' (D50)
+colordx({ x: 41.24, y: 21.26, z: 1.93, colorSpace: 'xyz-d65' as const }).toHex(); // '#ff0000'
+
+// color() strings parse for both white points
+colordx('color(xyz-d50 43.61 22.25 1.39)').toHex(); // '#ff0000'
+colordx('color(xyz-d65 41.24 21.26 1.93)').toHex(); // '#ff0000'
 
 // Mix in CIE Lab space
 colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
@@ -647,7 +658,7 @@ Every `toX()` / `toXString()` method accepts an optional `precision` (decimal pl
 
 | format | default |
 |---|---|
-| `toHsl`, `toHsv`, `toCmyk`, `toLab`, `toLch`, `toXyz` | `2` |
+| `toHsl`, `toHsv`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
 | `toHwb` | `0` |
 | `toOklab`, `toOklch`, `toP3`, `toRec2020` | `4` |
 
@@ -683,7 +694,7 @@ The same flag works on `.darken()` and `.desaturate()`.
 ### CSS Color 4/5 completeness
 
 - **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`)
-- **`color()` for remaining spaces** — `color(srgb ...)`, `color(srgb-linear ...)`, `color(a98-rgb ...)`, `color(prophoto-rgb ...)`, `color(xyz-d50 ...)`, `color(xyz-d65 ...)` string parsing (`display-p3` and `rec2020` already supported)
+- **`color()` for remaining spaces** — `color(srgb ...)`, `color(srgb-linear ...)`, `color(a98-rgb ...)`, `color(prophoto-rgb ...)` string parsing (`display-p3`, `rec2020`, `xyz-d50`, and `xyz-d65` already supported)
 - **Relative color syntax** — `oklch(from red l c h)` and channel arithmetic like `oklch(from red l calc(c + 0.1) h)`
 
 ### Internals

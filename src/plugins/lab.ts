@@ -1,8 +1,15 @@
 import { deltaE2000, labToRgb, parseLabObject, parseLabString, rgbToLab, rgbToLabD65 } from '../colorModels/lab.js';
-import { parseXyzObject, rgbToXyz } from '../colorModels/xyz.js';
+import {
+  parseXyzD50String,
+  parseXyzD65Object,
+  parseXyzD65String,
+  parseXyzObject,
+  rgbToXyz,
+  rgbToXyzD65,
+} from '../colorModels/xyz.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { clamp, round } from '../helpers.js';
-import type { AnyColor, LabColor, XyzColor } from '../types.js';
+import type { AnyColor, LabColor, XyzColor, XyzD65Color } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -10,6 +17,8 @@ declare module '@colordx/core' {
     toLabString(precision?: number): string;
     toXyz(precision?: number): XyzColor;
     toXyzString(precision?: number): string;
+    toXyzD65(precision?: number): XyzD65Color;
+    toXyzD65String(precision?: number): string;
     mixLab(color: AnyColor, ratio?: number): Colordx;
     delta(color?: AnyColor): number;
   }
@@ -36,6 +45,20 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toXyzString = function (this: Colordx, precision = 2) {
     const { x, y, z, alpha } = this.toXyz(precision);
+    return alpha < 1 ? `color(xyz-d50 ${x} ${y} ${z} / ${alpha})` : `color(xyz-d50 ${x} ${y} ${z})`;
+  };
+  ColordxClass.prototype.toXyzD65 = function (precision = 2) {
+    const { x, y, z, alpha } = rgbToXyzD65(this._rawRgb());
+    return {
+      x: round(x, precision),
+      y: round(y, precision),
+      z: round(z, precision),
+      alpha,
+      colorSpace: 'xyz-d65' as const,
+    };
+  };
+  ColordxClass.prototype.toXyzD65String = function (this: Colordx, precision = 2) {
+    const { x, y, z, alpha } = this.toXyzD65(precision);
     return alpha < 1 ? `color(xyz-d65 ${x} ${y} ${z} / ${alpha})` : `color(xyz-d65 ${x} ${y} ${z})`;
   };
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {
@@ -56,8 +79,15 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.delta = function (color: AnyColor = '#fff') {
     return round(deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(new ColordxClass(color)._rawRgb())) / 100, 3);
   };
-  parsers.push(parseLabString, parseLabObject, parseXyzObject);
-  formatParsers.push([parseLabString, 'lab'], [parseLabObject, 'lab'], [parseXyzObject, 'xyz']);
+  parsers.push(parseLabString, parseLabObject, parseXyzD65String, parseXyzD65Object, parseXyzD50String, parseXyzObject);
+  formatParsers.push(
+    [parseLabString, 'lab'],
+    [parseLabObject, 'lab'],
+    [parseXyzD65String, 'xyz-d65'],
+    [parseXyzD65Object, 'xyz-d65'],
+    [parseXyzD50String, 'xyz'],
+    [parseXyzObject, 'xyz']
+  );
 };
 
 export default lab;
