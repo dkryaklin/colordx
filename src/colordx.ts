@@ -100,23 +100,23 @@ export class Colordx {
     return alpha < 1 ? `hsl(${h} ${s}% ${l}% / ${alpha})` : `hsl(${h} ${s}% ${l}%)`;
   }
 
-  toOklab(): OklabColor {
+  toOklab(precision = 4): OklabColor {
     const { l, a, b, alpha } = rgbToOklab(this._rgb);
-    return { l: round(l, 4), a: round(a, 4), b: round(b, 4), alpha };
+    return { l: round(l, precision), a: round(a, precision), b: round(b, precision), alpha };
   }
 
-  toOklabString(): string {
-    const { l, a, b, alpha } = this.toOklab();
+  toOklabString(precision = 4): string {
+    const { l, a, b, alpha } = this.toOklab(precision);
     return alpha < 1 ? `oklab(${l} ${a} ${b} / ${alpha})` : `oklab(${l} ${a} ${b})`;
   }
 
-  toOklch(): OklchColor {
+  toOklch(precision = 4): OklchColor {
     const { l, c, h, alpha } = rgbToOklch(this._rgb);
-    return { l: round(l, 4), c: round(c, 4), h: round(h, 2), alpha };
+    return { l: round(l, precision), c: round(c, precision), h: round(h, precision), alpha };
   }
 
-  toOklchString(): string {
-    const { l, c, h, alpha } = this.toOklch();
+  toOklchString(precision = 4): string {
+    const { l, c, h, alpha } = this.toOklch(precision);
     const H = c === 0 ? 'none' : h;
     return alpha < 1 ? `oklch(${l} ${c} ${H} / ${alpha})` : `oklch(${l} ${c} ${H})`;
   }

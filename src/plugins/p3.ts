@@ -5,12 +5,13 @@ import {
   oklabToLinearP3,
   parseP3Object,
   parseP3String,
-  rgbToP3,
+  rgbToP3Raw,
   srgbLinearToP3Linear,
   srgbLinearToP3LinearInto,
 } from '../colorModels/p3.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
+import { round } from '../helpers.js';
 import { srgbFromLinear } from '../transfer.js';
 import type { AnyColor, P3Color } from '../types.js';
 
@@ -19,8 +20,8 @@ const p3FromLinear = (r: number, g: number, b: number): [number, number, number]
 
 declare module '@colordx/core' {
   interface Colordx {
-    toP3(): P3Color;
-    toP3String(): string;
+    toP3(precision?: number): P3Color;
+    toP3String(precision?: number): string;
   }
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Colordx {
@@ -73,11 +74,18 @@ const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
     const mapped = toGamutCustom(input, oklabToLinearP3, p3FromLinear);
     return mapped !== null ? ColordxClass._makeFromOklab(mapped) : new ColordxClass(input);
   };
-  ColordxClass.prototype.toP3 = function () {
-    return rgbToP3(this._rawRgb());
+  ColordxClass.prototype.toP3 = function (precision = 4) {
+    const { r, g, b, alpha } = rgbToP3Raw(this._rawRgb());
+    return {
+      r: round(r, precision),
+      g: round(g, precision),
+      b: round(b, precision),
+      alpha,
+      colorSpace: 'display-p3' as const,
+    };
   };
-  ColordxClass.prototype.toP3String = function () {
-    const { r, g, b, alpha } = this.toP3();
+  ColordxClass.prototype.toP3String = function (precision = 4) {
+    const { r, g, b, alpha } = this.toP3(precision);
     return alpha < 1 ? `color(display-p3 ${r} ${g} ${b} / ${alpha})` : `color(display-p3 ${r} ${g} ${b})`;
   };
   parsers.push(parseP3String, parseP3Object);

@@ -42,8 +42,8 @@ import { colordx } from '@colordx/core';
 // Parse any CSS color string or color object, then chain conversions:
 colordx('#ff0000').toRgbString();     // 'rgb(255 0 0)'
 colordx('#ff0000').toHex();           // '#ff0000'
-colordx('#ff0000').toOklch();         // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
-colordx('#ff0000').toOklchString();   // 'oklch(0.628 0.2577 29.23)'
+colordx('#ff0000').toOklch();         // { l: 0.628, c: 0.2577, h: 29.2339, alpha: 1 }
+colordx('#ff0000').toOklchString();   // 'oklch(0.628 0.2577 29.2339)'
 
 // Works from any input format — hex, rgb(), hsl(), oklch(), oklab(), plain objects:
 colordx('oklch(0.5 0.2 240)').toHex();                     // '#0069c7'
@@ -118,8 +118,8 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .toHwbString()     // 'hwb(0 0% 0%)'
 .toOklab()         // { l: 0.628, a: 0.2249, b: 0.1258, alpha: 1 }
 .toOklabString()   // 'oklab(0.628 0.2249 0.1258)'
-.toOklch()         // { l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }
-.toOklchString()   // 'oklch(0.628 0.2577 29.23)'
+.toOklch()         // { l: 0.628, c: 0.2577, h: 29.2339, alpha: 1 }
+.toOklchString()   // 'oklch(0.628 0.2577 29.2339)'
 // With p3 plugin loaded:
 .toP3()            // { r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }
 .toP3String()      // 'color(display-p3 0.9175 0.2003 0.1386)'
@@ -273,11 +273,11 @@ colordx(input).toOklchString();          // 'oklch(0.5 0.4 180)'
 colordx(input).toRgbString();            // 'rgb(0 152 108)' — naive clip, matches browser
 
 // 2. Map — CSS Color 4 gamut mapping (preserves lightness + hue, reduces chroma)
-colordx(input).mapSrgb().toOklchString();   // 'oklch(0.5091 0.0938 177.85)'
+colordx(input).mapSrgb().toOklchString();   // 'oklch(0.5091 0.0938 177.8489)'
 colordx(input).mapSrgb().toRgbString();     // 'rgb(0 119 102)'
 
 // 3. Clamp — naive-clip into sRGB as a Colordx (matches browser, but hue drifts)
-colordx(input).clampSrgb().toOklchString(); // 'oklch(0.6012 0.1276 164.3)'
+colordx(input).clampSrgb().toOklchString(); // 'oklch(0.6012 0.1276 164.2989)'
 colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes as (1)
 ```
 
@@ -641,14 +641,23 @@ colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab
 
 The same applies to `tints()`, `shades()`, and `tones()` from the mix plugin, which all call `.mix()` internally.
 
-### HSL precision
+### Precision
 
-`toHsl()` accepts an optional `precision` argument to control decimal places:
+Every `toX()` / `toXString()` method accepts an optional `precision` (decimal places), applied uniformly to every channel of that format. Alpha is fixed at 3 dp globally. Format-specific defaults (scale-appropriate):
+
+| format | default |
+|---|---|
+| `toHsl`, `toHsv`, `toCmyk`, `toLab`, `toLch`, `toXyz` | `2` |
+| `toHwb` | `0` |
+| `toOklab`, `toOklch`, `toP3`, `toRec2020` | `4` |
 
 ```ts
-colordx('#3d7a9f').toHsl(); // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }  — default (2)
-colordx('#3d7a9f').toHsl(4); // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
-colordx('#3d7a9f').toHsl(0); // { h: 203, s: 45, l: 43, alpha: 1 }
+colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }
+colordx('#3d7a9f').toHsl(4);     // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
+colordx('#3d7a9f').toHsl(0);     // { h: 203, s: 45, l: 43, alpha: 1 }
+
+colordx('#ff0000').toOklchString();   // 'oklch(0.628 0.2577 29.2339)'
+colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 ```
 
 The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.

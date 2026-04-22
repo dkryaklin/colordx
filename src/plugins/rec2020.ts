@@ -5,12 +5,13 @@ import {
   oklabToLinearRec2020,
   parseRec2020Object,
   parseRec2020String,
-  rgbToRec2020,
+  rgbToRec2020Raw,
   srgbLinearToRec2020Linear,
   srgbLinearToRec2020LinearInto,
 } from '../colorModels/rec2020.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
+import { round } from '../helpers.js';
 import { rec2020FromLinear } from '../transfer.js';
 import type { AnyColor, Rec2020Color } from '../types.js';
 
@@ -19,8 +20,8 @@ const rec2020FromLinearConverter = (r: number, g: number, b: number): [number, n
 
 declare module '@colordx/core' {
   interface Colordx {
-    toRec2020(): Rec2020Color;
-    toRec2020String(): string;
+    toRec2020(precision?: number): Rec2020Color;
+    toRec2020String(precision?: number): string;
   }
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Colordx {
@@ -71,11 +72,18 @@ const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
     const mapped = toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter);
     return mapped !== null ? ColordxClass._makeFromOklab(mapped) : new ColordxClass(input);
   };
-  ColordxClass.prototype.toRec2020 = function () {
-    return rgbToRec2020(this._rawRgb());
+  ColordxClass.prototype.toRec2020 = function (precision = 4) {
+    const { r, g, b, alpha } = rgbToRec2020Raw(this._rawRgb());
+    return {
+      r: round(r, precision),
+      g: round(g, precision),
+      b: round(b, precision),
+      alpha,
+      colorSpace: 'rec2020' as const,
+    };
   };
-  ColordxClass.prototype.toRec2020String = function () {
-    const { r, g, b, alpha } = this.toRec2020();
+  ColordxClass.prototype.toRec2020String = function (precision = 4) {
+    const { r, g, b, alpha } = this.toRec2020(precision);
     return alpha < 1 ? `color(rec2020 ${r} ${g} ${b} / ${alpha})` : `color(rec2020 ${r} ${g} ${b})`;
   };
   parsers.push(parseRec2020String, parseRec2020Object);

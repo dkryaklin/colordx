@@ -50,15 +50,20 @@ export const linearP3ToSrgb = (r: number, g: number, b: number): [number, number
 
 // No clamping on output: P3 is wide-gamut, sRGB values can legitimately sit outside [0,1] in P3 space.
 // p3ToRgb clips back to sRGB gamut on the way out.
-export const rgbToP3 = ({ r, g, b, alpha }: RgbColor): P3Color => {
+export const rgbToP3Raw = ({ r, g, b, alpha }: RgbColor): P3Color => {
   const [p3r, p3g, p3b] = srgbLinearToP3Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
-    r: round(srgbFromLinear(p3r), 4),
-    g: round(srgbFromLinear(p3g), 4),
-    b: round(srgbFromLinear(p3b), 4),
+    r: srgbFromLinear(p3r),
+    g: srgbFromLinear(p3g),
+    b: srgbFromLinear(p3b),
     alpha,
     colorSpace: 'display-p3',
   };
+};
+
+export const rgbToP3 = (rgb: RgbColor): P3Color => {
+  const { r, g, b, alpha } = rgbToP3Raw(rgb);
+  return { r: round(r, 4), g: round(g, 4), b: round(b, 4), alpha, colorSpace: 'display-p3' };
 };
 
 export const p3ToRgb = ({ r, g, b, alpha }: P3Color): RgbColor => {

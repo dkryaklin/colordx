@@ -10,19 +10,21 @@ const clampCmyk = (cmyk: CmykColor): CmykColor => ({
   alpha: clamp(cmyk.alpha, 0, 1),
 });
 
-export const rgbToCmyk = ({ r, g, b, alpha }: RgbColor): CmykColor => {
+export const rgbToCmykRaw = ({ r, g, b, alpha }: RgbColor): CmykColor => {
   const k = 1 - Math.max(r / 255, g / 255, b / 255);
-  if (k === 1) return { c: 0, m: 0, y: 0, k: round(100 * k), alpha };
-  const c = (1 - r / 255 - k) / (1 - k);
-  const m = (1 - g / 255 - k) / (1 - k);
-  const y = (1 - b / 255 - k) / (1 - k);
+  if (k === 1) return { c: 0, m: 0, y: 0, k: 100, alpha };
   return {
-    c: round(100 * c, 2),
-    m: round(100 * m, 2),
-    y: round(100 * y, 2),
-    k: round(100 * k, 2),
+    c: ((1 - r / 255 - k) / (1 - k)) * 100,
+    m: ((1 - g / 255 - k) / (1 - k)) * 100,
+    y: ((1 - b / 255 - k) / (1 - k)) * 100,
+    k: k * 100,
     alpha,
   };
+};
+
+export const rgbToCmyk = (rgb: RgbColor): CmykColor => {
+  const { c, m, y, k, alpha } = rgbToCmykRaw(rgb);
+  return { c: round(c, 2), m: round(m, 2), y: round(y, 2), k: round(k, 2), alpha };
 };
 
 export const cmykToRgb = ({ c, m, y, k, alpha }: CmykColor): RgbColor =>

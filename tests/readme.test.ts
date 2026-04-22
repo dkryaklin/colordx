@@ -49,10 +49,10 @@ beforeAll(() => {
 
 describe('README — Usage', () => {
   it('toOklch', () => {
-    expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.628, c: 0.2577, h: 29.23, alpha: 1 });
+    expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.628, c: 0.2577, h: 29.2339, alpha: 1 });
   });
   it('toOklchString', () => {
-    expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.628 0.2577 29.23)');
+    expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.628 0.2577 29.2339)');
   });
   it('lighten then toHex', () => {
     expect(colordx('#ff0000').lighten(0.1).toHex()).toBe('#ff3333');
@@ -115,8 +115,9 @@ describe('README — Conversion', () => {
 
   it('toOklab', () => expect(colordx('#ff0000').toOklab()).toEqual({ l: 0.628, a: 0.2249, b: 0.1258, alpha: 1 }));
   it('toOklabString', () => expect(colordx('#ff0000').toOklabString()).toBe('oklab(0.628 0.2249 0.1258)'));
-  it('toOklch', () => expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.628, c: 0.2577, h: 29.23, alpha: 1 }));
-  it('toOklchString', () => expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.628 0.2577 29.23)'));
+  it('toOklch', () => expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.628, c: 0.2577, h: 29.2339, alpha: 1 }));
+  it('toOklchString', () => expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.628 0.2577 29.2339)'));
+  it('toOklchString precision 2', () => expect(colordx('#ff0000').toOklchString(2)).toBe('oklch(0.63 0.26 29.23)'));
 
   it('toP3', () => expect((colordx('#ff0000') as any).toP3()).toEqual({ r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }));
   it('toP3String', () => expect((colordx('#ff0000') as any).toP3String()).toBe('color(display-p3 0.9175 0.2003 0.1386)'));

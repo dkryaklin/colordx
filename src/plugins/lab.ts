@@ -6,30 +6,36 @@ import type { AnyColor, LabColor, XyzColor } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
-    toLab(): LabColor;
-    toLabString(): string;
-    toXyz(): XyzColor;
-    toXyzString(): string;
+    toLab(precision?: number): LabColor;
+    toLabString(precision?: number): string;
+    toXyz(precision?: number): XyzColor;
+    toXyzString(precision?: number): string;
     mixLab(color: AnyColor, ratio?: number): Colordx;
     delta(color?: AnyColor): number;
   }
 }
 
 const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
-  ColordxClass.prototype.toLab = function () {
+  ColordxClass.prototype.toLab = function (precision = 2) {
     const { l, a, b, alpha } = rgbToLab(this._rawRgb());
-    return { l: round(l, 2), a: round(a, 2) || 0, b: round(b, 2) || 0, alpha, colorSpace: 'lab' as const }; // || 0 suppresses −0
+    return {
+      l: round(l, precision),
+      a: round(a, precision) || 0, // || 0 suppresses −0
+      b: round(b, precision) || 0,
+      alpha,
+      colorSpace: 'lab' as const,
+    };
   };
-  ColordxClass.prototype.toLabString = function (this: Colordx) {
-    const { l, a, b, alpha } = this.toLab();
+  ColordxClass.prototype.toLabString = function (this: Colordx, precision = 2) {
+    const { l, a, b, alpha } = this.toLab(precision);
     return alpha < 1 ? `lab(${l} ${a} ${b} / ${alpha})` : `lab(${l} ${a} ${b})`;
   };
-  ColordxClass.prototype.toXyz = function () {
+  ColordxClass.prototype.toXyz = function (precision = 2) {
     const { x, y, z, alpha } = rgbToXyz(this._rawRgb());
-    return { x: round(x, 2), y: round(y, 2), z: round(z, 2), alpha };
+    return { x: round(x, precision), y: round(y, precision), z: round(z, precision), alpha };
   };
-  ColordxClass.prototype.toXyzString = function (this: Colordx) {
-    const { x, y, z, alpha } = this.toXyz();
+  ColordxClass.prototype.toXyzString = function (this: Colordx, precision = 2) {
+    const { x, y, z, alpha } = this.toXyz(precision);
     return alpha < 1 ? `color(xyz-d65 ${x} ${y} ${z} / ${alpha})` : `color(xyz-d65 ${x} ${y} ${z})`;
   };
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {

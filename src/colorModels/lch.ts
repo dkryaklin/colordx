@@ -21,18 +21,24 @@ const clampLch = (lch: Omit<LchColor, 'colorSpace'>): LchColor => ({
   colorSpace: 'lch',
 });
 
-export const rgbToLch = (rgb: RgbColor): LchColor => {
+export const rgbToLchRaw = (rgb: RgbColor): LchColor => {
   const lab = rgbToLab(rgb);
-  const c = round(Math.sqrt(lab.a ** 2 + lab.b ** 2), 2);
+  const c = Math.sqrt(lab.a ** 2 + lab.b ** 2);
   const h = (Math.atan2(lab.b, lab.a) / Math.PI) * 180;
   return {
     l: lab.l,
     c,
     // Achromatic threshold on LCH scale (0–~150): below this chroma the hue is numerically unstable.
-    h: c < 0.0015 ? 0 : round(h < 0 ? h + 360 : h, 2),
+    h: c < 0.0015 ? 0 : h < 0 ? h + 360 : h,
     alpha: lab.alpha,
     colorSpace: 'lch',
   };
+};
+
+export const rgbToLch = (rgb: RgbColor): LchColor => {
+  const { l, c, h, alpha } = rgbToLchRaw(rgb);
+  const cR = round(c, 2);
+  return { l, c: cR, h: cR < 0.0015 ? 0 : round(h, 2), alpha, colorSpace: 'lch' };
 };
 
 export const lchToRgb = ({ l, c, h, alpha }: LchColor): RgbColor =>

@@ -315,13 +315,13 @@ describe('gamut strategies — the three distinct outputs', () => {
 
   it('map → hue-preserving chroma reduction (CSS Color 4)', () => {
     const mapped = colordx(input).mapSrgb();
-    expect(mapped.toOklchString()).toBe('oklch(0.5091 0.0938 177.85)');
+    expect(mapped.toOklchString()).toBe('oklch(0.5091 0.0938 177.8489)');
     expect(mapped.toRgbString()).toBe('rgb(0 119 102)');
   });
 
   it('clamp → browser-matching naive clip, oklch drifts', () => {
     const clamped = colordx(input).clampSrgb();
-    expect(clamped.toOklchString()).toBe('oklch(0.6012 0.1276 164.3)');
+    expect(clamped.toOklchString()).toBe('oklch(0.6012 0.1276 164.2989)');
     expect(clamped.toRgbString()).toBe('rgb(0 152 108)');
   });
 

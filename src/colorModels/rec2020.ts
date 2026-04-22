@@ -51,15 +51,20 @@ export const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, n
   R2S_BR * r + R2S_BG * g + R2S_BB * b,
 ];
 
-export const rgbToRec2020 = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
+export const rgbToRec2020Raw = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
   const [rr, rg, rb] = srgbLinearToRec2020Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
-    r: round(rec2020FromLinear(rr), 4),
-    g: round(rec2020FromLinear(rg), 4),
-    b: round(rec2020FromLinear(rb), 4),
+    r: rec2020FromLinear(rr),
+    g: rec2020FromLinear(rg),
+    b: rec2020FromLinear(rb),
     alpha,
     colorSpace: 'rec2020',
   };
+};
+
+export const rgbToRec2020 = (rgb: RgbColor): Rec2020Color => {
+  const { r, g, b, alpha } = rgbToRec2020Raw(rgb);
+  return { r: round(r, 4), g: round(g, 4), b: round(b, 4), alpha, colorSpace: 'rec2020' };
 };
 
 export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
