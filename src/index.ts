@@ -1,4 +1,5 @@
-export { Colordx, colordx, extend, nearest, random } from './colordx.js';
+export { Colordx, colordx, extend, nearest, random, toHex8 } from './colordx.js';
+export { toHexByte } from './colorModels/hex.js';
 export type { Plugin } from './colordx.js';
 export { getFormat } from './parse.js';
 export { inGamutSrgb } from './gamut.js';
@@ -14,16 +15,28 @@ export type {
   AnyColor,
   ColorFormat,
   RgbColor,
+  RgbColorInput,
   HslColor,
+  HslColorInput,
   HsvColor,
+  HsvColorInput,
   HwbColor,
+  HwbColorInput,
   LabColor,
+  LabColorInput,
   LchColor,
+  LchColorInput,
   XyzColor,
+  XyzColorInput,
   CmykColor,
+  CmykColorInput,
   OklabColor,
+  OklabColorInput,
   OklchColor,
+  OklchColorInput,
   P3Color,
+  P3ColorInput,
   Rec2020Color,
+  Rec2020ColorInput,
   ColorParser,
 } from './types.js';

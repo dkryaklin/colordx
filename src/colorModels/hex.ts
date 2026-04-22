@@ -2,6 +2,9 @@ import { clamp, round } from '../helpers.js';
 import type { RgbColor } from '../types.js';
 
 const HEX_BYTE = /* #__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+
+/** Convert a number in [0, 255] to a 2-char lowercase hex byte. Clamps and rounds out-of-range inputs. */
+export const toHexByte = (n: number): string => HEX_BYTE[clamp(Math.round(n), 0, 255)]!;
 const hexNibble = (c: number): number => (c & 0xf) + 9 * (c >> 6);
 const hexByte = (s: string, i: number): number => (hexNibble(s.charCodeAt(i)) << 4) | hexNibble(s.charCodeAt(i + 1));
 const HEX_RE = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -29,10 +32,10 @@ export const parseHex = (input: unknown): RgbColor | null => {
 };
 
 export const rgbToHex = ({ r, g, b, alpha }: RgbColor): string => {
-  const hex =
-    '#' +
-    HEX_BYTE[clamp(Math.round(r), 0, 255)] +
-    HEX_BYTE[clamp(Math.round(g), 0, 255)] +
-    HEX_BYTE[clamp(Math.round(b), 0, 255)];
-  return alpha < 1 ? hex + HEX_BYTE[clamp(Math.round(alpha * 255), 0, 255)] : hex;
+  const hex = '#' + toHexByte(r) + toHexByte(g) + toHexByte(b);
+  return alpha < 1 ? hex + toHexByte(alpha * 255) : hex;
 };
+
+/** Always emits 8-digit `#rrggbbaa`, regardless of alpha. Companion to `rgbToHex`. */
+export const rgbToHex8 = ({ r, g, b, alpha }: RgbColor): string =>
+  '#' + toHexByte(r) + toHexByte(g) + toHexByte(b) + toHexByte(alpha * 255);

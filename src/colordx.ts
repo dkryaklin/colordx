@@ -1,4 +1,4 @@
-import { rgbToHex } from './colorModels/hex.js';
+import { rgbToHex, rgbToHex8 } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { linearSrgbToOklab, oklabToLinear, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
@@ -76,6 +76,11 @@ export class Colordx {
 
   toHex(): string {
     return rgbToHex(this._rgb);
+  }
+
+  /** Always returns an 8-digit `#rrggbbaa`, even when alpha is 1. */
+  toHex8(): string {
+    return rgbToHex8(this._rgb);
   }
 
   /** Returns a 24-bit RGB integer (0x000000–0xFFFFFF). Alpha is not included. */
@@ -254,6 +259,9 @@ export type Plugin = (
 ) => void;
 
 export const colordx = (input: AnyColor | Colordx): Colordx => new Colordx(input);
+
+/** Emit an 8-digit `#rrggbbaa` hex for any color input. Convenience over `colordx(c).toHex8()`. */
+export const toHex8 = (input: AnyColor | Colordx): string => new Colordx(input).toHex8();
 
 export const extend = (plugins: Plugin[]): void => {
   plugins.forEach((plugin) => plugin(Colordx, parsers, pluginFormatParsers));

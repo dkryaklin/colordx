@@ -13,11 +13,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era. The successor to [colord](https://github.com/omgovich/colord) with first-class support for **OKLCH** and **OKLab**. **5 KB gzipped. More than 2× faster than colord.**
-
-## Why colordx?
-
-[colord](https://github.com/omgovich/colord) is a great library, but it was designed around CSS Color 3. Modern CSS uses `oklch()` and `oklab()` — color spaces that produce better gradients, more accurate lightness adjustments, and consistent hue shifts. colord has no support for them, not even via a plugin. With colordx, they're built in.
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **6 KB gzipped. 0 Dependencies.**
 
 ## Performance
 
@@ -25,12 +21,12 @@ Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwa
 
 | Benchmark | **colordx** | @texel/color | colord | culori | chroma-js | color | tinycolor2 |
 |---|---|---|---|---|---|---|---|
-| HEX → toHsl | **13M** | — | 5.2M | 3.4M | 2.4M | 1.7M | 1.7M |
-| HEX → lighten → toHex | **9.9M** | — | 3.8M | 3.1M | 780K | 650K | 650K |
-| Mix two colors | **6.3M** | 4.8M | 1.4M | 920K | 1.0M | 460K | 1.1M |
-| HEX → toOklch | **5.6M** | 4.2M | — | 3.3M | 1.0M | 1.8M | — |
-| inGamutP3 | **4.4M** | 3.0M | — | 960K | — | — | — |
-| inGamutRec2020 | **4.1M** | 3.0M | — | 1.0M | — | — | — |
+| HEX → toHsl | **24M** | — | 10M | 5.5M | 3.5M | 2.8M | 2.5M |
+| HEX → lighten → toHex | **12M** | — | 5.8M | 4.8M | 1.3M | 1.0M | 1.0M |
+| Mix two colors | **6.7M** | 5.2M | 1.2M | 1.0M | 1.1M | 550K | 1.1M |
+| HEX → toOklch | **5.5M** | 4.5M | — | 3.3M | 1.0M | 2.0M | — |
+| inGamutP3 | **4.6M** | 3.0M | — | 1.0M | — | — | — |
+| inGamutRec2020 | **4.5M** | 3.2M | — | 1.1M | — | — | — |
 
 ## Install
 
@@ -51,7 +47,7 @@ colordx('#ff0000').toOklchString();   // 'oklch(0.628 0.2577 29.23)'
 
 // Works from any input format — hex, rgb(), hsl(), oklch(), oklab(), plain objects:
 colordx('oklch(0.5 0.2 240)').toHex();                     // '#0069c7'
-colordx({ r: 255, g: 0, b: 0, alpha: 1 }).toHslString();   // 'hsl(0 100% 50%)'
+colordx({ r: 255, g: 0, b: 0 }).toHslString();             // 'hsl(0 100% 50%)'
 
 // Chain manipulations — each call returns a new immutable Colordx:
 colordx('#ff0000').lighten(0.1).saturate(0.2).toHex();
@@ -76,19 +72,30 @@ colordx('rgba(255, 0, 0, 0.5)');
 colordx('hsl(0 100% 50%)');
 colordx('oklab(0.6279 0.2249 0.1257)');
 colordx('oklch(0.6279 0.2577 29.23)');
-colordx({ r: 255, g: 0, b: 0, alpha: 1 });
-colordx({ h: 0, s: 100, l: 50, alpha: 1 });
-colordx({ l: 0.6279, a: 0.2249, b: 0.1257, alpha: 1 }); // OKLab
-colordx({ l: 0.6279, c: 0.2577, h: 29.23, alpha: 1 }); // OKLch
+colordx({ r: 255, g: 0, b: 0 });           // alpha defaults to 1
+colordx({ r: 255, g: 0, b: 0, alpha: 0.5 });
+colordx({ h: 0, s: 100, l: 50 });
+colordx({ l: 0.6279, a: 0.2249, b: 0.1257 }); // OKLab
+colordx({ l: 0.6279, c: 0.2577, h: 29.23 }); // OKLch
 // With p3 plugin loaded:
 colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
 colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
 // With hwb plugin loaded:
 colordx('hwb(0 0% 0%)');
-colordx({ h: 0, w: 0, b: 0, alpha: 1 });
+colordx({ h: 0, w: 0, b: 0 });
 // With hsv plugin loaded:
-colordx({ h: 0, s: 100, v: 100, alpha: 1 }); // HSV
+colordx({ h: 0, s: 100, v: 100 }); // HSV
+```
+
+TypeScript: input color objects use `*ColorInput` types (`alpha` optional, defaults to 1).
+Output methods like `.toRgb()` / `.toOklch()` return `*Color` types (`alpha` always present).
+
+```ts
+import type { RgbColor, RgbColorInput } from '@colordx/core';
+
+const input: RgbColorInput = { r: 255, g: 0, b: 0 };       // alpha optional
+const output: RgbColor = colordx(input).toRgb();           // alpha guaranteed
 ```
 
 ### Conversion
@@ -168,8 +175,8 @@ getFormat('rgb(255 0 0)'); // 'rgb'
 getFormat('hsl(0 100% 50%)'); // 'hsl'
 getFormat('oklch(0.5 0.2 240)'); // 'oklch'
 getFormat('oklab(0.6279 0.2249 0.1257)'); // 'oklab'
-getFormat({ r: 255, g: 0, b: 0, alpha: 1 }); // 'rgb'
-getFormat({ h: 0, s: 100, l: 50, alpha: 1 }); // 'hsl'
+getFormat({ r: 255, g: 0, b: 0 }); // 'rgb'
+getFormat({ h: 0, s: 100, l: 50 }); // 'hsl'
 getFormat('notacolor'); // undefined
 // Plugin-added parsers register their own format:
 // p3 → 'p3', hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020'
@@ -346,7 +353,7 @@ extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec20
 
 ### lab plugin
 
-CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input (Lab requires a `colorSpace: 'lab'` discriminant). Also adds `.mixLab()` for colord-compatible perceptual mixing, `.delta()` for CIEDE2000 color difference, and string conversion methods.
+CIE Lab (D50) and CIE XYZ (D50) color models. Lab and XYZ objects are also accepted as color input (Lab requires a `colorSpace: 'lab'` discriminant). Also adds `.mixLab()` for perceptual mixing in CIE Lab, `.delta()` for CIEDE2000 color difference, and string conversion methods.
 
 ```ts
 import lab from '@colordx/core/plugins/lab';
@@ -361,10 +368,10 @@ colordx('#ff0000').toXyzString(); // 'color(xyz-d65 43.61 22.25 1.39)'
 
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
 // Lab objects require colorSpace: 'lab' to distinguish from OKLab (which has the same l/a/b shape)
-colordx({ l: 54.29, a: 80.8, b: 69.89, alpha: 1, colorSpace: 'lab' as const }).toHex(); // '#ff0000'
-colordx({ x: 43.61, y: 22.25, z: 1.39, alpha: 1 }).toHex(); // '#ff0000'
+colordx({ l: 54.29, a: 80.8, b: 69.89, colorSpace: 'lab' as const }).toHex(); // '#ff0000'
+colordx({ x: 43.61, y: 22.25, z: 1.39 }).toHex(); // '#ff0000'
 
-// Mix in CIE Lab space (colord-compatible)
+// Mix in CIE Lab space
 colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
 
 // CIEDE2000 perceptual color difference (0 = identical, ~1 = maximum)
@@ -386,7 +393,7 @@ colordx('#ff0000').toLch(); // { l: 54.29, c: 106.84, h: 40.86, alpha: 1, colorS
 colordx('#ff0000').toLchString(); // 'lch(54.29 106.84 40.86)'
 colordx('lch(54.29 106.84 40.86)').toHex(); // '#ff0000'
 // LCH objects require colorSpace: 'lch' to distinguish from OKLCH (which has the same l/c/h shape)
-colordx({ l: 50, c: 50, h: 180, alpha: 1, colorSpace: 'lch' as const }).toHex(); // parses as LCH object
+colordx({ l: 50, c: 50, h: 180, colorSpace: 'lch' as const }).toHex(); // parses as LCH object
 ```
 
 ### cmyk plugin
@@ -401,7 +408,7 @@ extend([cmyk]);
 colordx('#ff0000').toCmyk(); // { c: 0, m: 100, y: 100, k: 0, alpha: 1 }
 colordx('#ff0000').toCmykString(); // 'device-cmyk(0% 100% 100% 0%)'
 colordx('device-cmyk(0% 100% 100% 0%)').toHex(); // '#ff0000'
-colordx({ c: 0, m: 100, y: 100, k: 0, alpha: 1 }).toHex(); // '#ff0000'
+colordx({ c: 0, m: 100, y: 100, k: 0 }).toHex(); // '#ff0000'
 ```
 
 ### names plugin
@@ -617,127 +624,26 @@ Object parsing is also supported using the `colorSpace` discriminant:
 colordx({ r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1, colorSpace: 'rec2020' }).toHex();
 ```
 
-## Migrating from colord
-
-The API is intentionally compatible. Most code works unchanged:
-
-```ts
-// Before
-import { colord } from 'colord';
-const c = colord('#ff0000');
-
-// After
-import { colordx } from '@colordx/core';
-const c = colordx('#ff0000');
-```
-
-### What's the same
-
-All core manipulation and conversion methods have identical signatures:
-`.toHex()`, `.toRgb()`, `.toRgbString()`, `.toHsl()`, `.toHslString()`, `.lighten()`, `.darken()`, `.saturate()`, `.desaturate()`, `.grayscale()`, `.invert()`, `.rotate()`, `.alpha()`, `.hue()`, `.brightness()`, `.isDark()`, `.isLight()`, `.isEqual()`, `getFormat()`, `random()`
-
-The following remain **plugin-only** (same as colord): `.mix()`, `.mixOklab()`, `.luminance()`, `.contrast()`, `.toHwb()`, `.toHwbString()`.
-
-`.lighten()`, `.darken()`, `.saturate()`, and `.desaturate()` accept an optional `{ relative: true }` flag not present in colord — see [Relative lighten/darken](#relative-lightendarken) below.
-
-### What changed
-
-**HSV moved to a plugin:**
-
-```ts
-// colord
-colord('#ff0000').toHsv();
-
-// colordx
-import hsv from '@colordx/core/plugins/hsv';
-extend([hsv]);
-colordx('#ff0000').toHsv();
-```
-
-**OKLCH and OKLab are now core** — no plugin needed:
-
-```ts
-// colord (requires plugin — not available)
-// colordx
-colordx('#ff0000').toOklch();
-colordx('#ff0000').toOklchString();
-colordx('oklch(0.5 0.2 240)').toHex();
-```
-
-**CIE Lab, LCH, XYZ, CMYK moved to plugins:**
-
-```ts
-// colord
-import { colord, extend } from 'colord';
-import labPlugin from 'colord/plugins/lab';
-import lchPlugin from 'colord/plugins/lch';
-import xyzPlugin from 'colord/plugins/xyz';
-import cmykPlugin from 'colord/plugins/cmyk';
-extend([labPlugin, lchPlugin, xyzPlugin, cmykPlugin]);
-
-// colordx
-import { colordx, extend } from '@colordx/core';
-import lab from '@colordx/core/plugins/lab';
-import lch from '@colordx/core/plugins/lch';
-import cmyk from '@colordx/core/plugins/cmyk';
-// Note: XYZ is part of the lab plugin in colordx
-extend([lab, lch, cmyk]);
-```
-
-**`getFormat()` import path:**
-
-```ts
-// colord
-import { getFormat } from 'colord';
-
-// colordx
-import { getFormat } from '@colordx/core';
-```
-
-**Alpha channel property renamed from `a` to `alpha`:**
-
-colord used `a` as the alpha key in all color objects. colordx uses `alpha` everywhere (except OKLab and CIE Lab where `a` is a color axis).
-
-```ts
-// colord
-colord('#ff0000').toRgb(); // { r: 255, g: 0, b: 0, a: 1 }
-colord({ r: 255, g: 0, b: 0, a: 1 });
-
-// colordx
-colordx('#ff0000').toRgb(); // { r: 255, g: 0, b: 0, alpha: 1 }
-colordx({ r: 255, g: 0, b: 0, alpha: 1 });
-```
+## Notes
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
 
-colord's `mix` plugin interpolated in **CIE Lab** space. colordx's `mix()` uses **sRGB interpolation**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers.
+`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab.
 
 ```ts
 colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
 colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform)
 
-// colord-compatible Lab mixing — requires lab plugin
 import lab from '@colordx/core/plugins/lab';
 extend([lab]);
-colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab (colord-compatible)
+colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab
 ```
 
-The same applies to `tints()`, `shades()`, and `tones()` from the mix plugin, which all call `.mix()` internally. If you have hardcoded expected hex values from colord's mix output, switch to `.mixLab()` or update the values.
-
-### `contrast()` rounding
-
-colord uses `Math.floor` when rounding the WCAG contrast ratio to 2 decimal places; colordx uses standard rounding (`Math.round`). This affects values that fall exactly at .xxx5:
-
-```ts
-colord('#ff0000').contrast('#ffffff'); // 3.99  (floor)
-colordx('#ff0000').contrast('#ffffff'); // 4     (round)
-```
+The same applies to `tints()`, `shades()`, and `tones()` from the mix plugin, which all call `.mix()` internally.
 
 ### HSL precision
 
-colordx returns higher precision HSL/HSV values than colord. If your code does exact equality checks on `.toHsl()` output, use `toBeCloseTo` or round the values.
-
-`toHsl()` now accepts an optional `precision` argument to control decimal places:
+`toHsl()` accepts an optional `precision` argument to control decimal places:
 
 ```ts
 colordx('#3d7a9f').toHsl(); // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }  — default (2)
@@ -745,11 +651,11 @@ colordx('#3d7a9f').toHsl(4); // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 
 colordx('#3d7a9f').toHsl(0); // { h: 203, s: 45, l: 43, alpha: 1 }
 ```
 
-The `minify()` plugin preserves full HSL precision when building candidates, so minification is now lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
+The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
 
 ## Relative lighten/darken
 
-By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points (same as colord). Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
+By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points. Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
 
 ```ts
 // Color with l=10%

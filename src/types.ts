@@ -1,9 +1,20 @@
+// Each color space exposes two types:
+//   - XxxColor:       canonical output shape. alpha is always present (the library
+//                     always writes it), so consumers of toRgb() / toOklch() / etc.
+//                     never need `?? 1` fallbacks.
+//   - XxxColorInput:  input shape. alpha is optional and defaults to 1 at parse
+//                     time, matching the runtime parsers. Use this for function
+//                     parameters that accept user-supplied color objects.
+// AnyColor below is the union of the *Input* types, since it's always used as
+// an input contract for colordx(), parse(), mix(), etc.
+
 export interface RgbColor {
   r: number;
   g: number;
   b: number;
   alpha: number;
 }
+export type RgbColorInput = Omit<RgbColor, 'alpha'> & { alpha?: number };
 
 export interface HslColor {
   h: number;
@@ -11,6 +22,7 @@ export interface HslColor {
   l: number;
   alpha: number;
 }
+export type HslColorInput = Omit<HslColor, 'alpha'> & { alpha?: number };
 
 export interface HsvColor {
   h: number;
@@ -18,6 +30,7 @@ export interface HsvColor {
   v: number;
   alpha: number;
 }
+export type HsvColorInput = Omit<HsvColor, 'alpha'> & { alpha?: number };
 
 export interface HwbColor {
   h: number;
@@ -27,6 +40,7 @@ export interface HwbColor {
   b: number;
   alpha: number;
 }
+export type HwbColorInput = Omit<HwbColor, 'alpha'> & { alpha?: number };
 
 /** CIE LAB (D50) */
 export interface LabColor {
@@ -38,6 +52,7 @@ export interface LabColor {
   alpha: number;
   readonly colorSpace: 'lab';
 }
+export type LabColorInput = Omit<LabColor, 'alpha'> & { alpha?: number };
 
 /** CIE LCH (D50) */
 export interface LchColor {
@@ -47,6 +62,7 @@ export interface LchColor {
   alpha: number;
   readonly colorSpace: 'lch';
 }
+export type LchColorInput = Omit<LchColor, 'alpha'> & { alpha?: number };
 
 /** CIE XYZ (D65) */
 export interface XyzColor {
@@ -55,6 +71,7 @@ export interface XyzColor {
   z: number;
   alpha: number;
 }
+export type XyzColorInput = Omit<XyzColor, 'alpha'> & { alpha?: number };
 
 export interface CmykColor {
   c: number;
@@ -63,6 +80,7 @@ export interface CmykColor {
   k: number;
   alpha: number;
 }
+export type CmykColorInput = Omit<CmykColor, 'alpha'> & { alpha?: number };
 
 /** Oklab — perceptually uniform, D65 */
 export interface OklabColor {
@@ -73,6 +91,7 @@ export interface OklabColor {
   b: number;
   alpha: number;
 }
+export type OklabColorInput = Omit<OklabColor, 'alpha'> & { alpha?: number };
 
 /** Oklch — perceptually uniform, polar form of Oklab */
 export interface OklchColor {
@@ -81,6 +100,7 @@ export interface OklchColor {
   h: number;
   alpha: number;
 }
+export type OklchColorInput = Omit<OklchColor, 'alpha'> & { alpha?: number };
 
 /** CSS Color 4 Display-P3 */
 export interface P3Color {
@@ -90,6 +110,7 @@ export interface P3Color {
   alpha: number;
   readonly colorSpace: 'display-p3';
 }
+export type P3ColorInput = Omit<P3Color, 'alpha'> & { alpha?: number };
 
 /** CSS Color 4 Rec.2020 */
 export interface Rec2020Color {
@@ -99,21 +120,22 @@ export interface Rec2020Color {
   alpha: number;
   readonly colorSpace: 'rec2020';
 }
+export type Rec2020ColorInput = Omit<Rec2020Color, 'alpha'> & { alpha?: number };
 
 export type AnyColor =
   | string
-  | RgbColor
-  | HslColor
-  | HsvColor
-  | HwbColor
-  | LabColor
-  | LchColor
-  | XyzColor
-  | CmykColor
-  | OklabColor
-  | OklchColor
-  | P3Color
-  | Rec2020Color;
+  | RgbColorInput
+  | HslColorInput
+  | HsvColorInput
+  | HwbColorInput
+  | LabColorInput
+  | LchColorInput
+  | XyzColorInput
+  | CmykColorInput
+  | OklabColorInput
+  | OklchColorInput
+  | P3ColorInput
+  | Rec2020ColorInput;
 
 export type ColorParser<T = AnyColor> = (input: T) => RgbColor | null;
 

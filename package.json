@@ -74,6 +74,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:types": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
@@ -82,8 +83,9 @@
     "changeset:ai": "tsx scripts/changeset.ts",
     "version": "changeset version",
     "release": "yarn build && publint && changeset publish",
-    "check": "tsc --noEmit && echo 'tsc ok' && yarn lint && yarn format",
+    "check": "tsc --noEmit && yarn test:types && echo 'tsc ok' && yarn lint && yarn format",
     "bench": "node --expose-gc --import tsx/esm bench/index.ts",
+    "size": "tsx scripts/size.ts",
     "prepare": "node --eval \"if (process.env.CI) process.exit(0)\" && husky || true"
   },
   "lint-staged": {
