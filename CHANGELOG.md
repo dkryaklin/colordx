@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.4.1
+
+### Patch Changes
+
+- Fix gamut helpers to recognize Lab, LCH, Display-P3, Rec.2020, and XYZ inputs and preserve unclamped channels so inGamut checks and toGamut mapping work correctly for wide-gamut color spaces
+
 ## 5.4.0
 
 ### Minor Changes
