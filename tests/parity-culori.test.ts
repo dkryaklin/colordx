@@ -120,6 +120,21 @@ const stats: Record<string, FormatStats> = {
   'RGB8:HSV': mkStats(),
   'RGB8:HWB': mkStats(),
   'RGB8:darken': mkStats(),
+  // Static gamut mapping on non-OKLCH inputs. The original 'RGB' / 'P3 gamut' / 'Rec.2020 gamut'
+  // rows only feed OKLCH — a regression in the getRawOklab paths for LCH / Lab / P3 / Rec.2020
+  // branded inputs (e.g. Colordx.toGamutSrgb(p3Red) falling back to naive clip) would not
+  // register here. These rows plug that gap by comparing the static form against culori's own
+  // toGamut for each source space.
+  'toGamutSrgb(lch-obj)': mkStats(),
+  'toGamutSrgb(lab-obj)': mkStats(),
+  'toGamutSrgb(p3-obj)': mkStats(),
+  'toGamutSrgb(rec2020-obj)': mkStats(),
+  'toGamutP3(lch-obj)': mkStats(),
+  'toGamutRec2020(lch-obj)': mkStats(),
+  // Alpha propagation. Culori's toGamut preserves alpha; colordx's static gamut maps should
+  // too. The existing suite only feeds alpha: 1, so any path silently dropping alpha would
+  // slip through. This aggregates the worst-case alpha delta across every new row below.
+  alpha: mkStats(),
 };
 
 const record = (key: string, delta: number, color: string) => {
@@ -142,6 +157,33 @@ const boolStats: Record<string, BoolStats> = {
   inGamutSrgb: mkBool(),
   inGamutP3: mkBool(),
   inGamutRec2020: mkBool(),
+  // CIE LCH / Lab as branded objects and CSS strings. These paths used to short-circuit
+  // to the sRGB-bounded default (always true) because getRawOklab didn't recognize them.
+  // Drawing fresh CIE-native samples (not reused OKLCH coordinates) so the suite would
+  // catch a regression on the LCH/Lab-object and lch()/lab()-string paths directly.
+  'inGamutSrgb(lch-obj)': mkBool(),
+  'inGamutP3(lch-obj)': mkBool(),
+  'inGamutRec2020(lch-obj)': mkBool(),
+  'inGamutSrgb(lab-obj)': mkBool(),
+  'inGamutP3(lab-obj)': mkBool(),
+  'inGamutRec2020(lab-obj)': mkBool(),
+  'inGamutSrgb(lch-str)': mkBool(),
+  'inGamutP3(lch-str)': mkBool(),
+  'inGamutSrgb(lab-str)': mkBool(),
+  'inGamutP3(lab-str)': mkBool(),
+  // P3 / Rec.2020 / XYZ wide-gamut inputs. Before the fix, `getRawOklab` returned null
+  // for all of these, so `inGamut*` defaulted to true (sRGB-bounded) and static gamut
+  // mapping fell back to naive clip. Sampling in each source space so a regression in
+  // the corresponding branch trips the parity floor.
+  'inGamutSrgb(p3-obj)': mkBool(),
+  'inGamutP3(p3-obj)': mkBool(),
+  'inGamutSrgb(p3-str)': mkBool(),
+  'inGamutSrgb(rec2020-obj)': mkBool(),
+  'inGamutP3(rec2020-obj)': mkBool(),
+  'inGamutRec2020(rec2020-obj)': mkBool(),
+  'inGamutSrgb(xyz50-obj)': mkBool(),
+  'inGamutSrgb(xyz65-obj)': mkBool(),
+  'inGamutSrgb(xyz65-str)': mkBool(),
 };
 const recordBool = (key: string, cx: boolean, cu: boolean) => {
   if (cx === cu) boolStats[key]!.agree++;
@@ -671,6 +713,221 @@ const runParity = () => {
       inGamutRec2020(oklchObj),
       cuRecR >= 0 && cuRecR <= 1 && cuRecG >= 0 && cuRecG <= 1 && cuRecB >= 0 && cuRecB <= 1
     );
+
+    // CIE LCH / Lab parity. Fresh CIE-space sample (not reused OKLCH coordinates), because
+    // the out-of-sRGB region of interest is different under CIE Lab than under OKLCH.
+    // Ground truth: culori's own lch→{lrgb,p3,rec2020} conversion, against which we assert
+    // the boolean ∈-gamut agreement, independent from the OKLCH path.
+    const cieL = rand() * 100;
+    const cieC = rand() * 150;
+    const cieH = rand() * 360;
+    const cieRad = (cieH * Math.PI) / 180;
+    const cieA = cieC * Math.cos(cieRad);
+    const cieB = cieC * Math.sin(cieRad);
+    // Random alpha on every iteration so a path that drops alpha shows up on the 'alpha' row.
+    // Pinned above 0.05 to keep the rounded-to-3dp alpha comparable after culori's pipeline.
+    const cieAlpha = 0.05 + rand() * 0.95;
+    const lchObj = { l: cieL, c: cieC, h: cieH, alpha: cieAlpha, colorSpace: 'lch' as const };
+    const labObj = { l: cieL, a: cieA, b: cieB, alpha: cieAlpha, colorSpace: 'lab' as const };
+    const lchStr = `lch(${cieL.toFixed(4)} ${cieC.toFixed(4)} ${cieH.toFixed(4)})`;
+    const labStr = `lab(${cieL.toFixed(4)} ${cieA.toFixed(4)} ${cieB.toFixed(4)})`;
+
+    const cuCieLrgb = culoriToLrgb({ mode: 'lch' as const, l: cieL, c: cieC, h: cieH })!;
+    const cuCieLR = cuCieLrgb.r ?? 0,
+      cuCieLG = cuCieLrgb.g ?? 0,
+      cuCieLB = cuCieLrgb.b ?? 0;
+    const inCieSrgb = cuCieLR >= 0 && cuCieLR <= 1 && cuCieLG >= 0 && cuCieLG <= 1 && cuCieLB >= 0 && cuCieLB <= 1;
+
+    const cuCieP3 = culoriToP3({ mode: 'lch' as const, l: cieL, c: cieC, h: cieH })!;
+    const cuCieP3R = cuCieP3.r ?? 0,
+      cuCieP3G = cuCieP3.g ?? 0,
+      cuCieP3B = cuCieP3.b ?? 0;
+    const inCieP3 = cuCieP3R >= 0 && cuCieP3R <= 1 && cuCieP3G >= 0 && cuCieP3G <= 1 && cuCieP3B >= 0 && cuCieP3B <= 1;
+
+    const cuCieRec = culoriToRec2020({ mode: 'lch' as const, l: cieL, c: cieC, h: cieH })!;
+    const cuCieRecR = cuCieRec.r ?? 0,
+      cuCieRecG = cuCieRec.g ?? 0,
+      cuCieRecB = cuCieRec.b ?? 0;
+    const inCieRec =
+      cuCieRecR >= 0 && cuCieRecR <= 1 && cuCieRecG >= 0 && cuCieRecG <= 1 && cuCieRecB >= 0 && cuCieRecB <= 1;
+
+    recordBool('inGamutSrgb(lch-obj)', inGamutSrgb(lchObj), inCieSrgb);
+    recordBool('inGamutP3(lch-obj)', inGamutP3(lchObj), inCieP3);
+    recordBool('inGamutRec2020(lch-obj)', inGamutRec2020(lchObj), inCieRec);
+    recordBool('inGamutSrgb(lab-obj)', inGamutSrgb(labObj), inCieSrgb);
+    recordBool('inGamutP3(lab-obj)', inGamutP3(labObj), inCieP3);
+    recordBool('inGamutRec2020(lab-obj)', inGamutRec2020(labObj), inCieRec);
+    recordBool('inGamutSrgb(lch-str)', inGamutSrgb(lchStr), inCieSrgb);
+    recordBool('inGamutP3(lch-str)', inGamutP3(lchStr), inCieP3);
+    recordBool('inGamutSrgb(lab-str)', inGamutSrgb(labStr), inCieSrgb);
+    recordBool('inGamutP3(lab-str)', inGamutP3(labStr), inCieP3);
+
+    // Static gamut-map parity on LCH/Lab objects. culoriGamutMap is toGamut('rgb', 'oklch'),
+    // which accepts any input mode (culori internally converts to oklch for the chroma-reduce
+    // step). colordx's toGamutSrgbRaw routes through getRawOklab — the exact path that used
+    // to return null for LCH/Lab branded objects and fall back to naive clip.
+    {
+      const cuGamutLch = culoriGamutMap({ mode: 'lch' as const, l: cieL, c: cieC, h: cieH, alpha: cieAlpha })!;
+      const cuR = Math.round((cuGamutLch.r ?? 0) * 255);
+      const cuG = Math.round((cuGamutLch.g ?? 0) * 255);
+      const cuB = Math.round((cuGamutLch.b ?? 0) * 255);
+      const cxMapped = Colordx.toGamutSrgb(lchObj).toRgb();
+      record('toGamutSrgb(lch-obj)', maxDiff([cxMapped.r, cuR], [cxMapped.g, cuG], [cxMapped.b, cuB]), lchStr);
+      record('alpha', absDiff(cxMapped.alpha, round(cuGamutLch.alpha ?? 1, 3)), lchStr);
+
+      const cxMappedLab = Colordx.toGamutSrgb(labObj).toRgb();
+      const cuGamutLab = culoriGamutMap({ mode: 'lab' as const, l: cieL, a: cieA, b: cieB, alpha: cieAlpha })!;
+      const cuR2 = Math.round((cuGamutLab.r ?? 0) * 255);
+      const cuG2 = Math.round((cuGamutLab.g ?? 0) * 255);
+      const cuB2 = Math.round((cuGamutLab.b ?? 0) * 255);
+      record(
+        'toGamutSrgb(lab-obj)',
+        maxDiff([cxMappedLab.r, cuR2], [cxMappedLab.g, cuG2], [cxMappedLab.b, cuB2]),
+        labStr
+      );
+      record('alpha', absDiff(cxMappedLab.alpha, round(cuGamutLab.alpha ?? 1, 3)), labStr);
+
+      // Cross-space static gamut map: LCH input, P3 / Rec.2020 destination. These exercise
+      // toGamutCustom on a non-OKLCH input, which was the static/instance split's root.
+      const cxP3Mapped = (
+        Colordx.toGamutP3(lchObj) as unknown as { toP3(): { r: number; g: number; b: number; alpha: number } }
+      ).toP3();
+      const cuP3Mapped = culoriP3GamutMap({ mode: 'lch' as const, l: cieL, c: cieC, h: cieH, alpha: cieAlpha })!;
+      record(
+        'toGamutP3(lch-obj)',
+        maxDiff(
+          [round(cxP3Mapped.r, 4), round(cuP3Mapped.r ?? 0, 4)],
+          [round(cxP3Mapped.g, 4), round(cuP3Mapped.g ?? 0, 4)],
+          [round(cxP3Mapped.b, 4), round(cuP3Mapped.b ?? 0, 4)]
+        ),
+        lchStr
+      );
+      record('alpha', absDiff(cxP3Mapped.alpha, round(cuP3Mapped.alpha ?? 1, 3)), lchStr);
+
+      const cxRecMapped = (
+        (Colordx as unknown as {
+          toGamutRec2020(o: unknown): { toRec2020(): { r: number; g: number; b: number; alpha: number } };
+        }).toGamutRec2020(lchObj)
+      ).toRec2020();
+      const cuRecMapped = culoriRec2020GamutMap({ mode: 'lch' as const, l: cieL, c: cieC, h: cieH, alpha: cieAlpha })!;
+      record(
+        'toGamutRec2020(lch-obj)',
+        maxDiff(
+          [round(cxRecMapped.r, 4), round(cuRecMapped.r ?? 0, 4)],
+          [round(cxRecMapped.g, 4), round(cuRecMapped.g ?? 0, 4)],
+          [round(cxRecMapped.b, 4), round(cuRecMapped.b ?? 0, 4)]
+        ),
+        lchStr
+      );
+      record('alpha', absDiff(cxRecMapped.alpha, round(cuRecMapped.alpha ?? 1, 3)), lchStr);
+    }
+
+    // P3 / Rec.2020 samples. Draw fresh r/g/b in [0, 1] and use culori's own conversion
+    // from that space to linear sRGB / linear P3 / linear Rec.2020 as ground truth.
+    const p3r = rand(),
+      p3g = rand(),
+      p3b = rand();
+    const p3Alpha = 0.05 + rand() * 0.95;
+    const p3Obj = { r: p3r, g: p3g, b: p3b, alpha: p3Alpha, colorSpace: 'display-p3' as const };
+    const p3Str = `color(display-p3 ${p3r.toFixed(6)} ${p3g.toFixed(6)} ${p3b.toFixed(6)})`;
+    const cuP3Lrgb = culoriToLrgb({ mode: 'p3' as const, r: p3r, g: p3g, b: p3b })!;
+    const cuP3InSrgb =
+      (cuP3Lrgb.r ?? 0) >= 0 &&
+      (cuP3Lrgb.r ?? 0) <= 1 &&
+      (cuP3Lrgb.g ?? 0) >= 0 &&
+      (cuP3Lrgb.g ?? 0) <= 1 &&
+      (cuP3Lrgb.b ?? 0) >= 0 &&
+      (cuP3Lrgb.b ?? 0) <= 1;
+    // A P3-branded { r, g, b } with all channels in [0, 1] is by construction inside P3.
+    recordBool('inGamutSrgb(p3-obj)', inGamutSrgb(p3Obj), cuP3InSrgb);
+    recordBool('inGamutP3(p3-obj)', inGamutP3(p3Obj), true);
+    recordBool('inGamutSrgb(p3-str)', inGamutSrgb(p3Str), cuP3InSrgb);
+
+    // Static gamut-map parity on a P3 input. Regression: Colordx.toGamutSrgb(p3Red) used to
+    // return #ff0000 (naive clip) while colordx(p3Red).mapSrgb() returned #ff0b0c (chroma-
+    // reduced). Same check for Rec.2020 below.
+    {
+      const cxP3Map = Colordx.toGamutSrgb(p3Obj).toRgb();
+      const cuP3Map = culoriGamutMap({ mode: 'p3' as const, r: p3r, g: p3g, b: p3b, alpha: p3Alpha })!;
+      const cuR = Math.round((cuP3Map.r ?? 0) * 255);
+      const cuG = Math.round((cuP3Map.g ?? 0) * 255);
+      const cuB = Math.round((cuP3Map.b ?? 0) * 255);
+      record('toGamutSrgb(p3-obj)', maxDiff([cxP3Map.r, cuR], [cxP3Map.g, cuG], [cxP3Map.b, cuB]), p3Str);
+      record('alpha', absDiff(cxP3Map.alpha, round(cuP3Map.alpha ?? 1, 3)), p3Str);
+    }
+
+    const r2r = rand(),
+      r2g = rand(),
+      r2b = rand();
+    const r2Alpha = 0.05 + rand() * 0.95;
+    const rec2020Obj = { r: r2r, g: r2g, b: r2b, alpha: r2Alpha, colorSpace: 'rec2020' as const };
+    const r2Str = `color(rec2020 ${r2r.toFixed(6)} ${r2g.toFixed(6)} ${r2b.toFixed(6)})`;
+    const cuR2Lrgb = culoriToLrgb({ mode: 'rec2020' as const, r: r2r, g: r2g, b: r2b })!;
+    const cuR2InSrgb =
+      (cuR2Lrgb.r ?? 0) >= 0 &&
+      (cuR2Lrgb.r ?? 0) <= 1 &&
+      (cuR2Lrgb.g ?? 0) >= 0 &&
+      (cuR2Lrgb.g ?? 0) <= 1 &&
+      (cuR2Lrgb.b ?? 0) >= 0 &&
+      (cuR2Lrgb.b ?? 0) <= 1;
+    const cuR2P3 = culoriToP3({ mode: 'rec2020' as const, r: r2r, g: r2g, b: r2b })!;
+    const cuR2InP3 =
+      (cuR2P3.r ?? 0) >= 0 &&
+      (cuR2P3.r ?? 0) <= 1 &&
+      (cuR2P3.g ?? 0) >= 0 &&
+      (cuR2P3.g ?? 0) <= 1 &&
+      (cuR2P3.b ?? 0) >= 0 &&
+      (cuR2P3.b ?? 0) <= 1;
+    recordBool('inGamutSrgb(rec2020-obj)', inGamutSrgb(rec2020Obj), cuR2InSrgb);
+    recordBool('inGamutP3(rec2020-obj)', inGamutP3(rec2020Obj), cuR2InP3);
+    recordBool('inGamutRec2020(rec2020-obj)', inGamutRec2020(rec2020Obj), true);
+
+    // Static gamut-map parity on a Rec.2020 input. Rec.2020 uses its own transfer curve
+    // (not sRGB's) — rec2020ToOklab must decode via rec2020ToLinear, not srgbToLinear.
+    // A regression swapping them would show up here.
+    {
+      const cxR2Map = Colordx.toGamutSrgb(rec2020Obj).toRgb();
+      const cuR2Map = culoriGamutMap({ mode: 'rec2020' as const, r: r2r, g: r2g, b: r2b, alpha: r2Alpha })!;
+      const cuR = Math.round((cuR2Map.r ?? 0) * 255);
+      const cuG = Math.round((cuR2Map.g ?? 0) * 255);
+      const cuB = Math.round((cuR2Map.b ?? 0) * 255);
+      record('toGamutSrgb(rec2020-obj)', maxDiff([cxR2Map.r, cuR], [cxR2Map.g, cuG], [cxR2Map.b, cuB]), r2Str);
+      record('alpha', absDiff(cxR2Map.alpha, round(cuR2Map.alpha ?? 1, 3)), r2Str);
+    }
+
+    // XYZ samples. Draw XYZ D50 coordinates in the library's 0–100 scale, restricted near
+    // the white point (0–120 on each axis) so most samples land in or near sRGB; culori
+    // converts the same XYZ to lrgb for the ground truth. Same for D65.
+    const x50 = rand() * 120,
+      y50 = rand() * 120,
+      z50 = rand() * 120;
+    const xyz50Obj = { x: x50, y: y50, z: z50, alpha: 1 };
+    // culori uses 0–1 XYZ; our library uses 0–100, hence the /100 scaling.
+    const cuXyz50Lrgb = culoriToLrgb({ mode: 'xyz50' as const, x: x50 / 100, y: y50 / 100, z: z50 / 100 })!;
+    const cuXyz50InSrgb =
+      (cuXyz50Lrgb.r ?? 0) >= 0 &&
+      (cuXyz50Lrgb.r ?? 0) <= 1 &&
+      (cuXyz50Lrgb.g ?? 0) >= 0 &&
+      (cuXyz50Lrgb.g ?? 0) <= 1 &&
+      (cuXyz50Lrgb.b ?? 0) >= 0 &&
+      (cuXyz50Lrgb.b ?? 0) <= 1;
+    recordBool('inGamutSrgb(xyz50-obj)', inGamutSrgb(xyz50Obj), cuXyz50InSrgb);
+
+    const x65 = rand() * 120,
+      y65 = rand() * 120,
+      z65 = rand() * 120;
+    const xyz65Obj = { x: x65, y: y65, z: z65, alpha: 1, colorSpace: 'xyz-d65' as const };
+    const xyz65Str = `color(xyz-d65 ${x65.toFixed(4)} ${y65.toFixed(4)} ${z65.toFixed(4)})`;
+    const cuXyz65Lrgb = culoriToLrgb({ mode: 'xyz65' as const, x: x65 / 100, y: y65 / 100, z: z65 / 100 })!;
+    const cuXyz65InSrgb =
+      (cuXyz65Lrgb.r ?? 0) >= 0 &&
+      (cuXyz65Lrgb.r ?? 0) <= 1 &&
+      (cuXyz65Lrgb.g ?? 0) >= 0 &&
+      (cuXyz65Lrgb.g ?? 0) <= 1 &&
+      (cuXyz65Lrgb.b ?? 0) >= 0 &&
+      (cuXyz65Lrgb.b ?? 0) <= 1;
+    recordBool('inGamutSrgb(xyz65-obj)', inGamutSrgb(xyz65Obj), cuXyz65InSrgb);
+    recordBool('inGamutSrgb(xyz65-str)', inGamutSrgb(xyz65Str), cuXyz65InSrgb);
   }
 
   for (let i = 0; i < COUNT_RGB; i++) {
@@ -785,6 +1042,19 @@ const ceilings: Record<string, number> = {
   'RGB8:HSV': 1,
   'RGB8:HWB': 1,
   'RGB8:darken': 2,
+  // Same ceilings as the OKLCH-feed equivalents: 2 rgb-channel integers for sRGB gamut maps,
+  // 0.1 on the 0–1 float scale for P3/Rec.2020. Tighter would falsely fail on CSS Color 4
+  // implementation latitude (JND is 0.02 in deltaEOK, culori and colordx each pick their own
+  // tie-break inside that band).
+  'toGamutSrgb(lch-obj)': 2,
+  'toGamutSrgb(lab-obj)': 2,
+  'toGamutSrgb(p3-obj)': 2,
+  'toGamutSrgb(rec2020-obj)': 2,
+  'toGamutP3(lch-obj)': 0.1,
+  'toGamutRec2020(lch-obj)': 0.1,
+  // Alpha is rounded to 3 dp in Colordx; culori tends to preserve exactly. 0.001 is 1 LSB
+  // at that precision — tighter would catch a precision regression, looser would hide one.
+  alpha: 0.001,
 };
 
 // Boundary colors where a point sits within float-epsilon of the gamut surface can
@@ -844,4 +1114,34 @@ describe('parity vs culori', () => {
   it(`inGamutRec2020 agrees with culori ≥ ${(boolFloor * 100).toFixed(0)}%`, () => {
     expect(boolStats.inGamutRec2020!.agree / COUNT).toBeGreaterThanOrEqual(boolFloor);
   });
+
+  // CIE LCH / Lab inputs — same floor as the OKLCH checks. If any of these falls below
+  // the floor, the LCH/Lab gamut path (object or string) has regressed. Before the
+  // fix these all scored near 0% on out-of-sRGB samples; the previous implementation
+  // returned true unconditionally for LCH/Lab branded inputs.
+  for (const key of [
+    'inGamutSrgb(lch-obj)',
+    'inGamutP3(lch-obj)',
+    'inGamutRec2020(lch-obj)',
+    'inGamutSrgb(lab-obj)',
+    'inGamutP3(lab-obj)',
+    'inGamutRec2020(lab-obj)',
+    'inGamutSrgb(lch-str)',
+    'inGamutP3(lch-str)',
+    'inGamutSrgb(lab-str)',
+    'inGamutP3(lab-str)',
+    'inGamutSrgb(p3-obj)',
+    'inGamutP3(p3-obj)',
+    'inGamutSrgb(p3-str)',
+    'inGamutSrgb(rec2020-obj)',
+    'inGamutP3(rec2020-obj)',
+    'inGamutRec2020(rec2020-obj)',
+    'inGamutSrgb(xyz50-obj)',
+    'inGamutSrgb(xyz65-obj)',
+    'inGamutSrgb(xyz65-str)',
+  ]) {
+    it(`${key} agrees with culori ≥ ${(boolFloor * 100).toFixed(0)}%`, () => {
+      expect(boolStats[key]!.agree / COUNT).toBeGreaterThanOrEqual(boolFloor);
+    });
+  }
 });

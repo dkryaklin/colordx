@@ -11,7 +11,7 @@ import {
   sanitize,
 } from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
-import { labToRgb, rgbToLab } from './lab.js';
+import { labToRgb, labToRgbUnclamped, rgbToLab } from './lab.js';
 
 const clampLch = (lch: Omit<LchColor, 'colorSpace'>): LchColor => ({
   l: clamp(lch.l, 0, 100),
@@ -50,13 +50,23 @@ export const lchToRgb = ({ l, c, h, alpha }: LchColor): RgbColor =>
     colorSpace: 'lab',
   });
 
+/** Unclamped LCH → gamma sRGB. Mirrors lchToRgb but preserves out-of-gamut channels. */
+const lchToRgbUnclamped = ({ l, c, h, alpha }: LchColor): RgbColor =>
+  labToRgbUnclamped({
+    l,
+    a: c * Math.cos((h * Math.PI) / 180),
+    b: c * Math.sin((h * Math.PI) / 180),
+    alpha,
+    colorSpace: 'lab',
+  });
+
 export const parseLchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'lch') return null;
   if (!hasKeys(input, ['l', 'c', 'h'])) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
-  return lchToRgb(
+  return lchToRgbUnclamped(
     clampLch({
       l: sanitize(l),
       c: sanitize(c),
@@ -83,5 +93,5 @@ export const parseLchString = (input: unknown): RgbColor | null => {
   const unit = g.hu?.toLowerCase() ?? 'deg';
   const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return lchToRgb(clampLch({ l, c, h, alpha }));
+  return lchToRgbUnclamped(clampLch({ l, c, h, alpha }));
 };

@@ -1,7 +1,7 @@
 import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
-import { srgbToLinear } from '../transfer.js';
+import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
-import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzToRgb } from './xyz.js';
+import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzD50ToLinearSrgb, xyzToRgb } from './xyz.js';
 
 // D65 white point derived from CIE chromaticity (x=0.3127, y=0.329)
 const D65_WX = (0.3127 / 0.329) * 100;
@@ -127,6 +127,22 @@ export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
 
 export const labToRgb = (lab: LabColor): RgbColor => xyzToRgb(labToXyz(lab));
 
+/**
+ * Unclamped Lab (D50) → gamma-encoded sRGB (0–255). Channels may exceed [0, 255] or go
+ * negative for colors outside the sRGB gamut. Preserves out-of-gamut information so callers
+ * (mapSrgb, inGamut*) can detect and map the color; sRGB output methods clamp at the edge.
+ */
+export const labToRgbUnclamped = ({ l, a, b, alpha }: LabColor): RgbColor => {
+  const [x, y, z] = labToXyzValues(l, a, b);
+  const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
+  return {
+    r: srgbFromLinear(lr) * 255,
+    g: srgbFromLinear(lg) * 255,
+    b: srgbFromLinear(lb) * 255,
+    alpha,
+  };
+};
+
 // CSS Color 4: lab(L a b / alpha). L: number|percentage|none (100% = 100).
 // a/b: number|percentage|none (100% = 125).
 const LAB_RE = new RegExp(
@@ -143,7 +159,7 @@ export const parseLabString = (input: unknown): RgbColor | null => {
   const a = g.ap ? parseNum(g.a!) * 1.25 : parseNum(g.a!);
   const b = g.bp ? parseNum(g.b!) * 1.25 : parseNum(g.b!);
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return labToRgb({
+  return labToRgbUnclamped({
     l: clamp(l, 0, 100),
     a,
     b,
@@ -158,7 +174,7 @@ export const parseLabObject = (input: unknown): RgbColor | null => {
   if (!hasKeys(input, ['l', 'a', 'b'])) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
-  return labToRgb({
+  return labToRgbUnclamped({
     l: clamp(sanitize(l), 0, 100),
     a: sanitize(a),
     b: sanitize(b),

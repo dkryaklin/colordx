@@ -371,6 +371,21 @@ Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 bou
 
 Gamut containment is hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
 
+Gamut checks and mapping accept wide-gamut inputs in every supported form — `oklab()` / `oklch()`, CIE `lab()` / `lch()` strings, and the corresponding object shapes (including branded `{ colorSpace: 'lab' | 'lch' }` objects):
+
+```ts
+// CIE LCH object — recognized as wide-gamut, not clamped at parse time
+const lch = { l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' as const };
+inGamutSrgb(lch);  // false — outside sRGB
+inGamutP3(lch);    // false — outside P3
+colordx(lch).toHex();           // '#009774' — naive clip
+colordx(lch).mapSrgb().toHex(); // '#008471' — chroma-reduced (CSS Color 4)
+
+// CIE Lab string works too
+inGamutSrgb('lab(50 100 0)'); // false
+Colordx.toGamutSrgb('lab(50 100 0)'); // → Colordx at the sRGB boundary
+```
+
 ## Plugins
 
 Opt-in plugins for less common color spaces and utilities:

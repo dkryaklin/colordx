@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { Colordx, colordx, extend, inGamutSrgb } from '../src/index.js';
+import lab from '../src/plugins/lab.js';
+import lch from '../src/plugins/lch.js';
 import p3, { inGamutP3 } from '../src/plugins/p3.js';
 import rec2020, { inGamutRec2020 } from '../src/plugins/rec2020.js';
 
-extend([p3, rec2020]);
+extend([p3, rec2020, lab, lch]);
 
 describe('inGamutSrgb', () => {
   it('returns true for hex colors', () => {
@@ -852,5 +854,350 @@ describe('toGamutP3 / toGamutRec2020 — plugin-format inputs', () => {
     const result = Colordx.toGamutRec2020('color(rec2020 0.9 0.3 0.2 / 0.4)' as any);
     expect(result.isValid()).toBe(true);
     expect(result.toRgb().alpha).toBeCloseTo(0.4, 2);
+  });
+});
+
+// Regression: before this fix, getRawOklab had no path for CIE LCH objects, so for
+// LchColor inputs inGamutP3 / inGamutRec2020 defaulted to `true` (sRGB-bounded default)
+// and mapSrgb passed the color through unchanged (hiding out-of-gamut info). LchColor
+// strings were similarly ignored. This block verifies inGamut* and gamut-mapping now
+// behave correctly for both object and string LCH inputs.
+describe('CIE LCH gamut checking', () => {
+  // lch(70, 80, 145) is saturated green just outside sRGB but inside P3/Rec.2020.
+  // lch(70, 110, 145) is beyond P3 but still inside Rec.2020.
+  // lch(85, 200, 145) is deep out of everything.
+  const lchOutOfSrgbInP3 = { l: 70, c: 80, h: 145, alpha: 1, colorSpace: 'lch' as const };
+  const lchOutOfP3InRec2020 = { l: 70, c: 110, h: 145, alpha: 1, colorSpace: 'lch' as const };
+  const lchFarOutOfGamut = { l: 85, c: 200, h: 145, alpha: 1, colorSpace: 'lch' as const };
+
+  it('inGamutSrgb returns false for out-of-sRGB LCH objects', () => {
+    expect(inGamutSrgb(lchOutOfSrgbInP3 as any)).toBe(false);
+    expect(inGamutSrgb(lchOutOfP3InRec2020 as any)).toBe(false);
+    expect(inGamutSrgb(lchFarOutOfGamut as any)).toBe(false);
+  });
+
+  it('inGamutP3 returns true for LCH colors that are outside sRGB but inside P3', () => {
+    // Regression: this used to always return true (the sRGB-bounded default).
+    // Now it correctly reports the color is inside the wider P3 gamut.
+    expect(inGamutP3(lchOutOfSrgbInP3 as any)).toBe(true);
+  });
+
+  it('inGamutRec2020 returns true for LCH colors that are outside sRGB but inside P3', () => {
+    expect(inGamutRec2020(lchOutOfSrgbInP3 as any)).toBe(true);
+  });
+
+  it('inGamutP3 returns false for LCH colors that are outside P3', () => {
+    // Regression: this used to return true for *every* LCH input because getRawOklab
+    // returned null → inGamutCustom short-circuited. Now we can detect out-of-P3.
+    expect(inGamutP3(lchOutOfP3InRec2020 as any)).toBe(false);
+    expect(inGamutP3(lchFarOutOfGamut as any)).toBe(false);
+  });
+
+  it('inGamutRec2020 returns true for LCH colors inside Rec.2020 but outside P3', () => {
+    expect(inGamutRec2020(lchOutOfP3InRec2020 as any)).toBe(true);
+  });
+
+  it('inGamutRec2020 returns false for LCH colors far outside Rec.2020', () => {
+    expect(inGamutRec2020(lchFarOutOfGamut as any)).toBe(false);
+    // Extreme blue far outside everything
+    expect(inGamutRec2020({ l: 50, c: 150, h: 270, alpha: 1, colorSpace: 'lch' } as any)).toBe(false);
+  });
+
+  it('returns true for in-sRGB LCH objects', () => {
+    expect(inGamutSrgb({ l: 50, c: 30, h: 180, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+    expect(inGamutSrgb({ l: 70, c: 20, h: 40, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+  });
+
+  it('returns true for achromatic LCH objects (c = 0)', () => {
+    expect(inGamutSrgb({ l: 50, c: 0, h: 0, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+    expect(inGamutP3({ l: 50, c: 0, h: 0, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+    expect(inGamutRec2020({ l: 50, c: 0, h: 0, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+    expect(inGamutSrgb({ l: 100, c: 0, h: 0, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+    expect(inGamutSrgb({ l: 0, c: 0, h: 0, alpha: 1, colorSpace: 'lch' } as any)).toBe(true);
+  });
+
+  it('inGamutSrgb / inGamutP3 handle LCH strings as well as objects', () => {
+    // Regression: getRawOklab ignored `lch(...)` strings too — not just objects.
+    expect(inGamutSrgb('lch(50% 80 180)')).toBe(false);
+    expect(inGamutP3('lch(70% 80 145)')).toBe(true);
+    // `lch(50 100 180)` is outside sRGB but still out-of-P3 here
+    expect(inGamutP3('lch(50% 100 180)')).toBe(false);
+  });
+
+  it('inGamut* agrees between object and string for the same LCH color', () => {
+    const obj = { l: 70, c: 80, h: 145, alpha: 1, colorSpace: 'lch' as const };
+    const str = 'lch(70 80 145)';
+    expect(inGamutSrgb(obj as any)).toBe(inGamutSrgb(str));
+    expect(inGamutP3(obj as any)).toBe(inGamutP3(str));
+    expect(inGamutRec2020(obj as any)).toBe(inGamutRec2020(str));
+  });
+});
+
+describe('CIE Lab gamut checking — strings', () => {
+  // The object path was already supported; the string path was not until this fix.
+
+  it('inGamutSrgb returns false for out-of-sRGB lab() strings', () => {
+    expect(inGamutSrgb('lab(50% 100 0)')).toBe(false);
+    expect(inGamutSrgb('lab(90 50 -30)')).toBe(false);
+  });
+
+  it('inGamutP3 returns false for deeply out-of-gamut lab() strings', () => {
+    // Regression: lab() strings previously bypassed gamut logic and always returned true.
+    expect(inGamutP3('lab(50 0 -200)')).toBe(false);
+  });
+
+  it('inGamutSrgb returns true for in-gamut lab() strings', () => {
+    expect(inGamutSrgb('lab(70 -60 60)')).toBe(true);
+    expect(inGamutSrgb('lab(50 0 0)')).toBe(true);
+  });
+
+  it('inGamut* agrees between object and string for the same Lab color', () => {
+    const obj = { l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' as const };
+    const str = 'lab(50 100 0)';
+    expect(inGamutSrgb(obj as any)).toBe(inGamutSrgb(str));
+    expect(inGamutP3(obj as any)).toBe(inGamutP3(str));
+    expect(inGamutRec2020(obj as any)).toBe(inGamutRec2020(str));
+  });
+});
+
+describe('mapSrgb() on CIE Lab / LCH inputs', () => {
+  // Regression: Lab/LCH parsers used to clamp RGB at parse time, so the internal
+  // _rgb was always in [0,255] and mapSrgb's in-gamut early-exit fired unconditionally —
+  // meaning colordx(lchOutOfGamut).toHex() matched the naive clip instead of the
+  // chroma-reduced CSS Color 4 result. Now Lab/LCH parsers preserve out-of-gamut
+  // channels in _rgb so mapSrgb correctly maps into gamut.
+
+  it('mapSrgb on an out-of-gamut LCH object produces a valid in-gamut color', () => {
+    const input = { l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' as const };
+    const mapped = colordx(input as any).mapSrgb();
+    const { r, g, b } = mapped.toRgb();
+    expect(r).toBeGreaterThanOrEqual(0);
+    expect(r).toBeLessThanOrEqual(255);
+    expect(g).toBeGreaterThanOrEqual(0);
+    expect(g).toBeLessThanOrEqual(255);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThanOrEqual(255);
+    expect(inGamutSrgb(mapped.toHex())).toBe(true);
+  });
+
+  it('mapSrgb on LCH agrees with Colordx.toGamutSrgb (instance matches static)', () => {
+    const inputs: any[] = [
+      { l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' },
+      { l: 70, c: 100, h: 145, alpha: 1, colorSpace: 'lch' },
+      { l: 30, c: 60, h: 40, alpha: 1, colorSpace: 'lch' },
+      'lch(50% 80 180)',
+      'lch(70% 100 145)',
+      { l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' },
+      { l: 90, a: 50, b: -30, alpha: 1, colorSpace: 'lab' },
+      'lab(50 100 0)',
+    ];
+    for (const input of inputs) {
+      expect(colordx(input).mapSrgb().toRgbString()).toBe(Colordx.toGamutSrgb(input).toRgbString());
+    }
+  });
+
+  it('mapSrgb on an out-of-gamut LCH object produces a different result than naive clip', () => {
+    // The whole point of mapSrgb vs clampSrgb: for deeply out-of-gamut colors they
+    // should diverge. If they're equal, mapSrgb is silently falling back to clip.
+    const input = { l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' as const };
+    const mapped = colordx(input as any).mapSrgb().toHex();
+    const clamped = colordx(input as any).clampSrgb().toHex();
+    expect(mapped).not.toBe(clamped);
+  });
+
+  it('mapSrgb on an out-of-gamut Lab object produces a different result than naive clip', () => {
+    const input = { l: 50, a: 100, b: 0, alpha: 1, colorSpace: 'lab' as const };
+    const mapped = colordx(input as any).mapSrgb().toHex();
+    const clamped = colordx(input as any).clampSrgb().toHex();
+    expect(mapped).not.toBe(clamped);
+  });
+
+  it('mapSrgb is a no-op for in-gamut LCH inputs (reference equality)', () => {
+    const input = colordx({ l: 50, c: 30, h: 180, alpha: 1, colorSpace: 'lch' } as any);
+    expect(input.mapSrgb()).toBe(input);
+  });
+
+  it('mapSrgb preserves lightness approximately for out-of-gamut LCH', () => {
+    const mapped = colordx({ l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' } as any).mapSrgb();
+    const resultLch = (mapped as any).toLch?.() ?? mapped.toOklch();
+    // Allow a small perceptual drift since the algorithm clips in linear space
+    if ('c' in resultLch && typeof (resultLch as { l?: unknown }).l === 'number' && resultLch.l! > 1) {
+      // It's CIE LCH (L 0–100) — check directly
+      expect(Math.abs(resultLch.l - 50)).toBeLessThan(3);
+      expect(resultLch.c).toBeLessThan(100);
+    }
+  });
+
+  it('mapSrgb preserves alpha on LCH inputs', () => {
+    const mapped = colordx({ l: 50, c: 100, h: 180, alpha: 0.5, colorSpace: 'lch' } as any).mapSrgb();
+    expect(mapped.alpha()).toBe(0.5);
+  });
+
+  it('toHex on a deeply out-of-gamut LCH input falls back to clampSrgb (naive clip)', () => {
+    // toHex does not itself gamut-map; it clips. Users who want a gamut-mapped output
+    // must call .mapSrgb().toHex(). This codifies that contract and the distinction
+    // from the fixed mapSrgb path above.
+    const input = { l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' as const };
+    expect(colordx(input as any).toHex()).toBe(colordx(input as any).clampSrgb().toHex());
+  });
+});
+
+describe('toGamutP3 / toGamutRec2020 on CIE LCH inputs', () => {
+  // Regression: these used to silently pass through unchanged (inGamutCustom returned
+  // true for all LCH inputs because getRawOklab returned null).
+
+  it('toGamutP3 maps out-of-P3 LCH to a valid color', () => {
+    const input = { l: 85, c: 200, h: 145, alpha: 1, colorSpace: 'lch' as const };
+    expect(inGamutP3(input as any)).toBe(false);
+    const mapped = Colordx.toGamutP3(input as any);
+    expect(mapped.isValid()).toBe(true);
+    const { r, g, b } = mapped.toRgb();
+    expect(r).toBeGreaterThanOrEqual(0);
+    expect(r).toBeLessThanOrEqual(255);
+    expect(g).toBeGreaterThanOrEqual(0);
+    expect(g).toBeLessThanOrEqual(255);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThanOrEqual(255);
+  });
+
+  it('toGamutRec2020 maps out-of-Rec.2020 LCH to a valid color', () => {
+    const input = { l: 50, c: 150, h: 270, alpha: 1, colorSpace: 'lch' as const };
+    expect(inGamutRec2020(input as any)).toBe(false);
+    const mapped = Colordx.toGamutRec2020(input as any);
+    expect(mapped.isValid()).toBe(true);
+    const { r, g, b } = mapped.toRgb();
+    expect(r).toBeGreaterThanOrEqual(0);
+    expect(r).toBeLessThanOrEqual(255);
+    expect(g).toBeGreaterThanOrEqual(0);
+    expect(g).toBeLessThanOrEqual(255);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThanOrEqual(255);
+  });
+
+  it('toGamutP3 preserves alpha on LCH string input', () => {
+    const result = Colordx.toGamutP3('lch(85% 200 145 / 0.4)');
+    expect(result.toRgb().alpha).toBeCloseTo(0.4, 2);
+  });
+});
+
+// Regression: same bug class as the Lab/LCH gap. `getRawOklab` didn't have branches for
+// P3, Rec.2020, or XYZ inputs either — the OklabColor guard filters `'r' in obj`, and no
+// regex handles `color(display-p3 ...)` / `color(rec2020 ...)` / `color(xyz-d50|d65 ...)`.
+// Consequence: inGamutSrgb returned `true` for P3 red primary, and `Colordx.toGamutSrgb`
+// (static) fell back to naive clip while `colordx(p3).mapSrgb()` (instance) mapped correctly,
+// creating a silent static/instance split. These tests lock in the fix.
+describe('Display-P3 wide-gamut inputs to gamut helpers', () => {
+  // P3 red ≈ oklch(0.649 0.299 29) — outside sRGB, inside P3/Rec.2020.
+  // P3 green ≈ oklch(0.866 0.294 142) — outside sRGB, inside P3, inside Rec.2020.
+  const p3Red = { r: 1, g: 0, b: 0, alpha: 1, colorSpace: 'display-p3' as const };
+  const p3Green = { r: 0, g: 1, b: 0, alpha: 1, colorSpace: 'display-p3' as const };
+  const p3Gray = { r: 0.5, g: 0.5, b: 0.5, alpha: 1, colorSpace: 'display-p3' as const };
+
+  it('inGamutSrgb returns false for out-of-sRGB P3 primaries', () => {
+    expect(inGamutSrgb(p3Red)).toBe(false);
+    expect(inGamutSrgb(p3Green)).toBe(false);
+  });
+
+  it('inGamutSrgb returns false for the equivalent P3 strings', () => {
+    expect(inGamutSrgb('color(display-p3 1 0 0)')).toBe(false);
+    expect(inGamutSrgb('color(display-p3 0 1 0)')).toBe(false);
+  });
+
+  it('inGamutP3 returns true for P3 primaries (P3-bounded inputs are inside P3)', () => {
+    expect(inGamutP3(p3Red)).toBe(true);
+    expect(inGamutP3(p3Green)).toBe(true);
+    expect(inGamutP3('color(display-p3 1 0 0)')).toBe(true);
+  });
+
+  it('inGamutSrgb returns true for P3 objects that happen to be in sRGB', () => {
+    expect(inGamutSrgb(p3Gray)).toBe(true);
+  });
+
+  it('Colordx.toGamutSrgb maps P3 red into sRGB rather than naive-clipping', () => {
+    // Regression: previously fell through to `new Colordx(input)` which returned `#ff0000`
+    // (naive clip, hue-shifted). Now it chroma-reduces via CSS Color 4.
+    const result = Colordx.toGamutSrgb(p3Red);
+    const { r, g, b } = result.toRgb();
+    expect(r).toBeGreaterThanOrEqual(0);
+    expect(r).toBeLessThanOrEqual(255);
+    expect(g).toBeGreaterThanOrEqual(0);
+    expect(g).toBeLessThanOrEqual(255);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThanOrEqual(255);
+    expect(inGamutSrgb(result.toHex())).toBe(true);
+  });
+
+  it('static Colordx.toGamutSrgb agrees with instance .mapSrgb() on a P3 input', () => {
+    // Regression: before the fix these disagreed (#ff0000 vs #ff0b0c) because the
+    // static form fell through to naive clip while the instance form had an unclamped
+    // _rgb to work with. Now both go through the same OKLab-backed gamut map.
+    const inputs: any[] = [
+      p3Red,
+      p3Green,
+      'color(display-p3 1 0 0)',
+      'color(display-p3 0.9 0.3 0.2)',
+    ];
+    for (const input of inputs) {
+      expect(colordx(input).mapSrgb().toRgbString()).toBe(Colordx.toGamutSrgb(input).toRgbString());
+    }
+  });
+
+  it('preserves alpha through gamut mapping of a P3 input', () => {
+    const alphaRed = { ...p3Red, alpha: 0.6 };
+    expect(Colordx.toGamutSrgb(alphaRed).toRgb().alpha).toBeCloseTo(0.6, 2);
+    expect(colordx(alphaRed).mapSrgb().toRgb().alpha).toBeCloseTo(0.6, 2);
+  });
+});
+
+describe('Rec.2020 wide-gamut inputs to gamut helpers', () => {
+  const recGreen = { r: 0, g: 1, b: 0, alpha: 1, colorSpace: 'rec2020' as const };
+
+  it('inGamutSrgb / inGamutP3 / inGamutRec2020 agree on Rec.2020 green primary', () => {
+    expect(inGamutSrgb(recGreen)).toBe(false);
+    expect(inGamutP3(recGreen)).toBe(false); // Rec.2020 green is outside P3
+    expect(inGamutRec2020(recGreen)).toBe(true);
+  });
+
+  it('inGamut* agree between object and string form of a Rec.2020 color', () => {
+    const str = 'color(rec2020 0 1 0)';
+    expect(inGamutSrgb(recGreen)).toBe(inGamutSrgb(str));
+    expect(inGamutP3(recGreen)).toBe(inGamutP3(str));
+    expect(inGamutRec2020(recGreen)).toBe(inGamutRec2020(str));
+  });
+
+  it('static Colordx.toGamutSrgb matches instance .mapSrgb() on Rec.2020 inputs', () => {
+    for (const input of [recGreen, 'color(rec2020 0 1 0)'] as any[]) {
+      expect(colordx(input).mapSrgb().toRgbString()).toBe(Colordx.toGamutSrgb(input).toRgbString());
+    }
+  });
+});
+
+describe('XYZ D50 / D65 inputs to gamut helpers', () => {
+  // Values in the library's 0–100 XYZ convention (matching parseXyzObject / parseXyzD65Object).
+  const whiteD50 = { x: 96.42956752983539, y: 100, z: 82.51046025104603, alpha: 1 };
+  const whiteD65 = { x: 95.05, y: 100, z: 108.88, alpha: 1, colorSpace: 'xyz-d65' as const };
+  const outOfGamut = { x: 150, y: 100, z: 0, alpha: 1 }; // extreme red — far outside sRGB
+
+  it('inGamutSrgb returns true for XYZ whites', () => {
+    expect(inGamutSrgb(whiteD50 as any)).toBe(true);
+    expect(inGamutSrgb(whiteD65 as any)).toBe(true);
+  });
+
+  it('inGamutSrgb returns false for an out-of-sRGB XYZ object', () => {
+    // Regression: previously always true because getRawOklab had no XYZ branch.
+    expect(inGamutSrgb(outOfGamut as any)).toBe(false);
+  });
+
+  it('inGamutSrgb handles color(xyz-d50 …) and color(xyz-d65 …) strings', () => {
+    // The library uses a 0–100 scale for the XYZ string form (matches parseXyzD50String).
+    expect(inGamutSrgb('color(xyz-d50 96.43 100 82.51)')).toBe(true);
+    expect(inGamutSrgb('color(xyz-d65 95.05 100 108.88)')).toBe(true);
+    // Out-of-sRGB XYZ — previously slipped through as true.
+    expect(inGamutSrgb('color(xyz-d50 150 100 0)')).toBe(false);
+  });
+
+  it('unbranded { x, y, z } without colorSpace is treated as XYZ D50', () => {
+    // Matches parseXyzObject's convention: unbranded XYZ is D50.
+    expect(inGamutSrgb({ x: 96.43, y: 100, z: 82.51, alpha: 1 } as any)).toBe(true);
   });
 });
