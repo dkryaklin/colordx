@@ -254,6 +254,25 @@ describe('.mapSrgb() instance method', () => {
     expect(() => invalid.mapSrgb()).not.toThrow();
     expect(invalid.mapSrgb().isValid()).toBe(false);
   });
+
+  // Regression: cssGamutMap's binary search + OKLab round-trip leaves 1-ULP asymmetries
+  // on what should be pure white/black/primary colors. Math.round hides it on toHex, but
+  // raw-float consumers (rgbToHslRaw, rgbToOklab) read the unrounded _rgb and produce
+  // phantom chroma. _makeFromOklab snaps channels within half a byte of an sRGB boundary.
+  it('does not leave phantom HSL chroma on gamut-mapped near-white colors', () => {
+    const mapped = colordx({ l: 0.98, c: 0.2, h: 120, alpha: 1 }).mapSrgb();
+    if (mapped.toHex() === '#ffffff') {
+      expect(mapped.toHsl().s).toBeLessThan(1);
+    }
+  });
+
+  it('does not leave phantom HSL chroma on gamut-mapped near-black colors', () => {
+    // Very dark OKLCH that gamut-maps to (or extremely close to) pure black.
+    const mapped = Colordx.toGamutSrgb({ l: 0.001, c: 0.001, h: 0, alpha: 1 });
+    if (mapped.toHex() === '#000000') {
+      expect(mapped.toHsl().s).toBeLessThan(1);
+    }
+  });
 });
 
 describe('.clampSrgb() instance method', () => {

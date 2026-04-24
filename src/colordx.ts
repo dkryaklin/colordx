@@ -1,6 +1,6 @@
 import { rgbToHex, rgbToHex8 } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { linearSrgbToOklab, oklabToLinear, rgbToOklab } from './colorModels/oklab.js';
+import { linearSrgbToOklab, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, round } from './helpers.js';
@@ -37,17 +37,34 @@ export class Colordx {
   }
 
   /**
-   * Construct a Colordx from OKLab values, storing unclamped gamma-encoded sRGB internally.
-   * Unlike new Colordx(oklabObject), this does NOT clamp channels to [0, 1] before gamma encoding,
-   * so wide-gamut P3/Rec2020 colors are preserved accurately for toP3() / toRec2020() output.
-   * sRGB output methods (toRgb, toHex, etc.) clamp to [0, 255] before returning.
+   * Construct a Colordx from linear-sRGB channels, gamma-encoding to the internal ×255 storage.
+   * Channels may exceed [0, 1] — wide-gamut inputs (toGamutP3 / toGamutRec2020 applied to a
+   * color outside sRGB) land here after the target-space → linear-sRGB matrix, and the stored
+   * _rgb holds unclamped gamma-encoded ×255 so toP3() / toRec2020() can recover the wide-gamut
+   * channels. sRGB output methods (toRgb, toHex, etc.) clamp to [0, 255] before returning.
+   *
+   * Replaces the prior _makeFromOklab: cssGamutMap hands back clipped linear-target channels
+   * directly, so callers skip the OKLab → linear round-trip that used to reintroduce 1-ULP
+   * asymmetries on gamut-boundary colors.
+   *
+   * A residual source of asymmetry remains — the clip itself. cssGamutMap's clip puts one
+   * channel exactly on 0 or 1 while the others sit where the input's hue landed, so an
+   * extreme-dark or extreme-light color ends up with genuinely asymmetric sub-byte channels
+   * (e.g. clipped linear (3e-6, 0, 8e-10) from oklch(0.001 0.001 0)). Math.round collapses all
+   * three to the same byte, but rgbToHslRaw / rgbToOklab read the raw floats and report
+   * phantom hue/saturation. Snap values within half a byte of 0 or 255 to the exact boundary;
+   * the band matches Math.round's own behavior so byte output is unchanged, while HSL / OKLab
+   * see a consistent pure white / black / primary. Values outside [0, 255] are wide-gamut
+   * (P3 / Rec.2020 targets) and pass through untouched.
    */
-  static _makeFromOklab({ l, a, b, alpha }: OklabColor): Colordx {
-    const [lr, lg, lb] = oklabToLinear(l, a, b);
+  static _makeFromLinearSrgb(lr: number, lg: number, lb: number, alpha: number): Colordx {
+    const rb = srgbFromLinear(lr) * 255;
+    const gb = srgbFromLinear(lg) * 255;
+    const bb = srgbFromLinear(lb) * 255;
     return Colordx._make({
-      r: srgbFromLinear(lr) * 255,
-      g: srgbFromLinear(lg) * 255,
-      b: srgbFromLinear(lb) * 255,
+      r: rb >= 0 && rb < 0.5 ? 0 : rb > 254.5 && rb <= 255 ? 255 : rb,
+      g: gb >= 0 && gb < 0.5 ? 0 : gb > 254.5 && gb <= 255 ? 255 : gb,
+      b: bb >= 0 && bb < 0.5 ? 0 : bb > 254.5 && bb <= 255 ? 255 : bb,
       alpha,
     });
   }
@@ -253,7 +270,9 @@ export class Colordx {
     // exact L=0 or L=1 hit the same white/black shortcut the static gamut map uses.
     const l = lRaw > 1 - 1e-7 ? 1 : lRaw < 1e-7 ? 0 : lRaw;
     const mapped = toGamutSrgbRaw({ l, a, b: bv, alpha });
-    return mapped !== null ? Colordx._makeFromOklab(mapped) : this;
+    if (mapped === null) return this;
+    const [mr, mg, mb] = mapped.linear;
+    return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha);
   }
 
   /**
@@ -304,5 +323,7 @@ export const random = (): Colordx =>
 
 Colordx.toGamutSrgb = (input: AnyColor): Colordx => {
   const mapped = toGamutSrgbRaw(input);
-  return mapped !== null ? Colordx._makeFromOklab(mapped) : new Colordx(input);
+  if (mapped === null) return new Colordx(input);
+  const [mr, mg, mb] = mapped.linear;
+  return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha);
 };

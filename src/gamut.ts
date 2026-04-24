@@ -278,11 +278,15 @@ const deltaEOK = (lab1: readonly [number, number, number], lab2: readonly [numbe
 export type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
 export type FromLinearConverter = (r: number, g: number, b: number) => [number, number, number];
 
+/** Clipped linear target-space channels plus alpha. Channels are in [0, 1] on the gamut boundary. */
+export type GamutMapResult = { linear: readonly [number, number, number]; alpha: number };
+
 /**
  * CSS Color 4 gamut mapping algorithm.
  * Binary-searches for the highest chroma where clip(color) is within JND (0.02 deltaEOK)
- * of the chroma-reduced color, then returns the clipped result.
- * This preserves lightness and hue while accepting only perceptually negligible clip error.
+ * of the chroma-reduced color. Returns the clipped linear target-space channels directly
+ * (already in [0, 1]); callers re-encode to their storage format without a round-trip
+ * through OKLab, which would reintroduce 1-ULP asymmetries at the gamut surface.
  *
  * toLinear: OKLab → unclamped linear target-space channels
  * fromLinear: linear target-space channels → OKLab (used to measure deltaEOK of clipped color)
@@ -291,28 +295,29 @@ const cssGamutMap = (
   l: number,
   a: number,
   b: number,
-  alpha: number,
   toLinear: LinearConverter,
   fromLinear: FromLinearConverter
-): OklabColor => {
-  if (l >= 1) return { l: 1, a: 0, b: 0, alpha };
-  if (l <= 0) return { l: 0, a: 0, b: 0, alpha };
+): [number, number, number] => {
+  if (l >= 1) return [1, 1, 1];
+  if (l <= 0) return [0, 0, 0];
 
   const [r0, g0, b0] = toLinear(l, a, b);
-  if (strictInGamut(r0, g0, b0)) return { l, a, b, alpha };
+  if (strictInGamut(r0, g0, b0)) return [r0, g0, b0];
 
   // Early exit: if the simple clip is already within JND, use it directly
-  const clip0 = fromLinear(clamp(r0, 0, 1), clamp(g0, 0, 1), clamp(b0, 0, 1));
-  if (deltaEOK(clip0, [l, a, b]) <= JND) {
-    return { l: clip0[0], a: clip0[1], b: clip0[2], alpha };
-  }
+  const c0r = clamp(r0, 0, 1),
+    c0g = clamp(g0, 0, 1),
+    c0b = clamp(b0, 0, 1);
+  if (deltaEOK(fromLinear(c0r, c0g, c0b), [l, a, b]) <= JND) return [c0r, c0g, c0b];
 
   const hRad = Math.atan2(b, a);
   const C = Math.sqrt(a * a + b * b);
   let lo = 0;
   let hi = C;
   let minInGamut = true;
-  let lastClip: readonly [number, number, number] = clip0;
+  let lastR = c0r,
+    lastG = c0g,
+    lastB = c0b;
 
   while (hi - lo > GAMUT_EPSILON) {
     const mid = (lo + hi) / 2;
@@ -325,9 +330,13 @@ const cssGamutMap = (
       continue;
     }
 
-    const clipOklab = fromLinear(clamp(lr, 0, 1), clamp(lg, 0, 1), clamp(lb, 0, 1));
-    lastClip = clipOklab;
-    const E = deltaEOK(clipOklab, [l, ma, mb]);
+    const cr = clamp(lr, 0, 1),
+      cg = clamp(lg, 0, 1),
+      cb = clamp(lb, 0, 1);
+    lastR = cr;
+    lastG = cg;
+    lastB = cb;
+    const E = deltaEOK(fromLinear(cr, cg, cb), [l, ma, mb]);
 
     if (E <= JND) {
       lo = mid;
@@ -337,19 +346,18 @@ const cssGamutMap = (
     }
   }
 
-  return { l: lastClip[0], a: lastClip[1], b: lastClip[2], alpha };
+  return [lastR, lastG, lastB];
 };
 
 /**
  * Maps an out-of-sRGB-gamut color using the CSS Color 4 algorithm.
  * Returns null for sRGB-bounded inputs (hex, rgb, hsl, etc.) — pass through unchanged.
- * Returns the mapped OklabColor otherwise.
+ * Otherwise returns the clipped linear-sRGB channels (in [0, 1]) plus alpha.
  */
-export const toGamutSrgbRaw = (input: AnyColor): OklabColor | null => {
+export const toGamutSrgbRaw = (input: AnyColor): GamutMapResult | null => {
   const raw = getRawOklab(input);
   if (raw === null) return null;
-  const { l, a, b, alpha } = raw;
-  return cssGamutMap(l, a, b, alpha, oklabToLinear, linearSrgbToOklab);
+  return { linear: cssGamutMap(raw.l, raw.a, raw.b, oklabToLinear, linearSrgbToOklab), alpha: raw.alpha };
 };
 
 export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boolean => {
@@ -363,7 +371,7 @@ export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter): boole
 /**
  * Maps an out-of-gamut color into a custom gamut using the CSS Color 4 gamut mapping algorithm.
  * Returns null for sRGB-bounded inputs (hex, rgb, hsl, etc.) — pass through unchanged.
- * Returns the mapped OklabColor otherwise.
+ * Otherwise returns the clipped linear target-space channels (in [0, 1]) plus alpha.
  * toLinear: OKLab → unclamped linear target-space channels
  * fromLinear: linear target-space channels → OKLab (for deltaEOK of clipped colors)
  */
@@ -371,9 +379,8 @@ export const toGamutCustom = (
   input: AnyColor,
   toLinear: LinearConverter,
   fromLinear: FromLinearConverter
-): OklabColor | null => {
+): GamutMapResult | null => {
   const raw = getRawOklab(input);
   if (raw === null) return null;
-  const { l, a, b, alpha } = raw;
-  return cssGamutMap(l, a, b, alpha, toLinear, fromLinear);
+  return { linear: cssGamutMap(raw.l, raw.a, raw.b, toLinear, fromLinear), alpha: raw.alpha };
 };

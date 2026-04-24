@@ -103,7 +103,12 @@ export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, okla
 const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutP3 = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearP3, p3FromLinear);
-    return mapped !== null ? ColordxClass._makeFromOklab(mapped) : new ColordxClass(input);
+    if (mapped === null) return new ColordxClass(input);
+    // Clipped linear-P3 → linear-sRGB (wide-gamut when the P3 color is outside sRGB),
+    // then gamma-encode for storage. No round-trip through OKLab.
+    const [lpR, lpG, lpB] = mapped.linear;
+    const [lr, lg, lb] = linearP3ToSrgb(lpR, lpG, lpB);
+    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha);
   };
   ColordxClass.prototype.toP3 = function (precision = 4) {
     const { r, g, b, alpha } = rgbToP3Raw(this._rawRgb());
