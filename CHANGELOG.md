@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.4.2
+
+### Patch Changes
+
+- Fix phantom hue and saturation on gamut-mapped colors by returning clipped linear channels directly from cssGamutMap and snapping near-boundary values to exact 0/255
+
 ## 5.4.1
 
 ### Patch Changes
