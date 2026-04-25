@@ -23,8 +23,8 @@ export const srgbFromLinear = (n: number): number => {
 };
 
 /** BT.2020 transfer function constants. */
-export const REC2020_ALPHA = 1.09929682680944;
-export const REC2020_BETA = 0.018053968510807;
+const REC2020_ALPHA = 1.09929682680944;
+const REC2020_BETA = 0.018053968510807;
 
 /** BT.2020 gamma-encoded → linear. Extended to the full real line (sign-preserving). */
 export const rec2020ToLinear = (c: number): number => {

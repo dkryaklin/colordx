@@ -23,7 +23,7 @@ const objectFormatParsers: [ColorParser, ColorFormat][] = [
 const builtinStringParsers: ColorParser[] = stringFormatParsers.map(([p]) => p);
 const builtinObjectParsers: ColorParser[] = objectFormatParsers.map(([p]) => p);
 
-export const defaultParsers: ColorParser[] = [...builtinStringParsers, ...builtinObjectParsers];
+const defaultParsers: ColorParser[] = [...builtinStringParsers, ...builtinObjectParsers];
 export const parsers: ColorParser[] = [...defaultParsers];
 export const pluginFormatParsers: [ColorParser, ColorFormat][] = [];
 

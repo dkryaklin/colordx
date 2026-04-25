@@ -3,3 +3,6 @@ dist/
 coverage/
 *.tsbuildinfo
 **/.yarn/install-state.gz
+reports/
+.claude/
+.stryker-tmp/

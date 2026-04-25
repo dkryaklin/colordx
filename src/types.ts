@@ -81,7 +81,7 @@ export interface XyzD65Color {
   alpha: number;
   readonly colorSpace: 'xyz-d65';
 }
-export type XyzD65ColorInput = Omit<XyzD65Color, 'alpha'> & { alpha?: number };
+type XyzD65ColorInput = Omit<XyzD65Color, 'alpha'> & { alpha?: number };
 
 export interface CmykColor {
   c: number;

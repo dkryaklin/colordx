@@ -76,23 +76,6 @@ export const xyzD65ToLinearSrgb = (x: number, y: number, z: number): [number, nu
   X_BX * x + X_BY * y + X_BZ * z,
 ];
 
-/** Zero-allocation sibling of xyzD65ToLinearSrgb — writes [lr, lg, lb] into `out`. */
-export const xyzD65ToLinearSrgbInto = (out: Float64Array | number[], x: number, y: number, z: number): void => {
-  out[0] = X_RX * x + X_RY * y + X_RZ * z;
-  out[1] = X_GX * x + X_GY * y + X_GZ * z;
-  out[2] = X_BX * x + X_BY * y + X_BZ * z;
-};
-
-export const xyzD65ToRgb = ({ x, y, z, alpha }: XyzD65Color): RgbColor => {
-  const [lr, lg, lb] = xyzD65ToLinearSrgb(x, y, z);
-  return clampRgb({
-    r: srgbFromLinear(lr) * 255,
-    g: srgbFromLinear(lg) * 255,
-    b: srgbFromLinear(lb) * 255,
-    alpha,
-  });
-};
-
 const xyzD65ToRgbUnclamped = ({ x, y, z, alpha }: XyzD65Color): RgbColor => {
   const [lr, lg, lb] = xyzD65ToLinearSrgb(x, y, z);
   return {

@@ -27,7 +27,7 @@ export const rgbToCmyk = (rgb: RgbColor): CmykColor => {
   return { c: round(c, 2), m: round(m, 2), y: round(y, 2), k: round(k, 2), alpha };
 };
 
-export const cmykToRgb = ({ c, m, y, k, alpha }: CmykColor): RgbColor =>
+const cmykToRgb = ({ c, m, y, k, alpha }: CmykColor): RgbColor =>
   clampRgb({
     r: 255 * (1 - c / 100) * (1 - k / 100),
     g: 255 * (1 - m / 100) * (1 - k / 100),

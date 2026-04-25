@@ -275,11 +275,11 @@ const deltaEOK = (lab1: readonly [number, number, number], lab2: readonly [numbe
   return Math.sqrt(dl * dl + da * da + db * db);
 };
 
-export type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
-export type FromLinearConverter = (r: number, g: number, b: number) => [number, number, number];
+type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
+type FromLinearConverter = (r: number, g: number, b: number) => [number, number, number];
 
 /** Clipped linear target-space channels plus alpha. Channels are in [0, 1] on the gamut boundary. */
-export type GamutMapResult = { linear: readonly [number, number, number]; alpha: number };
+type GamutMapResult = { linear: readonly [number, number, number]; alpha: number };
 
 /**
  * CSS Color 4 gamut mapping algorithm.

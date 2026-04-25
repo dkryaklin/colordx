@@ -91,6 +91,12 @@ const LAB_CASES: Array<[number, number, number]> = [
   [29.57, 68.3, -112.03], // blue
   [50, -50, 50],
   [60, 40, -20],
+  // Very-dark cases that exercise the (116*f − 16)/KAPPA linear branch with
+  // non-zero numerator. lab(0,0,0) zeroes the numerator and hides `/ KAPPA`
+  // vs `* KAPPA` mutations; these inputs do not.
+  [5, 0, 0],
+  [5, 10, 10],
+  [3, -5, 7],
 ];
 
 // CIE LCH (D50) triplets: L in [0,100], C in [0,~150], H in degrees.

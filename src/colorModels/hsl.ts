@@ -13,7 +13,7 @@ import {
 } from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
-export const clampHsl = (hsl: HslColor): HslColor => ({
+const clampHsl = (hsl: HslColor): HslColor => ({
   h: normalizeHue(hsl.h),
   s: clamp(hsl.s, 0, 100),
   l: clamp(hsl.l, 0, 100),

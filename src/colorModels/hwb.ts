@@ -26,13 +26,6 @@ export const clampHwb = (hwb: HwbColor): HwbColor => {
   };
 };
 
-export const roundHwb = (hwb: HwbColor): HwbColor => ({
-  h: round(hwb.h),
-  w: round(hwb.w),
-  b: round(hwb.b),
-  alpha: round(hwb.alpha, 3),
-});
-
 export const rgbToHwb = (rgb: RgbColor): HwbColor => {
   const { h } = rgbToHsvRaw(rgb);
   return clampHwb({

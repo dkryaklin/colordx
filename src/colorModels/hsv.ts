@@ -14,7 +14,7 @@ import {
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
-export const clampHsv = (hsv: HsvColor): HsvColor => ({
+const clampHsv = (hsv: HsvColor): HsvColor => ({
   h: normalizeHue(hsv.h),
   s: clamp(hsv.s, 0, 100),
   v: clamp(hsv.v, 0, 100),
