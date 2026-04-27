@@ -251,9 +251,9 @@ const strictInGamut = (r: number, g: number, b: number): boolean =>
   r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
 
 /**
- * Returns true if the color is within the sRGB gamut.
- * Always true for hex, rgb, hsl, hsv, and hwb inputs.
- * For oklch/oklab inputs, checks whether the computed linear sRGB channels are in [0, 1].
+ * True when the color falls inside the sRGB gamut.
+ * sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb) are always in gamut.
+ * Wide-gamut inputs (oklch, oklab, lab, lch, p3, rec2020, xyz) are checked against [0, 1] in linear sRGB.
  */
 export const inGamutSrgb = (input: AnyColor): boolean => {
   const raw = getRawOklab(input);

@@ -41,6 +41,10 @@ export const parse = (input: AnyColor): RgbColor | null => {
   return null;
 };
 
+/**
+ * Detects the input format (`'hex'`, `'rgb'`, `'hsl'`, `'oklch'`, etc.).
+ * Returns `undefined` for unrecognised input. Plugin-registered formats are detected too.
+ */
 export const getFormat = (input: AnyColor): ColorFormat | undefined => {
   if (input === 'transparent') return 'name';
   const typed = typeof input === 'string' ? stringFormatParsers : objectFormatParsers;

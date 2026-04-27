@@ -10,6 +10,11 @@ import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchCol
 
 const _SENTINEL: unique symbol = Symbol();
 
+/**
+ * Color value with parse, format, and manipulation methods.
+ * Construct via the `colordx()` helper or `new Colordx(input)`. Instances are immutable —
+ * mutators return a new `Colordx`.
+ */
 export class Colordx {
   private readonly _rgb: RgbColor;
   private readonly _valid: boolean;
@@ -69,10 +74,12 @@ export class Colordx {
     });
   }
 
+  /** True when the input parsed as a recognised color. */
   isValid(): boolean {
     return this._valid;
   }
 
+  /** Returns sRGB channels rounded to integers in [0, 255], plus alpha in [0, 1]. */
   toRgb(): RgbColor {
     const { r, g, b, alpha } = this._rgb;
     return { r: clamp(round(r), 0, 255), g: clamp(round(g), 0, 255), b: clamp(round(b), 0, 255), alpha };
@@ -84,12 +91,9 @@ export class Colordx {
   }
 
   /**
-   * Format as a `rgb()` / `rgba()` CSS string.
-   * Default is CSS Color 4 modern syntax (space-separated, slash-delimited alpha):
-   *   `rgb(255 0 0)` / `rgb(255 0 0 / 0.5)`
-   * Pass `{ legacy: true }` for CSS Color 3 comma-separated syntax, which also
-   * switches the function name to `rgba()` when alpha < 1:
-   *   `rgb(255, 0, 0)` / `rgba(255, 0, 0, 0.5)`
+   * Formats as a CSS `rgb()` / `rgba()` string.
+   * Default is CSS Color 4 modern syntax — `rgb(255 0 0 / 0.5)`.
+   * Pass `{ legacy: true }` for CSS Color 3 comma syntax (switches to `rgba()` when alpha < 1).
    */
   toRgbString(options?: { legacy?: boolean }): string {
     const { r, g, b, alpha } = this._rgb;
@@ -102,6 +106,7 @@ export class Colordx {
     return alpha < 1 ? `rgb(${ri} ${gi} ${bi} / ${alpha})` : `rgb(${ri} ${gi} ${bi})`;
   }
 
+  /** Returns `#rrggbb` (or `#rrggbbaa` when alpha < 1). */
   toHex(): string {
     return rgbToHex(this._rgb);
   }
@@ -117,51 +122,61 @@ export class Colordx {
     return (clamp(round(r), 0, 255) << 16) | (clamp(round(g), 0, 255) << 8) | clamp(round(b), 0, 255);
   }
 
+  /** Returns HSL channels: h in [0, 360), s/l in [0, 100], rounded to `precision` decimals. */
   toHsl(precision = 2): HslColor {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const hr = round(h, precision);
     return { h: hr >= 360 ? 0 : hr, s: round(s, precision), l: round(l, precision), alpha };
   }
 
+  /** Formats as a CSS `hsl()` string. */
   toHslString(precision = 2): string {
     const { h, s, l, alpha } = this.toHsl(precision);
     return alpha < 1 ? `hsl(${h} ${s}% ${l}% / ${alpha})` : `hsl(${h} ${s}% ${l}%)`;
   }
 
+  /** Returns OKLab channels: L in [0, 1], a/b roughly in [-0.4, 0.4]. */
   toOklab(precision = 4): OklabColor {
     const { l, a, b, alpha } = rgbToOklab(this._rgb);
     return { l: round(l, precision), a: round(a, precision), b: round(b, precision), alpha };
   }
 
+  /** Formats as a CSS `oklab()` string. */
   toOklabString(precision = 4): string {
     const { l, a, b, alpha } = this.toOklab(precision);
     return alpha < 1 ? `oklab(${l} ${a} ${b} / ${alpha})` : `oklab(${l} ${a} ${b})`;
   }
 
+  /** Returns OKLCh channels: L in [0, 1], C in [0, ~0.4], H in degrees. */
   toOklch(precision = 4): OklchColor {
     const { l, c, h, alpha } = rgbToOklch(this._rgb);
     return { l: round(l, precision), c: round(c, precision), h: round(h, precision), alpha };
   }
 
+  /** Formats as a CSS `oklch()` string. Hue is `none` when chroma is 0. */
   toOklchString(precision = 4): string {
     const { l, c, h, alpha } = this.toOklch(precision);
     const H = c === 0 ? 'none' : h;
     return alpha < 1 ? `oklch(${l} ${c} ${H} / ${alpha})` : `oklch(${l} ${c} ${H})`;
   }
 
+  /** Perceived brightness in [0, 1] using the ITU-R BT.601 weights. */
   brightness(): number {
     const { r, g, b } = this._rgb;
     return round((r * 299 + g * 587 + b * 114) / 255000, 2);
   }
 
+  /** True when `brightness()` is below 0.5. */
   isDark(): boolean {
     return this.brightness() < 0.5;
   }
 
+  /** True when `brightness()` is at or above 0.5. */
   isLight(): boolean {
     return this.brightness() >= 0.5;
   }
 
+  /** Get or set the alpha channel (clamped to [0, 1]). Setter returns a new `Colordx`. */
   alpha(): number;
   alpha(value: number): Colordx;
   alpha(value?: number): number | Colordx {
@@ -169,6 +184,7 @@ export class Colordx {
     return Colordx._make({ ...this._rgb, alpha: round(clamp(value, 0, 1), 3) });
   }
 
+  /** Get or set the HSL hue in degrees. Setter returns a new `Colordx`. */
   hue(): number;
   hue(value: number): Colordx;
   hue(value?: number): number | Colordx {
@@ -180,6 +196,7 @@ export class Colordx {
     return Colordx._make(hslToRgb({ h: value, s, l, alpha }));
   }
 
+  /** Get or set the OKLCh lightness in [0, 1]. Setter returns a new `Colordx`. */
   lightness(): number;
   lightness(value: number): Colordx;
   lightness(value?: number): number | Colordx {
@@ -188,6 +205,7 @@ export class Colordx {
     return Colordx._make(oklchToRgb({ ...oklch, l: clamp(value, 0, 1) }));
   }
 
+  /** Get or set the OKLCh chroma in [0, 0.4]. Setter returns a new `Colordx`. */
   chroma(): number;
   chroma(value: number): Colordx;
   chroma(value?: number): number | Colordx {
@@ -196,45 +214,60 @@ export class Colordx {
     return Colordx._make(oklchToRgb({ ...oklch, c: clamp(value, 0, 0.4) }));
   }
 
+  /**
+   * Lightens by `amount` (default 0.1) in HSL. Absolute by default — adds `amount * 100` to L.
+   * Pass `{ relative: true }` to multiply L by `1 + amount` instead.
+   */
   lighten(amount = 0.1, options?: { relative?: boolean }): Colordx {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newL = options?.relative ? l * (1 + amount) : l + amount * 100;
     return Colordx._make(hslToRgb({ h, s, l: clamp(newL, 0, 100), alpha }));
   }
 
+  /** Inverse of `lighten`. */
   darken(amount = 0.1, options?: { relative?: boolean }): Colordx {
     return this.lighten(-amount, options);
   }
 
+  /**
+   * Saturates by `amount` (default 0.1) in HSL. Absolute by default — adds `amount * 100` to S.
+   * Pass `{ relative: true }` to multiply S by `1 + amount` instead.
+   */
   saturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newS = options?.relative ? s * (1 + amount) : s + amount * 100;
     return Colordx._make(hslToRgb({ h, s: clamp(newS, 0, 100), l, alpha }));
   }
 
+  /** Inverse of `saturate`. */
   desaturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
     return this.saturate(-amount, options);
   }
 
+  /** Drops saturation to zero. */
   grayscale(): Colordx {
     return this.desaturate(1);
   }
 
+  /** Inverts each RGB channel (255 − channel). */
   invert(): Colordx {
     const { r, g, b, alpha } = this._rgb;
     return Colordx._make({ r: 255 - r, g: 255 - g, b: 255 - b, alpha });
   }
 
+  /** Shifts the HSL hue by `amount` degrees (default 15). */
   rotate(amount = 15): Colordx {
     return this.hue(this.hue() + amount);
   }
 
+  /** True when both colors round to the same RGBA tuple. */
   isEqual(color: AnyColor): boolean {
     const other = new Colordx(color).toRgb();
     const self = this.toRgb();
     return self.r === other.r && self.g === other.g && self.b === other.b && self.alpha === other.alpha;
   }
 
+  /** Returns the hex form (alias for `toHex()`). */
   toString(): string {
     return this.toHex();
   }
@@ -282,21 +315,31 @@ export class Colordx {
   static toGamutSrgb: (input: AnyColor) => Colordx;
 }
 
+/**
+ * Plugin signature. Receives the `Colordx` class plus the parser arrays so a plugin
+ * can register conversions (by adding instance methods) and parsers (by pushing onto the arrays).
+ */
 export type Plugin = (
   ColordxClass: typeof Colordx,
   parsers: ColorParser[],
   formatParsers: [ColorParser, ColorFormat][]
 ) => void;
 
+/** Constructs a `Colordx` from any supported color input. Existing instances pass through. */
 export const colordx = (input: AnyColor | Colordx): Colordx => new Colordx(input);
 
-/** Emit an 8-digit `#rrggbbaa` hex for any color input. Convenience over `colordx(c).toHex8()`. */
+/** Emits an 8-digit `#rrggbbaa` hex for any color input. Shortcut for `colordx(c).toHex8()`. */
 export const toHex8 = (input: AnyColor | Colordx): string => new Colordx(input).toHex8();
 
+/** Registers plugins. Each plugin is called once with the `Colordx` class and parser arrays. */
 export const extend = (plugins: Plugin[]): void => {
   plugins.forEach((plugin) => plugin(Colordx, parsers, pluginFormatParsers));
 };
 
+/**
+ * Picks the candidate closest to `color` by Euclidean distance in OKLab.
+ * Throws when `candidates` is empty.
+ */
 export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {
   if (candidates.length === 0) throw new Error('nearest: candidates array must not be empty');
   const { l: l1, a: a1, b: b1 } = new Colordx(color).toOklab();
@@ -313,6 +356,7 @@ export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T
   return result;
 };
 
+/** Returns a random opaque sRGB color. */
 export const random = (): Colordx =>
   new Colordx({
     r: Math.round(Math.random() * 255),
