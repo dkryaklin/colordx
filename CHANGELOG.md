@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.4.3
+
+### Patch Changes
+
+- Bump default precision for toOklab and toOklch (and their string variants) from 4 to 5 decimal places to ensure lossless sRGB round-trips
+
 ## 5.4.2
 
 ### Patch Changes
