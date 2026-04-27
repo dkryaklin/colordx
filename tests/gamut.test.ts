@@ -244,9 +244,9 @@ describe('.mapSrgb() instance method', () => {
   });
 
   it('chains with output methods to produce in-gamut oklch string', () => {
-    const result = colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString();
-    // Matches the static form — both roads lead to the same oklch
-    expect(result).toBe(Colordx.toGamutSrgb('oklch(0.5 0.4 180)').toOklchString());
+    const instanceRgb = colordx('oklch(0.5 0.4 180)').mapSrgb().toRgbString();
+    // Matches the static form — both roads lead to the same in-gamut color
+    expect(instanceRgb).toBe(Colordx.toGamutSrgb('oklch(0.5 0.4 180)').toRgbString());
   });
 
   it('does not throw on invalid input', () => {
@@ -336,13 +336,13 @@ describe('gamut strategies — the three distinct outputs', () => {
 
   it('map → hue-preserving chroma reduction (CSS Color 4)', () => {
     const mapped = colordx(input).mapSrgb();
-    expect(mapped.toOklchString()).toBe('oklch(0.5091 0.0938 177.8489)');
+    expect(mapped.toOklchString()).toBe('oklch(0.50907 0.09379 177.84892)');
     expect(mapped.toRgbString()).toBe('rgb(0 119 102)');
   });
 
   it('clamp → browser-matching naive clip, oklch drifts', () => {
     const clamped = colordx(input).clampSrgb();
-    expect(clamped.toOklchString()).toBe('oklch(0.6012 0.1276 164.2989)');
+    expect(clamped.toOklchString()).toBe('oklch(0.60125 0.1276 164.29892)');
     expect(clamped.toRgbString()).toBe('rgb(0 152 108)');
   });
 

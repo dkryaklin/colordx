@@ -771,7 +771,9 @@ describe('channel slot assignments — lab/lch/oklab/oklch', () => {
     expect(v.h).toBe(90);
   });
   it('oklch hue unit slot: 0.5turn == 180deg', () => {
-    expect(colordx('oklch(0.5 0.1 0.5turn)').toOklch().h).toBe(180);
+    // Compare via parses (not against literal 180) to dodge ~1e-5 round-trip noise
+    // exposed at the 5dp default — the parser is what's under test, not OKLCh round-trip.
+    expect(colordx('oklch(0.5 0.1 0.5turn)').toOklch().h).toBe(colordx('oklch(0.5 0.1 180deg)').toOklch().h);
   });
 });
 

@@ -52,10 +52,10 @@ beforeAll(() => {
 
 describe('README — Usage', () => {
   it('toOklch', () => {
-    expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.628, c: 0.2577, h: 29.2339, alpha: 1 });
+    expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.62796, c: 0.25768, h: 29.23389, alpha: 1 });
   });
   it('toOklchString', () => {
-    expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.628 0.2577 29.2339)');
+    expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.62796 0.25768 29.23389)');
   });
   it('lighten then toHex', () => {
     expect(colordx('#ff0000').lighten(0.1).toHex()).toBe('#ff3333');
@@ -120,10 +120,10 @@ describe('README — Conversion', () => {
   it('toHwb', () => expect((colordx('#ff0000') as any).toHwb()).toEqual({ h: 0, w: 0, b: 0, alpha: 1 }));
   it('toHwbString', () => expect((colordx('#ff0000') as any).toHwbString()).toBe('hwb(0 0% 0%)'));
 
-  it('toOklab', () => expect(colordx('#ff0000').toOklab()).toEqual({ l: 0.628, a: 0.2249, b: 0.1258, alpha: 1 }));
-  it('toOklabString', () => expect(colordx('#ff0000').toOklabString()).toBe('oklab(0.628 0.2249 0.1258)'));
-  it('toOklch', () => expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.628, c: 0.2577, h: 29.2339, alpha: 1 }));
-  it('toOklchString', () => expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.628 0.2577 29.2339)'));
+  it('toOklab', () => expect(colordx('#ff0000').toOklab()).toEqual({ l: 0.62796, a: 0.22486, b: 0.12585, alpha: 1 }));
+  it('toOklabString', () => expect(colordx('#ff0000').toOklabString()).toBe('oklab(0.62796 0.22486 0.12585)'));
+  it('toOklch', () => expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.62796, c: 0.25768, h: 29.23389, alpha: 1 }));
+  it('toOklchString', () => expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.62796 0.25768 29.23389)'));
   it('toOklchString precision 2', () => expect(colordx('#ff0000').toOklchString(2)).toBe('oklch(0.63 0.26 29.23)'));
 
   it('toP3', () => expect((colordx('#ff0000') as any).toP3()).toEqual({ r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }));

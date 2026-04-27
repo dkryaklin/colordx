@@ -136,25 +136,25 @@ export class Colordx {
   }
 
   /** Returns OKLab channels: L in [0, 1], a/b roughly in [-0.4, 0.4]. */
-  toOklab(precision = 4): OklabColor {
+  toOklab(precision = 5): OklabColor {
     const { l, a, b, alpha } = rgbToOklab(this._rgb);
     return { l: round(l, precision), a: round(a, precision), b: round(b, precision), alpha };
   }
 
   /** Formats as a CSS `oklab()` string. */
-  toOklabString(precision = 4): string {
+  toOklabString(precision = 5): string {
     const { l, a, b, alpha } = this.toOklab(precision);
     return alpha < 1 ? `oklab(${l} ${a} ${b} / ${alpha})` : `oklab(${l} ${a} ${b})`;
   }
 
   /** Returns OKLCh channels: L in [0, 1], C in [0, ~0.4], H in degrees. */
-  toOklch(precision = 4): OklchColor {
+  toOklch(precision = 5): OklchColor {
     const { l, c, h, alpha } = rgbToOklch(this._rgb);
     return { l: round(l, precision), c: round(c, precision), h: round(h, precision), alpha };
   }
 
   /** Formats as a CSS `oklch()` string. Hue is `none` when chroma is 0. */
-  toOklchString(precision = 4): string {
+  toOklchString(precision = 5): string {
     const { l, c, h, alpha } = this.toOklch(precision);
     const H = c === 0 ? 'none' : h;
     return alpha < 1 ? `oklch(${l} ${c} ${H} / ${alpha})` : `oklch(${l} ${c} ${H})`;

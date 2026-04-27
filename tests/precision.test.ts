@@ -64,8 +64,8 @@ describe('precision arg — per-format default dp matches prior behavior', () =>
   it('toLchString default = 2dp', () => expect(c.toLchString()).toBe('lch(48.38 28.8 246.13)'));
   it('toXyzString default = 2dp', () => expect(c.toXyzString()).toBe('color(xyz-d50 14.49 17.09 26.71)'));
   it('toXyzD65String default = 2dp', () => expect(c.toXyzD65String()).toMatch(/^color\(xyz-d65 \d/));
-  it('toOklabString default = 4dp', () => expect(c.toOklabString()).toBe('oklab(0.5548 -0.0457 -0.0722)'));
-  it('toOklchString default = 4dp', () => expect(c.toOklchString()).toBe('oklch(0.5548 0.0855 237.6561)'));
+  it('toOklabString default = 5dp', () => expect(c.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224)'));
+  it('toOklchString default = 5dp', () => expect(c.toOklchString()).toBe('oklch(0.55476 0.08551 237.65614)'));
   it('toP3String default = 4dp', () => expect(c.toP3String()).toBe('color(display-p3 0.2994 0.4728 0.6102)'));
   it('toRec2020String default = 4dp', () =>
     expect(c.toRec2020String()).toBe('color(rec2020 0.3051 0.4166 0.5667)'));
@@ -122,9 +122,9 @@ describe('precision arg — object methods return values rounded to precision', 
     expect(r.b).toBe(roundedTo(raw.b, 2));
   });
 
-  it('toOklch(2) hue is rounded to 2dp (not preserved at 4dp default)', () => {
+  it('toOklch(2) hue is rounded to 2dp (not preserved at 5dp default)', () => {
     expect(c.toOklch(2).h).toBe(237.66);
-    expect(c.toOklch().h).toBe(237.6561);
+    expect(c.toOklch().h).toBe(237.65614);
   });
 
   it('toCmyk(0) emits integer percentages', () => {
