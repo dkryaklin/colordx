@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Contrast, ArrowUpDown } from 'lucide-react';
 import { colordx } from '../lib.js';
+import SectionHead from './SectionHead.jsx';
 
 export default function Accessibility({ S }) {
   const [txtHex, setTxtHex] = useState('#1c1a16');
@@ -65,14 +67,15 @@ export default function Accessibility({ S }) {
   const bgPickerVal = bg.isValid() ? bg.toHex() : '#ffffff';
 
   return (
-    <section className="a11y-section">
-      <div className="section-wrap">
-        <h2 className="section-title">Accessibility</h2>
-        <p className="section-desc">
-          Check contrast between any two colors against WCAG 2.x (AA and AAA) and APCA — the perceptually accurate contrast model proposed for WCAG 3.0. The active color is automatically used as the background.
-        </p>
-        <div className="a11y-wrap">
-          <div className="card a11y-left">
+    <>
+      <SectionHead
+        icon={<Contrast size={13} />}
+        eyebrow="Accessibility"
+        title="Check contrast"
+        desc="Test any two colors against WCAG 2.x (AA / AAA) and APCA — the perceptually accurate model proposed for WCAG 3.0. Your active color is used as the background."
+      />
+      <div className="a11y-wrap">
+        <div className="card a11y-left">
             <div
               className="a11y-preview"
               style={{ backgroundColor: previewBgColor }}
@@ -104,7 +107,7 @@ export default function Accessibility({ S }) {
                 </div>
               </div>
               <button className="a11y-swap" title="Swap colors" onClick={handleSwap}>
-                ⇅
+                <ArrowUpDown size={15} />
               </button>
               <div className="a11y-pair">
                 <label className="a11y-label">Background</label>
@@ -168,7 +171,6 @@ export default function Accessibility({ S }) {
             </div>
           </div>
         </div>
-      </div>
-    </section>
+    </>
   );
 }

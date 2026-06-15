@@ -6,6 +6,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@colordx/core?labelColor=764be5&color=ffc200)](https://www.npmjs.com/package/@colordx/core)
 [![used by cssnano](https://img.shields.io/badge/used_by-cssnano-ffc200?labelColor=764be5)](https://github.com/cssnano/cssnano)
+[![used by oklch-picker](https://img.shields.io/badge/used_by-oklch--picker-ffc200?labelColor=764be5)](https://github.com/evilmartians/oklch-picker)
 [![bundle size](https://img.shields.io/bundlejs/size/@colordx/core?labelColor=764be5&color=ffc200)](https://bundlejs.com/?q=@colordx/core)
 [![npm downloads](https://img.shields.io/npm/dw/@colordx/core?labelColor=764be5&color=ffc200)](https://www.npmjs.com/package/@colordx/core)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-ffc200?labelColor=764be5)](https://github.com/dkryaklin/colordx/blob/main/package.json)
@@ -769,6 +770,14 @@ The same flag works on `.darken()` and `.desaturate()`.
 ### Internals
 
 - Deduplicate the sRGB→XYZ D65 matrix shared between `xyz.ts` and `lab.ts`
+
+## Ecosystem
+
+- [**@colordx/gpu**](https://github.com/dkryaklin/colordx-gpu) — colordx's color math on the GPU: conversions and gamut tests as generated GLSL, parity-tested against this library. For per-pixel workloads — picker charts, gamut visualizations, gradients — where you convert millions of colors per frame instead of one at a time.
+
+## Sponsors
+
+Supported by [Ruslo.app](https://ruslo.app).
 
 ## License
 

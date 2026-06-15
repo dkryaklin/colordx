@@ -209,6 +209,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@colordx/gpu@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@colordx/gpu@npm:0.2.1"
+  checksum: 10c0/2e7de92de4a5230daa067e44e539992f4a999a997f352a91a2dec34502544fc55dde22db2410becc4e941ad0ae52a72571b95bdfa090b80141f019416a953a90
+  languageName: node
+  linkType: hard
+
 "@esbuild/aix-ppc64@npm:0.21.5":
   version: 0.21.5
   resolution: "@esbuild/aix-ppc64@npm:0.21.5"
@@ -795,7 +802,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "colordx-playground@workspace:."
   dependencies:
+    "@colordx/gpu": "npm:^0.2.1"
     "@vitejs/plugin-react": "npm:^4.3.1"
+    lucide-react: "npm:^1.18.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     vite: "npm:^5.4.0"
@@ -1093,6 +1102,15 @@ __metadata:
   dependencies:
     yallist: "npm:^3.0.2"
   checksum: 10c0/89b2ef2ef45f543011e38737b8a8622a2f8998cddf0e5437174ef8f1f70a8b9d14a918ab3e232cb3ba343b7abddffa667f0b59075b2b80e6b4d63c3de6127482
+  languageName: node
+  linkType: hard
+
+"lucide-react@npm:^1.18.0":
+  version: 1.18.0
+  resolution: "lucide-react@npm:1.18.0"
+  peerDependencies:
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/91b52cec3e38f4b362f538f4e78a597434fc6e70f7a8fe3ccbc12c43ede886f8b32880c38ec4c9e5c949d3f32beb94e6985be0bb40341b031b2b9ca45010576b
   languageName: node
   linkType: hard
 

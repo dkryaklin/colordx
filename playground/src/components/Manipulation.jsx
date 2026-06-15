@@ -1,5 +1,7 @@
+import { SlidersHorizontal } from 'lucide-react';
 import { colordx } from '../lib.js';
 import { f } from '../utils.js';
+import SectionHead from './SectionHead.jsx';
 
 function swatchOklch(color) {
   const ok = color.toOklch();
@@ -19,7 +21,7 @@ function ManipRow({ label, items, currentHex, onSelect }) {
             title={`${item.label}: ${item.hex}`}
             onClick={() => !item.current && onSelect(item.hex)}
           >
-            <span className="ms-lbl">{item.label}</span>
+            <span className={`ms-lbl${item.dark ? '' : ' on-light'}`}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -34,6 +36,7 @@ function makeItem(color, label, isCurrent = false) {
     current: isCurrent,
     bg: `oklch(${f(ok.l)} ${f(ok.c)} ${f(ok.h, 2)})`,
     hex: color.toHex(),
+    dark: color.isDark(),
   };
 }
 
@@ -79,19 +82,19 @@ export default function Manipulation({ S, setS }) {
   ];
 
   return (
-    <section className="manip-section">
-      <div className="section-wrap">
-        <h2 className="section-title">Manipulation</h2>
-        <p className="section-desc">
-          Adjust lightness, chroma, and hue independently in OKLCH space — producing perceptually uniform steps that HSL cannot. Mix colors in sRGB or OKLab, apply grayscale, invert, and more. All methods are immutable and chainable.
-        </p>
-        <div className="manip-grid">
-          <ManipRow label="Lightness" items={lightItems} onSelect={handleSelect} />
-          <ManipRow label="Chroma" items={chromaItems} onSelect={handleSelect} />
-          <ManipRow label="Hue rotation" items={hueItems} onSelect={handleSelect} />
-          <ManipRow label="Effects" items={effectItems} onSelect={handleSelect} />
-        </div>
+    <>
+      <SectionHead
+        icon={<SlidersHorizontal size={13} />}
+        eyebrow="Manipulation"
+        title="Adjust & remix"
+        desc="Shift lightness, chroma, and hue independently in OKLCH space — perceptually uniform steps that HSL cannot produce. Mix, grayscale, invert, and more. Every method is immutable and chainable. Click a swatch to make it active."
+      />
+      <div className="manip-grid">
+        <ManipRow label="Lightness" items={lightItems} onSelect={handleSelect} />
+        <ManipRow label="Chroma" items={chromaItems} onSelect={handleSelect} />
+        <ManipRow label="Hue rotation" items={hueItems} onSelect={handleSelect} />
+        <ManipRow label="Effects" items={effectItems} onSelect={handleSelect} />
       </div>
-    </section>
+    </>
   );
 }

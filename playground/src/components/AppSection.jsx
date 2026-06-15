@@ -1,6 +1,48 @@
 import { useState, useRef, useEffect } from 'react';
+import { Copy, Check, Shuffle } from 'lucide-react';
+import { math } from '@colordx/gpu';
 import { colordx, Colordx, inGamutSrgb, oklchToLinear, oklchToP3Channels } from '../lib.js';
 import { f, clamp } from '../utils.js';
+
+// gamut classification consistent with the GPU charts
+const WITHIN = (n) => n >= -1e-4 && n <= 1 + 1e-4;
+function gamutFlags(l, c, h) {
+  const [r, g, b] = math.oklchToLinearSrgb(l, c, h);
+  const srgb = WITHIN(r) && WITHIN(g) && WITHIN(b);
+  const p3 = srgb || math.srgbLinearToP3Linear(r, g, b).every(WITHIN);
+  const rec2020 = p3 || math.srgbLinearToRec2020Linear(r, g, b).every(WITHIN);
+  return { srgb, p3, rec2020 };
+}
+
+const GAMUTS = [
+  { key: 'srgb', label: 'sRGB' },
+  { key: 'p3', label: 'P3' },
+  { key: 'rec2020', label: 'Rec.2020' },
+];
+
+// what the *display* can actually show, via CSS color-gamut media queries
+function readDisplayGamut() {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return { srgb: true, p3: false, rec2020: false };
+  }
+  return {
+    srgb: true,
+    p3: window.matchMedia('(color-gamut: p3)').matches,
+    rec2020: window.matchMedia('(color-gamut: rec2020)').matches,
+  };
+}
+
+function useDisplayGamut() {
+  const [g, setG] = useState(readDisplayGamut);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mqs = ['(color-gamut: p3)', '(color-gamut: rec2020)'].map((q) => window.matchMedia(q));
+    const onChange = () => setG(readDisplayGamut());
+    mqs.forEach((mq) => mq.addEventListener('change', onChange));
+    return () => mqs.forEach((mq) => mq.removeEventListener('change', onChange));
+  }, []);
+  return g;
+}
 
 function findGamutBoundariesC(l, h) {
   if (inGamutSrgb({ l, c: 0.4, h, alpha: 1 })) return [];
@@ -90,6 +132,9 @@ const CFGS = [
   },
 ];
 
+// L/C/H are edited via the gamut charts; only Alpha needs a standalone slider.
+const ALPHA_CFG = CFGS.find((cfg) => cfg.key === 'alpha');
+
 function CopyButton({ text, className }) {
   const [copied, setCopied] = useState(false);
 
@@ -105,12 +150,7 @@ function CopyButton({ text, className }) {
       onClick={handleCopy}
       title="Copy"
     >
-      {copied ? '✓' : (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-      )}
+      {copied ? <Check size={15} /> : <Copy size={15} />}
     </button>
   );
 }
@@ -129,7 +169,7 @@ function OutRow({ label, value }) {
       <span className="out-lbl">{label}</span>
       <span className="out-val">{value}</span>
       <button className={`out-cp${copied ? ' ok' : ''}`}>
-        {copied ? '✓' : '⎘'}
+        {copied ? <Check size={13} /> : <Copy size={13} />}
       </button>
     </div>
   );
@@ -210,7 +250,7 @@ function SliderCard({ cfg, S, setS, inGamut }) {
   );
 }
 
-export default function AppSection({ S, setS, onRandom }) {
+export default function AppSection({ S, setS, onRandom, showP3, showRec2020 }) {
   const [inputVal, setInputVal] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [inputError, setInputError] = useState(false);
@@ -276,6 +316,34 @@ export default function AppSection({ S, setS, onRandom }) {
   const rgbVal = cs.toRgbString();
 
   const inGamut = inGamutSrgb({ l: S.l, c: S.c, h: S.h, alpha: S.alpha });
+  const gamut = gamutFlags(S.l, S.c, S.h);
+  const display = useDisplayGamut();
+
+  // a pixel is only "real" when it's within a gamut the charts are showing —
+  // exactly the shader's fill rule. Out of that → no color (empty preview).
+  const displayable = gamut.srgb || (showP3 && gamut.p3) || (showRec2020 && gamut.rec2020);
+  const split = displayable && !gamut.srgb; // wide-gamut: compare native vs sRGB
+
+  // render each gamut with its own CSS function so the browser shows the true
+  // wide-gamut color (and maps it itself for the actual display)
+  const sm = c.mapSrgb().toRgb();
+  const srgbCss = `rgb(${sm.r} ${sm.g} ${sm.b} / ${S.alpha})`;
+  const p3Css = `color(display-p3 ${f(p3R, 4)} ${f(p3G, 4)} ${f(p3B, 4)} / ${S.alpha})`;
+  const rec2020Css = (() => {
+    const [lr, lg, lb] = math.oklchToLinearSrgb(S.l, S.c, S.h);
+    const [r2, g2, b2] = math.srgbLinearToRec2020Linear(lr, lg, lb);
+    const A = 1.09929682680944;
+    const B = 0.018053968510807;
+    const oetf = (v) => {
+      const s = v < 0 ? -1 : 1;
+      const x = Math.abs(v);
+      return s * (x < B ? 4.5 * x : A * Math.pow(x, 0.45) - (A - 1));
+    };
+    return `color(rec2020 ${f(oetf(r2), 4)} ${f(oetf(g2), 4)} ${f(oetf(b2), 4)} / ${S.alpha})`;
+  })();
+
+  const nativeCss = gamut.p3 ? p3Css : rec2020Css;
+  const nativeSpace = gamut.p3 ? 'P3' : 'Rec.2020';
 
   const outputRows = [
     { lbl: 'OKLab', val: `oklab(${f(ob.l)} ${f(ob.a)} ${f(ob.b)}${ob.alpha < 1 ? ` / ${f(ob.alpha, 2)}` : ''})` },
@@ -291,62 +359,94 @@ export default function AppSection({ S, setS, onRandom }) {
     { lbl: 'Figma P3', val: `#${toHex2(p3R)}${toHex2(p3G)}${toHex2(p3B)}${toHex2(S.alpha)}` },
   ];
 
+  const alphaGrad = `linear-gradient(to right, oklch(${f(S.l)} ${f(S.c)} ${f(S.h, 2)} / 0), oklch(${f(S.l)} ${f(S.c)} ${f(S.h, 2)} / 1))`;
+
   return (
-    <section className="app-section">
-      <div className="app-wrap">
-        <div className="card left">
-          <div
-            id="swatch"
-            style={{
-              backgroundColor: `oklch(${f(S.l)} ${f(S.c)} ${f(S.h, 2)} / ${S.alpha})`,
-            }}
-          />
-          <div className="left-body">
-            <button className="random-btn" onClick={onRandom}>↺ Random color</button>
-
-            <div className="row">
+    <>
+      <div className="card left">
+        <div className="swatch checker">
+          {!displayable && <span className="swatch-empty">no color</span>}
+          {displayable && !split && <div className="swatch-fill" style={{ background: srgbCss }} />}
+          {displayable && split && (
+            <>
+              <div className="swatch-half left" style={{ background: nativeCss }} />
+              <div className="swatch-half right" style={{ background: srgbCss }} />
+              <span className="swatch-tag swatch-tag-native">{nativeSpace}</span>
+              <span className="swatch-tag swatch-tag-srgb">sRGB</span>
+            </>
+          )}
+        </div>
+        <div className="left-body">
+          <div className="alpha-row">
+            <span className="alpha-cap">A</span>
+            <div className="alpha-track checker">
+              <div className="alpha-grad" style={{ background: alphaGrad }} />
               <input
-                className={`txt${inputError ? ' err' : ''}`}
-                id="color-input"
-                placeholder="Paste any color…"
-                spellCheck="false"
-                autoComplete="off"
-                value={inputVal}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                onChange={handleInputChange}
+                type="range"
+                className="alpha-rng"
+                min={0}
+                max={1}
+                step={0.01}
+                value={S.alpha}
+                onChange={(e) => setS((prev) => ({ ...prev, alpha: parseFloat(e.target.value) }))}
               />
-              <CopyButton text={oklchString} className="ibtn" />
             </div>
-            {inputError && <p className="color-error">Not a valid color</p>}
+            <span className="alpha-val">{f(S.alpha, 2)}</span>
+          </div>
+          <div className="row">
+            <input
+              className={`txt${inputError ? ' err' : ''}`}
+              id="color-input"
+              placeholder="Paste any color…"
+              spellCheck="false"
+              autoComplete="off"
+              value={inputVal}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onChange={handleInputChange}
+            />
+            <CopyButton text={oklchString} className="ibtn" />
+            <button className="random-icon" onClick={onRandom} title="Random color">
+              <Shuffle size={15} />
+            </button>
+          </div>
+          {inputError && <p className="color-error">Not a valid color</p>}
 
-            <div className="gamut-row">
-              <span className={`gamut-dot ${inGamut ? 'ok' : 'out'}`} />
-              <span className={`gamut-lbl${inGamut ? '' : ' out'}`}>
-                {inGamut ? 'In sRGB gamut' : 'Out of sRGB · values clipped to nearest'}
-              </span>
-              {!inGamut && (
-                <button className="gamut-btn" style={{ display: 'inline-flex' }} onClick={handleGamutMap}>
-                  Map to sRGB →
-                </button>
-              )}
-            </div>
-
-            <hr className="div" />
-            <div id="outputs">
-              {outputRows.map((r) => (
-                <OutRow key={r.lbl} label={r.lbl} value={r.val} />
-              ))}
-            </div>
+          <div className="gamut-bar">
+            {GAMUTS.map((g) => {
+              const fits = gamut[g.key];
+              const supported = display[g.key];
+              const title = !supported
+                ? `Your display can't show ${g.label}`
+                : fits
+                  ? `Color is within ${g.label}`
+                  : `Color is outside ${g.label}`;
+              return (
+                <span
+                  key={g.key}
+                  className={`gchip${fits ? ' on' : ''}${supported ? '' : ' unsupported'}`}
+                  title={title}
+                >
+                  {g.label}
+                </span>
+              );
+            })}
+            {!inGamut && (
+              <button className="gamut-fix" onClick={handleGamutMap} title="Reduce chroma to fit sRGB">
+                Fix
+              </button>
+            )}
           </div>
         </div>
+      </div>
 
-        <div className="grid">
-          {CFGS.map((cfg) => (
-            <SliderCard key={cfg.key} cfg={cfg} S={S} setS={setS} inGamut={inGamut} />
+      <div className="card out-card">
+        <div id="outputs">
+          {outputRows.map((r) => (
+            <OutRow key={r.lbl} label={r.lbl} value={r.val} />
           ))}
         </div>
       </div>
-    </section>
+    </>
   );
 }
