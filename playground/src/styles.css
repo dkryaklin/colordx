@@ -267,10 +267,12 @@ a {
   gap: 14px;
 }
 
-/* row 1 shares the charts' 3-column grid: preview = 1 chart, info = 2 charts */
+/* row 1 shares the charts' 3-column grid: preview = 1 chart, info = 2 charts.
+   minmax(0,1fr) lets columns shrink below their content (long values ellipsize
+   instead of forcing the page wider than the viewport). */
 .studio-controls {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   align-items: stretch;
 }
@@ -735,18 +737,28 @@ input[type='range'].rng::-moz-range-thumb {
 
 .out-card {
   padding: 5px 8px;
+  container-type: inline-size;
 }
 
+/* two columns only when the card itself is wide enough to show full values;
+   otherwise one column. Independent of viewport, so it's right at every size. */
 #outputs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 14px;
+}
+
+@container (max-width: 640px) {
+  #outputs {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .out-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   padding: 6px 7px;
   border-radius: var(--r-sm);
   cursor: pointer;
@@ -772,6 +784,7 @@ input[type='range'].rng::-moz-range-thumb {
   font-size: 11.5px;
   color: var(--t1);
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -811,7 +824,8 @@ input[type='range'].rng::-moz-range-thumb {
 .charts-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
+  flex-wrap: wrap;
 }
 
 .charts-bar-title {
@@ -863,7 +877,7 @@ input[type='range'].rng::-moz-range-thumb {
 
 .charts-col {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1308,6 +1322,7 @@ input[type='range'].rng::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .gs-step-label {
@@ -1320,6 +1335,7 @@ input[type='range'].rng::-moz-range-thumb {
 
 .code-block {
   position: relative;
+  min-width: 0;
   background: #1c1b19;
   border: 1px solid #2c2a27;
   border-radius: var(--r-md);
@@ -1455,6 +1471,9 @@ input[type='range'].rng::-moz-range-thumb {
   .studio-controls > .out-card {
     grid-column: auto;
   }
+  .charts-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .a11y-wrap {
     grid-template-columns: 1fr;
   }
@@ -1463,16 +1482,28 @@ input[type='range'].rng::-moz-range-thumb {
   }
 }
 
-@media (max-width: 680px) {
+/* mobile: drop the section nav, keep brand + links */
+@media (max-width: 600px) {
   .charts-col {
     grid-template-columns: 1fr;
   }
-  #outputs {
-    grid-template-columns: 1fr;
+  .topnav {
+    display: none;
+  }
+  .topbar-divider {
+    margin-left: auto;
+  }
+  /* let code samples wrap instead of forcing the page wider than the screen */
+  .code-block code {
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 }
 
 @media (max-width: 560px) {
+  .topbar-inner {
+    padding: 0 16px;
+  }
   .section,
   .workstation {
     padding-left: 16px;
