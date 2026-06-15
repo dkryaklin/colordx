@@ -344,6 +344,8 @@ export default function AppSection({ S, setS, onRandom, showP3, showRec2020 }) {
 
   const nativeCss = gamut.p3 ? p3Css : rec2020Css;
   const nativeSpace = gamut.p3 ? 'P3' : 'Rec.2020';
+  // whether the display can actually show the wide-gamut half
+  const nativeSupported = gamut.p3 ? display.p3 : display.rec2020;
 
   const outputRows = [
     { lbl: 'OKLab', val: `oklab(${f(ob.l)} ${f(ob.a)} ${f(ob.b)}${ob.alpha < 1 ? ` / ${f(ob.alpha, 2)}` : ''})` },
@@ -373,7 +375,17 @@ export default function AppSection({ S, setS, onRandom, showP3, showRec2020 }) {
               <div className="swatch-half right" style={{ background: srgbCss }} />
               <span className="swatch-tag swatch-tag-native">{nativeSpace}</span>
               <span className="swatch-tag swatch-tag-srgb">sRGB</span>
+              {!nativeSupported && <div className="swatch-note">Your display can’t show this</div>}
             </>
+          )}
+          {!inGamut && (
+            <button
+              className="swatch-fix"
+              onClick={handleGamutMap}
+              title="Reduce chroma to fit sRGB"
+            >
+              Fix → sRGB
+            </button>
           )}
         </div>
         <div className="left-body">
@@ -431,11 +443,6 @@ export default function AppSection({ S, setS, onRandom, showP3, showRec2020 }) {
                 </span>
               );
             })}
-            {!inGamut && (
-              <button className="gamut-fix" onClick={handleGamutMap} title="Reduce chroma to fit sRGB">
-                Fix
-              </button>
-            )}
           </div>
         </div>
       </div>

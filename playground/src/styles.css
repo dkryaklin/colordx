@@ -502,25 +502,6 @@ a {
   text-decoration-thickness: 1px;
 }
 
-.gamut-fix {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  padding: 3px 10px;
-  border-radius: var(--r-sm);
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #0a0a0c;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.gamut-fix:hover {
-  opacity: 0.85;
-}
-
 /* split preview: native (wide-gamut) | sRGB fallback, 50/50 */
 .swatch-half {
   position: absolute;
@@ -565,7 +546,7 @@ a {
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  z-index: 2;
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -575,6 +556,55 @@ a {
 
 .swatch-tag-srgb {
   right: 7px;
+}
+
+/* native half the display can't show → scrim + message over that half */
+.swatch-note {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 14px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: saturate(40%) blur(1px);
+  -webkit-backdrop-filter: saturate(40%) blur(1px);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  color: #fff;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* gamut-map action, floated on the preview */
+.swatch-fix {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #0a0a0c;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.15s;
+}
+
+.swatch-fix:hover {
+  opacity: 0.85;
 }
 
 /* ---- alpha slider card ---- */
