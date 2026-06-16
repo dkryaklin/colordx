@@ -468,40 +468,6 @@ a {
   border-color: var(--green);
 }
 
-/* gamut support chips — fixed height, never reflows the page */
-.gamut-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.gchip {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  padding: 3px 7px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border);
-  color: var(--t3);
-  background: transparent;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
-}
-
-.gchip.on {
-  color: var(--green);
-  border-color: rgba(69, 214, 127, 0.4);
-  background: rgba(69, 214, 127, 0.1);
-}
-
-/* gamut the display can't show — dimmed + struck through */
-.gchip.unsupported {
-  opacity: 0.5;
-  border-style: dashed;
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-}
-
 /* split preview: native (wide-gamut) | sRGB fallback, 50/50 */
 .swatch-half {
   position: absolute;
@@ -558,7 +524,8 @@ a {
   right: 7px;
 }
 
-/* native half the display can't show → scrim + message over that half */
+/* native half the display can't show → opaque panel + message (no
+   misleading clamped color shows through) */
 .swatch-note {
   position: absolute;
   left: 0;
@@ -570,14 +537,12 @@ a {
   justify-content: center;
   text-align: center;
   padding: 0 14px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: saturate(40%) blur(1px);
-  -webkit-backdrop-filter: saturate(40%) blur(1px);
+  background: #14141a;
   font-family: var(--mono);
   font-size: 10.5px;
   line-height: 1.45;
   letter-spacing: 0.02em;
-  color: #fff;
+  color: var(--t2);
   z-index: 2;
   pointer-events: none;
 }

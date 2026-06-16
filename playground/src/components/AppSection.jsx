@@ -14,12 +14,6 @@ function gamutFlags(l, c, h) {
   return { srgb, p3, rec2020 };
 }
 
-const GAMUTS = [
-  { key: 'srgb', label: 'sRGB' },
-  { key: 'p3', label: 'P3' },
-  { key: 'rec2020', label: 'Rec.2020' },
-];
-
 // what the *display* can actually show, via CSS color-gamut media queries
 function readDisplayGamut() {
   if (typeof window === 'undefined' || !window.matchMedia) {
@@ -423,27 +417,6 @@ export default function AppSection({ S, setS, onRandom, showP3, showRec2020 }) {
             </button>
           </div>
           {inputError && <p className="color-error">Not a valid color</p>}
-
-          <div className="gamut-bar">
-            {GAMUTS.map((g) => {
-              const fits = gamut[g.key];
-              const supported = display[g.key];
-              const title = !supported
-                ? `Your display can't show ${g.label}`
-                : fits
-                  ? `Color is within ${g.label}`
-                  : `Color is outside ${g.label}`;
-              return (
-                <span
-                  key={g.key}
-                  className={`gchip${fits ? ' on' : ''}${supported ? '' : ' unsupported'}`}
-                  title={title}
-                >
-                  {g.label}
-                </span>
-              );
-            })}
-          </div>
         </div>
       </div>
 
