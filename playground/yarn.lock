@@ -209,10 +209,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@colordx/gpu@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "@colordx/gpu@npm:0.2.1"
-  checksum: 10c0/2e7de92de4a5230daa067e44e539992f4a999a997f352a91a2dec34502544fc55dde22db2410becc4e941ad0ae52a72571b95bdfa090b80141f019416a953a90
+"@colordx/gpu@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@colordx/gpu@npm:0.4.0"
+  checksum: 10c0/13f39dbd678cb2c36b13f5c65638428e5cb5f999f215ea8d8849e0386c3fb1832ab4a431f5fc6af4c810d3cf3f80ac23371300d26ca823779dd0ad7a6a7ba382
   languageName: node
   linkType: hard
 
@@ -802,7 +802,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "colordx-playground@workspace:."
   dependencies:
-    "@colordx/gpu": "npm:^0.2.1"
+    "@colordx/gpu": "npm:^0.4.0"
     "@vitejs/plugin-react": "npm:^4.3.1"
     lucide-react: "npm:^1.18.0"
     react: "npm:^18.3.1"

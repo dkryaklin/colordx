@@ -1,16 +1,25 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { Grid2x2 } from 'lucide-react';
 import { createChartRenderer } from '@colordx/gpu';
 import { inGamutSrgb } from '../lib.js';
 import { f, clamp } from '../utils.js';
 
 const C_MAX = 0.37;
-const C_MAX_R2 = 0.47;
 const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
 
-// gamut-boundary line colors (RGBA 0–1)
-const BORDER_P3 = [1, 1, 1, 0.92];
-const BORDER_R2 = [0.78, 0.52, 1, 0.9];
+// sRGB edge is always drawn; each wider gamut, when toggled on, fills its
+// region and draws its own boundary line in a distinct color. cMax is how far
+// the chroma axis must stretch to show that gamut's slice. Gamuts are
+// independent layers in @colordx/gpu ≥0.4 — a98 and p3 are siblings, so their
+// boundaries genuinely cross.
+const SRGB_BORDER = [1, 1, 1, 0.92];
+const GAMUTS = {
+  p3: { label: 'P3', border: [0.4, 1, 0.62, 0.9], cMax: 0.37 },
+  a98: { label: 'A98', border: [0.35, 0.85, 1, 0.92], cMax: 0.4 },
+  rec2020: { label: 'Rec.2020', border: [0.78, 0.52, 1, 0.9], cMax: 0.47 },
+  prophoto: { label: 'ProPhoto', border: [1, 0.66, 0.26, 0.92], cMax: 0.57 },
+};
+const GAMUT_ORDER = ['p3', 'a98', 'rec2020', 'prophoto'];
 
 // Each chart is one slice plane of OKLCH space. `plane` matches @colordx/gpu's
 // renderer: 'ch' = hue×chroma (fixed L), 'lh' = hue×lightness (fixed C),
@@ -44,12 +53,11 @@ const CHARTS = [
   },
 ];
 
-function ChartCard({ cfg, S, setS, showP3, showRec2020 }) {
+function ChartCard({ cfg, S, setS, gamuts, cm }) {
   const stageRef = useRef(null);
   const canvasRef = useRef(null);
   const rendererRef = useRef(null);
   const draggingRef = useRef(false);
-  const cm = showRec2020 ? C_MAX_R2 : C_MAX;
 
   const paint = useCallback(() => {
     const r = rendererRef.current;
@@ -68,13 +76,10 @@ function ChartCard({ cfg, S, setS, showP3, showRec2020 }) {
       value: cfg.val(S),
       xMax: cfg.xMax(cm),
       yMax: cfg.yMax(cm),
-      showP3,
-      showRec2020,
-      borderP3: BORDER_P3,
-      borderRec2020: BORDER_R2,
+      gamuts,
       borderWidth: 2,
     });
-  }, [cfg, S, showP3, showRec2020, cm]);
+  }, [cfg, S, gamuts, cm]);
 
   // keep a stable ref so the ResizeObserver never needs re-subscribing
   const paintRef = useRef(paint);
@@ -157,6 +162,32 @@ function ChartCard({ cfg, S, setS, showP3, showRec2020 }) {
 }
 
 export default function GamutCharts({ S, setS, showP3, setShowP3, showRec2020, setShowRec2020 }) {
+  // a98 / prophoto live locally — they only drive the GPU charts, not the rest
+  // of the app, so there's no need to thread them through App state.
+  const [showA98, setShowA98] = useState(false);
+  const [showProphoto, setShowProphoto] = useState(false);
+
+  const on = { p3: showP3, a98: showA98, rec2020: showRec2020, prophoto: showProphoto };
+  const set = {
+    p3: setShowP3,
+    a98: setShowA98,
+    rec2020: setShowRec2020,
+    prophoto: setShowProphoto,
+  };
+
+  const gamuts = useMemo(() => {
+    const layers = [{ space: 'srgb', fill: true, border: SRGB_BORDER }];
+    for (const g of GAMUT_ORDER) {
+      if (on[g]) layers.push({ space: g, fill: true, border: GAMUTS[g].border });
+    }
+    return layers;
+  }, [showP3, showA98, showRec2020, showProphoto]);
+
+  const cm = useMemo(
+    () => Math.max(C_MAX, ...GAMUT_ORDER.filter((g) => on[g]).map((g) => GAMUTS[g].cMax)),
+    [showP3, showA98, showRec2020, showProphoto],
+  );
+
   return (
     <div className="charts-stack">
       <div className="charts-bar">
@@ -165,30 +196,17 @@ export default function GamutCharts({ S, setS, showP3, setShowP3, showRec2020, s
           Gamut slices
         </span>
         <div className="charts-toggles">
-          <label>
-            <input type="checkbox" checked={showP3} onChange={(e) => setShowP3(e.target.checked)} />{' '}
-            P3
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={showRec2020}
-              onChange={(e) => setShowRec2020(e.target.checked)}
-            />{' '}
-            Rec.2020
-          </label>
+          {GAMUT_ORDER.map((g) => (
+            <label key={g}>
+              <input type="checkbox" checked={on[g]} onChange={(e) => set[g](e.target.checked)} />{' '}
+              {GAMUTS[g].label}
+            </label>
+          ))}
         </div>
       </div>
       <div className="charts-col">
         {CHARTS.map((cfg) => (
-          <ChartCard
-            key={cfg.key}
-            cfg={cfg}
-            S={S}
-            setS={setS}
-            showP3={showP3}
-            showRec2020={showRec2020}
-          />
+          <ChartCard key={cfg.key} cfg={cfg} S={S} setS={setS} gamuts={gamuts} cm={cm} />
         ))}
       </div>
     </div>
