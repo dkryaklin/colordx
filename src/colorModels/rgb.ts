@@ -11,7 +11,7 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
 export const parseRgbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   const cs = (input as { colorSpace?: unknown }).colorSpace;
-  if (cs === 'display-p3' || cs === 'rec2020') return null;
+  if (cs === 'display-p3' || cs === 'rec2020' || cs === 'a98-rgb' || cs === 'prophoto-rgb') return null;
   if (!hasKeys(input, ['r', 'g', 'b'])) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;

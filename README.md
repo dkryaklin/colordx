@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **6 KB gzipped. 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **7.6 KB gzipped. 0 Dependencies.**
 
 ## Performance
 
@@ -82,6 +82,10 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23 }); // OKLch
 colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
 colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
+// With a98rgb plugin loaded:
+colordx('color(a98-rgb 0.8586 0 0)'); // A98 (Adobe RGB 1998) string
+// With prophoto plugin loaded:
+colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)'); // ProPhoto string
 // With hwb plugin loaded:
 colordx('hwb(0 0% 0%)');
 colordx({ h: 0, w: 0, b: 0 });
@@ -183,7 +187,7 @@ getFormat({ r: 255, g: 0, b: 0 }); // 'rgb'
 getFormat({ h: 0, s: 100, l: 50 }); // 'hsl'
 getFormat('notacolor'); // undefined
 // Plugin-added parsers register their own format:
-// p3 → 'p3', hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020'
+// p3 → 'p3', hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020', a98-rgb → 'a98-rgb', prophoto-rgb → 'prophoto-rgb'
 
 nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via OKLab
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
@@ -370,7 +374,7 @@ inGamutRec2020('oklch(0.5 0.4 180)'); // false — outside Rec.2020
 Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 ```
 
-Gamut containment is hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
+Gamut containment is largely hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020 ⊂ ProPhoto. A98 (Adobe RGB 1998) sits between sRGB and Rec.2020 — wider than sRGB, mostly in the greens — but is not a strict superset of Display-P3. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
 
 Gamut checks and mapping accept wide-gamut inputs in every supported form — `oklab()` / `oklch()`, CIE `lab()` / `lch()` strings, and the corresponding object shapes (including branded `{ colorSpace: 'lab' | 'lch' }` objects):
 
@@ -417,8 +421,12 @@ import p3 from '@colordx/core/plugins/p3';
 // toP3(), toP3String(), inGamutP3(), Colordx.toGamutP3(), linearToP3Channels(), oklchToP3Channels(), parses color(display-p3 ...) strings
 import rec2020 from '@colordx/core/plugins/rec2020';
 // toRec2020(), toRec2020String(), inGamutRec2020(), Colordx.toGamutRec2020(), linearToRec2020Channels(), oklchToRec2020Channels(), parses color(rec2020 ...) strings
+import a98rgb from '@colordx/core/plugins/a98rgb';
+// toA98(), toA98String(), inGamutA98(), Colordx.toGamutA98(), linearToA98Channels(), oklchToA98Channels(), parses color(a98-rgb ...) strings
+import prophoto from '@colordx/core/plugins/prophoto';
+// toProphoto(), toProphotoString(), inGamutProphoto(), Colordx.toGamutProphoto(), linearToProphotoChannels(), oklchToProphotoChannels(), parses color(prophoto-rgb ...) strings
 
-extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020]);
+extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020, a98rgb, prophoto]);
 ```
 
 ### lab plugin
@@ -703,6 +711,80 @@ Object parsing is also supported using the `colorSpace` discriminant:
 
 ```ts
 colordx({ r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1, colorSpace: 'rec2020' }).toHex();
+```
+
+### a98rgb plugin
+
+Adds A98 (Adobe RGB 1998) color space support. A98 shares sRGB's red and blue primaries but a wider green primary, so it extends mainly into the greens/cyans. It is a CSS Color 4 predefined space and a long-standing photography/print working space.
+
+```ts
+import a98rgb from '@colordx/core/plugins/a98rgb';
+
+extend([a98rgb]);
+
+colordx('#ff0000').toA98(); // { r: 0.8586, g: 0, b: 0, alpha: 1, colorSpace: 'a98-rgb' }
+colordx('#ff0000').toA98String(); // 'color(a98-rgb 0.8586 0 0)'
+
+// Parse A98 strings (alpha optional)
+colordx('color(a98-rgb 0.8586 0 0)').toHex(); // '#ff0000'
+colordx('color(a98-rgb 0.8586 0 0 / 0.5)').toHex(); // '#ff000080'
+```
+
+The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutA98` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutA98` after `extend([a98rgb])`:
+
+```ts
+import { Colordx, extend } from '@colordx/core';
+import a98rgb, { inGamutA98, linearToA98Channels, oklchToA98Channels } from '@colordx/core/plugins/a98rgb';
+
+extend([a98rgb]);
+
+inGamutA98('oklch(0.7 0.25 150)');        // true — inside A98 but outside sRGB
+Colordx.toGamutA98('oklch(0.5 0.4 180)'); // → Colordx at the A98 boundary
+
+oklchToA98Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded A98 in [0, 1]
+```
+
+Object parsing is also supported using the `colorSpace` discriminant:
+
+```ts
+colordx({ r: 0.8586, g: 0, b: 0, alpha: 1, colorSpace: 'a98-rgb' }).toHex();
+```
+
+### prophoto plugin
+
+Adds ProPhoto (ROMM RGB) color space support. ProPhoto has an extremely wide gamut — wider than Rec.2020, covering most of the visible spectrum — and uses a D50 white point with a gamma-1.8 transfer curve. It is the standard working space for high-end RAW photo and print pipelines.
+
+```ts
+import prophoto from '@colordx/core/plugins/prophoto';
+
+extend([prophoto]);
+
+colordx('#ff0000').toProphoto(); // { r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' }
+colordx('#ff0000').toProphotoString(); // 'color(prophoto-rgb 0.7022 0.2757 0.1035)'
+
+// Parse ProPhoto strings (alpha optional)
+colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').toHex(); // '#ff0000'
+colordx('color(prophoto-rgb 0.7022 0.2757 0.1035 / 0.5)').toHex(); // '#ff000080'
+```
+
+The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutProphoto` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutProphoto` after `extend([prophoto])`:
+
+```ts
+import { Colordx, extend } from '@colordx/core';
+import prophoto, { inGamutProphoto, linearToProphotoChannels, oklchToProphotoChannels } from '@colordx/core/plugins/prophoto';
+
+extend([prophoto]);
+
+inGamutProphoto('oklch(0.5 0.4 180)');       // false — outside even ProPhoto
+Colordx.toGamutProphoto('oklch(0.5 0.4 180)'); // → Colordx at the ProPhoto boundary
+
+oklchToProphotoChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded ProPhoto in [0, 1]
+```
+
+Object parsing is also supported using the `colorSpace` discriminant:
+
+```ts
+colordx({ r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' }).toHex();
 ```
 
 ## Notes

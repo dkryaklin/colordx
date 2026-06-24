@@ -52,5 +52,9 @@ export type {
   P3ColorInput,
   Rec2020Color,
   Rec2020ColorInput,
+  A98Color,
+  A98ColorInput,
+  ProPhotoColor,
+  ProPhotoColorInput,
   ColorParser,
 } from './types.js';

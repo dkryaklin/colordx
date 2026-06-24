@@ -146,6 +146,28 @@ export interface Rec2020Color {
 /** Input shape of `Rec2020Color` — `alpha` is optional and defaults to 1. */
 export type Rec2020ColorInput = Omit<Rec2020Color, 'alpha'> & { alpha?: number };
 
+/** CSS Color 4 A98 (Adobe RGB 1998). r, g, b in [0, 1]. */
+export interface A98Color {
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
+  readonly colorSpace: 'a98-rgb';
+}
+/** Input shape of `A98Color` — `alpha` is optional and defaults to 1. */
+export type A98ColorInput = Omit<A98Color, 'alpha'> & { alpha?: number };
+
+/** CSS Color 4 ProPhoto (ROMM RGB). r, g, b in [0, 1]. */
+export interface ProPhotoColor {
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
+  readonly colorSpace: 'prophoto-rgb';
+}
+/** Input shape of `ProPhotoColor` — `alpha` is optional and defaults to 1. */
+export type ProPhotoColorInput = Omit<ProPhotoColor, 'alpha'> & { alpha?: number };
+
 /** Any color input accepted by `colordx()` and friends — a CSS string or one of the input objects. */
 export type AnyColor =
   | string
@@ -161,7 +183,9 @@ export type AnyColor =
   | OklabColorInput
   | OklchColorInput
   | P3ColorInput
-  | Rec2020ColorInput;
+  | Rec2020ColorInput
+  | A98ColorInput
+  | ProPhotoColorInput;
 
 /** A parser registered by a plugin. Returns the sRGB equivalent or `null` if the input doesn't match. */
 export type ColorParser<T = AnyColor> = (input: T) => RgbColor | null;
@@ -182,4 +206,6 @@ export type ColorFormat =
   | 'cmyk'
   | 'p3'
   | 'rec2020'
+  | 'a98-rgb'
+  | 'prophoto-rgb'
   | 'name';

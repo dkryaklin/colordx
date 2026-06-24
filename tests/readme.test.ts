@@ -44,9 +44,11 @@ import rec2020, {
   oklchToRec2020Channels,
   oklchToRec2020ChannelsInto,
 } from '../src/plugins/rec2020.js';
+import a98rgb, { inGamutA98, oklchToA98Channels } from '../src/plugins/a98rgb.js';
+import prophoto, { inGamutProphoto, oklchToProphotoChannels } from '../src/plugins/prophoto.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020]);
+  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020, a98rgb, prophoto]);
 });
 
 
@@ -83,6 +85,8 @@ describe('README — Parsing (core)', () => {
 describe('README — Parsing (plugins)', () => {
   it('display-p3 string', () => expect(colordx('color(display-p3 0.9176 0.2003 0.1386)').isValid()).toBe(true));
   it('rec2020 string', () => expect(colordx('color(rec2020 0.7919 0.2307 0.0739)').isValid()).toBe(true));
+  it('a98-rgb string', () => expect(colordx('color(a98-rgb 0.8586 0 0)').isValid()).toBe(true));
+  it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').isValid()).toBe(true));
   it('hwb string', () => expect(colordx('hwb(0 0% 0%)').toHex()).toBe('#ff0000'));
   it('hwb object', () => expect(colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex()).toBe('#ff0000'));
   it('hsv object', () => expect(colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex()).toBe('#ff0000'));
@@ -626,5 +630,59 @@ describe('README — rec2020 plugin', () => {
   it('toGamutRec2020 → valid', () => expect(Colordx.toGamutRec2020('oklch(0.5 0.4 180)').isValid()).toBe(true));
   it('parse rec2020 object with colorSpace discriminant', () => {
     expect(colordx({ r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1, colorSpace: 'rec2020' as const }).isValid()).toBe(true);
+  });
+});
+
+
+describe('README — a98rgb plugin', () => {
+  it('toA98', () => {
+    expect((colordx('#ff0000') as any).toA98()).toEqual({ r: 0.8586, g: 0, b: 0, alpha: 1, colorSpace: 'a98-rgb' });
+  });
+  it('toA98String', () => {
+    expect((colordx('#ff0000') as any).toA98String()).toBe('color(a98-rgb 0.8586 0 0)');
+  });
+  it('parse a98-rgb string → toHex', () => {
+    expect(colordx('color(a98-rgb 0.8586 0 0)').toHex()).toBe('#ff0000');
+  });
+  it('parse a98-rgb string with alpha', () => {
+    expect(colordx('color(a98-rgb 0.8586 0 0 / 0.5)').toHex()).toBe('#ff000080');
+  });
+  it('inGamutA98 inside A98', () => expect(inGamutA98('oklch(0.7 0.25 150)')).toBe(true));
+  it('inGamutA98 outside A98', () => expect(inGamutA98('oklch(0.5 0.4 180)')).toBe(false));
+  it('toGamutA98 → valid', () => expect(Colordx.toGamutA98('oklch(0.5 0.4 180)').isValid()).toBe(true));
+  it('oklchToA98Channels returns [r, g, b]', () => expect(oklchToA98Channels(0.5, 0.2, 240)).toHaveLength(3));
+  it('parse a98 object with colorSpace discriminant', () => {
+    expect(colordx({ r: 0.8586, g: 0, b: 0, alpha: 1, colorSpace: 'a98-rgb' as const }).toHex()).toBe('#ff0000');
+  });
+});
+
+
+describe('README — prophoto plugin', () => {
+  it('toProphoto', () => {
+    expect((colordx('#ff0000') as any).toProphoto()).toEqual({
+      r: 0.7022,
+      g: 0.2757,
+      b: 0.1035,
+      alpha: 1,
+      colorSpace: 'prophoto-rgb',
+    });
+  });
+  it('toProphotoString', () => {
+    expect((colordx('#ff0000') as any).toProphotoString()).toBe('color(prophoto-rgb 0.7022 0.2757 0.1035)');
+  });
+  it('parse prophoto-rgb string → toHex', () => {
+    expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').toHex()).toBe('#ff0000');
+  });
+  it('parse prophoto-rgb string with alpha', () => {
+    expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035 / 0.5)').toHex()).toBe('#ff000080');
+  });
+  it('inGamutProphoto outside', () => expect(inGamutProphoto('oklch(0.5 0.4 180)')).toBe(false));
+  it('toGamutProphoto → valid', () => expect(Colordx.toGamutProphoto('oklch(0.5 0.4 180)').isValid()).toBe(true));
+  it('oklchToProphotoChannels returns [r, g, b]', () =>
+    expect(oklchToProphotoChannels(0.5, 0.2, 240)).toHaveLength(3));
+  it('parse prophoto object with colorSpace discriminant', () => {
+    expect(colordx({ r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' as const }).toHex()).toBe(
+      '#ff0000'
+    );
   });
 });

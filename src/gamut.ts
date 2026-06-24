@@ -1,17 +1,21 @@
+import { linearA98ToSrgb } from './colorModels/a98rgb.js';
 import { labToXyz } from './colorModels/lab.js';
 import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
 import { linearP3ToSrgb } from './colorModels/p3.js';
+import { linearProphotoToSrgb } from './colorModels/prophoto.js';
 import { linearRec2020ToSrgb } from './colorModels/rec2020.js';
 import { xyzD50ToLinearSrgb, xyzD65ToLinearSrgb } from './colorModels/xyz.js';
 import { ANGLE_UNITS, clamp } from './helpers.js';
-import { rec2020ToLinear, srgbToLinear } from './transfer.js';
+import { a98ToLinear, prophotoToLinear, rec2020ToLinear, srgbToLinear } from './transfer.js';
 import type {
+  A98Color,
   AnyColor,
   LabColor,
   LchColor,
   OklabColor,
   OklchColor,
   P3Color,
+  ProPhotoColor,
   Rec2020Color,
   XyzColor,
   XyzD65Color,
@@ -38,6 +42,10 @@ const P3_STR_RE =
   /^color\(\s*display-p3\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const REC2020_STR_RE =
   /^color\(\s*rec2020\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+const A98_STR_RE =
+  /^color\(\s*a98-rgb\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+const PROPHOTO_STR_RE =
+  /^color\(\s*prophoto-rgb\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const XYZ_D50_STR_RE =
   /^color\(\s*xyz-d50\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const XYZ_D65_STR_RE =
@@ -59,6 +67,18 @@ const p3ToOklab = (r: number, g: number, b: number): [number, number, number] =>
 /** Rec.2020 (gamma-encoded, 0–1) → OKLab via linear Rec.2020 → linear sRGB → OKLab. No clamping. */
 const rec2020ToOklab = (r: number, g: number, b: number): [number, number, number] => {
   const [sr, sg, sb] = linearRec2020ToSrgb(rec2020ToLinear(r), rec2020ToLinear(g), rec2020ToLinear(b));
+  return linearSrgbToOklab(sr, sg, sb);
+};
+
+/** A98 (gamma-encoded, 0–1) → OKLab via linear A98 → linear sRGB → OKLab. No clamping. */
+const a98ToOklab = (r: number, g: number, b: number): [number, number, number] => {
+  const [sr, sg, sb] = linearA98ToSrgb(a98ToLinear(r), a98ToLinear(g), a98ToLinear(b));
+  return linearSrgbToOklab(sr, sg, sb);
+};
+
+/** ProPhoto (gamma-encoded, 0–1) → OKLab via linear ProPhoto → linear sRGB → OKLab. No clamping. */
+const prophotoToOklab = (r: number, g: number, b: number): [number, number, number] => {
+  const [sr, sg, sb] = linearProphotoToSrgb(prophotoToLinear(r), prophotoToLinear(g), prophotoToLinear(b));
   return linearSrgbToOklab(sr, sg, sb);
 };
 
@@ -134,6 +154,18 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
       const [ol, oa, ob] = rec2020ToOklab(c.r, c.g, c.b);
       return { l: ol, a: oa, b: ob, alpha: typeof c.alpha === 'number' ? c.alpha : 1 };
     }
+    if (obj.colorSpace === 'a98-rgb') {
+      const c = input as A98Color;
+      if (typeof c.r !== 'number' || typeof c.g !== 'number' || typeof c.b !== 'number') return null;
+      const [ol, oa, ob] = a98ToOklab(c.r, c.g, c.b);
+      return { l: ol, a: oa, b: ob, alpha: typeof c.alpha === 'number' ? c.alpha : 1 };
+    }
+    if (obj.colorSpace === 'prophoto-rgb') {
+      const c = input as ProPhotoColor;
+      if (typeof c.r !== 'number' || typeof c.g !== 'number' || typeof c.b !== 'number') return null;
+      const [ol, oa, ob] = prophotoToOklab(c.r, c.g, c.b);
+      return { l: ol, a: oa, b: ob, alpha: typeof c.alpha === 'number' ? c.alpha : 1 };
+    }
     if (obj.colorSpace === 'xyz-d65') {
       const c = input as XyzD65Color;
       if (typeof c.x !== 'number' || typeof c.y !== 'number' || typeof c.z !== 'number') return null;
@@ -207,6 +239,24 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
       const b = m[6] ? Number(m[5]) / 100 : Number(m[5]);
       const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
       const [ol, oa, ob] = rec2020ToOklab(r, g, b);
+      return { l: ol, a: oa, b: ob, alpha };
+    }
+    m = A98_STR_RE.exec(input);
+    if (m) {
+      const r = m[2] ? Number(m[1]) / 100 : Number(m[1]);
+      const g = m[4] ? Number(m[3]) / 100 : Number(m[3]);
+      const b = m[6] ? Number(m[5]) / 100 : Number(m[5]);
+      const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
+      const [ol, oa, ob] = a98ToOklab(r, g, b);
+      return { l: ol, a: oa, b: ob, alpha };
+    }
+    m = PROPHOTO_STR_RE.exec(input);
+    if (m) {
+      const r = m[2] ? Number(m[1]) / 100 : Number(m[1]);
+      const g = m[4] ? Number(m[3]) / 100 : Number(m[3]);
+      const b = m[6] ? Number(m[5]) / 100 : Number(m[5]);
+      const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
+      const [ol, oa, ob] = prophotoToOklab(r, g, b);
       return { l: ol, a: oa, b: ob, alpha };
     }
     m = XYZ_D50_STR_RE.exec(input);

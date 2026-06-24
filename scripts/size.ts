@@ -35,6 +35,8 @@ const PLUGINS: Plugin[] = [
   { name: 'names', entry: join(DIST, 'plugins', 'names.mjs') },
   { name: 'p3', entry: join(DIST, 'plugins', 'p3.mjs') },
   { name: 'rec2020', entry: join(DIST, 'plugins', 'rec2020.mjs') },
+  { name: 'a98rgb', entry: join(DIST, 'plugins', 'a98rgb.mjs') },
+  { name: 'prophoto', entry: join(DIST, 'plugins', 'prophoto.mjs') },
 ];
 
 async function bundle(entries: string[]): Promise<{ raw: number; gzip: number }> {
