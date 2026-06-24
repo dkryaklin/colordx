@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.5.0
+
+### Minor Changes
+
+- Add a98-rgb and prophoto-rgb color space plugins with CSS Color 4 conversions, gamut checking, gamut mapping, and string/object parsing
+
 ## 5.4.3
 
 ### Patch Changes
