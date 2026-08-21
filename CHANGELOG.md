@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.6.0
+
+### Minor Changes
+
+- Significantly improve parse throughput by replacing regex and named-group dispatch with charcode scanners and key-probe routing, and fix malformed color string rejection to run in linear rather than quadratic time
+
 ## 5.5.0
 
 ### Minor Changes
