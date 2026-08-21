@@ -41,7 +41,9 @@ export const isWs = (c: number): boolean => {
 };
 
 // Shared regex fragments. NUM matches a signed decimal, NUM_OR_NONE adds the CSS Color 4 `none` keyword.
-export const NUM = '[+-]?\\d*\\.?\\d+';
+// The alternation is deliberate: the shorter `\\d*\\.?\\d+` is ambiguous and backtracks
+// quadratically on a long digit run that ultimately fails to match.
+export const NUM = '[+-]?(?:\\d*\\.\\d+|\\d+)';
 export const NUM_OR_NONE = `(?:none|${NUM})`;
 
 /** Parse a CSS Color 4 channel token. `none` → 0; a plain number is returned as-is. */
