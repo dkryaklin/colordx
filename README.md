@@ -14,20 +14,35 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **7.6 KB gzipped. 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **9.1 KB gzipped. 0 Dependencies.**
 
 ## Performance
 
-Benchmarks run on Apple M4, Node.js 22, using [mitata](https://github.com/evanwashere/mitata). Operations per second — higher is better.
+Apple M5 Pro, Node 24, using [mitata](https://github.com/evanwashere/mitata). Operations per
+second — higher is better. Versions: colord 2.10.0, culori 4.0.2, chroma-js 3.2.0, color 5.0.3,
+tinycolor2 1.6.0, @texel/color 1.1.11.
 
 | Benchmark | **colordx** | @texel/color | colord | culori | chroma-js | color | tinycolor2 |
 |---|---|---|---|---|---|---|---|
-| HEX → toHsl | **24M** | — | 10M | 5.5M | 3.5M | 2.8M | 2.5M |
-| HEX → lighten → toHex | **12M** | — | 5.8M | 4.8M | 1.3M | 1.0M | 1.0M |
-| Mix two colors | **6.7M** | 5.2M | 1.2M | 1.0M | 1.1M | 550K | 1.1M |
-| HEX → toOklch | **5.5M** | 4.5M | — | 3.3M | 1.0M | 2.0M | — |
-| inGamutP3 | **4.6M** | 3.0M | — | 1.0M | — | — | — |
-| inGamutRec2020 | **4.5M** | 3.2M | — | 1.1M | — | — | — |
+| Parse HEX → toHex | **39M** | 8.2M | 7.8M | 7.2M | 3.7M | 1.6M | 2.9M |
+| Parse HEX → toHsl | **37M** | — | 29M | 7.9M | 3.8M | 3.4M | 2.9M |
+| Parse RGB object → toHex | **51M** | — | 35M | 49M | 5.2M | 1.6M | 5.9M |
+| Parse rgb() string → toHex | **11M** | — | 7.3M | 3.1M | 230K | 1.5M | 3.0M |
+| Parse hsl() string → toHex | **6.7M** | — | 4.9M | 3.1M | 222K | 1.4M | 2.0M |
+| Parse named color → toHex | **11M** | — | 4.6M | 3.9M | 4.5M | 1.3M | 2.6M |
+| Parse HEX → lighten → toHex | **19M** | — | 13M | 5.3M | 1.9M | 1.3M | 1.2M |
+| Mix two colors | **16M** | 6.3M | 2.6M | 1.3M | 1.3M | 694K | 1.3M |
+| WCAG contrast ratio | **12M** | — | 3.7M | 3.3M | 2.0M | — | 1.5M |
+| Parse HEX → toOklch | **11M** | 6.7M | — | 4.9M | 1.4M | 2.6M | — |
+| inGamutP3 | **6.6M** | 3.9M | — | 1.5M | — | — | — |
+| inGamutRec2020 | **6.5M** | 3.8M | — | 1.5M | — | — | — |
+| CIEDE2000 delta | **4.2M** | — | — | 2.0M | 1.3M | — | — |
+| OKLCH string → HEX | **3.6M** | 2.8M | — | 1.7M | 192K | — | — |
+| Gamut map → sRGB | **1.0M** | — | — | 522K | — | — | — |
+
+In the RGB object row culori gets its own `{ mode, r, g, b }` format, so it skips parsing.
+
+Mean of two runs. Run `yarn bench` to check.
 
 ## Install
 
@@ -304,12 +319,6 @@ linearToRec2020ChannelsInto(out, lr, lg, lb);
 oklchToRec2020ChannelsInto(out, l, c, h);
 labToRec2020ChannelsInto(out, l, a, b);
 lchToRec2020ChannelsInto(out, l, c, h);
-
-// Lower-level matrix / color-space primitives also have *Into siblings:
-// linearSrgbToOklabInto, oklabToLinearInto (from '@colordx/core')
-// xyzD50ToLinearSrgbInto, xyzD65ToLinearSrgbInto, srgbLinearToP3LinearInto, linearP3ToSrgbInto,
-// oklabToLinearP3Into, srgbLinearToRec2020LinearInto, linearRec2020ToSrgbInto,
-// oklabToLinearRec2020Into
 ```
 
 Guidance:

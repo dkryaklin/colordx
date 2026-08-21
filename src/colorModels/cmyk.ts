@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import type { CmykColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -37,7 +37,7 @@ const cmykToRgb = ({ c, m, y, k, alpha }: CmykColor): RgbColor =>
 
 export const parseCmykObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
-  if (!hasKeys(input, ['c', 'm', 'y', 'k'])) return null;
+  if (!('c' in input && 'm' in input && 'y' in input && 'k' in input)) return null;
   const { c, m, y, k, alpha = 1 } = input as { c: unknown; m: unknown; y: unknown; k: unknown; alpha?: unknown };
   if (!isAnyNumber(c) || !isAnyNumber(m) || !isAnyNumber(y) || !isAnyNumber(k) || !isAnyNumber(alpha)) return null;
   return cmykToRgb(
@@ -74,3 +74,5 @@ export const parseCmykString = (input: unknown): RgbColor | null => {
     })
   );
 };
+parseCmykObject.inputKind = 'object' as const;
+parseCmykString.inputKind = 'string' as const;

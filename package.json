@@ -109,7 +109,7 @@
     "@vitest/coverage-v8": "^4.1.0",
     "chroma-js": "^3.2.0",
     "color": "^5.0.3",
-    "colord": "^2.9.3",
+    "colord": "^2.10.0",
     "culori": "^4.0.2",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.0",

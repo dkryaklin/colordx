@@ -1,4 +1,5 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { clamp, isObject, round } from '../helpers.js';
+import { scanChannel, scanNone, scanPct, scanPos, skipWs } from '../scan.js';
 import type { RgbColor } from '../types.js';
 
 export const clampRgb = (rgb: RgbColor): RgbColor => ({
@@ -8,58 +9,102 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
   alpha: clamp(round(rgb.alpha, 3), 0, 1),
 });
 
-export const parseRgbObject = (input: unknown): RgbColor | null => {
-  if (!isObject(input)) return null;
+/**
+ * Object body. Assumes the caller already established that `input` is a non-null
+ * object carrying r/g/b — the dispatcher proves that with one key probe, so
+ * re-checking here would duplicate it on every parse.
+ *
+ * Clamps with comparisons rather than Math.min/Math.max: `NaN > x` is always
+ * false, so NaN falls through to the low bound. That is exactly what
+ * sanitize()-then-clamp produced, for free and without four extra calls.
+ */
+export const parseRgbBody = (input: unknown): RgbColor | null => {
   const cs = (input as { colorSpace?: unknown }).colorSpace;
   if (cs === 'display-p3' || cs === 'rec2020' || cs === 'a98-rgb' || cs === 'prophoto-rgb') return null;
-  if (!hasKeys(input, ['r', 'g', 'b'])) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
-  if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
-  return clampRgb({ r: sanitize(r), g: sanitize(g), b: sanitize(b), alpha: sanitize(alpha) });
+  if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number' || typeof alpha !== 'number') return null;
+  const a = alpha > 1 ? 1 : alpha > 0 ? Math.round(alpha * 1000) / 1000 : 0;
+  return {
+    r: r > 255 ? 255 : r > 0 ? r : 0,
+    g: g > 255 ? 255 : g > 0 ? g : 0,
+    b: b > 255 ? 255 : b > 0 ? b : 0,
+    alpha: a,
+  };
 };
 
-// Matches both legacy comma syntax: rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
-// and modern space syntax: rgb(255 0 0) / rgb(255 0 0 / 0.5).
-// Supports percentage-based channels and the CSS Color 4 `none` keyword.
-// Named groups are suffixed `_c` (comma/legacy branch) or `_s` (space/modern branch)
-// because ES2022 regex requires distinct names across alternation branches.
-const RGB_RE = new RegExp(
-  `^rgba?\\(\\s*(?<r>${NUM_OR_NONE})(?<rp>%?)\\s*(?:` +
-    `,\\s*(?<g_c>${NUM_OR_NONE})(?<gp_c>%?)\\s*,\\s*(?<b_c>${NUM_OR_NONE})(?<bp_c>%?)` +
-    `(?:\\s*,\\s*(?<al_c>${NUM_OR_NONE})(?<alp_c>%?))?\\s*` +
-    `|` +
-    `\\s+(?<g_s>${NUM_OR_NONE})(?<gp_s>%?)\\s+(?<b_s>${NUM_OR_NONE})(?<bp_s>%?)` +
-    `(?:\\s*/\\s*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?))?\\s*` +
-    `)\\)$`,
-  'i'
-);
+export const parseRgbObject = (input: unknown): RgbColor | null => {
+  if (!isObject(input)) return null;
+  if (!('r' in input && 'g' in input && 'b' in input)) return null;
+  return parseRgbBody(input);
+};
 
 export const parseRgbString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = RGB_RE.exec(input.trim())?.groups;
-  if (!g) return null;
+  const s = input;
+  const n = s.length;
+  let i = skipWs(s, 0, n);
 
-  const isComma = g.g_c !== undefined;
-  const gRaw = g.g_c ?? g.g_s!;
-  const bRaw = g.b_c ?? g.b_s!;
-  const rPct = !!g.rp;
-  const gPct = !!(g.gp_c ?? g.gp_s);
-  const bPct = !!(g.bp_c ?? g.bp_s);
+  // rgb | rgba
+  if ((s.charCodeAt(i) | 32) !== 114) return null;
+  if ((s.charCodeAt(i + 1) | 32) !== 103) return null;
+  if ((s.charCodeAt(i + 2) | 32) !== 98) return null;
+  i += 3;
+  if ((s.charCodeAt(i) | 32) === 97) i++;
+  if (s.charCodeAt(i) !== 40) return null;
+  i = skipWs(s, i + 1, n);
 
-  const r = rPct ? (parseNum(g.r!) / 100) * 255 : parseNum(g.r!);
-  const gc = gPct ? (parseNum(gRaw) / 100) * 255 : parseNum(gRaw);
-  const b = bPct ? (parseNum(bRaw) / 100) * 255 : parseNum(bRaw);
+  const r = scanChannel(s, i, n);
+  if (r !== r) return null;
+  const rPct = scanPct(),
+    rNone = scanNone();
+  i = scanPos();
 
-  // Legacy: channels must match type, no `none`. Modern: mixing + `none` allowed.
-  if (isComma) {
-    if (rPct !== gPct || gPct !== bPct) return null;
-    if (/^none$/i.test(g.r!) || /^none$/i.test(gRaw) || /^none$/i.test(bRaw)) return null;
+  let j = skipWs(s, i, n);
+  const comma = s.charCodeAt(j) === 44;
+  if (comma) {
+    if (rNone) return null; // legacy syntax has no `none`
+    j = skipWs(s, j + 1, n);
+  } else if (j === i) return null; // modern syntax needs whitespace between channels
+
+  const g = scanChannel(s, j, n);
+  if (g !== g) return null;
+  const gPct = scanPct(),
+    gNone = scanNone();
+  j = scanPos();
+
+  let k = skipWs(s, j, n);
+  if (comma) {
+    if (s.charCodeAt(k) !== 44 || gNone) return null;
+    k = skipWs(s, k + 1, n);
+  } else if (k === j) return null;
+
+  const b = scanChannel(s, k, n);
+  if (b !== b) return null;
+  const bPct = scanPct(),
+    bNone = scanNone();
+  k = scanPos();
+
+  // Legacy: channels must agree on percent-vs-number and forbid `none`.
+  if (comma && (rPct !== gPct || gPct !== bPct || bNone)) return null;
+
+  let m = skipWs(s, k, n);
+  let alpha = 1;
+  const sep = s.charCodeAt(m);
+  if ((comma && sep === 44) || (!comma && sep === 47)) {
+    m = skipWs(s, m + 1, n);
+    const a = scanChannel(s, m, n);
+    if (a !== a) return null;
+    if (comma && scanNone()) return null;
+    alpha = scanPct() ? a / 100 : a;
+    m = skipWs(s, scanPos(), n);
   }
+  if (s.charCodeAt(m) !== 41) return null;
+  if (skipWs(s, m + 1, n) !== n) return null; // allow trailing whitespace, nothing else
 
-  const rawA = g.al_c ?? g.al_s;
-  const aPct = !!(g.alp_c ?? g.alp_s);
-  if (isComma && rawA !== undefined && /^none$/i.test(rawA)) return null;
-  const alpha = rawA === undefined ? 1 : parseNum(rawA) / (aPct ? 100 : 1);
-
-  return clampRgb({ r, g: gc, b, alpha });
+  return clampRgb({
+    r: rPct ? (r / 100) * 255 : r,
+    g: gPct ? (g / 100) * 255 : g,
+    b: bPct ? (b / 100) * 255 : b,
+    alpha,
+  });
 };

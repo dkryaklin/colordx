@@ -3,7 +3,7 @@ import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { linearSrgbToOklab, rgbToOklab } from './colorModels/oklab.js';
 import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
-import { clamp, round } from './helpers.js';
+import { clamp, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
 import { srgbFromLinear, srgbToLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
@@ -34,7 +34,7 @@ export class Colordx {
     }
     // Single chokepoint for alpha precision: parsers and _make() callers may hand us
     // raw floats (e.g. 1/255, 0.1+0.2). Snapping here keeps every formatter consistent.
-    this._rgb.alpha = clamp(round(this._rgb.alpha, 3), 0, 1);
+    this._rgb.alpha = round3(this._rgb.alpha);
   }
 
   private static _make(rgb: RgbColor): Colordx {
@@ -82,7 +82,7 @@ export class Colordx {
   /** Returns sRGB channels rounded to integers in [0, 255], plus alpha in [0, 1]. */
   toRgb(): RgbColor {
     const { r, g, b, alpha } = this._rgb;
-    return { r: clamp(round(r), 0, 255), g: clamp(round(g), 0, 255), b: clamp(round(b), 0, 255), alpha };
+    return { r: toByte(r), g: toByte(g), b: toByte(b), alpha };
   }
 
   /** Returns the internal unrounded RGB. Intended for plugin use where deferred rounding matters. */
@@ -97,9 +97,9 @@ export class Colordx {
    */
   toRgbString(options?: { legacy?: boolean }): string {
     const { r, g, b, alpha } = this._rgb;
-    const ri = clamp(round(r), 0, 255),
-      gi = clamp(round(g), 0, 255),
-      bi = clamp(round(b), 0, 255);
+    const ri = toByte(r),
+      gi = toByte(g),
+      bi = toByte(b);
     if (options?.legacy) {
       return alpha < 1 ? `rgba(${ri}, ${gi}, ${bi}, ${alpha})` : `rgb(${ri}, ${gi}, ${bi})`;
     }
@@ -119,7 +119,7 @@ export class Colordx {
   /** Returns a 24-bit RGB integer (0x000000–0xFFFFFF). Alpha is not included. */
   toNumber(): number {
     const { r, g, b } = this._rgb;
-    return (clamp(round(r), 0, 255) << 16) | (clamp(round(g), 0, 255) << 8) | clamp(round(b), 0, 255);
+    return (toByte(r) << 16) | (toByte(g) << 8) | toByte(b);
   }
 
   /** Returns HSL channels: h in [0, 360), s/l in [0, 100], rounded to `precision` decimals. */

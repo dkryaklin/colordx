@@ -1,8 +1,7 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
 import { prophotoFromLinear, prophotoToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { ProPhotoColor, RgbColor } from '../types.js';
-import { oklabToLinear, oklabToLinearInto } from './oklab.js';
-import { clampRgb } from './rgb.js';
+import { oklabToLinear } from './oklab.js';
 
 // Linear sRGB ↔ Linear ProPhoto (ROMM RGB, D50). Derived by composing the CSS Color 4
 // prophoto↔XYZ-D50 matrices with the library's Bradford D65↔D50 and sRGB↔XYZ-D65 matrices,
@@ -41,13 +40,6 @@ export const srgbLinearToProphotoLinear = (r: number, g: number, b: number): [nu
   SPP_BR * r + SPP_BG * g + SPP_BB * b,
 ];
 
-/** Zero-allocation sibling of linearProphotoToSrgb — writes into `out`. */
-export const linearProphotoToSrgbInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
-  out[0] = PPS_RR * r + PPS_RG * g + PPS_RB * b;
-  out[1] = PPS_GR * r + PPS_GG * g + PPS_GB * b;
-  out[2] = PPS_BR * r + PPS_BG * g + PPS_BB * b;
-};
-
 export const linearProphotoToSrgb = (r: number, g: number, b: number): [number, number, number] => [
   PPS_RR * r + PPS_RG * g + PPS_RB * b,
   PPS_GR * r + PPS_GG * g + PPS_GB * b,
@@ -65,21 +57,6 @@ export const rgbToProphotoRaw = ({ r, g, b, alpha }: RgbColor): ProPhotoColor =>
   };
 };
 
-export const rgbToProphoto = (rgb: RgbColor): ProPhotoColor => {
-  const { r, g, b, alpha } = rgbToProphotoRaw(rgb);
-  return { r: round(r, 4), g: round(g, 4), b: round(b, 4), alpha, colorSpace: 'prophoto-rgb' };
-};
-
-export const prophotoToRgb = ({ r, g, b, alpha }: ProPhotoColor): RgbColor => {
-  const [sr, sg, sb] = linearProphotoToSrgb(prophotoToLinear(r), prophotoToLinear(g), prophotoToLinear(b));
-  return clampRgb({
-    r: srgbFromLinear(clamp(sr, 0, 1)) * 255,
-    g: srgbFromLinear(clamp(sg, 0, 1)) * 255,
-    b: srgbFromLinear(clamp(sb, 0, 1)) * 255,
-    alpha,
-  });
-};
-
 /** Unclamped ProPhoto → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const prophotoToRgbUnclamped = ({ r, g, b, alpha }: ProPhotoColor): RgbColor => {
   const [sr, sg, sb] = linearProphotoToSrgb(prophotoToLinear(r), prophotoToLinear(g), prophotoToLinear(b));
@@ -94,7 +71,7 @@ const prophotoToRgbUnclamped = ({ r, g, b, alpha }: ProPhotoColor): RgbColor => 
 export const parseProphotoObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'prophoto-rgb') return null;
-  if (!hasKeys(input, ['r', 'g', 'b'])) return null;
+  if (!('r' in input && 'g' in input && 'b' in input)) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return prophotoToRgbUnclamped({
@@ -134,8 +111,5 @@ export const parseProphotoString = (input: unknown): RgbColor | null => {
 export const oklabToLinearProphoto = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToProphotoLinear(...oklabToLinear(l, a, b));
 
-/** Zero-allocation sibling of oklabToLinearProphoto — writes [pr, pg, pb] into `out`. */
-export const oklabToLinearProphotoInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
-  oklabToLinearInto(out, l, a, b);
-  srgbLinearToProphotoLinearInto(out, out[0]!, out[1]!, out[2]!);
-};
+parseProphotoObject.inputKind = 'object' as const;
+parseProphotoString.inputKind = 'string' as const;

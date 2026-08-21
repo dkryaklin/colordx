@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
@@ -90,7 +90,7 @@ const p3ToRgbUnclamped = ({ r, g, b, alpha }: P3Color): RgbColor => {
 export const parseP3Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'display-p3') return null;
-  if (!hasKeys(input, ['r', 'g', 'b'])) return null;
+  if (!('r' in input && 'g' in input && 'b' in input)) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return p3ToRgbUnclamped({
@@ -135,3 +135,5 @@ export const oklabToLinearP3Into = (out: Float64Array | number[], l: number, a: 
   oklabToLinearInto(out, l, a, b);
   srgbLinearToP3LinearInto(out, out[0]!, out[1]!, out[2]!);
 };
+parseP3Object.inputKind = 'object' as const;
+parseP3String.inputKind = 'string' as const;

@@ -158,6 +158,7 @@ const parseNameString = (input: unknown): RgbColor | null => {
   const hex = NAMES[input.toLowerCase().trim()];
   return hex ? parseHex(hex) : null;
 };
+parseNameString.inputKind = 'string' as const;
 
 const names: Plugin = (ColordxClass, parsers, formatParsers) => {
   parsers.push(parseNameString);

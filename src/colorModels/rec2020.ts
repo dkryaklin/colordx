@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
@@ -91,7 +91,7 @@ const rec2020ToRgbUnclamped = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
 export const parseRec2020Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'rec2020') return null;
-  if (!hasKeys(input, ['r', 'g', 'b'])) return null;
+  if (!('r' in input && 'g' in input && 'b' in input)) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return rec2020ToRgbUnclamped({
@@ -136,3 +136,5 @@ export const oklabToLinearRec2020Into = (out: Float64Array | number[], l: number
   oklabToLinearInto(out, l, a, b);
   srgbLinearToRec2020LinearInto(out, out[0]!, out[1]!, out[2]!);
 };
+parseRec2020Object.inputKind = 'object' as const;
+parseRec2020String.inputKind = 'string' as const;

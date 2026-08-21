@@ -2,7 +2,6 @@ import {
   ANGLE_UNITS,
   NUM_OR_NONE,
   clamp,
-  hasKeys,
   isAnyNumber,
   isObject,
   normalizeHue,
@@ -34,7 +33,7 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   // Objects with colorSpace: 'lch' are CIE LCH, not OKLCH — let parseLchObject handle them.
   if ((input as { colorSpace?: unknown }).colorSpace === 'lch') return null;
-  if (!hasKeys(input, ['l', 'c', 'h'])) return null;
+  if (!('l' in input && 'c' in input && 'h' in input)) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   if (sanitize(l) > 1) return null; // OKLCH L is always [0, 1]; reject CIE LCH values passed without colorSpace branding

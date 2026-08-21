@@ -646,7 +646,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:^4.1.0"
     chroma-js: "npm:^3.2.0"
     color: "npm:^5.0.3"
-    colord: "npm:^2.9.3"
+    colord: "npm:^2.10.0"
     culori: "npm:^4.0.2"
     esbuild: "npm:^0.28.0"
     eslint: "npm:^9.39.0"
@@ -3100,10 +3100,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"colord@npm:^2.9.3":
-  version: 2.9.3
-  resolution: "colord@npm:2.9.3"
-  checksum: 10c0/9699e956894d8996b28c686afe8988720785f476f59335c80ce852ded76ab3ebe252703aec53d9bef54f6219aea6b960fb3d9a8300058a1d0c0d4026460cd110
+"colord@npm:^2.10.0":
+  version: 2.10.0
+  resolution: "colord@npm:2.10.0"
+  checksum: 10c0/2f5d1d1759124f593deca17bbbab8a88bdc3ab68bbcc88db76c1192d9a5d575db202badde044bf61789561fa0ed7a9eb895382becad1af27ec65934c216e9e04
   languageName: node
   linkType: hard
 

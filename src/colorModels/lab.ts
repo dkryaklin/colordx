@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzD50ToLinearSrgb, xyzToRgb } from './xyz.js';
@@ -171,7 +171,7 @@ export const parseLabString = (input: unknown): RgbColor | null => {
 export const parseLabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'lab') return null;
-  if (!hasKeys(input, ['l', 'a', 'b'])) return null;
+  if (!('l' in input && 'a' in input && 'b' in input)) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return labToRgbUnclamped({
@@ -182,3 +182,5 @@ export const parseLabObject = (input: unknown): RgbColor | null => {
     colorSpace: 'lab',
   });
 };
+parseLabString.inputKind = 'string' as const;
+parseLabObject.inputKind = 'object' as const;

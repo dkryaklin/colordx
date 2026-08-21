@@ -2,7 +2,6 @@ import {
   ANGLE_UNITS,
   NUM_OR_NONE,
   clamp,
-  hasKeys,
   isAnyNumber,
   isObject,
   normalizeHue,
@@ -45,7 +44,7 @@ export const hwbToRgb = ({ h, w, b, alpha }: HwbColor): RgbColor => {
 
 export const parseHwbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
-  if (!hasKeys(input, ['h', 'w', 'b'])) return null;
+  if (!('h' in input && 'w' in input && 'b' in input)) return null;
   const { h, w, b, alpha = 1 } = input as { h: unknown; w: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(h) || !isAnyNumber(w) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), alpha: sanitize(alpha) }));
@@ -69,3 +68,5 @@ export const parseHwbString = (input: unknown): RgbColor | null => {
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return hwbToRgb(clampHwb({ h, w, b, alpha }));
 };
+parseHwbObject.inputKind = 'object' as const;
+parseHwbString.inputKind = 'string' as const;

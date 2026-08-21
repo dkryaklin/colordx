@@ -1,16 +1,4 @@
-import {
-  ANGLE_UNITS,
-  NUM,
-  NUM_OR_NONE,
-  clamp,
-  hasKeys,
-  isAnyNumber,
-  isObject,
-  normalizeHue,
-  parseNum,
-  round,
-  sanitize,
-} from '../helpers.js';
+import { ANGLE_UNITS, NUM, NUM_OR_NONE, clamp, isObject, normalizeHue, parseNum, round } from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -142,10 +130,22 @@ export const parseHsvString = (input: unknown): RgbColor | null => {
   return hsvToRgb(clampHsv({ h, s, v, alpha }));
 };
 
+const parseHsvBody = (input: unknown): RgbColor | null => {
+  const { h, s, v, alpha = 1 } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
+  if (typeof h !== 'number' || typeof s !== 'number' || typeof v !== 'number' || typeof alpha !== 'number') return null;
+  // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()
+  return hsvToRgb({
+    h: normalizeHue(h === h ? h : 0),
+    s: s > 100 ? 100 : s > 0 ? s : 0,
+    v: v > 100 ? 100 : v > 0 ? v : 0,
+    alpha: alpha > 1 ? 1 : alpha > 0 ? Math.round(alpha * 1000) / 1000 : 0,
+  });
+};
+
 export const parseHsvObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
-  if (!hasKeys(input, ['h', 's', 'v'])) return null;
-  const { h, s, v, alpha = 1 } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
-  if (!isAnyNumber(h) || !isAnyNumber(s) || !isAnyNumber(v) || !isAnyNumber(alpha)) return null;
-  return hsvToRgb(clampHsv({ h: sanitize(h), s: sanitize(s), v: sanitize(v), alpha: sanitize(alpha) }));
+  if (!('h' in input && 's' in input && 'v' in input)) return null;
+  return parseHsvBody(input);
 };
+parseHsvObject.inputKind = 'object' as const;
+parseHsvString.inputKind = 'string' as const;

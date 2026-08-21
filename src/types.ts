@@ -188,7 +188,10 @@ export type AnyColor =
   | ProPhotoColorInput;
 
 /** A parser registered by a plugin. Returns the sRGB equivalent or `null` if the input doesn't match. */
-export type ColorParser<T = AnyColor> = (input: T) => RgbColor | null;
+export type ColorParser<T = AnyColor> = ((input: T) => RgbColor | null) & {
+  /** Which input kind this parser can match. Untagged parsers are tried for both. */
+  inputKind?: 'string' | 'object';
+};
 
 /** Format tags returned by `getFormat()`. */
 export type ColorFormat =

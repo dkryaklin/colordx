@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -154,7 +154,7 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   // Objects with colorSpace: 'lab' are CIE Lab, not OKLab — let parseLabObject handle them.
   if ((input as { colorSpace?: unknown }).colorSpace === 'lab') return null;
-  if (!hasKeys(input, ['l', 'a', 'b'])) return null;
+  if (!('l' in input && 'a' in input && 'b' in input)) return null;
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;

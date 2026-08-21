@@ -2,7 +2,6 @@ import {
   ANGLE_UNITS,
   NUM_OR_NONE,
   clamp,
-  hasKeys,
   isAnyNumber,
   isObject,
   normalizeHue,
@@ -63,7 +62,7 @@ const lchToRgbUnclamped = ({ l, c, h, alpha }: LchColor): RgbColor =>
 export const parseLchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'lch') return null;
-  if (!hasKeys(input, ['l', 'c', 'h'])) return null;
+  if (!('l' in input && 'c' in input && 'h' in input)) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   return lchToRgbUnclamped(
@@ -95,3 +94,5 @@ export const parseLchString = (input: unknown): RgbColor | null => {
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return lchToRgbUnclamped(clampLch({ l, c, h, alpha }));
 };
+parseLchObject.inputKind = 'object' as const;
+parseLchString.inputKind = 'string' as const;

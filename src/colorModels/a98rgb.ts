@@ -1,8 +1,7 @@
-import { NUM_OR_NONE, clamp, hasKeys, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
 import { a98FromLinear, a98ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { A98Color, RgbColor } from '../types.js';
-import { oklabToLinear, oklabToLinearInto } from './oklab.js';
-import { clampRgb } from './rgb.js';
+import { oklabToLinear } from './oklab.js';
 
 // Linear sRGB ↔ Linear A98 (Adobe RGB 1998, D65). Derived by composing the CSS Color 4
 // a98↔XYZ matrices with the library's sRGB↔XYZ-D65 matrix; verified against culori to <1e-7.
@@ -33,13 +32,6 @@ export const srgbLinearToA98Linear = (r: number, g: number, b: number): [number,
   SA9_BG * g + SA9_BB * b,
 ];
 
-/** Zero-allocation sibling of linearA98ToSrgb — writes into `out`. */
-export const linearA98ToSrgbInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
-  out[0] = A9S_RR * r + A9S_RG * g;
-  out[1] = g;
-  out[2] = A9S_BG * g + A9S_BB * b;
-};
-
 export const linearA98ToSrgb = (r: number, g: number, b: number): [number, number, number] => [
   A9S_RR * r + A9S_RG * g,
   g,
@@ -47,7 +39,7 @@ export const linearA98ToSrgb = (r: number, g: number, b: number): [number, numbe
 ];
 
 // No clamping on output: A98 is wide-gamut, sRGB values can legitimately sit outside [0,1] in A98 space.
-// a98ToRgb clips back to sRGB gamut on the way out.
+// a98ToRgbUnclamped converts back on the way out; callers clip to sRGB gamut.
 export const rgbToA98Raw = ({ r, g, b, alpha }: RgbColor): A98Color => {
   const [ar, ag, ab] = srgbLinearToA98Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
   return {
@@ -57,21 +49,6 @@ export const rgbToA98Raw = ({ r, g, b, alpha }: RgbColor): A98Color => {
     alpha,
     colorSpace: 'a98-rgb',
   };
-};
-
-export const rgbToA98 = (rgb: RgbColor): A98Color => {
-  const { r, g, b, alpha } = rgbToA98Raw(rgb);
-  return { r: round(r, 4), g: round(g, 4), b: round(b, 4), alpha, colorSpace: 'a98-rgb' };
-};
-
-export const a98ToRgb = ({ r, g, b, alpha }: A98Color): RgbColor => {
-  const [sr, sg, sb] = linearA98ToSrgb(a98ToLinear(r), a98ToLinear(g), a98ToLinear(b));
-  return clampRgb({
-    r: srgbFromLinear(clamp(sr, 0, 1)) * 255,
-    g: srgbFromLinear(clamp(sg, 0, 1)) * 255,
-    b: srgbFromLinear(clamp(sb, 0, 1)) * 255,
-    alpha,
-  });
 };
 
 /** Unclamped A98 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
@@ -88,7 +65,7 @@ const a98ToRgbUnclamped = ({ r, g, b, alpha }: A98Color): RgbColor => {
 export const parseA98Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'a98-rgb') return null;
-  if (!hasKeys(input, ['r', 'g', 'b'])) return null;
+  if (!('r' in input && 'g' in input && 'b' in input)) return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return a98ToRgbUnclamped({
@@ -128,8 +105,5 @@ export const parseA98String = (input: unknown): RgbColor | null => {
 export const oklabToLinearA98 = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToA98Linear(...oklabToLinear(l, a, b));
 
-/** Zero-allocation sibling of oklabToLinearA98 — writes [ar, ag, ab] into `out`. */
-export const oklabToLinearA98Into = (out: Float64Array | number[], l: number, a: number, b: number): void => {
-  oklabToLinearInto(out, l, a, b);
-  srgbLinearToA98LinearInto(out, out[0]!, out[1]!, out[2]!);
-};
+parseA98Object.inputKind = 'object' as const;
+parseA98String.inputKind = 'string' as const;
