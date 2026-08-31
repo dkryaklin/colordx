@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.7.0
+
+### Minor Changes
+
+- Add toNumber32 method for 32-bit RGBA integer output with alpha packed as the low byte
+
 ## 5.6.0
 
 ### Minor Changes
