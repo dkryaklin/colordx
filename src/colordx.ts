@@ -122,6 +122,17 @@ export class Colordx {
     return (toByte(r) << 16) | (toByte(g) << 8) | toByte(b);
   }
 
+  /**
+   * Returns a 32-bit unsigned RGBA integer (`0xrrggbbaa`), alpha included as a byte.
+   * The packing image libraries want — equivalent to `parseInt(toHex8().slice(1), 16)`
+   * without the string. Kept separate from `toNumber()` rather than made an option so
+   * the 24-bit path stays a straight-line shift.
+   */
+  toNumber32(): number {
+    const { r, g, b, alpha } = this._rgb;
+    return ((toByte(r) << 24) | (toByte(g) << 16) | (toByte(b) << 8) | toByte(alpha * 255)) >>> 0;
+  }
+
   /** Returns HSL channels: h in [0, 360), s/l in [0, 100], rounded to `precision` decimals. */
   toHsl(precision = 2): HslColor {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);

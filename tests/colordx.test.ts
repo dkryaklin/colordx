@@ -62,6 +62,51 @@ describe("conversion", () => {
     expect(colordx("#3b82f6").toNumber()).toBe(0x3b82f6);
   });
 
+  it("converts to a 32-bit RGBA number", () => {
+    expect(colordx("#ff0000").toNumber32()).toBe(0xff0000ff);
+    expect(colordx("#ff000080").toNumber32()).toBe(0xff000080);
+    expect(colordx("#000000").toNumber32()).toBe(0x000000ff);
+    expect(colordx("#3b82f6").toNumber32()).toBe(0x3b82f6ff);
+  });
+
+  it("toNumber32 stays unsigned for colors with the high bit set", () => {
+    // A signed `|` would give -16776961 here; the >>> 0 keeps it in [0, 2^32).
+    expect(colordx("#ff0000ff").toNumber32()).toBe(4278190335);
+    expect(colordx("#ffffffff").toNumber32()).toBe(4294967295);
+    expect(colordx("#ffffff").toNumber32()).toBeGreaterThan(0);
+  });
+
+  it("toNumber32 packs a fully transparent color as alpha 0", () => {
+    expect(colordx("transparent").toNumber32()).toBe(0);
+    expect(colordx({ r: 255, g: 0, b: 0, alpha: 0 }).toNumber32()).toBe(0xff000000);
+  });
+
+  it("toNumber32 matches parseInt(toHex8(), 16)", () => {
+    // jimp's `cssColorToHex` is exactly this expression over tinycolor.
+    for (const input of ["#ff0000", "rgba(255, 0, 0, 0.5)", "#3b82f680", "hsl(204 70% 53% / 0.25)", "transparent"]) {
+      const c = colordx(input);
+      expect(c.toNumber32()).toBe(parseInt(c.toHex8().slice(1), 16));
+    }
+  });
+
+  it("toNumber32 clamps wide-gamut channels into bytes", () => {
+    // _rgb holds unclamped gamma-encoded channels for out-of-sRGB inputs — here
+    // r is about -81. A raw (r << 24) would corrupt every higher byte.
+    const c = colordx("oklch(0.75 0.25 150)");
+    expect(c._rawRgb().r).toBeLessThan(0);
+    expect(c.toNumber32()).toBe(0x00d649ff);
+    expect(c.toNumber32()).toBe(parseInt(c.toHex8().slice(1), 16));
+  });
+
+  it("toNumber32 round-trips all 256 alpha bytes", () => {
+    // Locks in the alpha precision chain: hex byte -> 3dp float -> byte again.
+    for (let a = 0; a < 256; a++) {
+      const n = colordx("#3b82f6" + a.toString(16).padStart(2, "0")).toNumber32();
+      expect(n & 0xff).toBe(a);
+      expect(n >>> 8).toBe(0x3b82f6);
+    }
+  });
+
   it("converts to rgb string", () => {
     expect(colordx("#ff0000").toRgbString()).toBe("rgb(255 0 0)");
     expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString()).toBe("rgb(255 0 0 / 0.5)");

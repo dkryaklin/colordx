@@ -128,6 +128,7 @@ const output: RgbColor = colordx(input).toRgb();           // alpha guaranteed
 colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString({ legacy: true }); // 'rgba(255, 0, 0, 0.5)'
 .toHex()           // '#ff0000'
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
+.toNumber32()      // 4278190335 (0xff0000ff — 32-bit RGBA, alpha as the low byte)
 .toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
 .toHslString()     // 'hsl(0 100% 50%)'
 // toHsl accepts an optional precision argument (decimal places):

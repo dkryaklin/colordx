@@ -102,6 +102,7 @@ describe('README — Conversion', () => {
     expect(colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString({ legacy: true })).toBe('rgba(255, 0, 0, 0.5)'));
   it('toHex', () => expect(colordx('#ff0000').toHex()).toBe('#ff0000'));
   it('toNumber', () => expect(colordx('#ff0000').toNumber()).toBe(16711680));
+  it('toNumber32', () => expect(colordx('#ff0000').toNumber32()).toBe(4278190335));
   it('toHsl', () => expect(colordx('#ff0000').toHsl()).toEqual({ h: 0, s: 100, l: 50, alpha: 1 }));
   it('toHslString', () => expect(colordx('#ff0000').toHslString()).toBe('hsl(0 100% 50%)'));
 
