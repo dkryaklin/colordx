@@ -46,9 +46,10 @@ import rec2020, {
 } from '../src/plugins/rec2020.js';
 import a98rgb, { inGamutA98, oklchToA98Channels } from '../src/plugins/a98rgb.js';
 import prophoto, { inGamutProphoto, oklchToProphotoChannels } from '../src/plugins/prophoto.js';
+import srgbLinear from '../src/plugins/srgb-linear.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020, a98rgb, prophoto]);
+  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020, a98rgb, prophoto, srgbLinear]);
 });
 
 
@@ -87,6 +88,7 @@ describe('README — Parsing (plugins)', () => {
   it('rec2020 string', () => expect(colordx('color(rec2020 0.7919 0.2307 0.0739)').isValid()).toBe(true));
   it('a98-rgb string', () => expect(colordx('color(a98-rgb 0.8586 0 0)').isValid()).toBe(true));
   it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').isValid()).toBe(true));
+  it('srgb-linear string', () => expect(colordx('color(srgb-linear 1 0 0)').isValid()).toBe(true));
   it('hwb string', () => expect(colordx('hwb(0 0% 0%)').toHex()).toBe('#ff0000'));
   it('hwb object', () => expect(colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex()).toBe('#ff0000'));
   it('hsv object', () => expect(colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex()).toBe('#ff0000'));
@@ -685,5 +687,44 @@ describe('README — prophoto plugin', () => {
     expect(colordx({ r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' as const }).toHex()).toBe(
       '#ff0000'
     );
+  });
+});
+
+describe('README — srgb-linear plugin', () => {
+  it('toSrgbLinear', () => {
+    expect((colordx('#3b82f6') as any).toSrgbLinear()).toEqual({
+      r: 0.04374,
+      g: 0.22323,
+      b: 0.92158,
+      alpha: 1,
+      colorSpace: 'srgb-linear',
+    });
+  });
+  it('toSrgbLinearString', () => {
+    expect((colordx('#3b82f6') as any).toSrgbLinearString()).toBe('color(srgb-linear 0.04374 0.22323 0.92158)');
+    expect((colordx('#3b82f6') as any).toSrgbLinearString(4)).toBe('color(srgb-linear 0.0437 0.2232 0.9216)');
+  });
+  it('quick-reference red', () => {
+    expect((colordx('#ff0000') as any).toSrgbLinear()).toEqual({
+      r: 1,
+      g: 0,
+      b: 0,
+      alpha: 1,
+      colorSpace: 'srgb-linear',
+    });
+    expect((colordx('#ff0000') as any).toSrgbLinearString()).toBe('color(srgb-linear 1 0 0)');
+  });
+  it('parse srgb-linear string → toHex', () => {
+    expect(colordx('color(srgb-linear 1 0 0)').toHex()).toBe('#ff0000');
+    expect(colordx('color(srgb-linear 100% none 0 / 0.5)').toHex()).toBe('#ff000080');
+  });
+  it('out-of-gamut values survive until sRGB output', () => {
+    expect((colordx('oklch(0.7 0.3 150)') as any).toSrgbLinearString()).toBe(
+      'color(srgb-linear -0.1728 0.59844 -0.00771)'
+    );
+    expect(inGamutSrgb('color(srgb-linear 1.2 0 0)')).toBe(false);
+  });
+  it('parse srgb-linear object with colorSpace discriminant', () => {
+    expect(colordx({ r: 0.5, g: 0, b: 0, colorSpace: 'srgb-linear' as const }).toHex()).toBe('#bc0000');
   });
 });

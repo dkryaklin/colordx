@@ -56,5 +56,7 @@ export type {
   A98ColorInput,
   ProPhotoColor,
   ProPhotoColorInput,
+  SrgbLinearColor,
+  SrgbLinearColorInput,
   ColorParser,
 } from './types.js';

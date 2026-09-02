@@ -168,6 +168,17 @@ export interface ProPhotoColor {
 /** Input shape of `ProPhotoColor` — `alpha` is optional and defaults to 1. */
 export type ProPhotoColorInput = Omit<ProPhotoColor, 'alpha'> & { alpha?: number };
 
+/** CSS Color 4 linear-light sRGB. r, g, b in [0, 1] when in gamut. */
+export interface SrgbLinearColor {
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
+  readonly colorSpace: 'srgb-linear';
+}
+/** Input shape of `SrgbLinearColor` — `alpha` is optional and defaults to 1. */
+export type SrgbLinearColorInput = Omit<SrgbLinearColor, 'alpha'> & { alpha?: number };
+
 /** Any color input accepted by `colordx()` and friends — a CSS string or one of the input objects. */
 export type AnyColor =
   | string
@@ -185,7 +196,8 @@ export type AnyColor =
   | P3ColorInput
   | Rec2020ColorInput
   | A98ColorInput
-  | ProPhotoColorInput;
+  | ProPhotoColorInput
+  | SrgbLinearColorInput;
 
 /** A parser registered by a plugin. Returns the sRGB equivalent or `null` if the input doesn't match. */
 export type ColorParser<T = AnyColor> = ((input: T) => RgbColor | null) & {
@@ -211,4 +223,5 @@ export type ColorFormat =
   | 'rec2020'
   | 'a98-rgb'
   | 'prophoto-rgb'
+  | 'srgb-linear'
   | 'name';

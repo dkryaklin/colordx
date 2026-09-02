@@ -101,6 +101,8 @@ colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
 colordx('color(a98-rgb 0.8586 0 0)'); // A98 (Adobe RGB 1998) string
 // With prophoto plugin loaded:
 colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)'); // ProPhoto string
+// With srgb-linear plugin loaded:
+colordx('color(srgb-linear 1 0 0)'); // linear-light sRGB string
 // With hwb plugin loaded:
 colordx('hwb(0 0% 0%)');
 colordx({ h: 0, w: 0, b: 0 });
@@ -147,6 +149,9 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 // With p3 plugin loaded:
 .toP3()            // { r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }
 .toP3String()      // 'color(display-p3 0.9175 0.2003 0.1386)'
+// With srgb-linear plugin loaded:
+.toSrgbLinear()    // { r: 1, g: 0, b: 0, alpha: 1, colorSpace: 'srgb-linear' }
+.toSrgbLinearString() // 'color(srgb-linear 1 0 0)'
 ```
 
 ### Manipulation
@@ -435,8 +440,10 @@ import a98rgb from '@colordx/core/plugins/a98rgb';
 // toA98(), toA98String(), inGamutA98(), Colordx.toGamutA98(), linearToA98Channels(), oklchToA98Channels(), parses color(a98-rgb ...) strings
 import prophoto from '@colordx/core/plugins/prophoto';
 // toProphoto(), toProphotoString(), inGamutProphoto(), Colordx.toGamutProphoto(), linearToProphotoChannels(), oklchToProphotoChannels(), parses color(prophoto-rgb ...) strings
+import srgbLinear from '@colordx/core/plugins/srgb-linear';
+// toSrgbLinear(), toSrgbLinearString(), parses color(srgb-linear ...) strings
 
-extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020, a98rgb, prophoto]);
+extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020, a98rgb, prophoto, srgbLinear]);
 ```
 
 ### lab plugin
@@ -797,6 +804,36 @@ Object parsing is also supported using the `colorSpace` discriminant:
 colordx({ r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' }).toHex();
 ```
 
+### srgb-linear plugin
+
+Adds the CSS Color 4 `srgb-linear` space: sRGB with the transfer curve removed. Same primaries and gamut as sRGB, so `inGamutSrgb()` and `Colordx.toGamutSrgb()` already apply. Values outside `[0, 1]` are kept as-is and only clip on sRGB output.
+
+```ts
+import srgbLinear from '@colordx/core/plugins/srgb-linear';
+
+extend([srgbLinear]);
+
+colordx('#3b82f6').toSrgbLinear(); // { r: 0.04374, g: 0.22323, b: 0.92158, alpha: 1, colorSpace: 'srgb-linear' }
+colordx('#3b82f6').toSrgbLinearString(); // 'color(srgb-linear 0.04374 0.22323 0.92158)'
+colordx('#3b82f6').toSrgbLinearString(4); // 'color(srgb-linear 0.0437 0.2232 0.9216)'
+
+// Parse srgb-linear strings (alpha optional)
+colordx('color(srgb-linear 1 0 0)').toHex(); // '#ff0000'
+colordx('color(srgb-linear 100% none 0 / 0.5)').toHex(); // '#ff000080'
+
+// Out-of-gamut values survive until sRGB output
+colordx('oklch(0.7 0.3 150)').toSrgbLinearString(); // 'color(srgb-linear -0.1728 0.59844 -0.00771)'
+inGamutSrgb('color(srgb-linear 1.2 0 0)'); // false
+```
+
+Object parsing is also supported using the `colorSpace` discriminant:
+
+```ts
+colordx({ r: 0.5, g: 0, b: 0, colorSpace: 'srgb-linear' }).toHex(); // '#bc0000'
+```
+
+For per-pixel work use the core channel helpers instead: `rgbToLinear()` and `oklchToLinear()` return the same linear channels without a `Colordx` instance.
+
 ## Notes
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
@@ -856,7 +893,7 @@ The same flag works on `.darken()` and `.desaturate()`.
 ### CSS Color 4/5 completeness
 
 - **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`)
-- **`color()` for remaining spaces** — `color(srgb ...)`, `color(srgb-linear ...)`, `color(a98-rgb ...)`, `color(prophoto-rgb ...)` string parsing (`display-p3`, `rec2020`, `xyz-d50`, and `xyz-d65` already supported)
+- **`color(srgb ...)`** — the last `color()` space without string parsing (`srgb-linear`, `display-p3`, `rec2020`, `a98-rgb`, `prophoto-rgb`, `xyz-d50`, and `xyz-d65` already supported)
 - **Relative color syntax** — `oklch(from red l c h)` and channel arithmetic like `oklch(from red l calc(c + 0.1) h)`
 
 ### Internals

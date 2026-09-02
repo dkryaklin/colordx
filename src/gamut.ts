@@ -17,6 +17,7 @@ import type {
   P3Color,
   ProPhotoColor,
   Rec2020Color,
+  SrgbLinearColor,
   XyzColor,
   XyzD65Color,
 } from './types.js';
@@ -46,6 +47,8 @@ const A98_STR_RE =
   /^color\(\s*a98-rgb\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const PROPHOTO_STR_RE =
   /^color\(\s*prophoto-rgb\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+const SRGB_LINEAR_STR_RE =
+  /^color\(\s*srgb-linear\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const XYZ_D50_STR_RE =
   /^color\(\s*xyz-d50\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const XYZ_D65_STR_RE =
@@ -166,6 +169,12 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
       const [ol, oa, ob] = prophotoToOklab(c.r, c.g, c.b);
       return { l: ol, a: oa, b: ob, alpha: typeof c.alpha === 'number' ? c.alpha : 1 };
     }
+    if (obj.colorSpace === 'srgb-linear') {
+      const c = input as SrgbLinearColor;
+      if (typeof c.r !== 'number' || typeof c.g !== 'number' || typeof c.b !== 'number') return null;
+      const [ol, oa, ob] = linearSrgbToOklab(c.r, c.g, c.b);
+      return { l: ol, a: oa, b: ob, alpha: typeof c.alpha === 'number' ? c.alpha : 1 };
+    }
     if (obj.colorSpace === 'xyz-d65') {
       const c = input as XyzD65Color;
       if (typeof c.x !== 'number' || typeof c.y !== 'number' || typeof c.z !== 'number') return null;
@@ -257,6 +266,15 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
       const b = m[6] ? Number(m[5]) / 100 : Number(m[5]);
       const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
       const [ol, oa, ob] = prophotoToOklab(r, g, b);
+      return { l: ol, a: oa, b: ob, alpha };
+    }
+    m = SRGB_LINEAR_STR_RE.exec(input);
+    if (m) {
+      const r = m[2] ? Number(m[1]) / 100 : Number(m[1]);
+      const g = m[4] ? Number(m[3]) / 100 : Number(m[3]);
+      const b = m[6] ? Number(m[5]) / 100 : Number(m[5]);
+      const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
+      const [ol, oa, ob] = linearSrgbToOklab(r, g, b);
       return { l: ol, a: oa, b: ob, alpha };
     }
     m = XYZ_D50_STR_RE.exec(input);

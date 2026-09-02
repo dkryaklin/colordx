@@ -20,7 +20,8 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
  */
 export const parseRgbBody = (input: unknown): RgbColor | null => {
   const cs = (input as { colorSpace?: unknown }).colorSpace;
-  if (cs === 'display-p3' || cs === 'rec2020' || cs === 'a98-rgb' || cs === 'prophoto-rgb') return null;
+  if (cs === 'display-p3' || cs === 'rec2020' || cs === 'a98-rgb' || cs === 'prophoto-rgb' || cs === 'srgb-linear')
+    return null;
   const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number' || typeof alpha !== 'number') return null;
   const a = alpha > 1 ? 1 : alpha > 0 ? Math.round(alpha * 1000) / 1000 : 0;
