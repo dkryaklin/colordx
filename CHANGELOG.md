@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 5.8.0
+
+### Minor Changes
+
+- Add color(srgb) string parsing in core, treat bare xyz as an xyz-d65 alias, and add srgb-linear plugin with toSrgbLinear, toSrgbLinearString, and color(srgb-linear) string and object parsing
+
 ## 5.7.0
 
 ### Minor Changes
