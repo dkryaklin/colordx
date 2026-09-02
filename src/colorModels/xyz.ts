@@ -179,8 +179,13 @@ export const parseXyzD65Object = (input: unknown): RgbColor | null => {
 };
 
 // CSS Color 4: color(xyz-d65 x y z / alpha). Bare `xyz` is the spec alias for xyz-d65. Channels accept number|percentage|none.
-// The library uses a 0–100 XYZ scale (to match the existing XyzColor convention); percent is
-// treated as the same scale for symmetry with the emitted string (100% = 100).
+// CSS puts XYZ on a 0–1 scale (1 = reference-white Y, 100% = 1). The library's XyzColor objects use
+// 0–100, so string channels are scaled ×100 on parse (numbers) or taken as-is (percentages), and
+// toXyzString / toXyzD65String divide by 100 on emit. This keeps strings interoperable with browsers,
+// culori, and colorjs.io while the object convention stays colord-compatible.
+/** CSS `color(xyz-*)` channel → library 0–100 scale: numbers are 0–1 (×100), percentages are already 0–100. */
+const cssXyzChannel = (v: string, pct: string | undefined): number => (pct ? parseNum(v) : parseNum(v) * 100);
+
 const XYZ_D65_RE = new RegExp(
   `^color\\(\\s*xyz(?:-d65)?\\s+(?<x>${NUM_OR_NONE})(?<xp>%?)\\s+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
     `\\s+(?<z>${NUM_OR_NONE})(?<zp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
@@ -197,9 +202,9 @@ export const parseXyzD65String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const g = XYZ_D65_RE.exec(input.trim())?.groups;
   if (!g) return null;
-  const x = parseNum(g.x!);
-  const y = parseNum(g.y!);
-  const z = parseNum(g.z!);
+  const x = cssXyzChannel(g.x!, g.xp);
+  const y = cssXyzChannel(g.y!, g.yp);
+  const z = cssXyzChannel(g.z!, g.zp);
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return xyzD65ToRgbUnclamped({
     x,
@@ -214,9 +219,9 @@ export const parseXyzD50String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const g = XYZ_D50_RE.exec(input.trim())?.groups;
   if (!g) return null;
-  const x = parseNum(g.x!);
-  const y = parseNum(g.y!);
-  const z = parseNum(g.z!);
+  const x = cssXyzChannel(g.x!, g.xp);
+  const y = cssXyzChannel(g.y!, g.yp);
+  const z = cssXyzChannel(g.z!, g.zp);
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return xyzToRgbUnclamped({
     x,

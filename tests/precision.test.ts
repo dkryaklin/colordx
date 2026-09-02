@@ -62,8 +62,10 @@ describe('precision arg — per-format default dp matches prior behavior', () =>
   it('toCmykString default = 2dp', () => expect(c.toCmykString()).toBe('device-cmyk(61.64% 23.27% 0% 37.65%)'));
   it('toLabString default = 2dp', () => expect(c.toLabString()).toBe('lab(48.38 -11.65 -26.34)'));
   it('toLchString default = 2dp', () => expect(c.toLchString()).toBe('lch(48.38 28.8 246.13)'));
-  it('toXyzString default = 2dp', () => expect(c.toXyzString()).toBe('color(xyz-d50 14.49 17.09 26.71)'));
-  it('toXyzD65String default = 2dp', () => expect(c.toXyzD65String()).toMatch(/^color\(xyz-d65 \d/));
+  it('toXyzString default = 4dp on the CSS 0–1 scale', () =>
+    expect(c.toXyzString()).toBe('color(xyz-d50 0.1449 0.1709 0.2671)'));
+  it('toXyzD65String default = 4dp on the CSS 0–1 scale', () =>
+    expect(c.toXyzD65String()).toMatch(/^color\(xyz-d65 0\.\d{1,4} 0\.\d{1,4} 0\.\d{1,4}\)$/));
   it('toOklabString default = 5dp', () => expect(c.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224)'));
   it('toOklchString default = 5dp', () => expect(c.toOklchString()).toBe('oklch(0.55476 0.08551 237.65614)'));
   it('toP3String default = 4dp', () => expect(c.toP3String()).toBe('color(display-p3 0.2994 0.4728 0.6102)'));

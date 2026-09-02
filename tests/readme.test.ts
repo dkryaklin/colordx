@@ -370,7 +370,7 @@ describe('README — lab plugin', () => {
     expect((colordx('#ff0000') as any).toXyz()).toEqual({ x: 43.61, y: 22.25, z: 1.39, alpha: 1 });
   });
   it('toXyzString', () => {
-    expect((colordx('#ff0000') as any).toXyzString()).toBe('color(xyz-d50 43.61 22.25 1.39)');
+    expect((colordx('#ff0000') as any).toXyzString()).toBe('color(xyz-d50 0.4361 0.2225 0.0139)');
   });
   it('toXyzD65', () => {
     expect((colordx('#ff0000') as any).toXyzD65()).toEqual({
@@ -382,7 +382,7 @@ describe('README — lab plugin', () => {
     });
   });
   it('toXyzD65String', () => {
-    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 41.24 21.26 1.93)');
+    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 0.4124 0.2126 0.0193)');
   });
   it('parse lab object (colorSpace discriminant)', () => {
     expect(colordx({ l: 54.29, a: 80.82, b: 69.91, alpha: 1, colorSpace: 'lab' as const }).toHex()).toBe('#ff0000');
@@ -394,11 +394,11 @@ describe('README — lab plugin', () => {
     expect(colordx({ x: 41.24, y: 21.26, z: 1.93, alpha: 1, colorSpace: 'xyz-d65' as const }).toHex()).toBe('#ff0000');
   });
   it('parse color(xyz-d65 ...) string', () => {
-    expect(colordx('color(xyz-d65 41.24 21.26 1.93)').toHex()).toBe('#ff0000');
-    expect(colordx('color(xyz 41.24 21.26 1.93)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz-d65 0.4124 0.2126 0.0193)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz 0.4124 0.2126 0.0193)').toHex()).toBe('#ff0000');
   });
   it('parse color(xyz-d50 ...) string', () => {
-    expect(colordx('color(xyz-d50 43.61 22.25 1.39)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz-d50 0.4361 0.2225 0.0139)').toHex()).toBe('#ff0000');
   });
   it('mixLab', () => {
     expect((colordx('#000000') as any).mixLab('#ffffff').toHex()).toBe('#777777');

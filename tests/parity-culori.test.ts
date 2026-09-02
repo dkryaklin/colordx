@@ -1,4 +1,4 @@
-import { converter, differenceCiede2000, toGamut } from 'culori';
+import { converter, parse as culoriParse, differenceCiede2000, formatCss, toGamut } from 'culori';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   Colordx,
@@ -98,6 +98,10 @@ const stats: Record<string, FormatStats> = {
   OKLab: mkStats(),
   XYZ: mkStats(),
   'XYZ D65': mkStats(),
+  'XYZ50str→RGB': mkStats(),
+  'XYZ65str→RGB': mkStats(),
+  'toXyzString→cu': mkStats(),
+  'toXyzD65String→cu': mkStats(),
   'Lab→LinSRGB': mkStats(),
   'LCH→LinSRGB': mkStats(),
   'Lab→P3': mkStats(),
@@ -182,6 +186,7 @@ const boolStats: Record<string, BoolStats> = {
   'inGamutP3(rec2020-obj)': mkBool(),
   'inGamutRec2020(rec2020-obj)': mkBool(),
   'inGamutSrgb(xyz50-obj)': mkBool(),
+  'inGamutSrgb(xyz50-str)': mkBool(),
   'inGamutSrgb(xyz65-obj)': mkBool(),
   'inGamutSrgb(xyz65-str)': mkBool(),
 };
@@ -233,6 +238,10 @@ const runParity = () => {
         'OKLab',
         'XYZ',
         'XYZ D65',
+        'XYZ50str→RGB',
+        'XYZ65str→RGB',
+        'toXyzString→cu',
+        'toXyzD65String→cu',
         'Lab→LinSRGB',
         'LCH→LinSRGB',
         'Lab→P3',
@@ -332,7 +341,7 @@ const runParity = () => {
       );
 
       const cxXyz = (cxCs as unknown as { toXyz(): { x: number; y: number; z: number } }).toXyz();
-      const cuXyz = culoriToXyz50(cuLab)!;
+      const cuXyz = culoriToXyz50(cuBase)!;
       record(
         'XYZ',
         maxDiff(
@@ -354,6 +363,41 @@ const runParity = () => {
         ),
         color
       );
+
+      // CSS color(xyz-*) strings are on the 0–1 scale (1 = reference-white Y) while the
+      // object API is 0–100. Cross-check the string form in both directions with no manual
+      // rescaling: culori serialises its own XYZ and colordx must parse it back to the same
+      // sRGB; colordx serialises and culori must parse it back. Both sides round to 8-bit,
+      // so a ±1 channel disagreement is the expected floor and anything wider is a scale bug.
+      {
+        const cxFromCu50 = colordx(formatCss(cuXyz)).toRgb();
+        record('XYZ50str→RGB', maxDiff([cxFromCu50.r, cuR], [cxFromCu50.g, cuG], [cxFromCu50.b, cuB]), color);
+        const cxFromCu65 = colordx(formatCss(cuXyz65)).toRgb();
+        record('XYZ65str→RGB', maxDiff([cxFromCu65.r, cuR], [cxFromCu65.g, cuG], [cxFromCu65.b, cuB]), color);
+
+        const cxStr50 = (cxCs as unknown as { toXyzString(): string }).toXyzString();
+        const cuFromCx50 = culoriToRgb(culoriParse(cxStr50)!)!;
+        record(
+          'toXyzString→cu',
+          maxDiff(
+            [cxR, Math.round((cuFromCx50.r ?? 0) * 255)],
+            [cxG, Math.round((cuFromCx50.g ?? 0) * 255)],
+            [cxB, Math.round((cuFromCx50.b ?? 0) * 255)]
+          ),
+          cxStr50
+        );
+        const cxStr65 = (cxCs as unknown as { toXyzD65String(): string }).toXyzD65String();
+        const cuFromCx65 = culoriToRgb(culoriParse(cxStr65)!)!;
+        record(
+          'toXyzD65String→cu',
+          maxDiff(
+            [cxR, Math.round((cuFromCx65.r ?? 0) * 255)],
+            [cxG, Math.round((cuFromCx65.g ?? 0) * 255)],
+            [cxB, Math.round((cuFromCx65.b ?? 0) * 255)]
+          ),
+          cxStr65
+        );
+      }
 
       // labToLinearSrgb: Lab D50 → linear sRGB via XYZ D50 / Bradford. Uses cuLab from above
       // so a culori Lab regression tests here, not in the feeder.
@@ -895,39 +939,33 @@ const runParity = () => {
       record('alpha', absDiff(cxR2Map.alpha, round(cuR2Map.alpha ?? 1, 3)), r2Str);
     }
 
-    // XYZ samples. Draw XYZ D50 coordinates in the library's 0–100 scale, restricted near
-    // the white point (0–120 on each axis) so most samples land in or near sRGB; culori
-    // converts the same XYZ to lrgb for the ground truth. Same for D65.
+    // XYZ samples. Draw XYZ D50 coordinates in the library's 0–100 object scale, restricted
+    // near the white point (0–120 on each axis) so most samples land in or near sRGB. culori's
+    // objects are 0–1, so the object comparison rescales; the string comparison does NOT —
+    // the CSS string is built on the spec's 0–1 scale and handed to culori's parser verbatim,
+    // so a scale mismatch in colordx's string parser would show up as disagreement here.
+    const inSrgb = (c: { r?: number; g?: number; b?: number }) =>
+      (c.r ?? 0) >= 0 && (c.r ?? 0) <= 1 && (c.g ?? 0) >= 0 && (c.g ?? 0) <= 1 && (c.b ?? 0) >= 0 && (c.b ?? 0) <= 1;
+
     const x50 = rand() * 120,
       y50 = rand() * 120,
       z50 = rand() * 120;
     const xyz50Obj = { x: x50, y: y50, z: z50, alpha: 1 };
-    // culori uses 0–1 XYZ; our library uses 0–100, hence the /100 scaling.
-    const cuXyz50Lrgb = culoriToLrgb({ mode: 'xyz50' as const, x: x50 / 100, y: y50 / 100, z: z50 / 100 })!;
-    const cuXyz50InSrgb =
-      (cuXyz50Lrgb.r ?? 0) >= 0 &&
-      (cuXyz50Lrgb.r ?? 0) <= 1 &&
-      (cuXyz50Lrgb.g ?? 0) >= 0 &&
-      (cuXyz50Lrgb.g ?? 0) <= 1 &&
-      (cuXyz50Lrgb.b ?? 0) >= 0 &&
-      (cuXyz50Lrgb.b ?? 0) <= 1;
+    const xyz50Str = `color(xyz-d50 ${(x50 / 100).toFixed(6)} ${(y50 / 100).toFixed(6)} ${(z50 / 100).toFixed(6)})`;
+    const cuXyz50InSrgb = inSrgb(culoriToLrgb({ mode: 'xyz50' as const, x: x50 / 100, y: y50 / 100, z: z50 / 100 })!);
+    const cuXyz50StrInSrgb = inSrgb(culoriToLrgb(culoriParse(xyz50Str)!)!);
     recordBool('inGamutSrgb(xyz50-obj)', inGamutSrgb(xyz50Obj), cuXyz50InSrgb);
+    recordBool('inGamutSrgb(xyz50-str)', inGamutSrgb(xyz50Str), cuXyz50StrInSrgb);
 
     const x65 = rand() * 120,
       y65 = rand() * 120,
       z65 = rand() * 120;
     const xyz65Obj = { x: x65, y: y65, z: z65, alpha: 1, colorSpace: 'xyz-d65' as const };
-    const xyz65Str = `color(xyz-d65 ${x65.toFixed(4)} ${y65.toFixed(4)} ${z65.toFixed(4)})`;
-    const cuXyz65Lrgb = culoriToLrgb({ mode: 'xyz65' as const, x: x65 / 100, y: y65 / 100, z: z65 / 100 })!;
-    const cuXyz65InSrgb =
-      (cuXyz65Lrgb.r ?? 0) >= 0 &&
-      (cuXyz65Lrgb.r ?? 0) <= 1 &&
-      (cuXyz65Lrgb.g ?? 0) >= 0 &&
-      (cuXyz65Lrgb.g ?? 0) <= 1 &&
-      (cuXyz65Lrgb.b ?? 0) >= 0 &&
-      (cuXyz65Lrgb.b ?? 0) <= 1;
+    const xyz65Str = `color(xyz-d65 ${(x65 / 100).toFixed(6)} ${(y65 / 100).toFixed(6)} ${(z65 / 100).toFixed(6)})`;
+    const cuXyz65InSrgb = inSrgb(culoriToLrgb({ mode: 'xyz65' as const, x: x65 / 100, y: y65 / 100, z: z65 / 100 })!);
+    const cuXyz65StrInSrgb = inSrgb(culoriToLrgb(culoriParse(xyz65Str)!)!);
     recordBool('inGamutSrgb(xyz65-obj)', inGamutSrgb(xyz65Obj), cuXyz65InSrgb);
-    recordBool('inGamutSrgb(xyz65-str)', inGamutSrgb(xyz65Str), cuXyz65InSrgb);
+    recordBool('inGamutSrgb(xyz65-str)', inGamutSrgb(xyz65Str), cuXyz65StrInSrgb);
   }
 
   for (let i = 0; i < COUNT_RGB; i++) {
@@ -1018,8 +1056,17 @@ const ceilings: Record<string, number> = {
   LCH: 1,
   Lab: 1,
   OKLab: 0.001,
-  XYZ: 1,
-  'XYZ D65': 1,
+  // XYZ objects are compared at 2 dp on the 0–100 scale; both libraries use the CSS Color 4
+  // exact matrices, so the only legitimate delta is the rounding LSB. The previous ceiling of
+  // 1 was 100× looser than observed and would have hidden a whole-percent scale error.
+  XYZ: 0.011,
+  'XYZ D65': 0.011,
+  // String cross-checks compare 8-bit sRGB after a parse on the other side; ±1 is the rounding
+  // floor. A 0–1 vs 0–100 scale confusion produces deltas in the hundreds.
+  'XYZ50str→RGB': 1,
+  'XYZ65str→RGB': 1,
+  'toXyzString→cu': 1,
+  'toXyzD65String→cu': 1,
   'Lab→LinSRGB': 0.001,
   'LCH→LinSRGB': 0.001,
   'Lab→P3': 0.001,
@@ -1137,6 +1184,7 @@ describe('parity vs culori', () => {
     'inGamutP3(rec2020-obj)',
     'inGamutRec2020(rec2020-obj)',
     'inGamutSrgb(xyz50-obj)',
+    'inGamutSrgb(xyz50-str)',
     'inGamutSrgb(xyz65-obj)',
     'inGamutSrgb(xyz65-str)',
   ]) {

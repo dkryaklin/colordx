@@ -464,11 +464,11 @@ colordx('lab(54.29 80.8 69.89)').toHex(); // '#ff0000'  — lab strings are pars
 
 // XYZ D50 (chromatic-adapted; matches Lab's white point)
 colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
-colordx('#ff0000').toXyzString(); // 'color(xyz-d50 43.61 22.25 1.39)'
+colordx('#ff0000').toXyzString(); // 'color(xyz-d50 0.4361 0.2225 0.0139)' — CSS scale (1 = reference white)
 
 // XYZ D65 (screen-native; no Bradford adaptation — same illuminant as sRGB/OKLab)
 colordx('#ff0000').toXyzD65(); // { x: 41.24, y: 21.26, z: 1.93, alpha: 1, colorSpace: 'xyz-d65' }
-colordx('#ff0000').toXyzD65String(); // 'color(xyz-d65 41.24 21.26 1.93)'
+colordx('#ff0000').toXyzD65String(); // 'color(xyz-d65 0.4124 0.2126 0.0193)'
 
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
 // Lab objects require colorSpace: 'lab' to distinguish from OKLab (which has the same l/a/b shape)
@@ -476,10 +476,12 @@ colordx({ l: 54.29, a: 80.8, b: 69.89, colorSpace: 'lab' as const }).toHex(); //
 colordx({ x: 43.61, y: 22.25, z: 1.39 }).toHex(); // '#ff0000' (D50)
 colordx({ x: 41.24, y: 21.26, z: 1.93, colorSpace: 'xyz-d65' as const }).toHex(); // '#ff0000'
 
-// color() strings parse for both white points
-colordx('color(xyz-d50 43.61 22.25 1.39)').toHex(); // '#ff0000'
-colordx('color(xyz-d65 41.24 21.26 1.93)').toHex(); // '#ff0000'
-colordx('color(xyz 41.24 21.26 1.93)').toHex(); // '#ff0000' — bare xyz is the spec alias for xyz-d65
+// color() strings parse for both white points. Per CSS Color 4 the string channels are 0–1
+// (1 = reference-white Y, 100% = 1), unlike the 0–100 object convention above.
+colordx('color(xyz-d50 0.4361 0.2225 0.0139)').toHex(); // '#ff0000'
+colordx('color(xyz-d65 0.4124 0.2126 0.0193)').toHex(); // '#ff0000'
+colordx('color(xyz 0.4124 0.2126 0.0193)').toHex(); // '#ff0000' — bare xyz is the spec alias for xyz-d65
+colordx('color(xyz-d65 41.24% 21.26% 1.93%)').toHex(); // '#ff0000'
 
 // Mix in CIE Lab space
 colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
@@ -886,7 +888,7 @@ Every `toX()` / `toXString()` method accepts an optional `precision` (decimal pl
 |---|---|
 | `toHsl`, `toHsv`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
 | `toHwb` | `0` |
-| `toOklab`, `toOklch`, `toP3`, `toRec2020` | `4` |
+| `toOklab`, `toOklch`, `toP3`, `toRec2020`, `toXyzString`, `toXyzD65String` | `4` |
 
 ```ts
 colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }

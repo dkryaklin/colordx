@@ -568,6 +568,29 @@ describe('XYZ D50 white point (CSS Color 4)', () => {
     expect((colordx('#ff0000') as any).toXyzString()).toMatch(/^color\(xyz-d50 /);
   });
 
+  it('toXyzString emits CSS 0–1 channels while toXyz stays on the 0–100 object scale', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = colordx('#ffffff') as any;
+    expect(c.toXyz()).toEqual({ x: 96.43, y: 100, z: 82.51, alpha: 1 });
+    expect(c.toXyzString()).toBe('color(xyz-d50 0.9643 1 0.8251)');
+    expect(c.toXyzString(2)).toBe('color(xyz-d50 0.96 1 0.83)');
+  });
+
+  it('parses CSS-scale color(xyz-d50 …) numbers and percentages', () => {
+    expect(colordx('color(xyz-d50 0.9643 1 0.8251)').toHex()).toBe('#ffffff');
+    expect(colordx('color(xyz-d50 96.43% 100% 82.51%)').toHex()).toBe('#ffffff');
+    expect(colordx('color(xyz-d50 0.4361 0.2225 0.0139)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz-d50 0 0 0)').toHex()).toBe('#000000');
+    expect(colordx('color(xyz-d50 none none none)').toHex()).toBe('#000000');
+  });
+
+  it('XYZ D50 string round-trip preserves RGB exactly', () => {
+    for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#3b82f6', '#c06060']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(colordx((colordx(hex) as any).toXyzString(6)).toHex()).toBe(hex);
+    }
+  });
+
   it('XYZ round-trip preserves RGB within ±1', () => {
     for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#c06060', '#3b82f6']) {
       const orig = colordx(hex).toRgb();
@@ -616,6 +639,21 @@ describe('XYZ D65 (CSS Color 4, screen-native, no Bradford adaptation)', () => {
     expect(str).toMatch(/ \/ 0\.5\)$/);
   });
 
+  it('toXyzD65String emits CSS 0–1 channels (white ≈ 0.9505 1 1.089)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ffffff') as any).toXyzD65String()).toBe('color(xyz-d65 0.9505 1 1.0891)');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 0.4124 0.2126 0.0193)');
+  });
+
+  it('parses CSS-scale color(xyz-d65 …) numbers and percentages', () => {
+    expect(colordx('color(xyz-d65 0.9505 1 1.089)').toHex()).toBe('#ffffff');
+    expect(colordx('color(xyz-d65 95.05% 100% 108.9%)').toHex()).toBe('#ffffff');
+    expect(colordx('color(xyz-d65 0.4124 0.2126 0.0193)').toHex()).toBe('#ff0000');
+    // Legacy 0–100 numbers are 100× too bright and must not parse as white.
+    expect(inGamutSrgb('color(xyz-d65 95.05 100 108.9)')).toBe(false);
+  });
+
   it('XYZ D65 round-trip (object) preserves RGB within ±1', () => {
     for (const hex of ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060', '#3b82f6']) {
       const orig = colordx(hex).toRgb();
@@ -657,18 +695,20 @@ describe('XYZ D65 (CSS Color 4, screen-native, no Bradford adaptation)', () => {
 
 describe('color(xyz) alias of xyz-d65', () => {
   it('parses the same as xyz-d65', () => {
-    expect(colordx('color(xyz 41.24 21.26 1.93)').toHex()).toBe('#ff0000');
-    expect(colordx('color(xyz 41.24 21.26 1.93)').toRgb()).toEqual(colordx('color(xyz-d65 41.24 21.26 1.93)').toRgb());
-    expect(colordx('color(XYZ 41.24 21.26 1.93 / 0.5)').toHex8()).toBe('#ff000080');
+    expect(colordx('color(xyz 0.4124 0.2126 0.0193)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz 0.4124 0.2126 0.0193)').toRgb()).toEqual(
+      colordx('color(xyz-d65 0.4124 0.2126 0.0193)').toRgb()
+    );
+    expect(colordx('color(XYZ 0.4124 0.2126 0.0193 / 0.5)').toHex8()).toBe('#ff000080');
   });
 
   it('reports xyz-d65 format', () => {
-    expect(getFormat('color(xyz 41.24 21.26 1.93)')).toBe('xyz-d65');
+    expect(getFormat('color(xyz 0.4124 0.2126 0.0193)')).toBe('xyz-d65');
   });
 
   it('inGamutSrgb sees the alias', () => {
-    expect(inGamutSrgb('color(xyz 41.24 21.26 1.93)')).toBe(true);
-    expect(inGamutSrgb('color(xyz 80 21.26 1.93)')).toBe(false);
+    expect(inGamutSrgb('color(xyz 0.4124 0.2126 0.0193)')).toBe(true);
+    expect(inGamutSrgb('color(xyz 0.8 0.2126 0.0193)')).toBe(false);
   });
 
   it('rejects near-misses', () => {

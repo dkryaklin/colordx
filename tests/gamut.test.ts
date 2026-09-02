@@ -1208,11 +1208,14 @@ describe('XYZ D50 / D65 inputs to gamut helpers', () => {
   });
 
   it('inGamutSrgb handles color(xyz-d50 …) and color(xyz-d65 …) strings', () => {
-    // The library uses a 0–100 scale for the XYZ string form (matches parseXyzD50String).
-    expect(inGamutSrgb('color(xyz-d50 96.43 100 82.51)')).toBe(true);
-    expect(inGamutSrgb('color(xyz-d65 95.05 100 108.88)')).toBe(true);
+    // CSS Color 4 color(xyz-*) channels are 0–1 (1 = reference-white Y), unlike the 0–100 objects.
+    expect(inGamutSrgb('color(xyz-d50 0.9643 1 0.8251)')).toBe(true);
+    expect(inGamutSrgb('color(xyz-d65 0.9505 1 1.0888)')).toBe(true);
+    expect(inGamutSrgb('color(xyz-d65 95.05% 100% 108.88%)')).toBe(true);
     // Out-of-sRGB XYZ — previously slipped through as true.
-    expect(inGamutSrgb('color(xyz-d50 150 100 0)')).toBe(false);
+    expect(inGamutSrgb('color(xyz-d50 1.5 1 0)')).toBe(false);
+    // Legacy 0–100 numbers are 100× too bright under CSS scaling — they must not read as in-gamut.
+    expect(inGamutSrgb('color(xyz-d50 96.43 100 82.51)')).toBe(false);
   });
 
   it('unbranded { x, y, z } without colorSpace is treated as XYZ D50', () => {
