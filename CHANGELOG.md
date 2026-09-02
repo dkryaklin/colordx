@@ -1,5 +1,13 @@
 # @colordx/core
 
+## 6.0.0
+
+### Major Changes
+
+- Add a tinycolor2-compatible drop-in export at @colordx/core/tinycolor (with `toColordx()` for the underlying Colordx) and recognize British `grey` spellings (grey, darkgrey, dimgrey, lightgrey, slategrey, darkslategrey, lightslategrey) in the names plugin ([297e4a8](https://github.com/dkryaklin/colordx/commit/297e4a8b1322a230532ff0630579a41c80bec193))
+- Reduce core bundle size by routing non-OKLab gamut inputs through the shared parser: `inGamutSrgb`/`toGamutSrgb*` now only recognize lab, lch, display-p3, rec2020, a98-rgb, prophoto-rgb, srgb-linear, and xyz inputs when the matching plugin is registered via `extend()` ([f66d2a8](https://github.com/dkryaklin/colordx/commit/f66d2a82ea7452d8ab32856f6c0e3a192b72f8d3))
+- BREAKING: emit and parse color(xyz-d50|xyz-d65|xyz) strings on the CSS Color 4 0–1 scale (toXyzString/toXyzD65String now default to 4 decimal places; percentages map 100% = 1), while toXyz/toXyzD65 objects keep the 0–100 scale — divide existing string values by 100 ([e12f0b6](https://github.com/dkryaklin/colordx/commit/e12f0b6c40ad5ffca893383d7bd73daf9841aba0))
+
 ## 5.8.0
 
 ### Minor Changes
