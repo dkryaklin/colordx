@@ -9,7 +9,7 @@ declare module '@colordx/core' {
 }
 
 // CSS color names map (name → hex)
-const NAMES: Record<string, string> = {
+export const NAMES: Record<string, string> = {
   aliceblue: '#f0f8ff',
   antiquewhite: '#faebd7',
   aqua: '#00ffff',
@@ -35,6 +35,7 @@ const NAMES: Record<string, string> = {
   darkcyan: '#008b8b',
   darkgoldenrod: '#b8860b',
   darkgray: '#a9a9a9',
+  darkgrey: '#a9a9a9',
   darkgreen: '#006400',
   darkkhaki: '#bdb76b',
   darkmagenta: '#8b008b',
@@ -46,11 +47,13 @@ const NAMES: Record<string, string> = {
   darkseagreen: '#8fbc8f',
   darkslateblue: '#483d8b',
   darkslategray: '#2f4f4f',
+  darkslategrey: '#2f4f4f',
   darkturquoise: '#00ced1',
   darkviolet: '#9400d3',
   deeppink: '#ff1493',
   deepskyblue: '#00bfff',
   dimgray: '#696969',
+  dimgrey: '#696969',
   dodgerblue: '#1e90ff',
   firebrick: '#b22222',
   floralwhite: '#fffaf0',
@@ -61,6 +64,7 @@ const NAMES: Record<string, string> = {
   gold: '#ffd700',
   goldenrod: '#daa520',
   gray: '#808080',
+  grey: '#808080',
   green: '#008000',
   greenyellow: '#adff2f',
   honeydew: '#f0fff0',
@@ -78,12 +82,14 @@ const NAMES: Record<string, string> = {
   lightcyan: '#e0ffff',
   lightgoldenrodyellow: '#fafad2',
   lightgray: '#d3d3d3',
+  lightgrey: '#d3d3d3',
   lightgreen: '#90ee90',
   lightpink: '#ffb6c1',
   lightsalmon: '#ffa07a',
   lightseagreen: '#20b2aa',
   lightskyblue: '#87cefa',
   lightslategray: '#778899',
+  lightslategrey: '#778899',
   lightsteelblue: '#b0c4de',
   lightyellow: '#ffffe0',
   lime: '#00ff00',
@@ -137,6 +143,7 @@ const NAMES: Record<string, string> = {
   skyblue: '#87ceeb',
   slateblue: '#6a5acd',
   slategray: '#708090',
+  slategrey: '#708090',
   snow: '#fffafa',
   springgreen: '#00ff7f',
   steelblue: '#4682b4',
@@ -171,7 +178,8 @@ const names: Plugin = (ColordxClass, parsers, formatParsers) => {
     // toHex() returns 6-char hex for alpha=1, 8-char for alpha<1. Only 6-char can match NAMES entries,
     // so semi-transparent colors always return undefined here (closest still works via RGB distance).
     const hex = this.toHex().toLowerCase();
-    // aqua/cyan and fuchsia/magenta share the same hex — insertion order means cyan/magenta are unreachable.
+    // aqua/cyan, fuchsia/magenta and the gray/grey spellings share a hex — insertion order means the
+    // later spelling is unreachable here.
     const exact = Object.keys(NAMES).find((name) => NAMES[name] === hex);
     if (exact || !options?.closest) return exact;
     let minDist = Infinity;

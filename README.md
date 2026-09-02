@@ -836,6 +836,29 @@ colordx({ r: 0.5, g: 0, b: 0, colorSpace: 'srgb-linear' }).toHex(); // '#bc0000'
 
 For per-pixel work use the core channel helpers instead: `rgbToLinear()` and `oklchToLinear()` return the same linear channels without a `Colordx` instance.
 
+## Migrating from tinycolor2
+
+`@colordx/core/tinycolor` is a drop-in replacement for [tinycolor2](https://github.com/bgrins/TinyColor). Swap the import (or the `require`) and keep the code:
+
+```ts
+import tinycolor from '@colordx/core/tinycolor'; // was: from 'tinycolor2'
+
+tinycolor('#f00').lighten(20).toHexString();     // '#ff6666'
+tinycolor('rgb 255 0 0').toHslString();          // 'hsl(0, 100%, 50%)'
+tinycolor.mix('#f00', '#00f', 50).toHexString(); // '#800080'
+tinycolor.isReadable('#777', '#fff');            // false
+tinycolor('#f00').toColordx().toOklchString();   // 'oklch(0.62796 0.25768 29.23389)'
+```
+
+Same API, same input quirks (`f00`, `rgb 255 0 0`, `{ h: 0, s: 1, l: 0.5 }` read as fractions), same output strings, mutable instances (`lighten()` changes the instance and returns it). Types come along: `tinycolor.Instance`, `tinycolor.ColorInput`.
+
+What is different:
+
+- **Precision.** tinycolor2 truncates percentages to two decimals when it re-parses HSL between operations. colordx keeps full precision, so `lighten()`, `darken()`, `saturate()`, `desaturate()`, `spin()` and the harmony helpers can differ from tinycolor2 by 1/255 on a channel. The test suite checks every operation against tinycolor2 within that bound.
+- **`toName()`** returns `'rebeccapurple'` for `#663399`; tinycolor2 returns `false` there (a lookup bug).
+- **`tinycolor.names`** holds full hex (`ff0000`); tinycolor2 holds shortened hex (`f00`).
+- **`.toColordx()`** is new: the immutable `Colordx` underneath, for oklch, gamut mapping and plugins.
+
 ## Notes
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending

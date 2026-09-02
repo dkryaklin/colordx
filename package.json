@@ -28,7 +28,9 @@
     "color-space",
     "color-manipulation",
     "color-conversion",
-    "performance"
+    "performance",
+    "tinycolor",
+    "tinycolor2"
   ],
   "sideEffects": false,
   "type": "module",
@@ -52,6 +54,16 @@
         "types": "./dist/plugins/*.d.cts",
         "default": "./dist/plugins/*.cjs"
       }
+    },
+    "./tinycolor": {
+      "import": {
+        "types": "./dist/tinycolor.d.ts",
+        "default": "./dist/tinycolor.mjs"
+      },
+      "require": {
+        "types": "./dist/tinycolor.d.cts",
+        "default": "./dist/tinycolor.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
@@ -61,6 +73,9 @@
     "*": {
       "plugins/*": [
         "./dist/plugins/*.d.ts"
+      ],
+      "tinycolor": [
+        "./dist/tinycolor.d.ts"
       ]
     }
   },

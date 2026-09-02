@@ -47,6 +47,7 @@ import rec2020, {
 import a98rgb, { inGamutA98, oklchToA98Channels } from '../src/plugins/a98rgb.js';
 import prophoto, { inGamutProphoto, oklchToProphotoChannels } from '../src/plugins/prophoto.js';
 import srgbLinear from '../src/plugins/srgb-linear.js';
+import tinycolor from '../src/tinycolor.js';
 
 beforeAll(() => {
   extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020, a98rgb, prophoto, srgbLinear]);
@@ -728,5 +729,19 @@ describe('README — srgb-linear plugin', () => {
   });
   it('parse srgb-linear object with colorSpace discriminant', () => {
     expect(colordx({ r: 0.5, g: 0, b: 0, colorSpace: 'srgb-linear' as const }).toHex()).toBe('#bc0000');
+  });
+});
+
+describe('README — Migrating from tinycolor2', () => {
+  it('examples', () => {
+    expect(tinycolor('#f00').lighten(20).toHexString()).toBe('#ff6666');
+    expect(tinycolor('rgb 255 0 0').toHslString()).toBe('hsl(0, 100%, 50%)');
+    expect(tinycolor.mix('#f00', '#00f', 50).toHexString()).toBe('#800080');
+    expect(tinycolor.isReadable('#777', '#fff')).toBe(false);
+    expect(tinycolor('#f00').toColordx().toOklchString()).toBe('oklch(0.62796 0.25768 29.23389)');
+    expect(tinycolor('f00').toHexString()).toBe('#ff0000');
+    expect(tinycolor({ h: 0, s: 1, l: 0.5 }).toHexString()).toBe('#ff0000');
+    expect(tinycolor('#663399').toName()).toBe('rebeccapurple');
+    expect(tinycolor.names.red).toBe('ff0000');
   });
 });

@@ -38,6 +38,7 @@ const PLUGINS: Plugin[] = [
   { name: 'a98rgb', entry: join(DIST, 'plugins', 'a98rgb.mjs') },
   { name: 'prophoto', entry: join(DIST, 'plugins', 'prophoto.mjs') },
   { name: 'srgb-linear', entry: join(DIST, 'plugins', 'srgb-linear.mjs') },
+  { name: 'tinycolor', entry: join(DIST, 'tinycolor.mjs') },
 ];
 
 async function bundle(entries: string[]): Promise<{ raw: number; gzip: number }> {

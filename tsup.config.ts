@@ -7,7 +7,7 @@ const pluginFiles = readdirSync(join(import.meta.dirname, "src/plugins"))
   .map((f) => `src/plugins/${f}`);
 
 export default defineConfig({
-  entry: ["src/index.ts", ...pluginFiles],
+  entry: ["src/index.ts", "src/tinycolor.ts", ...pluginFiles],
   format: ["esm", "cjs"],
   target: "es2022",
   platform: "neutral",

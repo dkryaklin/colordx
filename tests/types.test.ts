@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest';
 import { colordx } from '../src/index.js';
+import tinycolor, { type TinyColor } from '../src/tinycolor.js';
 import type {
   AnyColor,
   OklchColor,
@@ -51,5 +52,19 @@ describe('color type contracts', () => {
     const withAlpha: AnyColor = { r: 255, g: 0, b: 0, alpha: 0.5 };
     void noAlpha;
     void withAlpha;
+  });
+});
+
+describe('tinycolor compat types', () => {
+  it('tinycolor.Instance and tinycolor.ColorInput resolve like @types/tinycolor2', () => {
+    const c: tinycolor.Instance = tinycolor('#f00');
+    expectTypeOf(c).toEqualTypeOf<TinyColor>();
+    const input: tinycolor.ColorInput = { r: 255, g: '0%', b: 0, a: 0.5 };
+    const rgba: tinycolor.ColorFormats.RGBA = c.toRgb();
+    void input;
+    void rgba;
+    expectTypeOf(tinycolor.mix('#f00', '#00f')).toEqualTypeOf<TinyColor>();
+    expectTypeOf(c.lighten(10)).toEqualTypeOf<TinyColor>();
+    expectTypeOf(c.toColordx().toOklch()).toEqualTypeOf<OklchColor>();
   });
 });
