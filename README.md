@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **9.1 KB gzipped. 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **7.9 KB gzipped. 0 Dependencies.**
 
 ## Performance
 
