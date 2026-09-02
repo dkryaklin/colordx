@@ -4,6 +4,7 @@ import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
 import { linearP3ToSrgb } from './colorModels/p3.js';
 import { linearProphotoToSrgb } from './colorModels/prophoto.js';
 import { linearRec2020ToSrgb } from './colorModels/rec2020.js';
+import { parseSrgbColorString } from './colorModels/rgb.js';
 import { xyzD50ToLinearSrgb, xyzD65ToLinearSrgb } from './colorModels/xyz.js';
 import { ANGLE_UNITS, clamp } from './helpers.js';
 import { a98ToLinear, prophotoToLinear, rec2020ToLinear, srgbToLinear } from './transfer.js';
@@ -52,7 +53,7 @@ const SRGB_LINEAR_STR_RE =
 const XYZ_D50_STR_RE =
   /^color\(\s*xyz-d50\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 const XYZ_D65_STR_RE =
-  /^color\(\s*xyz-d65\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+  /^color\(\s*xyz(?:-d65)?\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s+([+-]?\d*\.?\d+)%?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
 
 /** CIE Lab (D50) → OKLab via XYZ D50 → linear sRGB → OKLab. No clamping. */
 const labToOklab = (l: number, a: number, b: number): [number, number, number] => {
@@ -267,6 +268,15 @@ const getRawOklab = (input: AnyColor): { l: number; a: number; b: number; alpha:
       const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
       const [ol, oa, ob] = prophotoToOklab(r, g, b);
       return { l: ol, a: oa, b: ob, alpha };
+    }
+    const srgb = parseSrgbColorString(input);
+    if (srgb) {
+      const [ol, oa, ob] = linearSrgbToOklab(
+        srgbToLinear(srgb.r / 255),
+        srgbToLinear(srgb.g / 255),
+        srgbToLinear(srgb.b / 255)
+      );
+      return { l: ol, a: oa, b: ob, alpha: srgb.alpha };
     }
     m = SRGB_LINEAR_STR_RE.exec(input);
     if (m) {

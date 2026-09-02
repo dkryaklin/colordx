@@ -535,11 +535,9 @@ rejectMany('color() — structural & unsupported spaces', [
   'color(rec2020)',
   'color(rec2020 1 0)',
   'color(rec2020 1, 0, 0)',
-  'color(srgb 1 0 0)', // unsupported
-  'color(srgb-linear 1 0 0)',
+  'color(srgb-linear 1 0 0)', // plugin not loaded here
   'color(prophoto-rgb 1 0 0)',
   'color(a98-rgb 1 0 0)',
-  'color(xyz 1 0 0)', // bare xyz (no -d50/-d65 suffix) not supported
   'color(display-p3 red green blue)',
   'color(display-p31 0 0)', // no space after name
 ]);
@@ -550,6 +548,43 @@ rejectMany('color() — invalid tokens', [
   'color(display-p3 calc(0.5) 0 0)',
   'color(display-p3 1%% 0 0)',
 ]);
+
+rejectMany('color(srgb) — structural', [
+  'color(srgb)',
+  'color(srgb 1)',
+  'color(srgb 1 0)',
+  'color(srgb 1, 0, 0)',
+  'color(srgb 1 0 0, 0.5)',
+  'color(srgb 1 0 0 / 0.5 / 0.5)',
+  'color(srgb 1 0 0)extra',
+  'color(srgb1 0 0)',
+  'color(srgb 1 0 0',
+  'color(srgb 1e2 0 0)',
+  'color(srgb 0xff 0 0)',
+  'color(srgb 1%% 0 0)',
+  'color(srgb red green blue)',
+  'color(srgbx 1 0 0)',
+  'colour(srgb 1 0 0)',
+]);
+
+acceptMany('color(srgb) — valid forms', [
+  'color(srgb 0 0 0)',
+  'color(srgb 1 1 1)',
+  'color(srgb 0.5 0.5 0.5)',
+  'color(srgb 100% 0% 0%)',
+  'color(srgb 0.5 50% 1)',
+  'color(srgb none 0 0)',
+  'color(srgb 1 0 0 / 0.5)',
+  'color(srgb 1 0 0 / 50%)',
+  'color(srgb 1 0 0 / none)',
+  'color(srgb 1.5 -0.2 0)',
+  'COLOR(SRGB 1 0 0)',
+  '  color( srgb  1  0  0 )  ',
+]);
+
+acceptMany('xyz — bare alias of xyz-d65', ['color(xyz 41 21 2)', 'color(XYZ 41 21 2 / 0.5)', 'color(xyz none 0 0)']);
+
+rejectMany('xyz — alias structural', ['color(xyz1 0 0)', 'color(xyz-d 1 0 0)', 'color(xyz 1 0)']);
 
 acceptMany('p3 — valid forms', [
   'color(display-p3 0 0 0)',

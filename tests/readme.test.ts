@@ -89,6 +89,7 @@ describe('README — Parsing (plugins)', () => {
   it('a98-rgb string', () => expect(colordx('color(a98-rgb 0.8586 0 0)').isValid()).toBe(true));
   it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').isValid()).toBe(true));
   it('srgb-linear string', () => expect(colordx('color(srgb-linear 1 0 0)').isValid()).toBe(true));
+  it('color(srgb) string', () => expect(colordx('color(srgb 1 0 0)').toHex()).toBe('#ff0000'));
   it('hwb string', () => expect(colordx('hwb(0 0% 0%)').toHex()).toBe('#ff0000'));
   it('hwb object', () => expect(colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex()).toBe('#ff0000'));
   it('hsv object', () => expect(colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex()).toBe('#ff0000'));
@@ -393,6 +394,7 @@ describe('README — lab plugin', () => {
   });
   it('parse color(xyz-d65 ...) string', () => {
     expect(colordx('color(xyz-d65 41.24 21.26 1.93)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz 41.24 21.26 1.93)').toHex()).toBe('#ff0000');
   });
   it('parse color(xyz-d50 ...) string', () => {
     expect(colordx('color(xyz-d50 43.61 22.25 1.39)').toHex()).toBe('#ff0000');

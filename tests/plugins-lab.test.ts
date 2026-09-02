@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { deltaE2000, rgbToLabD65 } from '../src/colorModels/lab.js';
 import type { LabColor } from '../src/types.js';
-import { colordx, extend } from '../src/index.js';
+import { colordx, extend, getFormat, inGamutSrgb } from '../src/index.js';
 import cmyk from '../src/plugins/cmyk.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
@@ -652,5 +652,27 @@ describe('XYZ D65 (CSS Color 4, screen-native, no Bradford adaptation)', () => {
     // So D50 red values should give red, D65 red values should NOT.
     expect(colordx({ x: 43.61, y: 22.25, z: 1.39 }).toHex()).toBe('#ff0000');
     expect(colordx({ x: 41.24, y: 21.26, z: 1.93 }).toHex()).not.toBe('#ff0000');
+  });
+});
+
+describe('color(xyz) alias of xyz-d65', () => {
+  it('parses the same as xyz-d65', () => {
+    expect(colordx('color(xyz 41.24 21.26 1.93)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz 41.24 21.26 1.93)').toRgb()).toEqual(colordx('color(xyz-d65 41.24 21.26 1.93)').toRgb());
+    expect(colordx('color(XYZ 41.24 21.26 1.93 / 0.5)').toHex8()).toBe('#ff000080');
+  });
+
+  it('reports xyz-d65 format', () => {
+    expect(getFormat('color(xyz 41.24 21.26 1.93)')).toBe('xyz-d65');
+  });
+
+  it('inGamutSrgb sees the alias', () => {
+    expect(inGamutSrgb('color(xyz 41.24 21.26 1.93)')).toBe(true);
+    expect(inGamutSrgb('color(xyz 80 21.26 1.93)')).toBe(false);
+  });
+
+  it('rejects near-misses', () => {
+    expect(colordx('color(xyz1 0 0)').isValid()).toBe(false);
+    expect(colordx('color(xyz-d 1 0 0)').isValid()).toBe(false);
   });
 });

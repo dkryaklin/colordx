@@ -178,11 +178,11 @@ export const parseXyzD65Object = (input: unknown): RgbColor | null => {
   });
 };
 
-// CSS Color 4: color(xyz-d65 x y z / alpha). Channels accept number|percentage|none.
+// CSS Color 4: color(xyz-d65 x y z / alpha). Bare `xyz` is the spec alias for xyz-d65. Channels accept number|percentage|none.
 // The library uses a 0–100 XYZ scale (to match the existing XyzColor convention); percent is
 // treated as the same scale for symmetry with the emitted string (100% = 100).
 const XYZ_D65_RE = new RegExp(
-  `^color\\(\\s*xyz-d65\\s+(?<x>${NUM_OR_NONE})(?<xp>%?)\\s+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
+  `^color\\(\\s*xyz(?:-d65)?\\s+(?<x>${NUM_OR_NONE})(?<xp>%?)\\s+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
     `\\s+(?<z>${NUM_OR_NONE})(?<zp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
   'i'
 );

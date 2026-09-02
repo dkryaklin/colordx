@@ -2,12 +2,13 @@ import { parseHex } from './colorModels/hex.js';
 import { parseHslBody, parseHslObject, parseHslString } from './colorModels/hsl.js';
 import { parseOklabObject, parseOklabString } from './colorModels/oklab.js';
 import { parseOklchObject, parseOklchString } from './colorModels/oklch.js';
-import { parseRgbBody, parseRgbObject, parseRgbString } from './colorModels/rgb.js';
+import { parseRgbBody, parseRgbObject, parseRgbString, parseSrgbColorString } from './colorModels/rgb.js';
 import type { AnyColor, ColorFormat, ColorParser, RgbColor } from './types.js';
 
 const stringFormatParsers: [ColorParser, ColorFormat][] = [
   [parseHex, 'hex'],
   [parseRgbString, 'rgb'],
+  [parseSrgbColorString, 'rgb'],
   [parseHslString, 'hsl'],
   [parseOklchString, 'oklch'],
   [parseOklabString, 'oklab'],
@@ -65,6 +66,7 @@ const parseString = (input: string): RgbColor | null => {
   let r: RgbColor | null = null;
   if (c === 35 /* # */) r = parseHex(input);
   else if (c === 114 /* r */) r = parseRgbString(input);
+  else if (c === 99 /* c */) r = parseSrgbColorString(input);
   else if (c === 104 /* h */) r = parseHslString(input);
   else if (c === 111 /* o */) {
     r = (input.charCodeAt(3) | 32) === 99 ? parseOklchString(input) : parseOklabString(input);

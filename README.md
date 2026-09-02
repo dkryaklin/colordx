@@ -84,6 +84,7 @@ Accepts any CSS color string or color object:
 colordx('#ff0000');
 colordx('#f00');
 colordx('rgb(255 0 0)');
+colordx('color(srgb 1 0 0)'); // CSS Color 4 color() form of sRGB
 colordx('rgba(255, 0, 0, 0.5)');
 colordx('hsl(0 100% 50%)');
 colordx('oklab(0.6279 0.2249 0.1257)');
@@ -476,6 +477,7 @@ colordx({ x: 41.24, y: 21.26, z: 1.93, colorSpace: 'xyz-d65' as const }).toHex()
 // color() strings parse for both white points
 colordx('color(xyz-d50 43.61 22.25 1.39)').toHex(); // '#ff0000'
 colordx('color(xyz-d65 41.24 21.26 1.93)').toHex(); // '#ff0000'
+colordx('color(xyz 41.24 21.26 1.93)').toHex(); // '#ff0000' — bare xyz is the spec alias for xyz-d65
 
 // Mix in CIE Lab space
 colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
@@ -893,7 +895,6 @@ The same flag works on `.darken()` and `.desaturate()`.
 ### CSS Color 4/5 completeness
 
 - **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`)
-- **`color(srgb ...)`** — the last `color()` space without string parsing (`srgb-linear`, `display-p3`, `rec2020`, `a98-rgb`, `prophoto-rgb`, `xyz-d50`, and `xyz-d65` already supported)
 - **Relative color syntax** — `oklch(from red l c h)` and channel arithmetic like `oklch(from red l calc(c + 0.1) h)`
 
 ### Internals
