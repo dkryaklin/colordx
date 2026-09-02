@@ -13,7 +13,7 @@ import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { round } from '../helpers.js';
 import { rec2020FromLinear } from '../transfer.js';
-import type { AnyColor, Rec2020Color } from '../types.js';
+import type { AnyColor, ColorParser, Rec2020Color } from '../types.js';
 
 const rec2020FromLinearConverter = (r: number, g: number, b: number): [number, number, number] =>
   linearSrgbToOklab(...linearRec2020ToSrgb(r, g, b));
@@ -92,15 +92,17 @@ export const lchToRec2020ChannelsInto = (out: Float64Array | number[], l: number
   labToRec2020ChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
+const parseRec2020: ColorParser = (input) => parseRec2020String(input) ?? parseRec2020Object(input);
+
 /**
  * Returns true if the color is within the Rec.2020 gamut.
  * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ Rec.2020).
  */
-export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020);
+export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020, parseRec2020);
 
 const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutRec2020 = (input: AnyColor) => {
-    const mapped = toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter);
+    const mapped = toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter, parseRec2020);
     if (mapped === null) return new ColordxClass(input);
     // Clipped linear-Rec.2020 → linear-sRGB (wide-gamut when the Rec.2020 color is outside
     // sRGB), then gamma-encode for storage. No round-trip through OKLab.

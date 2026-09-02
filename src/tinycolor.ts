@@ -457,7 +457,9 @@ class TinyColor {
   monochromatic(results?: number): TinyColor[] {
     let n = results || 6;
     const { h, s } = this.toHsv();
-    let { v } = this.toHsv();
+    const { r, g, b } = this._c._rawRgb();
+    // Exact max/255 (toHsv() goes through ×100) so the `% 1` wrap lands on 1 exactly like tinycolor2.
+    let v = Math.max(r, g, b) / 255;
     const out: TinyColor[] = [];
     const step = 1 / n;
     while (n--) {

@@ -13,7 +13,7 @@ import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { round } from '../helpers.js';
 import { srgbFromLinear } from '../transfer.js';
-import type { AnyColor, P3Color } from '../types.js';
+import type { AnyColor, ColorParser, P3Color } from '../types.js';
 
 const p3FromLinear = (r: number, g: number, b: number): [number, number, number] =>
   linearSrgbToOklab(...linearP3ToSrgb(r, g, b));
@@ -94,15 +94,17 @@ export const lchToP3ChannelsInto = (out: Float64Array | number[], l: number, c: 
   labToP3ChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
+const parseP3: ColorParser = (input) => parseP3String(input) ?? parseP3Object(input);
+
 /**
  * Returns true if the color is within the Display-P3 gamut.
  * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ P3).
  */
-export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearP3);
+export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearP3, parseP3);
 
 const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutP3 = (input: AnyColor) => {
-    const mapped = toGamutCustom(input, oklabToLinearP3, p3FromLinear);
+    const mapped = toGamutCustom(input, oklabToLinearP3, p3FromLinear, parseP3);
     if (mapped === null) return new ColordxClass(input);
     // Clipped linear-P3 → linear-sRGB (wide-gamut when the P3 color is outside sRGB),
     // then gamma-encode for storage. No round-trip through OKLab.

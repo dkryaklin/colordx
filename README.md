@@ -392,9 +392,11 @@ Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 bou
 
 Gamut containment is largely hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020 ⊂ ProPhoto. A98 (Adobe RGB 1998) sits between sRGB and Rec.2020 — wider than sRGB, mostly in the greens — but is not a strict superset of Display-P3. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
 
-Gamut checks and mapping accept wide-gamut inputs in every supported form — `oklab()` / `oklch()`, CIE `lab()` / `lch()` strings, and the corresponding object shapes (including branded `{ colorSpace: 'lab' | 'lch' }` objects):
+Gamut checks and mapping accept wide-gamut inputs in every supported form — `oklab()` / `oklch()`, CIE `lab()` / `lch()` strings, `color(display-p3 …)` and friends, and the corresponding object shapes (including branded `{ colorSpace: 'lab' | 'lch' }` objects). `oklab` / `oklch` are read by core; any other format needs its plugin loaded via `extend()`, exactly like `colordx()` itself. A plugin's own helpers (`inGamutP3`, `inGamutRec2020`, …) always understand their own format:
 
 ```ts
+extend([lab, lch]);
+
 // CIE LCH object — recognized as wide-gamut, not clamped at parse time
 const lch = { l: 50, c: 100, h: 180, alpha: 1, colorSpace: 'lch' as const };
 inGamutSrgb(lch);  // false — outside sRGB

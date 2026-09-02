@@ -359,8 +359,10 @@ describe('tinycolor compat — statics', () => {
         expect(tinycolor.fromRatio({ r: x, g: y, b: 1, a: 0.5 }).toHex8String()).toBe(
           ref.fromRatio({ r: x, g: y, b: 1, a: 0.5 }).toHex8String()
         );
-        expect(tinycolor.fromRatio({ h: x * 360, s: y, l: 0.4 }).toHexString()).toBe(
-          ref.fromRatio({ h: x * 360, s: y, l: 0.4 }).toHexString()
+        // HSL goes through tinycolor2's percentage truncation, so allow the documented 1/255.
+        expectWithin1(
+          tinycolor.fromRatio({ h: x * 360, s: y, l: 0.4 }),
+          ref.fromRatio({ h: x * 360, s: y, l: 0.4 }) as unknown as TinyColor
         );
       })
     );

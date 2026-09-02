@@ -13,7 +13,7 @@ import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { round } from '../helpers.js';
 import { a98FromLinear } from '../transfer.js';
-import type { A98Color, AnyColor } from '../types.js';
+import type { A98Color, AnyColor, ColorParser } from '../types.js';
 
 const a98FromLinearConverter = (r: number, g: number, b: number): [number, number, number] =>
   linearSrgbToOklab(...linearA98ToSrgb(r, g, b));
@@ -91,15 +91,17 @@ export const lchToA98ChannelsInto = (out: Float64Array | number[], l: number, c:
   labToA98ChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
+const parseA98: ColorParser = (input) => parseA98String(input) ?? parseA98Object(input);
+
 /**
  * Returns true if the color is within the A98 (Adobe RGB 1998) gamut.
  * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ A98).
  */
-export const inGamutA98 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearA98);
+export const inGamutA98 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearA98, parseA98);
 
 const a98: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutA98 = (input: AnyColor) => {
-    const mapped = toGamutCustom(input, oklabToLinearA98, a98FromLinearConverter);
+    const mapped = toGamutCustom(input, oklabToLinearA98, a98FromLinearConverter, parseA98);
     if (mapped === null) return new ColordxClass(input);
     // Clipped linear-A98 → linear-sRGB (wide-gamut when the A98 color is outside sRGB),
     // then gamma-encode for storage. No round-trip through OKLab.

@@ -70,7 +70,7 @@ export const rgbToXyzD65 = ({ r, g, b, alpha }: RgbColor): XyzD65Color => {
 };
 
 /** XYZ D65 (0–100) → linear sRGB (0–1, unclamped). */
-export const xyzD65ToLinearSrgb = (x: number, y: number, z: number): [number, number, number] => [
+const xyzD65ToLinearSrgb = (x: number, y: number, z: number): [number, number, number] => [
   X_RX * x + X_RY * y + X_RZ * z,
   X_GX * x + X_GY * y + X_GZ * z,
   X_BX * x + X_BY * y + X_BZ * z,

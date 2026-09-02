@@ -13,7 +13,7 @@ import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { round } from '../helpers.js';
 import { prophotoFromLinear } from '../transfer.js';
-import type { AnyColor, ProPhotoColor } from '../types.js';
+import type { AnyColor, ColorParser, ProPhotoColor } from '../types.js';
 
 const prophotoFromLinearConverter = (r: number, g: number, b: number): [number, number, number] =>
   linearSrgbToOklab(...linearProphotoToSrgb(r, g, b));
@@ -96,15 +96,17 @@ export const lchToProphotoChannelsInto = (out: Float64Array | number[], l: numbe
   labToProphotoChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
+const parseProphoto: ColorParser = (input) => parseProphotoString(input) ?? parseProphotoObject(input);
+
 /**
  * Returns true if the color is within the ProPhoto (ROMM RGB) gamut.
  * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ ProPhoto).
  */
-export const inGamutProphoto = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearProphoto);
+export const inGamutProphoto = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearProphoto, parseProphoto);
 
 const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutProphoto = (input: AnyColor) => {
-    const mapped = toGamutCustom(input, oklabToLinearProphoto, prophotoFromLinearConverter);
+    const mapped = toGamutCustom(input, oklabToLinearProphoto, prophotoFromLinearConverter, parseProphoto);
     if (mapped === null) return new ColordxClass(input);
     // Clipped linear-ProPhoto → linear-sRGB (wide-gamut when the ProPhoto color is outside
     // sRGB), then gamma-encode for storage. No round-trip through OKLab.
