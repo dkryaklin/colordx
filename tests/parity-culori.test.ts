@@ -267,7 +267,7 @@ const runParity = () => {
       const cuHslH = cuHsl.h ?? 0,
         cuHslS = (cuHsl.s ?? 0) * 100,
         cuHslL = (cuHsl.l ?? 0) * 100;
-      const hslAchromatic = cxHsl.s < 1 || cuHslS < 1;
+      const hslAchromatic = cxHsl.s < 1 && cuHslS < 1;
       const hslHueDelta = hslAchromatic ? 0 : hueDiff(cxHsl.h, round(cuHslH, 2));
       record('HSL', Math.max(hslHueDelta, absDiff(cxHsl.s, round(cuHslS, 2)), absDiff(cxHsl.l, round(cuHslL, 2))), color);
 
@@ -276,7 +276,7 @@ const runParity = () => {
       const cuHsvH = cuHsv.h ?? 0,
         cuHsvS = (cuHsv.s ?? 0) * 100,
         cuHsvV = (cuHsv.v ?? 0) * 100;
-      const hsvAchromatic = cxHsv.s < 1 || cuHsvS < 1;
+      const hsvAchromatic = cxHsv.s < 1 && cuHsvS < 1;
       const hsvHueDelta = hsvAchromatic ? 0 : hueDiff(cxHsv.h, round(cuHsvH, 2));
       record('HSV', Math.max(hsvHueDelta, absDiff(cxHsv.s, round(cuHsvS, 2)), absDiff(cxHsv.v, round(cuHsvV, 2))), color);
 
@@ -988,7 +988,7 @@ const runParity = () => {
     const cuHsl8H = cuHsl8.h ?? 0,
       cuHsl8S = (cuHsl8.s ?? 0) * 100,
       cuHsl8L = (cuHsl8.l ?? 0) * 100;
-    const hsl8Achromatic = cxHsl8.s < 1 || cuHsl8S < 1;
+    const hsl8Achromatic = cxHsl8.s < 1 && cuHsl8S < 1;
     const hsl8HueDelta = hsl8Achromatic ? 0 : hueDiff(cxHsl8.h, round(cuHsl8H, 2));
     record(
       'RGB8:HSL',
@@ -1001,7 +1001,7 @@ const runParity = () => {
     const cuHsv8H = cuHsv8.h ?? 0,
       cuHsv8S = (cuHsv8.s ?? 0) * 100,
       cuHsv8V = (cuHsv8.v ?? 0) * 100;
-    const hsv8Achromatic = cxHsv8.s < 1 || cuHsv8S < 1;
+    const hsv8Achromatic = cxHsv8.s < 1 && cuHsv8S < 1;
     const hsv8HueDelta = hsv8Achromatic ? 0 : hueDiff(cxHsv8.h, round(cuHsv8H, 2));
     record(
       'RGB8:HSV',

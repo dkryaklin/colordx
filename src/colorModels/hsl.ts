@@ -1,4 +1,15 @@
-import { ANGLE_UNITS, NUM, NUM_OR_NONE, clamp, isNone, isObject, normalizeHue, parseNum, round } from '../helpers.js';
+import {
+  ACHROMATIC_EPS,
+  ANGLE_UNITS,
+  NUM,
+  NUM_OR_NONE,
+  clamp,
+  isNone,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+} from '../helpers.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 const clampHsl = (hsl: HslColor): HslColor => ({
@@ -18,11 +29,11 @@ export const rgbToHslRaw = ({ r, g, b, alpha }: RgbColor): HslColor => {
   const max = Math.max(rn, gn, bn),
     min = Math.min(rn, gn, bn);
   const l = (max + min) / 2;
+  const d = max - min;
   let h = 0,
     s = 0;
 
-  if (max !== min) {
-    const d = max - min;
+  if (d > ACHROMATIC_EPS) {
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
       case rn:
@@ -64,7 +75,9 @@ const _hueToRgb = (p: number, q: number, t: number): number => {
 export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
   const sn = s / 100,
     ln = l / 100;
-  const q = ln < 0.5 ? ln * (1 + sn) : ln + sn - ln * sn;
+  // `ln + sn * (1 - ln)` rather than `ln + sn - ln * sn`: the latter rounds `1 + sn` before
+  // subtracting, so l=100 gives q=0.9999999999999999 and rgbToHsl reads white as chromatic.
+  const q = ln < 0.5 ? ln * (1 + sn) : ln + sn * (1 - ln);
   const p = 2 * ln - q;
   const hue = (((h % 360) + 360) % 360) / 360;
   return {

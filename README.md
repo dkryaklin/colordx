@@ -861,6 +861,8 @@ What is different:
 - **Precision.** tinycolor2 truncates percentages to two decimals when it re-parses HSL between operations. colordx keeps full precision, so `lighten()`, `darken()`, `saturate()`, `desaturate()`, `spin()` and the harmony helpers can differ from tinycolor2 by 1/255 on a channel. The test suite checks every operation against tinycolor2 within that bound.
 - **`toName()`** returns `'rebeccapurple'` for `#663399`; tinycolor2 returns `false` there (a lookup bug).
 - **`tinycolor.names`** holds full hex (`ff0000`); tinycolor2 holds shortened hex (`f00`).
+- **CSS angle units** on a hue (`hsl(0.5turn 100% 50%)`, `200grad`, `3.14rad`) convert to degrees. tinycolor2 rejects them as invalid.
+- **`analogous()` / `monochromatic()`** always terminate. tinycolor2 loops forever on a negative or fractional count ([#280](https://github.com/bgrins/TinyColor/issues/280)); here it is floored, with anything below 1 treated as 1.
 - **`.toColordx()`** is new: the immutable `Colordx` underneath, for oklch, gamut mapping and plugins.
 
 ## Notes

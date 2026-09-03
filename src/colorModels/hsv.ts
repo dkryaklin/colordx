@@ -1,4 +1,14 @@
-import { ANGLE_UNITS, NUM, NUM_OR_NONE, clamp, isObject, normalizeHue, parseNum, round } from '../helpers.js';
+import {
+  ACHROMATIC_EPS,
+  ANGLE_UNITS,
+  NUM,
+  NUM_OR_NONE,
+  clamp,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+} from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -19,10 +29,11 @@ export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
   const max = Math.max(rn, gn, bn),
     min = Math.min(rn, gn, bn);
   const d = max - min;
-  const s = max === 0 ? 0 : d / max;
-  let h = 0;
+  let h = 0,
+    s = 0;
 
-  if (max !== min) {
+  if (d > ACHROMATIC_EPS) {
+    s = d / max;
     switch (max) {
       case rn:
         h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;

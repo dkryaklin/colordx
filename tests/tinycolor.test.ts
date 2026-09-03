@@ -172,6 +172,58 @@ describe('tinycolor compat — parsing and output match tinycolor2', () => {
     );
   });
 
+  it('CSS angle units on the hue convert to degrees (tinycolor2 rejects them; parseFloat would read 0.5turn as 0.5deg)', () => {
+    const cyan = tinycolor('hsl(180, 100%, 50%)').toRgbString();
+    for (const input of [
+      'hsl(0.5turn 100% 50%)',
+      'hsl(0.5turn, 100%, 50%)',
+      'hsl(180deg, 100%, 50%)',
+      'hsl(200grad 100% 50%)',
+      `hsl(${Math.PI}rad 100% 50%)`,
+      'hsv(0.5TURN, 100%, 100%)',
+      { h: '0.5turn', s: 1, l: 0.5 },
+      { h: '200grad', s: 1, v: 1 },
+    ]) {
+      expect(tinycolor(input).toRgbString(), String(input)).toBe(cyan);
+      expect(tinycolor(input).isValid()).toBe(true);
+    }
+    // negative angles clamp to 0 like tinycolor2's bound01 does for plain degrees
+    expect(tinycolor('hsl(-0.25turn 100% 50%)').toRgbString()).toBe(R({ h: -90, s: 1, l: 0.5 }).toRgbString());
+    // a unit alone is not a number
+    expect(tinycolor('hsl(turn, 100%, 50%)').isValid()).toBe(false);
+  });
+
+  it('string tokens must be whole CSS numbers, like tinycolor2 (parseFloat would read `1e2` as 1)', () => {
+    expect(R('hsl(1e2, 100%, 50%)').isValid()).toBe(false);
+    expect(tinycolor('hsl(1e2, 100%, 50%)').isValid()).toBe(false);
+    // tinycolor2 is unanchored at the end: the last token's numeric prefix is used, the rest ignored
+    expect(R('rgb(0, 0, 1e2)').toRgbString()).toBe('rgb(0, 0, 1)');
+    expect(tinycolor('rgb(0, 0, 1e2)').toRgbString()).toBe('rgb(0, 0, 1)');
+    for (const t of ['180foo', '1e2', '0x10', '180.', '3e', '2..5', 'e5', '--5', '5-', '5%%', '1-1']) {
+      for (const s of [`hsl(${t}, 100%, 50%)`, `rgb(${t}, 0, 0)`, `rgb(0, ${t}, 0)`, `rgb(0, 0, ${t})`, `hsv(0, ${t}, 100%)`]) {
+        expect(tinycolor(s).isValid(), s).toBe(R(s).isValid());
+        if (R(s).isValid()) expect(tinycolor(s).toRgbString(), s).toBe(R(s).toRgbString());
+      }
+    }
+    const tokenArb = fc.string({
+      unit: fc.constantFrom('0', '1', '9', '.', '%', '+', '-', 'e', 'x', 'f'),
+      minLength: 1,
+      maxLength: 6,
+    });
+    fc.assert(
+      fc.property(tokenArb, fc.constantFrom('rgb', 'hsl', 'hsv'), fc.integer({ min: 0, max: 2 }), (t, fn, pos) => {
+        // tinycolor2's bound01 wraps a percentage above 100 modulo the channel max (900% → 140); the shim clamps
+        if (/^[-+]?(?:\d*\.\d+|\d+)%/.test(t) && parseFloat(t) > 100) return;
+        const parts = fn === 'rgb' ? ['0', '0', '0'] : ['0', '50%', '50%'];
+        parts[pos] = t;
+        const s = `${fn}(${parts.join(', ')})`;
+        expect(tinycolor(s).isValid(), s).toBe(R(s).isValid());
+        if (R(s).isValid()) expect(tinycolor(s).toRgbString(), s).toBe(R(s).toRgbString());
+      }),
+      { numRuns: 500 }
+    );
+  });
+
   it('getOriginalInput returns the input untouched', () => {
     const obj = { r: 1, g: 2, b: 3 };
     expect(tinycolor(obj).getOriginalInput()).toBe(obj);
@@ -298,6 +350,23 @@ describe('tinycolor compat — combinations', () => {
         o.forEach((c, i) => expectWithin1(c, t[i]!));
       })
     );
+  });
+
+  it('analogous / monochromatic terminate on a negative, fractional or non-finite count (bgrins/TinyColor#280)', () => {
+    // tinycolor2's `--results` / `results--` loops never reach 0 here and run out of memory.
+    const c = tinycolor('#3d7a9f');
+    expect(c.analogous(-1)).toHaveLength(1);
+    expect(c.analogous(0.5)).toHaveLength(1);
+    expect(c.analogous(2.5).map((x) => x.toHexString())).toEqual(c.analogous(2).map((x) => x.toHexString()));
+    expect(c.analogous(Infinity)).toHaveLength(6);
+    expect(c.analogous(NaN)).toHaveLength(6);
+    expect(c.monochromatic(-1)).toHaveLength(1);
+    expect(c.monochromatic(0.5)).toHaveLength(1);
+    expect(c.monochromatic(1.5).map((x) => x.toHexString())).toEqual(c.monochromatic(1).map((x) => x.toHexString()));
+    expect(c.monochromatic(Infinity)).toHaveLength(6);
+    // `slices` only sets the step; it never drives a loop
+    expect(c.analogous(3, -1)).toHaveLength(3);
+    expect(c.analogous(3, 0.5)).toHaveLength(3);
   });
 
   it('first element of triad/tetrad/splitcomplement/analogous is the instance itself', () => {

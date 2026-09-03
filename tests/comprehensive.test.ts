@@ -232,7 +232,24 @@ describe('HSL — hslToRgb edge cases', () => {
     const rgb = hslToRgb({ h: 180, s: 100, l: 100, alpha: 1 });
     expect(rgb.r).toBe(255);
     expect(rgb.g).toBe(255);
-    expect(rgb.b).toBeCloseTo(255, 0);
+    expect(rgb.b).toBe(255);
+  });
+
+  it('l=100 is exactly white for every hue and saturation, so HSL/HSV read back achromatic', () => {
+    // `ln + sn - ln * sn` rounds to 0.9999999999999999 for some s, which made rgbToHsl see
+    // max !== min and invent a hue: hsl(316, 63%, 100%) read back as hsl(120 100% 100%).
+    expect(colordx('hsl(316, 63%, 100%)').toHslString()).toBe('hsl(0 0% 100%)');
+    expect(colordx('hsl(316, 63%, 100%)').hue()).toBe(0);
+    for (let h = 0; h < 360; h += 7) {
+      for (const s of [1, 25, 50, 63, 75, 99, 100]) {
+        for (const l of [0, 100]) {
+          const rgb = hslToRgb({ h, s, l, alpha: 1 });
+          const v = l === 0 ? 0 : 255;
+          expect([rgb.r, rgb.g, rgb.b]).toEqual([v, v, v]);
+          expect(rgbToHsl(rgb)).toEqual({ h: 0, s: 0, l, alpha: 1 });
+        }
+      }
+    }
   });
 });
 

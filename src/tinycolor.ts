@@ -16,7 +16,7 @@ import { parseHex, toHexByte } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { hsvToRgb, rgbToHsvRaw } from './colorModels/hsv.js';
 import { Colordx } from './colordx.js';
-import { clamp, isObject } from './helpers.js';
+import { ANGLE_UNITS, clamp, isObject } from './helpers.js';
 import { NAMES } from './plugins/names.js';
 import { srgbToLinear } from './transfer.js';
 import type { RgbColor } from './types.js';
@@ -99,6 +99,11 @@ names.burntsienna = 'ea7e5d'; // tinycolor2 extra, not a CSS name
 hexNames.ea7e5d = 'burntsienna';
 
 const UNIT_RE = /[-+]?(?:\d*\.\d+|\d+)%?/;
+const ANGLE_RE = /^([-+]?(?:\d*\.\d+|\d+))(deg|grad|rad|turn)$/;
+// tinycolor2's CSS_UNIT as a prefix. Its string matcher is unanchored at the end, so every token
+// must be a whole number except the last, where tinycolor2 takes the numeric prefix and ignores the
+// rest. UNIT_RE stays unanchored for object input, where tinycolor2 lets parseFloat read `180foo`.
+const TOKEN_RE = /^[-+]?(?:\d*\.\d+|\d+)%?/;
 const HEX_RE = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
 const FN_RE = /^(rgba?|hsla?|hsva?)[\s(]+([^)]*?)\s*\)?$/;
 
@@ -112,6 +117,13 @@ const chan = (n: Unit, max: number): number => {
   if (n.includes('%')) return (clamp(v, 0, 100) / 100) * max;
   if (v === 1 && n.includes('.')) return max; // "1.0" means 100%
   return clamp(v, 0, max);
+};
+
+// CSS angle units on a hue. tinycolor2 rejects `hsl(0.5turn 100% 50%)`; parseFloat would read
+// it as 0.5deg, so convert to degrees instead of returning a plausible wrong colour.
+const hue = (n: Unit): Unit => {
+  const m = typeof n === 'string' ? ANGLE_RE.exec(n) : null;
+  return m ? parseFloat(m[1]!) * ANGLE_UNITS[m[2]!]! : n;
 };
 
 // tinycolor2's convertToPercentage: s/l/v at or below 1 are fractions. Returns [0, 100].
@@ -129,6 +141,14 @@ const boundAlpha = (a: unknown): number => {
 
 // tinycolor2's `amount === 0 ? 0 : amount || default`.
 const amt = (n: number | undefined, d: number): number => (n === 0 ? 0 : n || d);
+
+// tinycolor2's `results || 6`, then coerced to a positive integer: tinycolor2's `--results` /
+// `results--` loops never reach 0 for a negative or fractional count and run out of memory
+// (bgrins/TinyColor#280). A non-finite count falls back to the default.
+const count = (n: number | undefined, d: number): number => {
+  const v = n || d;
+  return Number.isFinite(v) ? (v >= 1 ? Math.floor(v) : 1) : d;
+};
 
 interface Parsed {
   rgb: RgbColor;
@@ -158,6 +178,15 @@ const parseInput = (input: unknown): Parsed => {
     const p = fm[2]!.split(/[\s,/]+/).filter(Boolean);
     if (p.length < 3 || p.length > 4) return invalid;
     const k = fm[1]!.slice(0, 3);
+    // tinycolor2's matcher rejects `1e2`, `180foo`, `0x10`; parseFloat would read them as 100, 180, 0.
+    const last = p.length - 1;
+    for (let i = 0; i <= last; i++) {
+      const t = p[i]!;
+      if (i === 0 && k !== 'rgb' && ANGLE_RE.test(t)) continue;
+      const m = TOKEN_RE.exec(t);
+      if (!m || (i < last && m[0].length !== t.length)) return invalid;
+      p[i] = m[0];
+    }
     obj =
       k === 'rgb'
         ? { r: p[0], g: p[1], b: p[2] }
@@ -177,10 +206,10 @@ const parseInput = (input: unknown): Parsed => {
     rgb = { r: chan(obj.r, 255), g: chan(obj.g, 255), b: chan(obj.b, 255), alpha: 1 };
     format = String(obj.r).endsWith('%') ? 'prgb' : 'rgb';
   } else if (isUnit(obj.h) && isUnit(obj.s) && isUnit(obj.v)) {
-    rgb = hsvToRgb({ h: chan(obj.h, 360), s: pct(obj.s), v: pct(obj.v), alpha: 1 });
+    rgb = hsvToRgb({ h: chan(hue(obj.h), 360), s: pct(obj.s), v: pct(obj.v), alpha: 1 });
     format = 'hsv';
   } else if (isUnit(obj.h) && isUnit(obj.s) && isUnit(obj.l)) {
-    rgb = hslToRgb({ h: chan(obj.h, 360), s: pct(obj.s), l: pct(obj.l), alpha: 1 });
+    rgb = hslToRgb({ h: chan(hue(obj.h), 360), s: pct(obj.s), l: pct(obj.l), alpha: 1 });
     format = 'hsl';
   } else {
     return invalid;
@@ -444,7 +473,7 @@ class TinyColor {
     return [this, new TinyColor({ h: (h + 72) % 360, s, l }), new TinyColor({ h: (h + 216) % 360, s, l })];
   }
   analogous(results?: number, slices?: number): TinyColor[] {
-    let n = results || 6;
+    let n = count(results, 6);
     const part = 360 / (slices || 30);
     const hsl = this.toHsl();
     const out: TinyColor[] = [this];
@@ -455,7 +484,7 @@ class TinyColor {
     return out;
   }
   monochromatic(results?: number): TinyColor[] {
-    let n = results || 6;
+    let n = count(results, 6);
     const { h, s } = this.toHsv();
     const { r, g, b } = this._c._rawRgb();
     // Exact max/255 (toHsv() goes through ×100) so the `% 1` wrap lands on 1 exactly like tinycolor2.

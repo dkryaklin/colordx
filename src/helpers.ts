@@ -9,6 +9,12 @@ export const round = (n: number, d = 0): number => {
 // when h is already in [0, 360) due to binary floating-point subtraction.
 export const normalizeHue = (h: number): number => (h >= 0 && h < 360 ? h : ((h % 360) + 360) % 360);
 
+// Channels closer than this (0–1 scale) are read as achromatic by rgbToHsl/rgbToHsv. Matrix-based
+// producers (Lab, LCH, mixOklab, display-p3, …) leave up to ~1.5e-7 of noise on a grey; an exact
+// max !== min then invents a hue. 1e-6 is 50× below the smallest saturation toHsl() can print
+// (0.005%) and 4000× below one 16-bit step, so no representable colour reads differently.
+export const ACHROMATIC_EPS = 1e-6;
+
 export const ANGLE_UNITS: Record<string, number> = { deg: 1, grad: 0.9, turn: 360, rad: 360 / (2 * Math.PI) };
 
 export const isNumber = (n: unknown): n is number => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
