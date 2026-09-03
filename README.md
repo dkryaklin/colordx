@@ -187,9 +187,10 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
 .isEqual('#f00')   // exact RGB equality
+.over('#fff')      // source-over composite of a translucent color onto a bg
 // With a11y plugin loaded:
-.luminance()       // relative luminance (0–1, WCAG)
-.contrast('#fff')  // WCAG 2.x contrast ratio (1–21)
+.luminance()       // relative luminance (0–1, WCAG), optional precision
+.contrast('#fff')  // WCAG 2.x contrast ratio (1–21), optional precision
 // With mix plugin loaded:
 .mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
 .mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
@@ -645,6 +646,23 @@ colordx('#aaa').readableScore('#fff'); // 'fail'
 colordx('#777').minReadable('#fff'); // darkened/lightened to reach 4.5
 ```
 
+Numbers are rounded for display only (`contrast` to 2 decimals, `apcaContrast` to 1). Every `isReadable*` / `readableScore` gate uses the unrounded value, so a true 4.496:1 fails AA even though `contrast()` shows 4.5. Pass a precision to see more digits:
+
+```ts
+colordx('#d200d2').contrast('#fff'); // 4.5
+colordx('#d200d2').contrast('#fff', 4); // 4.4959
+colordx('#d200d2').isReadable('#fff'); // false
+```
+
+A translucent fg is composited over the bg first. To check a stack (fg over a translucent surface over the page), flatten it bottom up with `over()`:
+
+```ts
+const surface = colordx('rgba(255, 255, 255, 0.2)').over('#000');
+colordx('rgba(255, 255, 255, 0.6)').over(surface).contrast('#000');
+```
+
+Colors outside sRGB are gamut-mapped (not clipped) before the check. WCAG always runs on the sRGB-mapped color; APCA can run on the Display-P3-mapped color with its own coefficients via `{ space: 'p3' }`.
+
 APCA (Accessible Perceptual Contrast Algorithm) — the projected replacement for WCAG 2.x in WCAG 3.0:
 
 ```ts
@@ -658,6 +676,11 @@ colordx('#ffffff').apcaContrast('#cf674a'); // -69.5  ← white text on orange
 colordx('#000').isReadableApca('#fff'); // true
 colordx('#777').isReadableApca('#fff'); // false
 colordx('#777').isReadableApca('#fff', { size: 'large' }); // true
+
+// Options: precision (default 1) and space ('srgb' | 'p3', default 'srgb')
+colordx('#9900ff').apcaContrast('#fff', { precision: 3 }); // 74.956
+colordx('oklch(0.8 0.3 145)').apcaContrast('#000', { space: 'p3' }); // -73.3 (P3-mapped), vs -74.8 in sRGB
+colordx('#777').isReadableApca('#fff', { space: 'p3' }); // false
 ```
 
 APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.

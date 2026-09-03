@@ -207,6 +207,22 @@ export class Colordx {
     return Colordx._make(hslToRgb({ h: value, s, l, alpha }));
   }
 
+  /** Source-over composite of this color onto `background`, in gamma sRGB (as browsers blend). */
+  over(background: AnyColor | Colordx): Colordx {
+    const fg = this._rgb;
+    if (fg.alpha === 1) return this;
+    const bg = new Colordx(background)._rgb;
+    const alpha = fg.alpha + bg.alpha * (1 - fg.alpha);
+    if (alpha === 0) return Colordx._make({ r: 0, g: 0, b: 0, alpha: 0 });
+    const w = fg.alpha / alpha;
+    return Colordx._make({
+      r: fg.r * w + bg.r * (1 - w),
+      g: fg.g * w + bg.g * (1 - w),
+      b: fg.b * w + bg.b * (1 - w),
+      alpha,
+    });
+  }
+
   /** Get or set the OKLCh lightness in [0, 1]. Setter returns a new `Colordx`. */
   lightness(): number;
   lightness(value: number): Colordx;
