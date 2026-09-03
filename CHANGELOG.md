@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 6.1.0
+
+### Minor Changes
+
+- Fix achromatic colors reporting a phantom hue and saturation: hslToRgb is now exact at l=100 and rgbToHsl/rgbToHsv treat sub-1e-6 channel differences as grey, so greys from Lab, LCH, mixOklab and display-p3 read back as hsl(0 0% l); in the tinycolor shim, accept deg/grad/rad/turn hues, reject invalid string tokens like 1e2, 180foo and 0x10 as tinycolor2 does, and floor analogous()/monochromatic() counts to at least 1 instead of looping forever on negative or fractional values ([94d2f74](https://github.com/dkryaklin/colordx/commit/94d2f74800e2ef9992f67e575e049dfd79f3d39c))
+
 ## 6.0.0
 
 ### Major Changes
