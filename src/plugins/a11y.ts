@@ -1,12 +1,18 @@
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
+import { rgbToOklch } from '../colorModels/oklch.js';
 import { linearP3ToSrgb, oklabToLinearP3, srgbLinearToP3Linear } from '../colorModels/p3.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { toGamutCustom } from '../gamut.js';
-import { round } from '../helpers.js';
+import { round, toByte } from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { AnyColor } from '../types.js';
 
 export type ApcaSpace = 'srgb' | 'p3';
+export interface FixContrastOptions {
+  wcag?: number;
+  apca?: number;
+  space?: ApcaSpace;
+}
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -15,6 +21,7 @@ declare module '@colordx/core' {
     isReadable(background?: AnyColor | Colordx, options?: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' }): boolean;
     readableScore(background?: AnyColor | Colordx): 'AAA' | 'AA' | 'AA large' | 'fail';
     minReadable(background?: AnyColor | Colordx): Colordx;
+    fixContrast(background?: AnyColor | Colordx, options?: FixContrastOptions): Colordx | null;
     apcaContrast(background?: AnyColor | Colordx, options?: { precision?: number; space?: ApcaSpace }): number;
     isReadableApca(
       background?: AnyColor | Colordx,
@@ -41,6 +48,7 @@ const APCA = {
   deltaYmin: 0.0005,
 };
 
+const DEG = Math.PI / 180;
 const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 const p3FromLinear = (r: number, g: number, b: number): [number, number, number] =>
   linearSrgbToOklab(...linearP3ToSrgb(r, g, b));
@@ -93,6 +101,53 @@ const apcaLc = (fg: Colordx, bg: Colordx, space: ApcaSpace): number => {
   }
   const c = (Ys ** APCA.revBG - Yt ** APCA.revTXT) * APCA.scale;
   return c > -APCA.loClip ? 0 : (c + APCA.offset) * 100;
+};
+
+// oklch(l c h) gamut-mapped into `space` and quantized to its output format (bytes, or 4-decimal P3),
+// so the fix passes as written, not just as a float.
+const quantized = (C: typeof Colordx, l: number, c: number, h: number, alpha: number, space: ApcaSpace): Colordx => {
+  if (space === 'srgb') {
+    const { r, g, b } = C.toGamutSrgb({ l, c, h, alpha })._rawRgb();
+    return new C({ r: toByte(r), g: toByte(g), b: toByte(b), alpha });
+  }
+  const lab = { l, a: c * Math.cos(h * DEG), b: c * Math.sin(h * DEG), alpha };
+  const [pr, pg, pb] = toGamutCustom(lab, oklabToLinearP3, p3FromLinear)!.linear.map((v) =>
+    srgbToLinear(round(srgbFromLinear(v), 4))
+  );
+  return C._makeFromLinearSrgb(...linearP3ToSrgb(pr!, pg!, pb!), alpha);
+};
+
+// Spec rule 10: keep hue, move lightness, let the gamut map reduce chroma only when it must,
+// smallest move that passes. Same-polarity side first (APCA sign is kept), other side only if needed.
+const fixContrast = (
+  C: typeof Colordx,
+  fg: Colordx,
+  bg: Colordx,
+  wcag: number | undefined,
+  apca: number | undefined,
+  space: ApcaSpace
+): Colordx | null => {
+  const passes = (x: Colordx): boolean =>
+    (wcag === undefined || wcagRatio(x, bg) >= wcag) && (apca === undefined || Math.abs(apcaLc(x, bg, space)) >= apca);
+  if (passes(fg)) return fg;
+  const { l, c, h, alpha } = rgbToOklch(fg._rawRgb());
+  const search = (extreme: number): Colordx | null => {
+    let best = quantized(C, extreme, c, h, alpha, space);
+    if (!passes(best)) return null;
+    let lo = l;
+    let hi = extreme;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      const cand = quantized(C, mid, c, h, alpha, space);
+      if (passes(cand)) {
+        hi = mid;
+        best = cand;
+      } else lo = mid;
+    }
+    return best;
+  };
+  const darker = wcagY(fg) <= wcagY(bg);
+  return search(darker ? 0 : 1) ?? search(darker ? 1 : 0);
 };
 
 const a11y: Plugin = (ColordxClass) => {
@@ -150,24 +205,18 @@ const a11y: Plugin = (ColordxClass) => {
     return size === 'large' ? ratio >= 3 : ratio >= 4.5;
   };
 
-  ColordxClass.prototype.minReadable = function (this: Colordx, background: AnyColor | Colordx = '#fff'): Colordx {
-    const bg = new ColordxClass(background);
-    const bgLuminance = wcagY(bg);
-    // Pick direction by which extreme (black vs white) gives higher max contrast against the background.
-    // Using fg vs bg luminance comparison fails for dark-on-dark: fg darker than bg → darken, but
-    // darkening toward black may never reach 4.5:1 against a dark background.
-    const darkContrast = (bgLuminance + 0.05) / 0.05;
-    const lightContrast = 1.05 / (bgLuminance + 0.05);
-    const shouldDarken = darkContrast >= lightContrast;
-    const step = (c: Colordx) => (shouldDarken ? c.darken(0.01) : c.lighten(0.01));
+  ColordxClass.prototype.fixContrast = function (
+    this: Colordx,
+    background: AnyColor | Colordx = '#fff',
+    options: FixContrastOptions = {}
+  ): Colordx | null {
+    const { apca, space = 'srgb' } = options;
+    const wcag = options.wcag ?? (apca === undefined ? 4.5 : undefined);
+    return fixContrast(ColordxClass, this, new ColordxClass(background), wcag, apca, space);
+  };
 
-    if (wcagRatio(this, bg) >= 4.5) return this;
-    let color = step(this);
-    for (let i = 1; i < 100; i++) {
-      if (wcagRatio(color, bg) >= 4.5) break;
-      color = step(color);
-    }
-    return color;
+  ColordxClass.prototype.minReadable = function (this: Colordx, background: AnyColor | Colordx = '#fff'): Colordx {
+    return this.fixContrast(background) ?? this;
   };
 };
 

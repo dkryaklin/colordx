@@ -571,6 +571,15 @@ describe('README — a11y plugin (WCAG)', () => {
     const result = (colordx('#777') as any).minReadable('#fff');
     expect((result as any).contrast('#fff')).toBeGreaterThanOrEqual(4.5);
   });
+  it('fixContrast examples', () => {
+    expect((colordx('#3b82f6') as any).fixContrast('#fff').toHex()).toBe('#2c72e5');
+    expect(
+      Math.abs((colordx('#3b82f6') as any).fixContrast('#fff', { apca: 75 }).apcaContrast('#fff'))
+    ).toBeGreaterThanOrEqual(75);
+    expect((colordx('#3b82f6') as any).fixContrast('#fff', { wcag: 4.5, apca: 75 }).toHex()).toBe('#2168da');
+    expect((colordx('#999') as any).fixContrast('#777', { wcag: 7 })).toBeNull();
+    expect((colordx('oklch(0.9 0.3 145)') as any).fixContrast('#fff', { space: 'p3' }).isReadable('#fff')).toBe(true);
+  });
   it('contrast precision: display 4.5, true 4.4959, gate fails', () => {
     expect(colordx('#d200d2').contrast('#fff')).toBe(4.5);
     expect(colordx('#d200d2').contrast('#fff', 4)).toBe(4.4959);

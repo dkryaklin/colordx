@@ -643,7 +643,17 @@ colordx('#000').readableScore('#fff'); // 'AAA'
 colordx('#e60000').readableScore('#ffff47'); // 'AA'
 colordx('#949494').readableScore('#fff'); // 'AA large'
 colordx('#aaa').readableScore('#fff'); // 'fail'
-colordx('#777').minReadable('#fff'); // darkened/lightened to reach 4.5
+colordx('#777').minReadable('#fff'); // fixContrast at 4.5, or the input if nothing passes
+```
+
+`fixContrast` finds the nearest color that passes a gate. It keeps hue, moves OKLCH lightness, lets the gamut map reduce chroma only when it must, and returns `null` when no color with that hue passes. A darker fg stays darker (APCA sign is kept) unless nothing on that side passes.
+
+```ts
+colordx('#3b82f6').fixContrast('#fff'); // #2c72e5 — WCAG 4.5 by default
+colordx('#3b82f6').fixContrast('#fff', { apca: 75 }); // APCA only, |Lc| >= 75
+colordx('#3b82f6').fixContrast('#fff', { wcag: 4.5, apca: 75 }); // #2168da — both
+colordx('#999').fixContrast('#777', { wcag: 7 }); // null — no grey reaches 7:1 on #777
+colordx('oklch(0.9 0.3 145)').fixContrast('#fff', { space: 'p3' }); // fix stays inside Display-P3
 ```
 
 Numbers are rounded for display only (`contrast` to 2 decimals, `apcaContrast` to 1). Every `isReadable*` / `readableScore` gate uses the unrounded value, so a true 4.496:1 fails AA even though `contrast()` shows 4.5. Pass a precision to see more digits:
