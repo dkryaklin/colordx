@@ -7,12 +7,11 @@
 // For plugins we report *incremental* size: (core + plugin) bundled together,
 // minus core alone. That's what adding a plugin actually costs you at runtime,
 // since the shared helpers are already paid for by core.
-
-import { build } from 'esbuild';
 import { statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { build } from 'esbuild';
 
 const DIST = join(import.meta.dirname, '..', 'dist');
 const CORE = join(DIST, 'index.mjs');
@@ -25,6 +24,7 @@ interface Plugin {
 const PLUGINS: Plugin[] = [
   { name: 'a11y', entry: join(DIST, 'plugins', 'a11y.mjs') },
   { name: 'cmyk', entry: join(DIST, 'plugins', 'cmyk.mjs') },
+  { name: 'cvd', entry: join(DIST, 'plugins', 'cvd.mjs') },
   { name: 'harmonies', entry: join(DIST, 'plugins', 'harmonies.mjs') },
   { name: 'hsv', entry: join(DIST, 'plugins', 'hsv.mjs') },
   { name: 'hwb', entry: join(DIST, 'plugins', 'hwb.mjs') },

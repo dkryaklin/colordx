@@ -22,6 +22,7 @@ import {
 import a11y from '../src/plugins/a11y.js';
 import a98rgb, { inGamutA98, oklchToA98Channels } from '../src/plugins/a98rgb.js';
 import cmyk from '../src/plugins/cmyk.js';
+import cvd from '../src/plugins/cvd.js';
 import harmonies from '../src/plugins/harmonies.js';
 import hsv from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
@@ -49,7 +50,24 @@ import srgbLinear from '../src/plugins/srgb-linear.js';
 import tinycolor from '../src/tinycolor.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020, a98rgb, prophoto, srgbLinear]);
+  extend([
+    a11y,
+    cmyk,
+    cvd,
+    harmonies,
+    hsv,
+    hwb,
+    lab,
+    lch,
+    minify,
+    mix,
+    names,
+    p3,
+    rec2020,
+    a98rgb,
+    prophoto,
+    srgbLinear,
+  ]);
 });
 
 describe('README — Usage', () => {
@@ -403,6 +421,7 @@ describe('README — lab plugin', () => {
   it('mixLab', () => {
     expect((colordx('#000000') as any).mixLab('#ffffff').toHex()).toBe('#777777');
   });
+  it('delta precision', () => expect((colordx('#ef4444') as any).delta('#10b981', 5)).toBe(0.71465));
   it('delta identical colors → 0', () => {
     expect((colordx('#ff0000') as any).delta('#ff0000')).toBe(0);
   });
@@ -609,6 +628,17 @@ describe('README — a11y plugin (APCA)', () => {
   });
   it('isReadableApca #777 large → true', () => {
     expect((colordx('#777') as any).isReadableApca('#fff', { size: 'large' })).toBe(true);
+  });
+});
+
+describe('README — cvd plugin', () => {
+  it('protanopia red', () => expect((colordx('#ff0000') as any).simulate('protanopia').toHex()).toBe('#6d5f00'));
+  it('deuteranopia red', () => expect((colordx('#ff0000') as any).simulate('deuteranopia').toHex()).toBe('#a39000'));
+  it('tritanopia blue', () => expect((colordx('#0000ff') as any).simulate('tritanopia').toHex()).toBe('#006087'));
+  it('status colours collapse under deuteranopia', () => {
+    const [a, b] = [colordx('#ef4444') as any, colordx('#10b981') as any];
+    expect(a.delta(b, 5)).toBe(0.71465);
+    expect(a.simulate('deuteranopia').delta(b.simulate('deuteranopia'), 5)).toBeCloseTo(0.14, 1);
   });
 });
 

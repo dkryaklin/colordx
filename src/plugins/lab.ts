@@ -20,7 +20,7 @@ declare module '@colordx/core' {
     toXyzD65(precision?: number): XyzD65Color;
     toXyzD65String(precision?: number): string;
     mixLab(color: AnyColor, ratio?: number): Colordx;
-    delta(color?: AnyColor): number;
+    delta(color?: AnyColor | Colordx, precision?: number): number;
   }
 }
 
@@ -83,8 +83,11 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     );
   };
   /** Returns ΔE2000 color difference normalized to [0, 1] (divide by 100). 0 = identical, 1 = maximally different. */
-  ColordxClass.prototype.delta = function (color: AnyColor = '#fff') {
-    return round(deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(new ColordxClass(color)._rawRgb())) / 100, 3);
+  ColordxClass.prototype.delta = function (color: AnyColor | Colordx = '#fff', precision = 3) {
+    return round(
+      deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(new ColordxClass(color)._rawRgb())) / 100,
+      precision
+    );
   };
   parsers.push(parseLabString, parseLabObject, parseXyzD65String, parseXyzD65Object, parseXyzD50String, parseXyzObject);
   formatParsers.push(
