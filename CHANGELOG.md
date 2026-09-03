@@ -1,5 +1,14 @@
 # @colordx/core
 
+## 6.2.0
+
+### Minor Changes
+
+- Add over() source-over compositing, gate isReadable/readableScore/minReadable/isReadableApca on unrounded contrast values, accept precision arguments on luminance/contrast/apcaContrast, gamut-map colors before WCAG and APCA checks, and add `{ space: 'p3' }` to apcaContrast and isReadableApca ([d6e79aa](https://github.com/dkryaklin/colordx/commit/d6e79aa9fbc052192ce556d0743261f382677845))
+- Add fixContrast(background, { wcag, apca, space }) to find the nearest hue-preserving OKLCH color meeting WCAG and/or APCA gates (returns null when none passes) and reimplement minReadable on top of it, falling back to the original color when no fix exists ([20d31ef](https://github.com/dkryaklin/colordx/commit/20d31ef565660e6fb7df4e3b256465a7edd6c575))
+- Fix tinycolor shim to treat "1.0%" as 100% for RGB channels and HSL/HSV saturation, lightness, and value, matching tinycolor2 ([ece82ba](https://github.com/dkryaklin/colordx/commit/ece82ba1f58e0166ff4eca1b3d42056898982dce))
+- Add cvd plugin exposing simulate() for protanopia, deuteranopia and tritanopia, and accept an optional precision argument plus Colordx instances in delta() ([c7ff75a](https://github.com/dkryaklin/colordx/commit/c7ff75a90de42cbb471f44f1f5b634106fa29d5e))
+
 ## 6.1.0
 
 ### Minor Changes
