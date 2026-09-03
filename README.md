@@ -420,6 +420,8 @@ import a11y from '@colordx/core/plugins/a11y';
 // isReadable(), readableScore(), minReadable(), apcaContrast(), isReadableApca()
 import cmyk from '@colordx/core/plugins/cmyk';
 // toCmyk(), toCmykString(), parses device-cmyk() strings and CMYK objects
+import cvd from '@colordx/core/plugins/cvd';
+// simulate('protanopia' | 'deuteranopia' | 'tritanopia')
 import harmonies from '@colordx/core/plugins/harmonies';
 // harmonies()
 import hwb from '@colordx/core/plugins/hwb';
@@ -491,6 +493,7 @@ colordx('#000000').mixLab('#ffffff').toHex(); // '#777777'
 colordx('#ff0000').delta('#ff0000'); // 0
 colordx('#000000').delta('#ffffff'); // ~1
 colordx('#ff0000').delta(); // compared against white (default)
+colordx('#ef4444').delta('#10b981', 5); // 0.71465 — optional precision (default 3)
 ```
 
 ### lch plugin
@@ -694,6 +697,21 @@ colordx('#777').isReadableApca('#fff', { space: 'p3' }); // false
 ```
 
 APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.
+
+### cvd plugin
+
+Simulates colour vision deficiency. Machado 2009 (severity 1.0) for protanopia and deuteranopia, the same matrices Chrome and Firefox DevTools use; Brettel 1997 for tritanopia, where Machado is weak. Runs on linear sRGB; wide-gamut input is gamut-mapped first. Reference values are checked against DaltonLens in the test suite.
+
+```ts
+colordx('#ff0000').simulate('protanopia'); // #6d5f00
+colordx('#ff0000').simulate('deuteranopia'); // #a39000
+colordx('#0000ff').simulate('tritanopia'); // #006087
+
+// Do two status colours collapse? Compare ΔE2000 before and after (lab plugin).
+const [a, b] = [colordx('#ef4444'), colordx('#10b981')];
+a.delta(b, 5); // 0.71465 — clearly distinct
+a.simulate('deuteranopia').delta(b.simulate('deuteranopia'), 5); // ~0.14 — nearly the same colour
+```
 
 ### p3 plugin
 
