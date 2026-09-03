@@ -193,13 +193,52 @@ describe('tinycolor compat — parsing and output match tinycolor2', () => {
     expect(tinycolor('hsl(turn, 100%, 50%)').isValid()).toBe(false);
   });
 
+  it('alpha is optional in rgba()/hsla()/hsva(), which tinycolor2 rejects outright (bgrins/TinyColor#274)', () => {
+    // tinycolor2's matchers demand exactly four components after the `a` form, but CSS makes the
+    // fourth optional. It reports these invalid and falls back to black; we parse them as opaque.
+    for (const [input, plain] of [
+      ['rgba(255, 0, 0)', 'rgb(255, 0, 0)'],
+      ['rgba(255 0 0)', 'rgb(255, 0, 0)'],
+      ['rgba(100%, 0%, 0%)', 'rgb(100%, 0%, 0%)'],
+      ['hsla(120, 50%, 50%)', 'hsl(120, 50%, 50%)'],
+      ['hsva(300, 50%, 80%)', 'hsv(300, 50%, 80%)'],
+    ] as const) {
+      expect(R(input).isValid(), input).toBe(false);
+      expect(tinycolor(input).isValid(), input).toBe(true);
+      expect(tinycolor(input).getAlpha(), input).toBe(1);
+      // the alpha-less form is the plain form, and the plain form still matches tinycolor2 exactly
+      expect(tinycolor(input).toRgbString(), input).toBe(tinycolor(plain).toRgbString());
+      expect(tinycolor(plain).toRgbString(), plain).toBe(R(plain).toRgbString());
+    }
+  });
+
+  it('alpha survives a 4th component on rgb()/hsl(), which tinycolor2 silently drops', () => {
+    // Unfiled upstream. tinycolor2 matches these against its 3-component matcher and throws the
+    // alpha away *without* reporting the input invalid — a plausible opaque colour, silently wrong.
+    for (const input of [
+      'rgb(255 0 0 / 0.5)',
+      'rgb(255, 0, 0, 0.5)',
+      'rgb(100%, 0%, 0%, 0.5)',
+      'hsl(0, 100%, 50%, 0.5)',
+      'hsl(0 100% 50% / 0.5)',
+    ]) {
+      expect(R(input).isValid(), input).toBe(true);
+      expect(R(input).getAlpha(), input).toBe(1); // tinycolor2 loses it
+      expect(tinycolor(input).getAlpha(), input).toBe(0.5);
+      expect(tinycolor(input).toRgbString(), input).toBe('rgba(255, 0, 0, 0.5)');
+    }
+    // the slash separator is not a licence to accept a 5th component
+    expect(tinycolor('rgb(255 0 0 / 0.5 / 0.5)').isValid()).toBe(false);
+  });
+
   it('string tokens must be whole CSS numbers, like tinycolor2 (parseFloat would read `1e2` as 1)', () => {
     expect(R('hsl(1e2, 100%, 50%)').isValid()).toBe(false);
     expect(tinycolor('hsl(1e2, 100%, 50%)').isValid()).toBe(false);
     // tinycolor2 is unanchored at the end: the last token's numeric prefix is used, the rest ignored
     expect(R('rgb(0, 0, 1e2)').toRgbString()).toBe('rgb(0, 0, 1)');
     expect(tinycolor('rgb(0, 0, 1e2)').toRgbString()).toBe('rgb(0, 0, 1)');
-    for (const t of ['180foo', '1e2', '0x10', '180.', '3e', '2..5', 'e5', '--5', '5-', '5%%', '1-1']) {
+    // '1.0%' is tinycolor2's isOnePointZero quirk: checked before the percent sign, so it means 100%
+    for (const t of ['180foo', '1e2', '0x10', '180.', '3e', '2..5', 'e5', '--5', '5-', '5%%', '1-1', '1.0%', '1.0%0', '1.00%']) {
       for (const s of [`hsl(${t}, 100%, 50%)`, `rgb(${t}, 0, 0)`, `rgb(0, ${t}, 0)`, `rgb(0, 0, ${t})`, `hsv(0, ${t}, 100%)`]) {
         expect(tinycolor(s).isValid(), s).toBe(R(s).isValid());
         if (R(s).isValid()) expect(tinycolor(s).toRgbString(), s).toBe(R(s).toRgbString());

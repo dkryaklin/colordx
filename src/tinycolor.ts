@@ -114,8 +114,8 @@ const isUnit = (v: unknown): v is Unit =>
 const chan = (n: Unit, max: number): number => {
   if (typeof n !== 'string') return clamp(n, 0, max);
   const v = parseFloat(n);
+  if (v === 1 && n.includes('.')) return max; // isOnePointZero: "1.0" (even "1.0%") means 100%
   if (n.includes('%')) return (clamp(v, 0, 100) / 100) * max;
-  if (v === 1 && n.includes('.')) return max; // "1.0" means 100%
   return clamp(v, 0, max);
 };
 
@@ -129,6 +129,7 @@ const hue = (n: Unit): Unit => {
 // tinycolor2's convertToPercentage: s/l/v at or below 1 are fractions. Returns [0, 100].
 const pct = (n: Unit): number => {
   const v = typeof n === 'string' ? parseFloat(n) : n;
+  if (typeof n === 'string' && v === 1 && n.includes('.')) return 100; // isOnePointZero, as in chan
   const isPct = typeof n === 'string' && n.includes('%');
   return clamp(!isPct && v <= 1 ? v * 100 : v, 0, 100);
 };
