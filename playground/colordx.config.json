@@ -1,0 +1,22 @@
+{
+  "gate": "wcag",
+  "level": "AA",
+  "files": ["src/styles.css"],
+  "pairs": [
+    { "fg": "--t1", "bg": "--bg" }, { "fg": "--t1", "bg": "--surface" }, { "fg": "--t1", "bg": "--surface2" },
+    { "fg": "--t2", "bg": "--bg" }, { "fg": "--t2", "bg": "--surface" }, { "fg": "--t2", "bg": "--surface2" },
+    { "fg": "--t3", "bg": "--bg" }, { "fg": "--t3", "bg": "--surface" }, { "fg": "--t3", "bg": "--surface2" },
+    { "fg": "--accent", "bg": "--bg" }, { "fg": "--accent", "bg": "--surface" },
+    { "fg": "#0a0a0c", "bg": "--accent" },
+    { "fg": "--green", "bg": "--surface" }, { "fg": "--red", "bg": "--surface" }, { "fg": "--amber", "bg": "--surface" },
+    { "fg": "--green", "bg": ["rgb(47 125 79 / .12)", "--surface"] },
+    { "fg": "--t2", "bg": ["rgb(255 255 255 / .06)", "--surface"] },
+    { "fg": "--border-ctrl", "bg": "--surface", "use": "ui" }, { "fg": "--border-ctrl", "bg": "--bg", "use": "ui" },
+    { "fg": "--border-ctrl-2", "bg": "--surface", "use": "ui" }, { "fg": "--border-ctrl-2", "bg": "--bg", "use": "ui" }
+  ],
+  "skips": [
+    { "token": "--border", "reason": "decorative" },
+    { "token": "--border-2", "reason": "decorative" }
+  ],
+  "status": ["--green", "--red", "--amber"]
+}

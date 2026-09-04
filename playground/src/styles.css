@@ -9,10 +9,12 @@
   --surface2: #1d1d22;
   --border: #2b2b32;
   --border-2: #3c3c46;
+  --border-ctrl: #61626a;
+  --border-ctrl-2: #7c7d86;
 
   --t1: #ededf0;
   --t2: #9a9aa4;
-  --t3: #74727e;
+  --t3: #85838f;
 
   --green: #45d67f;
   --red: #ff6a5c;
@@ -282,7 +284,7 @@ code {
   min-width: 0;
   font-family: var(--mono);
   font-size: 12px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-ctrl);
   border-radius: var(--r-sm);
   padding: 8px 10px;
   background: var(--surface2);
@@ -307,7 +309,7 @@ code {
   justify-content: center;
   width: 34px;
   min-height: 34px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-ctrl);
   border-radius: var(--r-sm);
   background: var(--surface2);
   color: var(--t2);
@@ -318,7 +320,7 @@ code {
 
 .ibtn:hover {
   background: var(--surface);
-  border-color: var(--border-2);
+  border-color: var(--border-ctrl-2);
   color: var(--t1);
 }
 
@@ -335,7 +337,7 @@ code {
   font-size: 11.5px;
   font-weight: 500;
   padding: 7px 11px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-ctrl);
   border-radius: var(--r-sm);
   background: var(--surface2);
   color: var(--t1);
@@ -345,7 +347,7 @@ code {
 }
 
 .btn:hover {
-  border-color: var(--border-2);
+  border-color: var(--border-ctrl-2);
   background: var(--surface);
 }
 
@@ -373,7 +375,7 @@ code {
 .seg {
   display: inline-flex;
   background: var(--surface2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-ctrl);
   border-radius: var(--r-sm);
   padding: 3px;
   gap: 2px;
@@ -1050,7 +1052,7 @@ code {
   font-size: 11px;
   color: var(--t2);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-ctrl);
   border-radius: 999px;
   padding: 4px 10px 4px 8px;
   cursor: pointer;
@@ -1059,7 +1061,7 @@ code {
 }
 
 .charts-toggles label:hover {
-  border-color: var(--border-2);
+  border-color: var(--border-ctrl-2);
   color: var(--t1);
 }
 
