@@ -37,7 +37,9 @@ export const rgbToLchRaw = (rgb: RgbColor): LchColor => {
 export const rgbToLch = (rgb: RgbColor): LchColor => {
   const { l, c, h, alpha } = rgbToLchRaw(rgb);
   const cR = round(c, 2);
-  return { l, c: cR, h: cR < 0.0015 ? 0 : round(h, 2), alpha, colorSpace: 'lch' };
+  const hR = round(h, 2);
+  // round() can push a hue just below 360 to 360.00; wrap back to 0 so H stays in [0, 360).
+  return { l, c: cR, h: cR < 0.0015 || hR >= 360 ? 0 : hR, alpha, colorSpace: 'lch' };
 };
 
 export const lchToRgb = ({ l, c, h, alpha }: LchColor): RgbColor =>

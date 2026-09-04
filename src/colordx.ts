@@ -178,7 +178,9 @@ export class Colordx {
   /** Returns OKLCh channels: L in [0, 1], C in [0, ~0.4], H in degrees. */
   toOklch(precision = 5): OklchColor {
     const { l, c, h, alpha } = rgbToOklch(this._rgb);
-    return { l: round(l, precision), c: round(c, precision), h: round(h, precision), alpha };
+    const hr = round(h, precision);
+    // round() can push a hue just below 360 to 360; wrap back to 0 so H stays in [0, 360).
+    return { l: round(l, precision), c: round(c, precision), h: hr >= 360 ? 0 : hr, alpha };
   }
 
   /** Formats as a CSS `oklch()` string. Hue is `none` when chroma is 0. */

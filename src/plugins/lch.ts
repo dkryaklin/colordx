@@ -14,11 +14,13 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toLch = function (precision = 2) {
     const { l, c, h, alpha } = rgbToLchRaw(this._rawRgb());
     const cR = round(c, precision);
+    const hR = round(h, precision);
     return {
       l: round(l, precision),
       c: cR,
       // Achromatic threshold on LCH scale (0–~150): below this chroma the hue is numerically unstable.
-      h: c < 0.0015 ? 0 : round(h, precision),
+      // round() can push a hue just below 360 to 360; wrap back to 0 so H stays in [0, 360).
+      h: c < 0.0015 || hR >= 360 ? 0 : hR,
       alpha,
       colorSpace: 'lch' as const,
     };
