@@ -1,5 +1,5 @@
 import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
-import { ANGLE_UNITS, clamp } from './helpers.js';
+import { ANGLE_UNITS, clamp, isNumber } from './helpers.js';
 import { parse } from './parse.js';
 import { srgbToLinear } from './transfer.js';
 import type { AnyColor, ColorParser, OklabColor, OklchColor } from './types.js';
@@ -14,9 +14,12 @@ type RawOklab = { l: number; a: number; b: number; alpha: number };
 
 /**
  * Extract raw OKLab {l, a, b, alpha} without clamping.
- * OKLab / OKLCH inputs are read directly. Everything else goes through `own` (a plugin's
- * parser for its own format, so its gamut helpers work without `extend()`) and then the
- * regular parser; channels outside [0, 255] carry the out-of-gamut information.
+ * OKLab / OKLCH inputs are read directly, under the same rules as the parsers: L is clamped to
+ * [0, 1] (CSS Color 4 parsed-value clamping), C to ≥ 0, alpha defaults to 1, and an object with
+ * L > 1 is not OKLab (it is CIE Lab/LCH missing its colorSpace brand) so it falls through to the
+ * shared parser and is rejected there. Everything else goes through `own` (a plugin's parser for
+ * its own format, so its gamut helpers work without `extend()`) and then the regular parser;
+ * channels outside [0, 255] carry the out-of-gamut information.
  * Returns null for inputs that are already sRGB-bounded (hex, rgb, hsl, hsv, hwb, etc.).
  */
 const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null => {
@@ -25,28 +28,26 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null => {
     // OklabColor: l/a/b present, no 'lab' colorSpace brand
     if ('l' in obj && 'a' in obj && 'b' in obj && obj.colorSpace !== 'lab' && !('c' in obj) && !('r' in obj)) {
       const c = input as OklabColor;
-      if (
-        typeof c.l === 'number' &&
-        typeof c.a === 'number' &&
-        typeof c.b === 'number' &&
-        typeof c.alpha === 'number'
-      ) {
-        return { l: c.l, a: c.a, b: c.b, alpha: c.alpha };
+      const alpha = c.alpha === undefined ? 1 : c.alpha;
+      if (isNumber(c.l) && isNumber(c.a) && isNumber(c.b) && isNumber(alpha) && c.l <= 1) {
+        return { l: clamp(c.l, 0, 1), a: c.a, b: c.b, alpha };
       }
     }
     // OklchColor: l/c/h present, no 'lch' colorSpace brand
     if ('l' in obj && 'c' in obj && 'h' in obj && obj.colorSpace !== 'lch' && !('a' in obj) && !('r' in obj)) {
       const c = input as OklchColor;
-      if (typeof c.l === 'number' && typeof c.c === 'number' && typeof c.h === 'number') {
+      const alpha = c.alpha === undefined ? 1 : c.alpha;
+      if (isNumber(c.l) && isNumber(c.c) && isNumber(c.h) && isNumber(alpha) && c.l <= 1) {
         const hRad = (c.h * Math.PI) / 180;
-        return { l: c.l, a: c.c * Math.cos(hRad), b: c.c * Math.sin(hRad), alpha: c.alpha };
+        const C = Math.max(0, c.c);
+        return { l: clamp(c.l, 0, 1), a: C * Math.cos(hRad), b: C * Math.sin(hRad), alpha };
       }
     }
   } else if (typeof input === 'string') {
     let m = OKLCH_RE.exec(input);
     if (m) {
-      const l = m[2] ? Number(m[1]) / 100 : Number(m[1]);
-      const c = m[4] ? Number(m[3]) * 0.004 : Number(m[3]);
+      const l = clamp(m[2] ? Number(m[1]) / 100 : Number(m[1]), 0, 1);
+      const c = Math.max(0, m[4] ? Number(m[3]) * 0.004 : Number(m[3]));
       const unit = m[6]?.toLowerCase() ?? 'deg';
       const hDeg = Number(m[5]) * (ANGLE_UNITS[unit] ?? 1);
       const hRad = (hDeg * Math.PI) / 180;
@@ -55,7 +56,7 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null => {
     }
     m = OKLAB_RE.exec(input);
     if (m) {
-      const l = m[2] ? Number(m[1]) / 100 : Number(m[1]);
+      const l = clamp(m[2] ? Number(m[1]) / 100 : Number(m[1]), 0, 1);
       const a = m[4] ? Number(m[3]) * 0.004 : Number(m[3]);
       const b = m[6] ? Number(m[5]) * 0.004 : Number(m[5]);
       const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
