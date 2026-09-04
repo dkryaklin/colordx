@@ -36,9 +36,11 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   if (!('l' in input && 'c' in input && 'h' in input)) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
-  if (sanitize(l) > 1) return null; // OKLCH L is always [0, 1]; reject CIE LCH values passed without colorSpace branding
+  // OKLCH L is [0, 1]; an object above that is a CIE LCH value passed without the colorSpace
+  // brand, so reject it rather than clamp it to white. Negative L clamps to 0 like the string form.
+  if (sanitize(l) > 1) return null;
   return oklchToRgbUnclamped({
-    l: sanitize(l),
+    l: clamp(sanitize(l), 0, 1),
     c: Math.max(0, sanitize(c)),
     h: normalizeHue(sanitize(h)),
     alpha: clamp(sanitize(alpha), 0, 1),
@@ -56,7 +58,8 @@ export const parseOklchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const g = OKLCH_RE.exec(input.trim())?.groups;
   if (!g) return null;
-  const L = g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!); // 100% = 1
+  // CSS Color 4: L outside [0, 1] and negative C are clamped at parsed-value time.
+  const L = clamp(g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!), 0, 1); // 100% = 1
   const C = Math.max(0, g.cp ? parseNum(g.c!) * 0.004 : parseNum(g.c!)); // 100% = 0.4
   const unit = g.hu?.toLowerCase() ?? 'deg';
   const H = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);

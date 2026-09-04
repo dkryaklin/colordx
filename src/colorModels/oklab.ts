@@ -153,9 +153,11 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(a) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
-  if (sanitize(l) > 1) return null; // OKLab L is always [0, 1]; reject CIE Lab values passed without colorSpace branding
+  // OKLab L is [0, 1]; an object above that is a CIE Lab value passed without the colorSpace
+  // brand, so reject it rather than clamp it to white. Negative L clamps to 0 like the string form.
+  if (sanitize(l) > 1) return null;
   return oklabToRgbUnclamped({
-    l: sanitize(l),
+    l: clamp(sanitize(l), 0, 1),
     a: sanitize(a),
     b: sanitize(b),
     alpha: clamp(sanitize(alpha), 0, 1),
@@ -172,7 +174,8 @@ export const parseOklabString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const g = OKLAB_RE.exec(input.trim())?.groups;
   if (!g) return null;
-  const L = g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!); // 100% = 1
+  // CSS Color 4: L outside [0, 1] is clamped at parsed-value time; a and b are unbounded.
+  const L = clamp(g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!), 0, 1); // 100% = 1
   const a = g.ap ? parseNum(g.a!) * 0.004 : parseNum(g.a!); // 100% = 0.4
   const b = g.bp ? parseNum(g.b!) * 0.004 : parseNum(g.b!);
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
