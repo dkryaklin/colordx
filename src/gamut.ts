@@ -150,7 +150,12 @@ const cssGamutMap = (
   if (deltaEOK(fromLinear(c0r, c0g, c0b), [l, a, b]) <= JND) return [c0r, c0g, c0b];
 
   const hRad = Math.atan2(b, a);
-  const C = Math.sqrt(a * a + b * b);
+  // hypot rather than sqrt(a² + b²): a finite a of 1e308 squares to Infinity. An infinite or NaN
+  // chroma (from `oklab(0.5 1e400 0)` or `{ a: Infinity }`) has nothing to bisect — `hi - lo >
+  // GAMUT_EPSILON` would never turn false — so naive clip is the only answer such an input has,
+  // the same one toHex() gives it. clamp() has already read any NaN channel as 0.
+  const C = Math.hypot(a, b);
+  if (!Number.isFinite(C)) return [c0r, c0g, c0b];
   let lo = 0;
   let hi = C;
   let minInGamut = true;
