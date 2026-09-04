@@ -16,7 +16,8 @@ declare module '@colordx/core' {
 
 const mix: Plugin = (ColordxClass) => {
   ColordxClass.prototype.mix = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
-    const other = new ColordxClass(color).toRgb();
+    // Both sides unrounded so a.mix(b, t) and b.mix(a, 1 - t) land on the same byte.
+    const other = new ColordxClass(color)._rawRgb();
     const self = this._rawRgb();
     const w = clamp(ratio, 0, 1);
     return new ColordxClass({
