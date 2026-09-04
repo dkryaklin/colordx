@@ -1,5 +1,18 @@
 # @colordx/core
 
+## 6.3.0
+
+### Minor Changes
+
+- Treat NaN as 0 and non-finite hues as 0° across all parsers and manipulators, make toHexByte(NaN) return "00", accept non-finite XYZ object channels via sanitize, and strip -0 from all rounded output ([096cd2f](https://github.com/dkryaklin/colordx/commit/096cd2fad93694be7ef179a43a28fb63cfac6570))
+- Bound stored RGB channels to ±1e6 (NaN to 0) in the wide-gamut and rgb() parsers so extreme inputs like lab(50 1e400 0) or { a: -1e308 } no longer produce NaN output in later conversions ([ba67427](https://github.com/dkryaklin/colordx/commit/ba67427a497de8121e5ca8c3fe9a1c7133c90f69))
+- Fix mapSrgb() and toGamut\*() hanging forever on colors with infinite or overflowing chroma by falling back to naive clipping ([828c501](https://github.com/dkryaklin/colordx/commit/828c501b2f4add138a3fac134b11b64cb63d44f6))
+- Clamp oklab() and oklch() lightness to [0, 1] at parse time per CSS Color 4, matching lab() and lch() ([981551b](https://github.com/dkryaklin/colordx/commit/981551be6feb9334a1c76738782ef5b86788d2a7))
+- Fix inGamut/toGamut OKLab and OKLCh input handling to match colordx(): default alpha to 1 instead of 0, clamp L to [0, 1] and chroma to >= 0, and reject objects with L > 1 as non-OKLab ([fe11b88](https://github.com/dkryaklin/colordx/commit/fe11b88674f42b9013435cbbdfadd868e8aee603))
+- Clip wide-gamut colors to sRGB in toHsl/toHsv/toHwb/toCmyk, brightness, invert and the HSL-based manipulators (lighten, saturate, rotate, etc.) so they describe the same color as toHex() ([91793f4](https://github.com/dkryaklin/colordx/commit/91793f4085892310bbb6572cbb4ad7b0f05af89c))
+- Fix toOklch, toLch and toHwb returning a hue of 360 by wrapping rounded hues back to 0 so H stays in [0, 360) ([3be0ee3](https://github.com/dkryaklin/colordx/commit/3be0ee32b4dadcd36a1f4a960db22c6c24b3349d))
+- Fix mix() to read the second color unrounded so a.mix(b, t) and b.mix(a, 1 - t) return the same result ([47b4bb6](https://github.com/dkryaklin/colordx/commit/47b4bb6d00ed088865895581ddf62688da9faa8e))
+
 ## 6.2.0
 
 ### Minor Changes
