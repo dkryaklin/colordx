@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
-import { srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { RgbColor, SrgbLinearColor } from '../types.js';
 
 // No clamping: srgb-linear may hold values outside [0, 1]. Callers clip on sRGB output.
@@ -11,12 +11,7 @@ export const rgbToSrgbLinearRaw = ({ r, g, b, alpha }: RgbColor): SrgbLinearColo
   colorSpace: 'srgb-linear',
 });
 
-const srgbLinearToRgbUnclamped = ({ r, g, b, alpha }: SrgbLinearColor): RgbColor => ({
-  r: srgbFromLinear(r) * 255,
-  g: srgbFromLinear(g) * 255,
-  b: srgbFromLinear(b) * 255,
-  alpha,
-});
+const srgbLinearToRgbUnclamped = ({ r, g, b, alpha }: SrgbLinearColor): RgbColor => linearToStoredRgb(r, g, b, alpha);
 
 export const parseSrgbLinearObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;

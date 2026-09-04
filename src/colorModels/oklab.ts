@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
-import { srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -73,12 +73,7 @@ export const rgbToOklab = ({ r, g, b, alpha }: RgbColor): OklabColor => {
 /** Unclamped OKLab → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 export const oklabToRgbUnclamped = ({ l, a, b, alpha }: OklabColor): RgbColor => {
   const [lr, lg, lb] = oklabToLinear(l, a, b);
-  return {
-    r: srgbFromLinear(lr) * 255,
-    g: srgbFromLinear(lg) * 255,
-    b: srgbFromLinear(lb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(lr, lg, lb, alpha);
 };
 
 export const oklabToRgb = ({ l, a, b, alpha }: OklabColor): RgbColor => {

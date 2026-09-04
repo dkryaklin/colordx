@@ -34,6 +34,8 @@ export class Colordx {
     }
     // Single chokepoint for alpha precision: parsers and _make() callers may hand us
     // raw floats (e.g. 1/255, 0.1+0.2). Snapping here keeps every formatter consistent.
+    // Channel sanity (NaN, ±Infinity, absurd magnitudes) is not checked here: the sRGB-bounded
+    // parsers clamp, and every wide-gamut parser ends in linearToStoredRgb(), which bounds.
     this._rgb.alpha = round3(this._rgb.alpha);
   }
 

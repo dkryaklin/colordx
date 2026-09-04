@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
-import { prophotoFromLinear, prophotoToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, prophotoFromLinear, prophotoToLinear, srgbToLinear } from '../transfer.js';
 import type { ProPhotoColor, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 
@@ -60,12 +60,7 @@ export const rgbToProphotoRaw = ({ r, g, b, alpha }: RgbColor): ProPhotoColor =>
 /** Unclamped ProPhoto → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const prophotoToRgbUnclamped = ({ r, g, b, alpha }: ProPhotoColor): RgbColor => {
   const [sr, sg, sb] = linearProphotoToSrgb(prophotoToLinear(r), prophotoToLinear(g), prophotoToLinear(b));
-  return {
-    r: srgbFromLinear(sr) * 255,
-    g: srgbFromLinear(sg) * 255,
-    b: srgbFromLinear(sb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(sr, sg, sb, alpha);
 };
 
 export const parseProphotoObject = (input: unknown): RgbColor | null => {

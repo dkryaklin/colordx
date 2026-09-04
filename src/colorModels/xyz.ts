@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
-import { srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -78,12 +78,7 @@ const xyzD65ToLinearSrgb = (x: number, y: number, z: number): [number, number, n
 
 const xyzD65ToRgbUnclamped = ({ x, y, z, alpha }: XyzD65Color): RgbColor => {
   const [lr, lg, lb] = xyzD65ToLinearSrgb(x, y, z);
-  return {
-    r: srgbFromLinear(lr) * 255,
-    g: srgbFromLinear(lg) * 255,
-    b: srgbFromLinear(lb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(lr, lg, lb, alpha);
 };
 
 // ── RGB ↔ XYZ D50 ───────────────────────────────────────────────────────────
@@ -138,12 +133,7 @@ export const xyzToRgb = ({ x, y, z, alpha }: XyzColor): RgbColor => {
 /** Unclamped XYZ D50 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const xyzToRgbUnclamped = ({ x, y, z, alpha }: XyzColor): RgbColor => {
   const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
-  return {
-    r: srgbFromLinear(lr) * 255,
-    g: srgbFromLinear(lg) * 255,
-    b: srgbFromLinear(lb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(lr, lg, lb, alpha);
 };
 
 // ── Parsers ─────────────────────────────────────────────────────────────────

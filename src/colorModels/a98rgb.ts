@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
-import { a98FromLinear, a98ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { a98FromLinear, a98ToLinear, linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { A98Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 
@@ -54,12 +54,7 @@ export const rgbToA98Raw = ({ r, g, b, alpha }: RgbColor): A98Color => {
 /** Unclamped A98 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const a98ToRgbUnclamped = ({ r, g, b, alpha }: A98Color): RgbColor => {
   const [sr, sg, sb] = linearA98ToSrgb(a98ToLinear(r), a98ToLinear(g), a98ToLinear(b));
-  return {
-    r: srgbFromLinear(sr) * 255,
-    g: srgbFromLinear(sg) * 255,
-    b: srgbFromLinear(sb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(sr, sg, sb, alpha);
 };
 
 export const parseA98Object = (input: unknown): RgbColor | null => {

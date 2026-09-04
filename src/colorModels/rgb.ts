@@ -1,5 +1,6 @@
 import { NUM_OR_NONE, clamp, isObject, parseNum, round } from '../helpers.js';
 import { scanChannel, scanNone, scanPct, scanPos, skipWs } from '../scan.js';
+import { boundChannel } from '../transfer.js';
 import type { RgbColor } from '../types.js';
 
 export const clampRgb = (rgb: RgbColor): RgbColor => ({
@@ -124,9 +125,9 @@ export const parseSrgbColorString = (input: unknown): RgbColor | null => {
   if (!g) return null;
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return {
-    r: (g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!)) * 255,
-    g: (g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!)) * 255,
-    b: (g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!)) * 255,
+    r: boundChannel((g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!)) * 255),
+    g: boundChannel((g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!)) * 255),
+    b: boundChannel((g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!)) * 255),
     alpha: clamp(alpha, 0, 1),
   };
 };

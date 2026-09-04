@@ -1,3 +1,5 @@
+import type { RgbColor } from './types.js';
+
 /**
  * sRGB / Display-P3 transfer function (IEC 61966-2-1), extended to the full real line.
  * For in-gamut values [0, 1] this is the standard curve.
@@ -21,6 +23,31 @@ export const srgbFromLinear = (n: number): number => {
   const encoded = abs <= 0.0031308 ? 12.92 * abs : 1.055 * abs ** (1 / 2.4) - 0.055;
   return n < 0 ? -encoded : encoded;
 };
+
+/**
+ * Largest magnitude a stored gamma-encoded ×255 channel may have. Unbounded channels (Lab a/b,
+ * OKLab a/b, XYZ) are legitimately unclamped, so an absurd input (`lab(50 1e400 0)`,
+ * `{ a: -1e308 }`) arrives as NaN, ±Infinity, or a finite 1e129 that overflows to Infinity in the
+ * next matrix and prints NaN from every formatter. ~4000× sRGB white is far beyond any real color
+ * space and small enough that every downstream transfer curve and matrix stays finite.
+ */
+const MAX_CHANNEL = 1e6;
+
+/** Clamp a stored channel to ±MAX_CHANNEL; NaN reads as 0. The range test is false for all three. */
+export const boundChannel = (n: number): number =>
+  n >= -MAX_CHANNEL && n <= MAX_CHANNEL ? n : n > MAX_CHANNEL ? MAX_CHANNEL : n < -MAX_CHANNEL ? -MAX_CHANNEL : 0;
+
+/**
+ * Linear sRGB → the gamma-encoded ×255 form Colordx stores. Unclamped, so wide-gamut channels
+ * outside [0, 255] survive to toP3() / mapSrgb() / inGamut*, but bounded (see MAX_CHANNEL).
+ * Every wide-gamut parser ends here; the sRGB-bounded parsers clamp to [0, 255] themselves.
+ */
+export const linearToStoredRgb = (lr: number, lg: number, lb: number, alpha: number): RgbColor => ({
+  r: boundChannel(srgbFromLinear(lr) * 255),
+  g: boundChannel(srgbFromLinear(lg) * 255),
+  b: boundChannel(srgbFromLinear(lb) * 255),
+  alpha,
+});
 
 /** BT.2020 transfer function constants. */
 const REC2020_ALPHA = 1.09929682680944;

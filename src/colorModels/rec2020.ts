@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
-import { rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
@@ -80,12 +80,7 @@ export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
 /** Unclamped Rec.2020 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const rec2020ToRgbUnclamped = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
   const [sr, sg, sb] = linearRec2020ToSrgb(rec2020ToLinear(r), rec2020ToLinear(g), rec2020ToLinear(b));
-  return {
-    r: srgbFromLinear(sr) * 255,
-    g: srgbFromLinear(sg) * 255,
-    b: srgbFromLinear(sb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(sr, sg, sb, alpha);
 };
 
 export const parseRec2020Object = (input: unknown): RgbColor | null => {

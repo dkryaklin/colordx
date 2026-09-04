@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
-import { srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
@@ -79,12 +79,7 @@ export const p3ToRgb = ({ r, g, b, alpha }: P3Color): RgbColor => {
 /** Unclamped P3 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const p3ToRgbUnclamped = ({ r, g, b, alpha }: P3Color): RgbColor => {
   const [sr, sg, sb] = linearP3ToSrgb(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
-  return {
-    r: srgbFromLinear(sr) * 255,
-    g: srgbFromLinear(sg) * 255,
-    b: srgbFromLinear(sb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(sr, sg, sb, alpha);
 };
 
 export const parseP3Object = (input: unknown): RgbColor | null => {

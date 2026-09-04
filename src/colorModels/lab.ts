@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
-import { srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzD50ToLinearSrgb, xyzToRgb } from './xyz.js';
 
@@ -135,12 +135,7 @@ export const labToRgb = (lab: LabColor): RgbColor => xyzToRgb(labToXyz(lab));
 export const labToRgbUnclamped = ({ l, a, b, alpha }: LabColor): RgbColor => {
   const [x, y, z] = labToXyzValues(l, a, b);
   const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
-  return {
-    r: srgbFromLinear(lr) * 255,
-    g: srgbFromLinear(lg) * 255,
-    b: srgbFromLinear(lb) * 255,
-    alpha,
-  };
+  return linearToStoredRgb(lr, lg, lb, alpha);
 };
 
 // CSS Color 4: lab(L a b / alpha). L: number|percentage|none (100% = 100).
