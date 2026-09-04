@@ -1,10 +1,10 @@
-import { clamp, isWs, round } from '../helpers.js';
+import { isWs, round, toByte } from '../helpers.js';
 import type { RgbColor } from '../types.js';
 
 const HEX_BYTE = /* #__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
 
-/** Convert a number in [0, 255] to a 2-char lowercase hex byte. Clamps and rounds out-of-range inputs. */
-export const toHexByte = (n: number): string => HEX_BYTE[clamp(Math.round(n), 0, 255)]!;
+/** Convert a number in [0, 255] to a 2-char lowercase hex byte. Clamps and rounds out-of-range inputs; NaN reads as 0. */
+export const toHexByte = (n: number): string => HEX_BYTE[toByte(n)]!;
 /** Hex digit value, or -1. Avoids a regex validation pass over the string. */
 const hexDigit = (c: number): number => {
   const d = c - 48;

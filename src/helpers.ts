@@ -1,13 +1,20 @@
-export const clamp = (n: number, min: number, max: number): number => Math.min(Math.max(n, min), max);
+// Comparison clamp: NaN fails both tests and lands on `min`, the same "NaN reads as the low
+// bound" rule the object parsers use, so a NaN never reaches a formatter. Math.min/Math.max
+// would propagate it.
+export const clamp = (n: number, min: number, max: number): number => (n > min ? (n < max ? n : max) : min);
 
+// `|| 0` folds the -0 that Math.round leaves on a tiny negative (a grey's OKLab a/b, the L of a
+// black with chroma) so formatted objects never carry a signed zero.
 export const round = (n: number, d = 0): number => {
   const p = 10 ** d;
-  return Math.round(p * n) / p;
+  return Math.round(p * n) / p || 0;
 };
 
 // Normalize hue to [0, 360). Avoids (h + 360) % 360 which can lose precision
 // when h is already in [0, 360) due to binary floating-point subtraction.
-export const normalizeHue = (h: number): number => (h >= 0 && h < 360 ? h : ((h % 360) + 360) % 360);
+// `|| 0` folds -0 and the NaN that `Infinity % 360` produces to 0, so a non-finite hue
+// reads as 0° instead of poisoning every channel downstream.
+export const normalizeHue = (h: number): number => (h >= 0 && h < 360 ? h : ((h % 360) + 360) % 360 || 0);
 
 // Channels closer than this (0–1 scale) are read as achromatic by rgbToHsl/rgbToHsv. Matrix-based
 // producers (Lab, LCH, mixOklab, display-p3, …) leave up to ~1.5e-7 of noise on a grey; an exact

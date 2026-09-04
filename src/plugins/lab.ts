@@ -29,8 +29,8 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { l, a, b, alpha } = rgbToLab(this._rawRgb());
     return {
       l: round(l, precision),
-      a: round(a, precision) || 0, // || 0 suppresses −0
-      b: round(b, precision) || 0,
+      a: round(a, precision),
+      b: round(b, precision),
       alpha,
       colorSpace: 'lab' as const,
     };
@@ -46,9 +46,9 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   // CSS Color 4 color(xyz-*) channels are 0–1 (1 = reference-white Y); the object API is 0–100.
   ColordxClass.prototype.toXyzString = function (this: Colordx, precision = 4) {
     const { x, y, z, alpha } = rgbToXyz(this._rawRgb());
-    const cx = round(x / 100, precision) || 0,
-      cy = round(y / 100, precision) || 0,
-      cz = round(z / 100, precision) || 0;
+    const cx = round(x / 100, precision),
+      cy = round(y / 100, precision),
+      cz = round(z / 100, precision);
     return alpha < 1 ? `color(xyz-d50 ${cx} ${cy} ${cz} / ${alpha})` : `color(xyz-d50 ${cx} ${cy} ${cz})`;
   };
   ColordxClass.prototype.toXyzD65 = function (precision = 2) {
@@ -63,9 +63,9 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toXyzD65String = function (this: Colordx, precision = 4) {
     const { x, y, z, alpha } = rgbToXyzD65(this._rawRgb());
-    const cx = round(x / 100, precision) || 0,
-      cy = round(y / 100, precision) || 0,
-      cz = round(z / 100, precision) || 0;
+    const cx = round(x / 100, precision),
+      cy = round(y / 100, precision),
+      cz = round(z / 100, precision);
     return alpha < 1 ? `color(xyz-d65 ${cx} ${cy} ${cz} / ${alpha})` : `color(xyz-d65 ${cx} ${cy} ${cz})`;
   };
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {

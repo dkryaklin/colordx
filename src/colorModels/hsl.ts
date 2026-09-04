@@ -79,7 +79,7 @@ export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
   // subtracting, so l=100 gives q=0.9999999999999999 and rgbToHsl reads white as chromatic.
   const q = ln < 0.5 ? ln * (1 + sn) : ln + sn * (1 - ln);
   const p = 2 * ln - q;
-  const hue = (((h % 360) + 360) % 360) / 360;
+  const hue = normalizeHue(h) / 360;
   return {
     r: _hueToRgb(p, q, hue + 1 / 3) * 255,
     g: _hueToRgb(p, q, hue) * 255,

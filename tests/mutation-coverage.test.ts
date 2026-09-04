@@ -591,23 +591,31 @@ describe('M. rgb legacy mixed % / number is rejected', () => {
 
 describe('N. parseXyzObject (unbranded) — single-field invalid value', () => {
   for (const field of ['x', 'y', 'z'] as const) {
-    for (const bad of ['x', null, NaN, {}, []] as const) {
-      const label = bad === null ? 'null' : Number.isNaN(bad as number) ? 'NaN' : JSON.stringify(bad);
+    for (const bad of ['x', null, {}, []] as const) {
+      const label = bad === null ? 'null' : JSON.stringify(bad);
       it(`{${field}: ${label}, …} → invalid`, () => {
         const obj = { x: 50, y: 50, z: 50, [field]: bad };
         // Without a brand: parseXyzD65Object rejects (no brand), parseXyzObject
-        // takes over. parseXyzObject uses isNumber (rejects NaN/Infinity too),
-        // so the mutant `(false || !isNumber(alpha))` would fall through with
-        // alpha defaulted, producing NaN-RGB → isValid=true. The
+        // takes over. The mutant `(false || !isAnyNumber(alpha))` would fall
+        // through with alpha defaulted, producing NaN-RGB → isValid=true. The
         // expect-isValid-false assertion catches that.
         expect(colordx(obj as never).isValid()).toBe(false);
       });
     }
   }
-  // alpha=NaN passes the `isNumber` of x/y/z but fails alpha's own check —
-  // EXCEPT under the mutant that drops the first three terms.
-  it('alpha=NaN with valid x/y/z → invalid', () => {
-    expect(colordx({ x: 50, y: 50, z: 50, alpha: NaN } as never).isValid()).toBe(false);
+  // NaN is a number and reads as 0, the same rule as every other object parser
+  // (and the branded xyz-d65 form): {x: NaN, y: 0, z: 0} is black, not invalid.
+  for (const field of ['x', 'y', 'z'] as const) {
+    it(`{${field}: NaN, …} reads NaN as 0`, () => {
+      const nan = colordx({ x: 50, y: 50, z: 50, [field]: NaN } as never);
+      expect(nan.isValid()).toBe(true);
+      expect(nan.toHex()).toBe(colordx({ x: 50, y: 50, z: 50, [field]: 0 } as never).toHex());
+    });
+  }
+  it('alpha=NaN with valid x/y/z → alpha 0', () => {
+    const c = colordx({ x: 50, y: 50, z: 50, alpha: NaN } as never);
+    expect(c.isValid()).toBe(true);
+    expect(c.alpha()).toBe(0);
   });
 });
 
