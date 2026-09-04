@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **7.9 KB gzipped. 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.1 KB gzipped. 0 Dependencies.**
 
 ## Performance
 
@@ -111,6 +111,8 @@ colordx({ h: 0, w: 0, b: 0 });
 colordx({ h: 0, s: 100, v: 100 }); // HSV
 ```
 
+Channels are clamped the way CSS Color 4 clamps them at parsed-value time: `rgb()` / `hsl()` channels to their ranges, `lab()` / `lch()` / `oklab()` / `oklch()` lightness to `[0, 100]` / `[0, 1]`, chroma to `≥ 0`. Lab/LCH `a`, `b`, `c` and OKLab/OKLCh `a`, `b`, `c` are unbounded, which is what makes out-of-gamut colors representable (see [Gamut](#gamut)). Alpha is clamped to `[0, 1]`. One consequence: an imaginary `lab()` / `lch()` / `color(xyz …)` input can have an OKLab lightness outside `[0, 1]`; `.toOklchString()` reports it faithfully, but feeding that string back clamps L, so only colors with L in range round-trip through OKLCh. Two object-only rules: an OKLab/OKLCh object with `l > 1` is rejected as invalid — it is almost certainly a CIE Lab/LCH value missing its `colorSpace: 'lab' | 'lch'` brand, and clamping it to white would hide the mistake — and `NaN` in any channel reads as `0` (an infinite hue reads as `0°`).
+
 TypeScript: input color objects use `*ColorInput` types (`alpha` optional, defaults to 1).
 Output methods like `.toRgb()` / `.toOklch()` return `*Color` types (`alpha` always present).
 
@@ -175,18 +177,20 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .chroma(0.1)       // set chroma (OKLCH, 0–0.4)
 ```
 
+The HSL-based methods (`lighten`, `darken`, `saturate`, `desaturate`, `grayscale`, `rotate`, `hue`) and `invert` work on the sRGB-clipped color — the same color `.toHex()` prints — so on a wide-gamut input they start from what is displayed. `lightness()` and `chroma()` work in OKLCH and clip the result into sRGB.
+
 ### Getters
 
 ```ts
 .isValid()         // true if input was parseable
 .alpha()           // get alpha (0–1)
-.hue()             // get hue (0–360)
+.hue()             // get HSL hue, [0, 360)
 .lightness()       // get OKLCH lightness (0–1)
 .chroma()          // get OKLCH chroma (0–0.4)
-.brightness()      // perceived brightness (0–1)
+.brightness()      // perceived brightness (0–1), of the sRGB-clipped color
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
-.isEqual('#f00')   // exact RGB equality
+.isEqual('#f00')   // same RGBA bytes after rounding
 .over('#fff')      // source-over composite of a translucent color onto a bg
 // With a11y plugin loaded:
 .luminance()       // relative luminance (0–1, WCAG), optional precision
@@ -210,7 +214,7 @@ getFormat({ r: 255, g: 0, b: 0 }); // 'rgb'
 getFormat({ h: 0, s: 100, l: 50 }); // 'hsl'
 getFormat('notacolor'); // undefined
 // Plugin-added parsers register their own format:
-// p3 → 'p3', hsv → 'hsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab', xyz → 'xyz', names → 'name', rec2020 → 'rec2020', a98-rgb → 'a98-rgb', prophoto-rgb → 'prophoto-rgb'
+// p3 → 'p3', hsv → 'hsv', hwb → 'hwb', cmyk → 'cmyk', lch → 'lch', lab → 'lab' | 'xyz' | 'xyz-d65', names → 'name', rec2020 → 'rec2020', a98rgb → 'a98-rgb', prophoto → 'prophoto-rgb', srgb-linear → 'srgb-linear'
 
 nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via OKLab
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
@@ -359,6 +363,8 @@ colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes a
 
 - **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Preserves lightness and hue; sacrifices chroma. Use when hue stability matters — design tokens, palettes, programmatic harmonies, OKLCH pickers.
 - **`.clampSrgb()`** — naive clip in linear sRGB. Hue and lightness may drift. Use when you want a `Colordx` whose `.toOklchString()` describes what browsers actually render.
+
+Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mixOklab`, `mixLab`, `delta`) read the unclamped color. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
 A static form is also available for one-shot conversion without wrapping first — `Colordx.toGamutSrgb(input)` is equivalent to `colordx(input).mapSrgb()`.
 
@@ -627,8 +633,8 @@ extend([minify]);
 colordx('#ff0000').minify(); // '#f00'
 colordx('#ffffff').minify(); // '#fff'
 colordx('#ff0000').minify({ name: true }); // 'red'  — requires names plugin
-colordx({ r: 0, g: 0, b: 0, a: 0 }).minify({ transparent: true }); // 'transparent'
-colordx({ r: 255, g: 0, b: 0, a: 0.5 }).minify({ alphaHex: true }); // '#ff000080'
+colordx({ r: 0, g: 0, b: 0, alpha: 0 }).minify({ transparent: true }); // 'transparent'
+colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).minify({ alphaHex: true }); // '#ff000080'
 
 // Disable specific formats to exclude them from candidates:
 colordx('#ff0000').minify({ hsl: false }); // skips HSL, picks from hex/RGB
@@ -935,13 +941,14 @@ The same applies to `tints()`, `shades()`, and `tones()` from the mix plugin, wh
 
 ### Precision
 
-Every `toX()` / `toXString()` method accepts an optional `precision` (decimal places), applied uniformly to every channel of that format. Alpha is fixed at 3 dp globally. Format-specific defaults (scale-appropriate):
+Every `toX()` / `toXString()` method accepts an optional `precision` (decimal places), applied uniformly to every channel of that format. Alpha is fixed at 3 dp globally. Hues are wrapped after rounding, so a hue never prints as `360` at any precision. Format-specific defaults (scale-appropriate):
 
 | format | default |
 |---|---|
 | `toHsl`, `toHsv`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
 | `toHwb` | `0` |
-| `toOklab`, `toOklch`, `toP3`, `toRec2020`, `toXyzString`, `toXyzD65String` | `4` |
+| `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toXyzString`, `toXyzD65String` | `4` |
+| `toOklab`, `toOklch`, `toSrgbLinear` | `5` |
 
 ```ts
 colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }
@@ -983,6 +990,7 @@ The same flag works on `.darken()` and `.desaturate()`.
 
 ## Ecosystem
 
+- [**@colordx/cli**](https://github.com/dkryaklin/colordx-a11y) — color accessibility on the command line, and a skill for coding agents: check a pair, audit a token file, build a scale, solve a theme. WCAG 2.2 and APCA gates, one JSON record per pair, a fix on every fail.
 - [**@colordx/gpu**](https://github.com/dkryaklin/colordx-gpu) — colordx's color math on the GPU: conversions and gamut tests as generated GLSL, parity-tested against this library. For per-pixel workloads — picker charts, gamut visualizations, gradients — where you convert millions of colors per frame instead of one at a time.
 
 ## Sponsors
