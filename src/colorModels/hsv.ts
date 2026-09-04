@@ -23,11 +23,19 @@ const clampHsv = (hsv: HsvColor): HsvColor => ({
 const _hsvBuf: HsvColor = { h: 0, s: 0, v: 0, alpha: 0 };
 
 export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
-  const rn = r / 255,
+  let rn = r / 255,
     gn = g / 255,
     bn = b / 255;
-  const max = Math.max(rn, gn, bn),
+  let max = Math.max(rn, gn, bn),
     min = Math.min(rn, gn, bn);
+  if (max > 1 || min < 0) {
+    // Same rule as rgbToHslRaw: HSV lives on the sRGB cube, so clip a wide-gamut color first.
+    rn = clamp(rn, 0, 1);
+    gn = clamp(gn, 0, 1);
+    bn = clamp(bn, 0, 1);
+    max = Math.max(rn, gn, bn);
+    min = Math.min(rn, gn, bn);
+  }
   const d = max - min;
   let h = 0,
     s = 0;

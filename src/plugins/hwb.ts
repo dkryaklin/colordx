@@ -12,7 +12,7 @@ declare module '@colordx/core' {
 
 const hwb: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toHwb = function (this: Colordx, precision = 0): HwbColor {
-    const { h, w, b, alpha } = rgbToHwb(this._rawRgb());
+    const { h, w, b, alpha } = rgbToHwb(this._srgbRgb());
     return { h: round(h, precision), w: round(w, precision), b: round(b, precision), alpha: round(alpha, 3) };
   };
   ColordxClass.prototype.toHwbString = function (this: Colordx, precision = 0): string {

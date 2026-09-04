@@ -13,7 +13,7 @@ declare module '@colordx/core' {
 
 const hsv: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toHsv = function (this: Colordx, precision = 2): HsvColor {
-    const { h, s, v, alpha } = rgbToHsvRaw(this._rawRgb());
+    const { h, s, v, alpha } = rgbToHsvRaw(this._rawRgb()); // rgbToHsvRaw clips to sRGB itself
     const hr = round(h, precision);
     return { h: hr >= 360 ? 0 : hr, s: round(s, precision), v: round(v, precision), alpha };
   };

@@ -93,6 +93,21 @@ export class Colordx {
   }
 
   /**
+   * Unrounded RGB clipped to [0, 255] — the color `toHex()` prints. sRGB-bounded consumers that
+   * read channels directly (brightness, invert, HWB, CMYK) take this rather than `_rawRgb()`:
+   * a wide-gamut input stored as (-172, 303, -21) has no meaning on the sRGB cube. The HSL/HSV
+   * converters clip on their own (rgbToHslRaw / rgbToHsvRaw), so toHsl() and the HSL-based
+   * manipulators pass `_rgb` straight through and pay only the max/min they compute anyway.
+   * Returns the internal object itself when already in range, so nothing is allocated.
+   */
+  _srgbRgb(): RgbColor {
+    const rgb = this._rgb;
+    const { r, g, b } = rgb;
+    if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return rgb;
+    return { r: clamp(r, 0, 255), g: clamp(g, 0, 255), b: clamp(b, 0, 255), alpha: rgb.alpha };
+  }
+
+  /**
    * Formats as a CSS `rgb()` / `rgba()` string.
    * Default is CSS Color 4 modern syntax — `rgb(255 0 0 / 0.5)`.
    * Pass `{ legacy: true }` for CSS Color 3 comma syntax (switches to `rgba()` when alpha < 1).
@@ -173,9 +188,9 @@ export class Colordx {
     return alpha < 1 ? `oklch(${l} ${c} ${H} / ${alpha})` : `oklch(${l} ${c} ${H})`;
   }
 
-  /** Perceived brightness in [0, 1] using the ITU-R BT.601 weights. */
+  /** Perceived brightness in [0, 1] using the ITU-R BT.601 weights, on the sRGB-clipped color. */
   brightness(): number {
-    const { r, g, b } = this._rgb;
+    const { r, g, b } = this._srgbRgb();
     return round((r * 299 + g * 587 + b * 114) / 255000, 2);
   }
 
@@ -278,9 +293,9 @@ export class Colordx {
     return this.desaturate(1);
   }
 
-  /** Inverts each RGB channel (255 − channel). */
+  /** Inverts each RGB channel (255 − channel) of the sRGB-clipped color. */
   invert(): Colordx {
-    const { r, g, b, alpha } = this._rgb;
+    const { r, g, b, alpha } = this._srgbRgb();
     return Colordx._make({ r: 255 - r, g: 255 - g, b: 255 - b, alpha });
   }
 

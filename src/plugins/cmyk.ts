@@ -12,7 +12,7 @@ declare module '@colordx/core' {
 
 const cmyk: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toCmyk = function (precision = 2) {
-    const { c, m, y, k, alpha } = rgbToCmykRaw(this._rawRgb());
+    const { c, m, y, k, alpha } = rgbToCmykRaw(this._srgbRgb());
     return { c: round(c, precision), m: round(m, precision), y: round(y, precision), k: round(k, precision), alpha };
   };
   ColordxClass.prototype.toCmykString = function (precision = 2) {

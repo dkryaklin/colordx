@@ -23,11 +23,21 @@ const clampHsl = (hsl: HslColor): HslColor => ({
 const _hslBuf: HslColor = { h: 0, s: 0, l: 0, alpha: 0 };
 
 export const rgbToHslRaw = ({ r, g, b, alpha }: RgbColor): HslColor => {
-  const rn = r / 255,
+  let rn = r / 255,
     gn = g / 255,
     bn = b / 255;
-  const max = Math.max(rn, gn, bn),
+  let max = Math.max(rn, gn, bn),
     min = Math.min(rn, gn, bn);
+  if (max > 1 || min < 0) {
+    // HSL is defined on the sRGB cube. A wide-gamut color stored outside it is clipped first —
+    // the color toHex() prints — so toHsl() and the HSL-based manipulators never describe a
+    // different color than hex does. Two comparisons on the in-gamut path, nothing more.
+    rn = clamp(rn, 0, 1);
+    gn = clamp(gn, 0, 1);
+    bn = clamp(bn, 0, 1);
+    max = Math.max(rn, gn, bn);
+    min = Math.min(rn, gn, bn);
+  }
   const l = (max + min) / 2;
   const d = max - min;
   let h = 0,
