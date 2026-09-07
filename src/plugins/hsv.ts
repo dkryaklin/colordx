@@ -3,6 +3,10 @@ import type { Colordx, Plugin } from '../colordx.js';
 import { round } from '../helpers.js';
 import type { HsvColor } from '../types.js';
 
+// Channel functions (allocation-free `*Into` siblings included) for per-pixel HSV work — pickers,
+// vectorscopes, hue wheels. Same scale as toHsv(): h in degrees, s/v in 0–100; RGB in 0–1.
+export { hsvToRgbChannels, hsvToRgbChannelsInto, rgbToHsvChannels, rgbToHsvChannelsInto } from '../colorModels/hsv.js';
+
 // HSV/HSVA is a non-standard, library-defined format (not part of any CSS spec).
 declare module '@colordx/core' {
   interface Colordx {

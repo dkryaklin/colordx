@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.1 KB gzipped. 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.4 KB gzipped. 0 Dependencies.**
 
 ## Performance
 
@@ -276,6 +276,19 @@ lchToRec2020Channels(54.29, 106.84, 40.86);
 // then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
 linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
 linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (BT.2020 gamma)
+
+// sRGB ↔ HSL / HSV on the same scale toHsl() / toHsv() report: h in degrees, s and l/v in 0–100.
+// RGB is 0–1 gamma sRGB, like rgbToLinear. This is the per-pixel path for pickers, hue wheels
+// and vectorscopes — no parsing, no object, no rounding.
+import { hslToRgbChannels, rgbToHslChannels } from '@colordx/core';
+import { hsvToRgbChannels, rgbToHsvChannels } from '@colordx/core/plugins/hsv';
+
+rgbToHslChannels(1, 0, 0);       // [0, 100, 50]
+rgbToHsvChannels(0, 0, 1);       // [240, 100, 100]
+hslToRgbChannels(120, 100, 50);  // [0, 1, 0]
+hsvToRgbChannels(-30, 50, 50);   // hue wraps: same as hsvToRgbChannels(330, 50, 50)
+// Greys report h = 0, s = 0 (same ACHROMATIC_EPS threshold as toHsl()). Nothing is clipped:
+// HSL/HSV live on the sRGB cube, so clip a wide-gamut color first — for bytes, pass r/255, g/255, b/255.
 ```
 
 **Zero-allocation tight-loop variants (`*Into`).** Every channel function has an `*Into` sibling that writes into a caller-provided `Float64Array | number[]` instead of allocating a new tuple. For per-pixel work (canvas renderers, gradient grids, wide-gamut data viz), this eliminates ~10× the GC pressure and makes interactive redraws smoother. Output is bit-for-bit identical to the allocating version.
@@ -319,6 +332,14 @@ labToLinearAndSrgbInto(linOut, srgbOut, l, a, b); // both (distinct buffers)
 lchToLinearSrgbInto(out, l, c, h);         // CIE LCH (D50) → linear sRGB
 lchToRgbChannelsInto(out, l, c, h);        // CIE LCH (D50) → gamma sRGB
 lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
+
+// from '@colordx/core' — sRGB ↔ HSL (h degrees, s/l 0–100; RGB 0–1)
+rgbToHslChannelsInto(out, r, g, b);        // → [h, s, l]
+hslToRgbChannelsInto(out, h, s, l);        // → [r, g, b] gamma sRGB
+
+// from '@colordx/core/plugins/hsv' — sRGB ↔ HSV (h degrees, s/v 0–100; RGB 0–1)
+rgbToHsvChannelsInto(out, r, g, b);        // → [h, s, v]
+hsvToRgbChannelsInto(out, h, s, v);        // → [r, g, b] gamma sRGB
 
 // from '@colordx/core/plugins/p3'
 linearToP3ChannelsInto(out, lr, lg, lb);
@@ -562,6 +583,26 @@ colordx('#ff0000').toHsv(); // { h: 0, s: 100, v: 100, alpha: 1 }
 colordx('#ff0000').toHsvString(); // 'hsv(0 100% 100%)'
 colordx('hsv(0 100% 100%)').toHex(); // '#ff0000'
 colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex(); // '#ff0000'
+```
+
+The plugin entry also exports the HSV channel functions — `rgbToHsvChannels`, `hsvToRgbChannels` and their `*Into` siblings — for per-pixel work such as a saturation/value plane:
+
+```ts
+import { hsvToRgbChannelsInto } from '@colordx/core/plugins/hsv';
+
+// 256×256 S/V plane for a fixed hue → RGBA bytes. One buffer, no allocation per pixel.
+const buf = new Float64Array(3);
+const plane = new Uint8ClampedArray(256 * 256 * 4);
+let i = 0;
+for (let y = 0; y < 256; y++) {
+  for (let x = 0; x < 256; x++) {
+    hsvToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
+    plane[i++] = buf[0] * 255;
+    plane[i++] = buf[1] * 255;
+    plane[i++] = buf[2] * 255;
+    plane[i++] = 255;
+  }
+}
 ```
 
 ### harmonies plugin
