@@ -8,6 +8,8 @@ import {
   colordx,
   extend,
   getFormat,
+  hslToRgbChannels,
+  hslToRgbChannelsInto,
   inGamutSrgb,
   labToLinearSrgb,
   lchToLinearSrgb,
@@ -17,6 +19,8 @@ import {
   oklchToLinearInto,
   oklchToRgbChannels,
   oklchToRgbChannelsInto,
+  rgbToHslChannels,
+  rgbToHslChannelsInto,
   rgbToLinear,
 } from '../src/index.js';
 import a11y from '../src/plugins/a11y.js';
@@ -24,7 +28,12 @@ import a98rgb, { inGamutA98, oklchToA98Channels } from '../src/plugins/a98rgb.js
 import cmyk from '../src/plugins/cmyk.js';
 import cvd from '../src/plugins/cvd.js';
 import harmonies from '../src/plugins/harmonies.js';
-import hsv from '../src/plugins/hsv.js';
+import hsv, {
+  hsvToRgbChannels,
+  hsvToRgbChannelsInto,
+  rgbToHsvChannels,
+  rgbToHsvChannelsInto,
+} from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
@@ -290,6 +299,44 @@ describe('README — p3/rec2020 channel functions', () => {
   });
 });
 
+describe('README — sRGB ↔ HSL / HSV channel functions', () => {
+  it('reports the toHsl() / toHsv() scale', () => {
+    expect(rgbToHslChannels(1, 0, 0)).toEqual([0, 100, 50]);
+    expect(rgbToHsvChannels(0, 0, 1)).toEqual([240, 100, 100]);
+    expect(hslToRgbChannels(120, 100, 50)).toEqual([0, 1, 0]);
+  });
+
+  it('hue wraps', () => {
+    expect(hsvToRgbChannels(-30, 50, 50)).toEqual(hsvToRgbChannels(330, 50, 50));
+  });
+
+  it('greys report h = 0, s = 0', () => {
+    expect(rgbToHslChannels(0.5, 0.5, 0.5)).toEqual([0, 0, 50]);
+    expect(rgbToHsvChannels(0.5, 0.5, 0.5)).toEqual([0, 0, 50]);
+  });
+
+  it('bytes: pass r/255, g/255, b/255 — matches toHsl()', () => {
+    const { r, g, b } = colordx('#3498db').toRgb();
+    const [h, s, l] = rgbToHslChannels(r / 255, g / 255, b / 255);
+    const want = colordx('#3498db').toHsl(4);
+    expect(Math.round(h * 1e4) / 1e4).toBe(want.h);
+    expect(Math.round(s * 1e4) / 1e4).toBe(want.s);
+    expect(Math.round(l * 1e4) / 1e4).toBe(want.l);
+  });
+
+  it('*Into siblings match the allocating versions', () => {
+    const buf = new Float64Array(3);
+    rgbToHslChannelsInto(buf, 0.2, 0.4, 0.6);
+    expect([buf[0], buf[1], buf[2]]).toEqual(rgbToHslChannels(0.2, 0.4, 0.6));
+    hslToRgbChannelsInto(buf, 204, 70, 53);
+    expect([buf[0], buf[1], buf[2]]).toEqual(hslToRgbChannels(204, 70, 53));
+    rgbToHsvChannelsInto(buf, 0.2, 0.4, 0.6);
+    expect([buf[0], buf[1], buf[2]]).toEqual(rgbToHsvChannels(0.2, 0.4, 0.6));
+    hsvToRgbChannelsInto(buf, 204, 70, 53);
+    expect([buf[0], buf[1], buf[2]]).toEqual(hsvToRgbChannels(204, 70, 53));
+  });
+});
+
 describe('README — Zero-allocation *Into variants', () => {
   it('pixel-renderer pattern: reuse one buffer across calls', () => {
     const buf = new Float64Array(3);
@@ -486,6 +533,35 @@ describe('README — hsv plugin', () => {
   });
   it('parse hsv object', () => {
     expect(colordx({ h: 0, s: 100, v: 100, alpha: 1 }).toHex()).toBe('#ff0000');
+  });
+  it('S/V plane with hsvToRgbChannelsInto matches the object API byte for byte', () => {
+    const buf = new Float64Array(3);
+    const plane = new Uint8ClampedArray(256 * 256 * 4);
+    let i = 0;
+    for (let y = 0; y < 256; y++) {
+      for (let x = 0; x < 256; x++) {
+        hsvToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
+        plane[i++] = buf[0]! * 255;
+        plane[i++] = buf[1]! * 255;
+        plane[i++] = buf[2]! * 255;
+        plane[i++] = 255;
+      }
+    }
+    // Uint8ClampedArray rounds-half-to-even on store; spot-check corners and a mid cell against toRgb().
+    for (const [x, y] of [
+      [0, 0],
+      [255, 0],
+      [0, 255],
+      [255, 255],
+      [128, 64],
+    ] as const) {
+      const { r, g, b } = colordx({ h: 210, s: (x / 255) * 100, v: (1 - y / 255) * 100 }).toRgb();
+      const o = (y * 256 + x) * 4;
+      expect(Math.abs(plane[o]! - r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(plane[o + 1]! - g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(plane[o + 2]! - b)).toBeLessThanOrEqual(1);
+      expect(plane[o + 3]).toBe(255);
+    }
   });
 });
 

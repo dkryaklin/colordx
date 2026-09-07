@@ -22,6 +22,18 @@ import {
   rgbToLinearInto,
 } from '../src/channels.js';
 import {
+  hslToRgbChannels,
+  hslToRgbChannelsInto,
+  rgbToHslChannels,
+  rgbToHslChannelsInto,
+} from '../src/colorModels/hsl.js';
+import {
+  hsvToRgbChannels,
+  hsvToRgbChannelsInto,
+  rgbToHsvChannels,
+  rgbToHsvChannelsInto,
+} from '../src/colorModels/hsv.js';
+import {
   linearSrgbToOklab,
   linearSrgbToOklabInto,
   oklabToLinear,
@@ -132,6 +144,45 @@ const LINEAR_CASES: Array<[number, number, number]> = [
   [0.2, 0.4, 0.6],
   [0.9, 0.1, 0.3],
   [-0.2, 0.5, 1.3], // out-of-gamut
+];
+
+// Gamma sRGB (0–1) triplets for the polar (HSL / HSV) channel functions: every max-channel
+// sector, greys on both sides of ACHROMATIC_EPS, and the `(g - b) / d + 6 === 6` hue-wrap edge.
+const RGB_UNIT_CASES: Array<[number, number, number]> = [
+  [0, 0, 0],
+  [1, 1, 1],
+  [0.5, 0.5, 0.5],
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+  [1, 1, 0],
+  [0, 1, 1],
+  [1, 0, 1],
+  [0.2, 0.4, 0.6],
+  [0.9, 0.1, 0.3],
+  [0.6, 0.9, 0.1], // max = g, l > 0.5
+  [0.1, 0.2, 0.9], // max = b
+  [0.5, 0.5, 0.5 + 5e-7], // below ACHROMATIC_EPS — achromatic
+  [0.5, 0.5, 0.5 + 2e-6], // above it — chromatic
+  [1, 0, 1e-17], // hue rounds to exactly 360 before the wrap
+];
+
+// Polar triplets: h in degrees (including negative and ≥ 360, which the *ToRgb side wraps),
+// s and l / v in 0–100, plus out-of-range s that must propagate unclamped.
+const POLAR_CASES: Array<[number, number, number]> = [
+  [0, 0, 0],
+  [0, 0, 100],
+  [0, 0, 50],
+  [0, 100, 50],
+  [120, 100, 50],
+  [240, 100, 50],
+  [60, 100, 50],
+  [204, 70, 53],
+  [359.999, 50, 50],
+  [-30, 50, 50],
+  [390, 50, 50],
+  [720, 100, 50],
+  [30, 150, 50], // s out of range
 ];
 
 const XYZ_CASES: Array<[number, number, number]> = [
@@ -265,6 +316,62 @@ describe('oklab *Into parity', () => {
       lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
       expectTripleEqual(linOut, wantLin);
       expectTripleEqual(srgbOut, wantSrgb);
+    }
+  });
+});
+
+describe('hsl / hsv *Into parity', () => {
+  const out = new Float64Array(3);
+
+  it('rgbToHslChannelsInto matches rgbToHslChannels', () => {
+    for (const [r, g, b] of RGB_UNIT_CASES) {
+      const want = rgbToHslChannels(r, g, b);
+      rgbToHslChannelsInto(out, r, g, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('hslToRgbChannelsInto matches hslToRgbChannels', () => {
+    for (const [h, s, l] of POLAR_CASES) {
+      const want = hslToRgbChannels(h, s, l);
+      hslToRgbChannelsInto(out, h, s, l);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('rgbToHsvChannelsInto matches rgbToHsvChannels', () => {
+    for (const [r, g, b] of RGB_UNIT_CASES) {
+      const want = rgbToHsvChannels(r, g, b);
+      rgbToHsvChannelsInto(out, r, g, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('hsvToRgbChannelsInto matches hsvToRgbChannels', () => {
+    for (const [h, s, v] of POLAR_CASES) {
+      const want = hsvToRgbChannels(h, s, v);
+      hsvToRgbChannelsInto(out, h, s, v);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('number[] out receives the same values as Float64Array', () => {
+    const arr = [0, 0, 0];
+    for (const [r, g, b] of RGB_UNIT_CASES) {
+      rgbToHslChannelsInto(out, r, g, b);
+      rgbToHslChannelsInto(arr, r, g, b);
+      expectTripleEqual(arr, [out[0]!, out[1]!, out[2]!]);
+      rgbToHsvChannelsInto(out, r, g, b);
+      rgbToHsvChannelsInto(arr, r, g, b);
+      expectTripleEqual(arr, [out[0]!, out[1]!, out[2]!]);
+    }
+    for (const [h, s, x] of POLAR_CASES) {
+      hslToRgbChannelsInto(out, h, s, x);
+      hslToRgbChannelsInto(arr, h, s, x);
+      expectTripleEqual(arr, [out[0]!, out[1]!, out[2]!]);
+      hsvToRgbChannelsInto(out, h, s, x);
+      hsvToRgbChannelsInto(arr, h, s, x);
+      expectTripleEqual(arr, [out[0]!, out[1]!, out[2]!]);
     }
   });
 });

@@ -4,12 +4,14 @@ import {
   Colordx,
   colordx,
   extend,
+  hslToRgbChannels,
   inGamutSrgb,
   labToLinearSrgb,
   lchToLinearSrgb,
   oklchToLinear,
+  rgbToHslChannels,
 } from '../src/index.js';
-import hsvPlugin from '../src/plugins/hsv.js';
+import hsvPlugin, { hsvToRgbChannels, rgbToHsvChannels } from '../src/plugins/hsv.js';
 import hwbPlugin from '../src/plugins/hwb.js';
 import labPlugin from '../src/plugins/lab.js';
 import lchPlugin from '../src/plugins/lch.js';
@@ -124,6 +126,14 @@ const stats: Record<string, FormatStats> = {
   'RGB8:HSV': mkStats(),
   'RGB8:HWB': mkStats(),
   'RGB8:darken': mkStats(),
+  // Polar channel functions on byte input — the per-pixel picker / vectorscope path. Compared
+  // unrounded against culori's converters (both sides are exact double math on the same sRGB cube),
+  // so the only legitimate delta is FP noise from the two libraries' different-but-equivalent formulas.
+  'RGB8:rgbToHslChannels': mkStats(),
+  'RGB8:rgbToHsvChannels': mkStats(),
+  // Inverse direction from fresh polar samples: h in [0, 360), s / l / v in 0–100.
+  hslToRgbChannels: mkStats(),
+  hsvToRgbChannels: mkStats(),
   // Static gamut mapping on non-OKLCH inputs. The original 'RGB' / 'P3 gamut' / 'Rec.2020 gamut'
   // rows only feed OKLCH — a regression in the getRawOklab paths for LCH / Lab / P3 / Rec.2020
   // branded inputs (e.g. Colordx.toGamutSrgb(p3Red) falling back to naive clip) would not
@@ -1028,6 +1038,37 @@ const runParity = () => {
     const cuDG = Math.round((cuDarkened.g ?? 0) * 255);
     const cuDB = Math.round((cuDarkened.b ?? 0) * 255);
     record('RGB8:darken', maxDiff([cxDR, cuDR], [cxDG, cuDG], [cxDB, cuDB]), rgbLabel);
+
+    // Channel functions take 0–1 RGB and report h in degrees, s / l / v in 0–100 — the toHsl()
+    // scale — so culori's 0–1 s / l / v are scaled up here. culori leaves the hue undefined on a
+    // grey; both sides agree it is achromatic when s < 1e-6, and hue is skipped there.
+    const [chHslH, chHslS, chHslL] = rgbToHslChannels(r8 / 255, g8 / 255, b8 / 255);
+    const chHslHueDelta = chHslS < 1e-6 && cuHsl8S < 1e-6 ? 0 : hueDiff(chHslH, cuHsl8H);
+    record(
+      'RGB8:rgbToHslChannels',
+      Math.max(chHslHueDelta, absDiff(chHslS, cuHsl8S), absDiff(chHslL, cuHsl8L)),
+      rgbLabel
+    );
+
+    const [chHsvH, chHsvS, chHsvV] = rgbToHsvChannels(r8 / 255, g8 / 255, b8 / 255);
+    const chHsvHueDelta = chHsvS < 1e-6 && cuHsv8S < 1e-6 ? 0 : hueDiff(chHsvH, cuHsv8H);
+    record(
+      'RGB8:rgbToHsvChannels',
+      Math.max(chHsvHueDelta, absDiff(chHsvS, cuHsv8S), absDiff(chHsvV, cuHsv8V)),
+      rgbLabel
+    );
+
+    const ph = rand() * 360,
+      ps = rand() * 100,
+      pl = rand() * 100;
+    const polarLabel = `h=${ph.toFixed(4)} s=${ps.toFixed(4)} l|v=${pl.toFixed(4)}`;
+    const [chR, chG, chB] = hslToRgbChannels(ph, ps, pl);
+    const cuFromHsl = culoriToRgb({ mode: 'hsl' as const, h: ph, s: ps / 100, l: pl / 100 })!;
+    record('hslToRgbChannels', maxDiff([chR, cuFromHsl.r], [chG, cuFromHsl.g], [chB, cuFromHsl.b]), polarLabel);
+
+    const [chVR, chVG, chVB] = hsvToRgbChannels(ph, ps, pl);
+    const cuFromHsv = culoriToRgb({ mode: 'hsv' as const, h: ph, s: ps / 100, v: pl / 100 })!;
+    record('hsvToRgbChannels', maxDiff([chVR, cuFromHsv.r], [chVG, cuFromHsv.g], [chVB, cuFromHsv.b]), polarLabel);
   }
 };
 
@@ -1089,6 +1130,13 @@ const ceilings: Record<string, number> = {
   'RGB8:HSV': 1,
   'RGB8:HWB': 1,
   'RGB8:darken': 2,
+  // Unrounded channel functions vs culori. Both compute on the same sRGB cube with exact double
+  // math, so the ceiling is FP noise: 1e-9 on the 0–100 / degree scale, 1e-12 on 0–1 RGB. A
+  // scale slip (0–1 vs 0–100, degrees vs turns) or a swapped sector lands in the tens.
+  'RGB8:rgbToHslChannels': 1e-9,
+  'RGB8:rgbToHsvChannels': 1e-9,
+  hslToRgbChannels: 1e-12,
+  hsvToRgbChannels: 1e-12,
   // Same ceilings as the OKLCH-feed equivalents: 2 rgb-channel integers for sRGB gamut maps,
   // 0.1 on the 0–1 float scale for P3/Rec.2020. Tighter would falsely fail on CSS Color 4
   // implementation latitude (JND is 0.02 in deltaEOK, culori and colordx each pick their own
