@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 6.4.0
+
+### Minor Changes
+
+- Add rgbToHslChannels/hslToRgbChannels to core and rgbToHsvChannels/hsvToRgbChannels to the hsv plugin, each with a zero-allocation \*Into sibling (hue in degrees, s/l/v 0–100, RGB 0–1) ([1e97cba](https://github.com/dkryaklin/colordx/commit/1e97cbaa70776ed3dd48d12989d07ee954c34533))
+
 ## 6.3.0
 
 ### Minor Changes
