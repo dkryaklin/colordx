@@ -1,0 +1,52 @@
+---
+import { Pipette, Wrench } from 'lucide-react';
+import Layout from '../layouts/Layout.astro';
+import SectionHead from '../components/SectionHead.astro';
+import Picker from '../islands/Picker.jsx';
+import AdjustSection from '../islands/AdjustSection.jsx';
+import { ToolsGrid, GettingStarted, Faq } from '../components/Content.jsx';
+import Cli from '../components/Cli.jsx';
+---
+
+<Layout
+  title="colordx · OKLCH color picker, contrast and theme tools"
+  description="Pick colors in OKLCH. Convert to any CSS format. Build ramps, check WCAG and APCA contrast, and export a full light and dark theme. Built on @colordx/core, a zero-dependency color library."
+  ogTitle="colordx · Color tools for designers and devs"
+  ogDescription="OKLCH picker, palettes, contrast and theme tools. Built on @colordx/core."
+>
+  <section class="workstation" id="picker">
+    <SectionHead
+      icon={Pipette}
+      eyebrow="OKLCH picker"
+      title="Pick a color"
+      desc="Drag a chart. Each one sets two channels. Or paste any CSS color. Every format below is one click to copy."
+    />
+    <Picker client:only="react" />
+  </section>
+
+  <section class="section" id="adjust">
+    <AdjustSection client:only="react" />
+  </section>
+
+  <section class="section" id="tools">
+    <SectionHead
+      icon={Wrench}
+      eyebrow="Tools"
+      title="Take it further"
+      desc="The active color follows you to every page."
+    />
+    <ToolsGrid />
+  </section>
+
+  <section class="section" id="library">
+    <GettingStarted client:visible />
+  </section>
+
+  <section class="section" id="cli">
+    <Cli client:visible />
+  </section>
+
+  <section class="section" id="faq">
+    <Faq />
+  </section>
+</Layout>

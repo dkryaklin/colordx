@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Shuffle } from 'lucide-react';
 import { useColor } from '../color-state.jsx';
-import { Link } from '../router.jsx';
 import { oklchCss, randomOklch } from '../utils.js';
 import { CopyButton } from './ui.jsx';
 
@@ -40,9 +39,9 @@ export default function ActiveBar() {
         <button type="button" className="ibtn" title="Random color" aria-label="Random color" onClick={() => setS(randomOklch())}>
           <Shuffle size={15} />
         </button>
-        <Link to="/" className="active-link">
+        <a href="/" className="active-link">
           Open in picker
-        </Link>
+        </a>
       </div>
     </div>
   );

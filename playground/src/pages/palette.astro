@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PaletteApp from '../islands/PaletteApp.jsx';
+---
+
+<Layout
+  title="Palette · colordx"
+  description="Build a ramp, harmonies and mixes from one seed color in OKLCH. Export to CSS custom properties, Tailwind, or JSON."
+>
+  <PaletteApp client:only="react" />
+</Layout>

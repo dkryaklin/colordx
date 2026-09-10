@@ -1,11 +1,9 @@
 import { useColor } from '../color-state.jsx';
-import { useTitle } from '../router.jsx';
 import ActiveBar from '../components/ActiveBar.jsx';
 import ContrastChecker from '../components/ContrastChecker.jsx';
 import StatusSet from '../components/StatusSet.jsx';
 
-export default function ContrastPage() {
-  useTitle('Contrast · colordx');
+export default function ContrastApp() {
   const { hex } = useColor();
   return (
     <>

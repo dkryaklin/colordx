@@ -1,5 +1,4 @@
 import { Terminal, HelpCircle, Layers, Contrast, Palette, ArrowRight } from 'lucide-react';
-import { Link } from '../router.jsx';
 import { SectionHead, CodeBlock } from './ui.jsx';
 
 export function ToolsGrid() {
@@ -11,14 +10,14 @@ export function ToolsGrid() {
   return (
     <div className="tools">
       {tools.map((t) => (
-        <Link key={t.to} to={t.to} className="tool">
+        <a key={t.to} href={t.to} className="tool">
           <span className="tool-icon">{t.icon}</span>
           <span className="tool-title">{t.title}</span>
           <span className="tool-desc">{t.desc}</span>
           <span className="tool-go">
             Open <ArrowRight size={13} />
           </span>
-        </Link>
+        </a>
       ))}
     </div>
   );

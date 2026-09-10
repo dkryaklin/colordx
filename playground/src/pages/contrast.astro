@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ContrastApp from '../islands/ContrastApp.jsx';
+---
+
+<Layout
+  title="Contrast · colordx"
+  description="Check any pair against WCAG 2.2 and APCA, fix a failing pair, preview it with color blindness, and keep status colors apart."
+>
+  <ContrastApp client:only="react" />
+</Layout>

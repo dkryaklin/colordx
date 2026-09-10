@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ThemeApp from '../islands/ThemeApp.jsx';
+---
+
+<Layout
+  title="Theme · colordx"
+  description="Generate a light and dark theme from three seed colors, with every foreground and background pair contrast-checked. shadcn-ready tokens."
+>
+  <ThemeApp client:only="react" />
+</Layout>

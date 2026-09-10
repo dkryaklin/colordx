@@ -1,0 +1,15 @@
+---
+// The static twin of SectionHead in ui.jsx, for headings that ship as HTML.
+const { icon: Icon, eyebrow, title, desc } = Astro.props;
+---
+
+<div class="section-head">
+  <div class="section-head-main">
+    <span class="section-eyebrow">
+      {Icon ? <Icon size={13} /> : null}
+      {eyebrow}
+    </span>
+    <h2 class="section-title">{title}</h2>
+    {desc ? <p class="section-desc">{desc}</p> : null}
+  </div>
+</div>

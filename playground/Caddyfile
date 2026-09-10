@@ -1,6 +1,11 @@
 :80 {
     root * /usr/share/caddy
-    try_files {path} /index.html
+    try_files {path} {path}.html
     file_server
     encode gzip zstd
+
+    handle_errors {
+        rewrite * /404.html
+        file_server
+    }
 }

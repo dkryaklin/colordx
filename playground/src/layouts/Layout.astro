@@ -1,0 +1,89 @@
+---
+import { Pipette, Layers, Contrast, Palette, Terminal } from 'lucide-react';
+import '../styles.css';
+
+const { title, description, ogTitle = title, ogDescription = description, noindex = false } = Astro.props;
+
+// build.format 'file' means pathname arrives as /index.html or /palette.html
+const here = Astro.url.pathname.replace(/(?:index)?\.html$/, '').replace(/\/+$/, '') || '/';
+const canonical = new URL(here, Astro.site).href;
+
+// lucide icons render to static HTML here: no client directive, no JS shipped
+const NAV = [
+  { to: '/', label: 'Picker', Icon: Pipette },
+  { to: '/palette', label: 'Palette', Icon: Layers },
+  { to: '/contrast', label: 'Contrast', Icon: Contrast },
+  { to: '/theme', label: 'Theme', Icon: Palette },
+  { to: '/#cli', label: 'CLI', Icon: Terminal },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0c" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta
+      name="keywords"
+      content="color converter, oklch, oklab, hex, rgb, hsl, color picker, gamut, css colors, javascript color library, color conversion"
+    />
+    <meta name="author" content="dkryaklin" />
+    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow'} />
+    {noindex ? null : <link rel="canonical" href={canonical} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={ogTitle} />
+    <meta property="og:description" content={ogDescription} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={ogTitle} />
+    <meta name="twitter:description" content={ogDescription} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <img class="brand-mark" src="/favicon.svg" alt="" width="26" height="26" />
+          <span class="brand-name">colordx</span>
+        </a>
+        <nav class="topnav" aria-label="Pages">
+          {
+            NAV.map(({ to, label, Icon }) => (
+              <a href={to} class={here === to ? 'on' : undefined} aria-current={here === to ? 'page' : undefined}>
+                <Icon size={15} />
+                <span>{label}</span>
+              </a>
+            ))
+          }
+        </nav>
+        <span class="topbar-divider"></span>
+        <a class="ext-link" href="https://www.npmjs.com/package/@colordx/core" target="_blank" rel="noopener noreferrer">npm ↗</a>
+        <a class="ext-link" href="https://github.com/dkryaklin/colordx" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <slot />
+    </main>
+
+    <footer class="footer">
+      <span class="footer-mark">colordx · MIT</span>
+      <nav class="footer-nav">
+        <a href="https://github.com/dkryaklin/colordx" target="_blank" rel="noopener noreferrer">@colordx/core</a>
+        <a href="https://github.com/dkryaklin/colordx-a11y" target="_blank" rel="noopener noreferrer">@colordx/cli</a>
+        <a href="https://dkryaklin.com" target="_blank" rel="noopener noreferrer">dkryaklin.com</a>
+      </nav>
+    </footer>
+  </body>
+</html>
