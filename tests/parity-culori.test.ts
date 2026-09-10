@@ -34,7 +34,7 @@ import rec2020Plugin, {
 // delta is at or below a documented ceiling. If culori patches a conversion
 // or we introduce a regression, the affected format trips loudly.
 //
-// The counts default low enough to keep `yarn test` snappy. Set
+// The counts default low enough to keep `pnpm test` snappy. Set
 // `PARITY_COUNT=100000` to reproduce the long-form script run.
 
 const COUNT = Number(process.env.PARITY_COUNT ?? 10_000);

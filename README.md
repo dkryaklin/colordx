@@ -42,7 +42,7 @@ tinycolor2 1.6.0, @texel/color 1.1.11.
 
 In the RGB object row culori gets its own `{ mode, r, g, b }` format, so it skips parsing.
 
-Mean of two runs. Run `yarn bench` to check.
+Mean of two runs. Run `pnpm bench` to check.
 
 ## Install
 

@@ -46,7 +46,7 @@ async function bundle(entries: string[]): Promise<{ raw: number; gzip: number }>
     try {
       statSync(e);
     } catch {
-      throw new Error(`Missing build output: ${e}. Run \`yarn build\` first.`);
+      throw new Error(`Missing build output: ${e}. Run \`pnpm build\` first.`);
     }
   }
   // Single synthetic entry that re-exports every target — forces esbuild to bundle

@@ -30,27 +30,20 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
+          cache: pnpm
 
       - name: Upgrade npm for OIDC support
         run: npm install -g npm@latest
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Cache yarn global cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.yarn/berry/cache
-          key: yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: yarn-
-
-      - run: yarn install --immutable
-      - run: yarn build
-      - run: yarn publint
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec publint
 
       - name: Find last release ref
         id: last
@@ -67,10 +60,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BUMP: ${{ inputs.bump }}
           BASE_REF: ${{ steps.last.outputs.ref }}
-        run: yarn tsx scripts/changeset.ts
+        run: pnpm exec tsx scripts/changeset.ts
 
       - name: Version packages
-        run: yarn changeset version
+        run: pnpm exec changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -82,7 +75,7 @@ jobs:
           git diff --staged --quiet || (git commit -m "chore: release" && git push)
 
       - name: Publish to npm
-        run: yarn changeset publish --provenance
+        run: pnpm exec changeset publish --provenance
 
       - name: Create GitHub release
         run: |

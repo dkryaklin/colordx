@@ -14,7 +14,7 @@ import type {
 // rgb + oklch chosen as representatives — all 12 spaces use the same Omit<_, 'alpha'> pattern,
 // so a regression in the pattern surfaces here without enumerating every space.
 //
-// Run with `yarn test:types` to actually enforce — plain `yarn test` only executes the
+// Run with `pnpm test:types` to actually enforce — plain `pnpm test` only executes the
 // runtime bodies, which are no-ops for type assertions.
 
 describe('color type contracts', () => {

@@ -1,0 +1,5 @@
+# Its own workspace root: the playground installs and builds independently of the
+# library above it, and Docker copies this directory on its own.
+# esbuild's postinstall fetches its platform binary; Vite is dead without it.
+allowBuilds:
+  esbuild: true

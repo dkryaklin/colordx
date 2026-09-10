@@ -2,7 +2,6 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
-**/.yarn/install-state.gz
 reports/
 .claude/
 .stryker-tmp/

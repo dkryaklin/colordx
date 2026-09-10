@@ -1,0 +1,3 @@
+# esbuild's postinstall fetches its platform binary; tsup is dead without it.
+allowBuilds:
+  esbuild: true

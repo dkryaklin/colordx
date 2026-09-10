@@ -478,7 +478,7 @@ class TinyColor {
     const part = 360 / (slices || 30);
     const hsl = this.toHsl();
     const out: TinyColor[] = [this];
-    for (hsl.h = (hsl.h - ((part * n) >> 1) + 720) % 360; --n; ) {
+    for (hsl.h = (hsl.h - ((part * n) >> 1) + 720) % 360; --n;) {
       hsl.h = (hsl.h + part) % 360;
       out.push(new TinyColor({ ...hsl }));
     }

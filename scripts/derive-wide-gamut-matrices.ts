@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 // Derivation + verification of the linear-sRGB ↔ linear-space matrices used by the
-// a98rgb and prophoto color models. Run with `yarn tsx scripts/derive-wide-gamut-matrices.ts`.
+// a98rgb and prophoto color models. Run with `pnpm exec tsx scripts/derive-wide-gamut-matrices.ts`.
 //
 // Provenance of the constants in src/colorModels/{a98rgb,prophoto}.ts:
 //   - The space ↔ XYZ matrices and transfer functions are the CSS Color 4 reference values
