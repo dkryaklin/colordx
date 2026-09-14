@@ -1,4 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { NUM } from '../src/helpers.js';
+import { scanChannel, scanPos } from '../src/scan.js';
 import { colordx, extend } from '../src/index.js';
 import cmyk from '../src/plugins/cmyk.js';
 import hsv from '../src/plugins/hsv.js';
@@ -191,4 +193,83 @@ describe('whitespace edges across formats', () => {
   it('lab: tabs between channels', () => valid('lab(50\t0\t0)'));
   it('hwb: trailing whitespace before )', () => valid('hwb(0 0% 0%   )'));
   it('rgb: leading whitespace inside (', () => valid('rgb(   255 0 0)'));
+});
+
+describe('scientific notation (CSS Syntax 3 <number-token> exponent)', () => {
+  const same = (a: string, b: string) => {
+    valid(a);
+    expect(colordx(a).toHex8()).toBe(colordx(b).toHex8());
+  };
+  it('rgb: 1e2 reads as 100', () => same('rgb(1e2 0 0)', 'rgb(100 0 0)'));
+  it('rgb: mantissa with a fraction', () => same('rgb(2.55e2 0 0)', 'rgb(255 0 0)'));
+  it('rgb: negative exponent', () => same('rgb(2550e-1 0 0)', 'rgb(255 0 0)'));
+  it('rgb: explicit positive exponent, upper-case E', () => same('rgb(2.55E+2 0 0)', 'rgb(255 0 0)'));
+  it('rgb: percent after the exponent', () => same('rgb(1e2% 0 0)', 'rgb(100% 0 0)'));
+  it('rgb: alpha with an exponent', () => expect(colordx('rgb(0 0 0 / 5e-1)').alpha()).toBe(0.5));
+  it('rgb: legacy comma form', () => same('rgba(1e2, 0, 0, 5e-1)', 'rgba(100, 0, 0, 0.5)'));
+  it('rgb: 16+ digit mantissa with an exponent still defers to Number()', () =>
+    same('rgb(1234567890123456789e-17 0 0)', 'rgb(12.34567890123456789 0 0)'));
+  it('hsl: hue with an exponent', () => same('hsl(1.2e2 100% 50%)', 'hsl(120 100% 50%)'));
+  it('hsl: hue with an exponent and a unit', () => same('hsl(1.2e2deg 100% 50%)', 'hsl(120 100% 50%)'));
+  it('oklch: 6e-1 reads as 0.6', () => same('oklch(6e-1 0.1 30)', 'oklch(0.6 0.1 30)'));
+  it('oklch: tiny chroma as culori formats it', () => same('oklch(0.5 1e-7 30)', 'oklch(0.5 0.0000001 30)'));
+  it('oklab', () => same('oklab(5e-1 1e-1 -1e-1)', 'oklab(0.5 0.1 -0.1)'));
+  it('lab', () => same('lab(5e1 -1E1 1e-1)', 'lab(50 -10 0.1)'));
+  it('lch', () => same('lch(50 30 1.8e2)', 'lch(50 30 180)'));
+  it('hwb', () => same('hwb(1.2e2 1e1% 1e1%)', 'hwb(120 10% 10%)'));
+  it('hsv', () => same('hsv(1.2e2 1e2% 1e2%)', 'hsv(120 100% 100%)'));
+  it('color(srgb)', () => same('color(srgb 1e-7 0 0)', 'color(srgb 0.0000001 0 0)'));
+  it('color(display-p3)', () => same('color(display-p3 5e-1 0 0)', 'color(display-p3 0.5 0 0)'));
+  it('color(rec2020)', () => same('color(rec2020 5e-1 0 0)', 'color(rec2020 0.5 0 0)'));
+  it('device-cmyk', () => same('device-cmyk(0 1e2% 0 0)', 'device-cmyk(0 100% 0 0)'));
+  it('a bare `e` ends the number and the leftover rejects the string', () => {
+    invalid('rgb(1e 0 0)');
+    invalid('rgb(1e+ 0 0)');
+    invalid('rgb(1e2.5 0 0)');
+    invalid('oklch(6e-1e 0.1 30)');
+  });
+});
+
+describe('scientific notation: round-trips and grammar parity', () => {
+  const same = (a: string, b: string) => {
+    valid(a);
+    expect(colordx(a).toHex8()).toBe(colordx(b).toHex8());
+  };
+
+  it('high-precision formatter output that carries an exponent re-parses to the same color', () => {
+    // toOklchString(10) prints a tiny chroma as `1.105e-7`; before exponents were accepted the
+    // library could not read its own output.
+    const c = colordx('oklch(0.5 1e-7 30)');
+    const s = c.toOklchString(10);
+    expect(s).toMatch(/e-\d/);
+    expect(colordx(s).isValid()).toBe(true);
+    expect(colordx(s).toHex8()).toBe(c.toHex8());
+  });
+
+  it('overflowing and underflowing exponents clamp like their long spellings', () => {
+    same('rgb(1e400 0 0)', 'rgb(1' + '0'.repeat(400) + ' 0 0)');
+    same('rgb(-1e400 0 0)', 'rgb(0 0 0)');
+    same('rgb(1e-400 0 0)', 'rgb(0 0 0)');
+    same('hsl(1e20 100% 50%)', 'hsl(100000000000000000000 100% 50%)');
+    same('hsl(1e400 100% 50%)', 'hsl(0 100% 50%)'); // non-finite hue → 0°
+    same('oklch(0.5 1e400 30)', 'oklch(0.5 1' + '0'.repeat(400) + ' 30)');
+    expect(colordx('rgb(0 0 0 / 1e400)').alpha()).toBe(1);
+    expect(colordx('rgb(0 0 0 / 1e-400)').alpha()).toBe(0);
+  });
+
+  it('the hand-written scanner and the NUM regex accept exactly the same tokens', () => {
+    const re = new RegExp(`^${NUM}%?$`);
+    const tokens = [
+      '1', '-1', '+1', '.5', '1.5', '1e2', '1E2', '1e+2', '1e-2', '1.5e2', '.5e2', '1e02', '1e2%', '1.5e-2%',
+      '0e0', '-0e0', '1e0000000000000000002', '1234567890123456789e-17',
+      '1e', '1e+', '1e-', 'e2', '.e2', '1.e2', '1e2.5', '1e2e2', '1e 2', '1 e2', '1e0x2', '1.', '.', '', '+', '-',
+      '1e2%%', '1%e2', '1e%2', '1ee2', '1e+-2', '1e2-', '1e2+', '1e2e', 'E2', '1E', '1e.5',
+    ];
+    for (const t of tokens) {
+      const v = scanChannel(t, 0, t.length);
+      const scannerAccepts = v === v && scanPos() === t.length;
+      expect(scannerAccepts, JSON.stringify(t)).toBe(re.test(t));
+      if (scannerAccepts) expect(v, JSON.stringify(t)).toBe(Number(t.replace('%', '')));
+    }
+  });
 });

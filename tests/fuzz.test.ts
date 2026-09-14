@@ -645,6 +645,7 @@ describe('fuzz: invariants — no rounded output carries a signed zero', () => {
 describe('fuzz: invariants — hostile input never reaches a formatter', () => {
   const HEX = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/;
   const big = '1' + '0'.repeat(400); // Number() → Infinity, but passes every NUM regex
+  // `1e400` is the short spelling of the same overflow now that NUM accepts an exponent; `1e-400` underflows to 0.
   const bads = [NaN, Infinity, -Infinity, 1e308, -1e308];
 
   const objectShapes: Record<string, unknown>[] = [
@@ -691,7 +692,7 @@ describe('fuzz: invariants — hostile input never reaches a formatter', () => {
   for (const shape of stringShapes) {
     const slots = shape.split('_').length - 1;
     for (let s = 0; s < slots; s++)
-      for (const v of [big, `-${big}`]) {
+      for (const v of [big, `-${big}`, '1e400', '-1e400', '1e-400', '-1e-400']) {
         let k = 0;
         hostile.push(shape.replace(/_/g, () => (k++ === s ? v : '0.5')));
       }

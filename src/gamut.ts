@@ -1,14 +1,19 @@
 import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
-import { ANGLE_UNITS, clamp, isNumber } from './helpers.js';
+import { ANGLE_UNITS, NUM, clamp, isNumber } from './helpers.js';
 import { parse } from './parse.js';
 import { srgbToLinear } from './transfer.js';
 import type { AnyColor, ColorParser, OklabColor, OklchColor } from './types.js';
 
-const OKLCH_RE =
-  /^oklch\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(deg|rad|grad|turn)?\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+// Same NUM as the parsers so both grammars accept the same tokens (exponents included).
+const OKLCH_RE = new RegExp(
+  `^oklch\\(\\s*(${NUM})(%?)\\s+(${NUM})(%?)\\s+(${NUM})(deg|rad|grad|turn)?\\s*(?:\\/\\s*(${NUM})(%)?\\s*)?\\)$`,
+  'i'
+);
 
-const OKLAB_RE =
-  /^oklab\(\s*([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s+([+-]?\d*\.?\d+)(%?)\s*(?:\/\s*([+-]?\d*\.?\d+)(%)?\s*)?\)$/i;
+const OKLAB_RE = new RegExp(
+  `^oklab\\(\\s*(${NUM})(%?)\\s+(${NUM})(%?)\\s+(${NUM})(%?)\\s*(?:\\/\\s*(${NUM})(%)?\\s*)?\\)$`,
+  'i'
+);
 
 type RawOklab = { l: number; a: number; b: number; alpha: number };
 

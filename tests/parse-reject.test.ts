@@ -121,9 +121,17 @@ rejectMany('rgb — invalid tokens', [
   'rgb(red 0 0)',
   'rgb(#ff 0 0)',
   'rgb(0x00 0 0)',
-  'rgb(1e2 0 0)', // scientific notation not supported
-  'rgb(1E2 0 0)',
-  'rgb(1e+2 0 0)',
+  'rgb(1e 0 0)', // exponent needs at least one digit
+  'rgb(1e+ 0 0)',
+  'rgb(1e- 0 0)',
+  'rgb(e2 0 0)', // exponent needs a mantissa
+  'rgb(.e2 0 0)',
+  'rgb(1.e2 0 0)', // "1." is not a NUM, with or without an exponent
+  'rgb(1e2.5 0 0)', // exponent is an integer
+  'rgb(1e2e2 0 0)',
+  'rgb(1 e2 0 0)', // exponent must be attached
+  'rgb(1e 2 0 0)',
+  'rgb(1e0x2 0 0)',
   'rgb(-- 0 0)',
   'rgb(++1 0 0)',
   'rgb(+-1 0 0)',
@@ -198,6 +206,16 @@ acceptMany('rgb — valid modern space forms', [
   'rgb(  255  0  0  )',
   'rgb(255\t0\t0)', // tabs
   'rgb(+255 +0 +0)', // explicit positive
+  'rgb(1e2 0 0)', // CSS Syntax 3 <number-token> exponent
+  'rgb(1E2 0 0)',
+  'rgb(1e+2 0 0)',
+  'rgb(2.55e2 0 0)',
+  'rgb(255e-0 0 0)',
+  'rgb(1e2% 0 0)',
+  'rgb(0 0 0 / 5e-1)',
+  'rgb(0 0 0 / 5E1%)',
+  'rgb(1e2, 0, 0)', // legacy comma form
+  'rgba(1e2, 0, 0, 5e-1)',
   'rgb(-10 0 0)', // negative clamped but syntax is valid
   'rgb(300 0 0)', // over-255 clamped
   'rgb(.5 .5 .5)', // leading dot
@@ -245,7 +263,8 @@ rejectMany('hsl — invalid hue units', [
 
 rejectMany('hsl — invalid tokens', [
   'hsl(red 100% 50%)',
-  'hsl(0 1e2% 50%)',
+  'hsl(0 1e% 50%)',
+  'hsl(1e 100% 50%)',
   'hsl(0 100%% 50%)', // double percent
   'hsl(0 %100 50%)', // leading percent
   'hsl(0 100 % 50%)', // space between value and %
@@ -254,6 +273,10 @@ rejectMany('hsl — invalid tokens', [
 
 acceptMany('hsl — valid forms', [
   'hsl(0, 0%, 0%)',
+  'hsl(0 1e2% 50%)',
+  'hsl(1.2e2 100% 50%)',
+  'hsl(1.2e2deg 100% 50%)',
+  'hsl(1e2, 100%, 50%)',
   'hsl(360, 100%, 100%)',
   'hsl(180, 50%, 50%)',
   'hsla(0, 100%, 50%, 0.5)',
@@ -337,11 +360,12 @@ rejectMany('hwb — invalid hue units', [
 rejectMany('hwb — invalid tokens', [
   'hwb(red 0% 0%)',
   'hwb(0 0%% 0%)',
-  'hwb(0 1e2% 0%)',
+  'hwb(0 1e% 0%)',
 ]);
 
 acceptMany('hwb — valid forms', [
   'hwb(0 0% 0%)',
+  'hwb(0 1e2% 0%)',
   'hwb(360 100% 100%)',
   'hwb(180 50% 50%)',
   'hwb(0 50% 30%)',
@@ -378,11 +402,13 @@ rejectMany('lab — invalid tokens', [
   'lab(50deg 0 0)', // degrees don't apply to lab
   'lab(50 red 0)',
   'lab(50 0 calc(0))',
-  'lab(50 1e2 0)',
+  'lab(50 1e 0)',
 ]);
 
 acceptMany('lab — valid forms', [
   'lab(0 0 0)',
+  'lab(50 1e2 0)',
+  'lab(5e1 -1E1 1e-1)',
   'lab(100 0 0)',
   'lab(50 0 0)',
   'lab(50% 0 0)',
@@ -419,12 +445,14 @@ rejectMany('lch — invalid tokens', [
   'lch(50 red 180)',
   'lch(50 30 red)',
   'lch(50 30deg 180)', // degrees only on hue, not on chroma
-  'lch(50 30 1e2)',
+  'lch(50 30 1e)',
   'lch(50 30 180degrees)',
 ]);
 
 acceptMany('lch — valid forms', [
   'lch(0 0 0)',
+  'lch(50 30 1e2)',
+  'lch(50 30 1e2deg)',
   'lch(100 150 360)',
   'lch(50 30 180)',
   'lch(50% 30 180)',
@@ -543,7 +571,7 @@ rejectMany('color() — structural & unsupported spaces', [
 ]);
 
 rejectMany('color() — invalid tokens', [
-  'color(display-p3 1e2 0 0)',
+  'color(display-p3 1e 0 0)',
   'color(display-p3 0xff 0 0)',
   'color(display-p3 calc(0.5) 0 0)',
   'color(display-p3 1%% 0 0)',
@@ -559,7 +587,7 @@ rejectMany('color(srgb) — structural', [
   'color(srgb 1 0 0)extra',
   'color(srgb1 0 0)',
   'color(srgb 1 0 0',
-  'color(srgb 1e2 0 0)',
+  'color(srgb 1e 0 0)',
   'color(srgb 0xff 0 0)',
   'color(srgb 1%% 0 0)',
   'color(srgb red green blue)',
@@ -569,6 +597,8 @@ rejectMany('color(srgb) — structural', [
 
 acceptMany('color(srgb) — valid forms', [
   'color(srgb 0 0 0)',
+  'color(srgb 1e2 0 0)',
+  'color(srgb 1e-7 0 0)', // culori's formatCss emits this for tiny channels
   'color(srgb 1 1 1)',
   'color(srgb 0.5 0.5 0.5)',
   'color(srgb 100% 0% 0%)',
@@ -588,6 +618,8 @@ rejectMany('xyz — alias structural', ['color(xyz1 0 0)', 'color(xyz-d 1 0 0)',
 
 acceptMany('p3 — valid forms', [
   'color(display-p3 0 0 0)',
+  'color(display-p3 1e2 0 0)',
+  'color(display-p3 1e-7 0 0)',
   'color(display-p3 1 1 1)',
   'color(display-p3 0.5 0.5 0.5)',
   'color(display-p3 100% 0% 0%)',
@@ -644,13 +676,14 @@ rejectMany('device-cmyk — structural', [
 
 rejectMany('device-cmyk — invalid tokens', [
   'device-cmyk(red 0 0 0)',
-  'device-cmyk(0 1e2 0 0)',
+  'device-cmyk(0 1e 0 0)',
   'device-cmyk(0 0xff 0 0)',
   'device-cmyk(0 0 calc(0) 0)',
 ]);
 
 acceptMany('device-cmyk — valid forms', [
   'device-cmyk(0 0 0 0)',
+  'device-cmyk(0 1e2 0 0)',
   'device-cmyk(1 1 1 1)',
   'device-cmyk(0.5 0.5 0.5 0.5)',
   'device-cmyk(0% 0% 0% 0%)',

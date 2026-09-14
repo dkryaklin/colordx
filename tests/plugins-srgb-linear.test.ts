@@ -99,7 +99,7 @@ describe('parse color(srgb-linear …)', () => {
     'color(srgb-linear 1, 0, 0)',
     'color(srgb-linear 1 0 0 0.5)',
     'color(srgb-linear 1 0 0)x',
-    'color(srgb-linear 1e2 0 0)',
+    'color(srgb-linear 1e 0 0)',
     'color(srgb-linear1 0 0)',
     'color(srgblinear 1 0 0)',
   ])('rejects %s', (input) => {

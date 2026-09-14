@@ -3,7 +3,8 @@ import { isWs } from './helpers.js';
 // Hand-written single-pass scanners for the hot CSS string formats.
 // They replace regex + parseNum + group-indexing with one charCode walk that
 // produces final numeric channels directly. Grammar is byte-for-byte the same
-// as the regexes they replace (NUM = [+-]?(\d*\.\d+|\d+), plus the `none` keyword).
+// as the regexes they replace (NUM = [+-]?(\d*\.\d+|\d+)([eE][+-]?\d+)?, plus the
+// `none` keyword).
 
 // Scanner cursor + per-channel flags. Parsing is synchronous and non-reentrant,
 // so module-level scratch is safe and avoids an allocation per channel.
@@ -68,6 +69,22 @@ const scanNum = (s: string, i: number, n: number): number => {
     }
     if (after === 0) return NaN; // "5." is not a valid NUM
   } else if (before === 0) return NaN;
+  // CSS Syntax 3 <number-token> exponent: e/E, optional sign, one or more digits. A bare `e`
+  // (`1e`, `1e+`) is not consumed — the number ends before it and the caller rejects the `e`.
+  if (i < n && (s.charCodeAt(i) | 32) === 101) {
+    let j = i + 1;
+    if (j < n && (s.charCodeAt(j) === 43 || s.charCodeAt(j) === 45)) j++;
+    const expStart = j;
+    while (j < n) {
+      const d = s.charCodeAt(j) - 48;
+      if (d < 0 || d > 9) break;
+      j++;
+    }
+    if (j > expStart) {
+      _p = j;
+      return Number(s.slice(start, j));
+    }
+  }
   _p = i;
   // Beyond 2^53 the integer mantissa is no longer exact; defer to Number().
   if (digits > 15) return Number(s.slice(start, i));

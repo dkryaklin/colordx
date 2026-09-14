@@ -89,6 +89,7 @@ colordx('rgba(255, 0, 0, 0.5)');
 colordx('hsl(0 100% 50%)');
 colordx('oklab(0.6279 0.2249 0.1257)');
 colordx('oklch(0.6279 0.2577 29.23)');
+colordx('oklch(6e-1 1e-7 30)');           // CSS number tokens may carry an exponent
 colordx({ r: 255, g: 0, b: 0 });           // alpha defaults to 1
 colordx({ r: 255, g: 0, b: 0, alpha: 0.5 });
 colordx({ h: 0, s: 100, l: 50 });
