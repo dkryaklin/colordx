@@ -1,5 +1,12 @@
 # @colordx/core
 
+## 6.5.0
+
+### Minor Changes
+
+- Fix inGamutSrgb and inGamutCustom to return false for unparseable input, and make toGamutSrgb/toGamutCustom yield an invalid color instead of treating it as in-gamut sRGB ([cdc7a19](https://github.com/dkryaklin/colordx/commit/cdc7a195eb4607673b4785c2fac945c9b234e212))
+- Add support for scientific-notation number tokens (1e2, 6e-1) in all CSS color string parsers, the fast scanner, and the oklch/oklab gamut regexes ([081d9d4](https://github.com/dkryaklin/colordx/commit/081d9d46a791f740cce653afd1245deb7ea7c84d))
+
 ## 6.4.0
 
 ### Minor Changes
