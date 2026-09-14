@@ -403,6 +403,7 @@ extend([p3, rec2020]);
 inGamutSrgb('#ff0000'); // true  — hex is always sRGB
 inGamutSrgb('oklch(0.5 0.1 30)'); // true  — clearly in sRGB
 inGamutSrgb('oklch(0.5 0.4 180)'); // false — too much cyan chroma
+inGamutSrgb('not-a-color'); // false — not a color, so in no gamut
 
 // Map: reduce chroma until in-gamut (preserves lightness and hue)
 Colordx.toGamutSrgb('oklch(0.5 0.4 180)'); // → Colordx at the sRGB boundary

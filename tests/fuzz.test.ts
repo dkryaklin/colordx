@@ -624,7 +624,7 @@ describe('fuzz: invariants — gamut helpers read an input exactly like colordx(
       expect(colordx({ l: lo, c, h }).toHex8()).toBe(colordx({ l: 0, c, h }).toHex8());
       expect(colordx({ l: hi, c, h }).isValid()).toBe(false);
       expect(Colordx.toGamutSrgb({ l: hi, c, h }).isValid()).toBe(false);
-      expect(inGamutSrgb({ l: hi, c, h })).toBe(true); // not a wide-gamut color: passes through
+      expect(inGamutSrgb({ l: hi, c, h })).toBe(false); // not a color at all: in no gamut
     }
   });
 });

@@ -31,8 +31,8 @@ describe('gamut helpers accept the same OKLab/OKLCh objects the parser does', ()
   });
   it('object with L > 1 is not OKLab for the gamut helpers either (parser rejects it)', () => {
     expect(colordx({ l: 50, a: 0, b: 0, alpha: 1 }).isValid()).toBe(false);
-    expect(inGamutSrgb({ l: 50, a: 0, b: 0, alpha: 1 })).toBe(true);
-    expect(inGamutSrgb({ l: 50, a: 0, b: 0 })).toBe(true);
+    expect(inGamutSrgb({ l: 50, a: 0, b: 0, alpha: 1 })).toBe(false);
+    expect(inGamutSrgb({ l: 50, a: 0, b: 0 })).toBe(false);
     expect(Colordx.toGamutSrgb({ l: 50, c: 0, h: 0 }).isValid()).toBe(false);
   });
   it('string L is clamped to [0, 1] for gamut checks like it is for parsing', () => {

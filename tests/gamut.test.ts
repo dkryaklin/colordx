@@ -55,6 +55,30 @@ describe('inGamutSrgb', () => {
     expect(inGamutSrgb('oklch(0 0 0)')).toBe(true);
     expect(inGamutSrgb('oklch(1 0 0)')).toBe(true);
   });
+
+  it('returns false for input that is not a color', () => {
+    expect(inGamutSrgb('not-a-color')).toBe(false);
+    expect(inGamutSrgb('')).toBe(false);
+    expect(inGamutSrgb('rgb(1e 0 0)')).toBe(false);
+    expect(inGamutSrgb('oklch(0.5 0.1)')).toBe(false); // wide-gamut prefix, malformed body
+    expect(inGamutSrgb({} as never)).toBe(false);
+    expect(inGamutSrgb({ x: 1 } as never)).toBe(false);
+    expect(inGamutSrgb([] as never)).toBe(false);
+    expect(inGamutSrgb(42 as never)).toBe(false);
+    expect(inGamutSrgb(null as never)).toBe(false);
+    expect(inGamutSrgb(undefined as never)).toBe(false);
+    // The plugin checks share the extractor
+    expect(inGamutP3('not-a-color')).toBe(false);
+    expect(inGamutRec2020('not-a-color')).toBe(false);
+    expect(inGamutP3(42 as never)).toBe(false);
+    // Mapping a non-color stays a non-color
+    expect(Colordx.toGamutSrgb('not-a-color').isValid()).toBe(false);
+    expect(Colordx.toGamutSrgb(42 as never).isValid()).toBe(false);
+  });
+
+  it('transparent is a color, and in gamut', () => {
+    expect(inGamutSrgb('transparent')).toBe(true);
+  });
 });
 
 describe('toGamutSrgb — CSS Color 4 spec algorithm', () => {

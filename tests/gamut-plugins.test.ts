@@ -19,9 +19,9 @@ describe('gamut helpers before extend()', () => {
     expect(inGamutP3('oklch(0.5 0.4 180)')).toBe(false);
   });
 
-  it('core treats an unloaded plugin format as sRGB-bounded', () => {
+  it('core treats an unloaded plugin format as not a color', () => {
     expect(colordx('color(display-p3 1 0 0)').isValid()).toBe(false);
-    expect(inGamutSrgb('color(display-p3 1 0 0)')).toBe(true);
+    expect(inGamutSrgb('color(display-p3 1 0 0)')).toBe(false);
     expect(Colordx.toGamutSrgb('color(display-p3 1 0 0)').isValid()).toBe(false);
   });
 });

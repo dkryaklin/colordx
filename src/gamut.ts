@@ -14,15 +14,17 @@ type RawOklab = { l: number; a: number; b: number; alpha: number };
 
 /**
  * Extract raw OKLab {l, a, b, alpha} without clamping.
+ * Returns `null` for inputs that are already sRGB-bounded (hex, rgb, hsl, hsv, hwb, etc.) and
+ * `undefined` for input that is not a color at all, so callers can tell "always in gamut" from
+ * "nothing to check".
  * OKLab / OKLCH inputs are read directly, under the same rules as the parsers: L is clamped to
  * [0, 1] (CSS Color 4 parsed-value clamping), C to ≥ 0, alpha defaults to 1, and an object with
  * L > 1 is not OKLab (it is CIE Lab/LCH missing its colorSpace brand) so it falls through to the
  * shared parser and is rejected there. Everything else goes through `own` (a plugin's parser for
  * its own format, so its gamut helpers work without `extend()`) and then the regular parser;
  * channels outside [0, 255] carry the out-of-gamut information.
- * Returns null for inputs that are already sRGB-bounded (hex, rgb, hsl, hsv, hwb, etc.).
  */
-const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null => {
+const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | undefined => {
   if (typeof input === 'object' && input !== null) {
     const obj = input as unknown as Record<string, unknown>;
     // OklabColor: l/a/b present, no 'lab' colorSpace brand
@@ -63,11 +65,11 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null => {
       return { l, a, b, alpha };
     }
   } else {
-    return null;
+    return undefined;
   }
 
   const rgb = own?.(input) ?? parse(input);
-  if (rgb === null) return null;
+  if (rgb === null) return undefined;
   const { r, g, b, alpha } = rgb;
   if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return null;
   const [l, a, bb] = linearSrgbToOklab(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
@@ -94,9 +96,11 @@ const strictInGamut = (r: number, g: number, b: number): boolean =>
  * True when the color falls inside the sRGB gamut.
  * sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb) are always in gamut.
  * Wide-gamut inputs (oklch, oklab, lab, lch, p3, rec2020, xyz) are checked against [0, 1] in linear sRGB.
+ * Input that does not parse as a color is not in any gamut and returns false.
  */
 export const inGamutSrgb = (input: AnyColor): boolean => {
   const raw = getRawOklab(input);
+  if (raw === undefined) return false;
   if (raw === null) return true;
   const [r, g, b] = oklabToLinear(raw.l, raw.a, raw.b);
   return isLinearInGamut(r, g, b);
@@ -201,12 +205,13 @@ const cssGamutMap = (
  */
 export const toGamutSrgbRaw = (input: AnyColor): GamutMapResult | null => {
   const raw = getRawOklab(input);
-  if (raw === null) return null;
+  if (raw == null) return null;
   return { linear: cssGamutMap(raw.l, raw.a, raw.b, oklabToLinear, linearSrgbToOklab), alpha: raw.alpha };
 };
 
 export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter, own?: ColorParser): boolean => {
   const raw = getRawOklab(input, own);
+  if (raw === undefined) return false; // not a color
   // sRGB-bounded inputs (hex, rgb, hsl, etc.) are always inside the wider P3/Rec.2020 gamut
   if (raw === null) return true;
   const [r, g, b] = toLinear(raw.l, raw.a, raw.b);
@@ -228,6 +233,6 @@ export const toGamutCustom = (
   own?: ColorParser
 ): GamutMapResult | null => {
   const raw = getRawOklab(input, own);
-  if (raw === null) return null;
+  if (raw == null) return null;
   return { linear: cssGamutMap(raw.l, raw.a, raw.b, toLinear, fromLinear), alpha: raw.alpha };
 };
