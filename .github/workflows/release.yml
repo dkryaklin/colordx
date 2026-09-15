@@ -45,8 +45,25 @@ jobs:
       - run: pnpm build
       - run: pnpm exec publint
 
+      # A run that pushed its version bump but failed to publish leaves main a version ahead of npm.
+      # Publish that version as-is instead of generating changesets and bumping a second time.
+      - name: Check for unpublished version
+        id: pending
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if OUT=$(npm view "@colordx/core@${VERSION}" version 2>&1); then
+            echo "${VERSION} is already on npm"
+          elif grep -q E404 <<<"$OUT"; then
+            echo "${VERSION} is not on npm yet, publishing it without a new bump"
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "$OUT"
+            exit 1
+          fi
+
       - name: Find last release ref
         id: last
+        if: steps.pending.outputs.version == ''
         run: |
           TAG=$(git describe --tags --abbrev=0 --match '@colordx/core@*' 2>/dev/null || echo "")
           if [ -z "$TAG" ]; then
@@ -56,6 +73,7 @@ jobs:
           echo "Diffing against: $TAG"
 
       - name: Generate changeset via AI
+        if: steps.pending.outputs.version == ''
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BUMP: ${{ inputs.bump }}
@@ -63,19 +81,29 @@ jobs:
         run: pnpm exec tsx scripts/changeset.ts
 
       - name: Version packages
+        if: steps.pending.outputs.version == ''
         run: pnpm exec changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and push version bump
+        if: steps.pending.outputs.version == ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json CHANGELOG.md .changeset
           git diff --staged --quiet || (git commit -m "chore: release" && git push)
 
+      # npm, not `changeset publish`: in a pnpm repo changesets hands off to `pnpm publish`, and it
+      # rejects --provenance since 2.31. npm is the path proven with trusted publishing and provenance.
       - name: Publish to npm
-        run: pnpm exec changeset publish --provenance
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@colordx/core@${VERSION}" version >/dev/null 2>&1; then
+            echo "${VERSION} is already on npm, nothing to publish"
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: Create GitHub release
         run: |
