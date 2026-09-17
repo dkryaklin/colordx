@@ -1095,3 +1095,35 @@ describe("string output: round-trips", () => {
   });
 });
 
+
+describe("toRgb precision option", () => {
+  it("rounds to integers by default", () => {
+    expect(colordx("hsl(210 40% 47%)").toRgb()).toEqual({ r: 72, g: 120, b: 168, alpha: 1 });
+  });
+
+  it("keeps the requested number of decimals", () => {
+    const c = colordx("hsl(210 40% 47%)");
+    expect(c.toRgb(2)).toEqual({ r: 71.91, g: 119.85, b: 167.79, alpha: 1 });
+    expect(c.toRgb(0)).toEqual(c.toRgb());
+    const raw = c._rawRgb();
+    expect(c.toRgb(12).r).toBeCloseTo(raw.r, 10);
+  });
+
+  it("keeps alpha untouched", () => {
+    expect(colordx("#ff000080").toRgb(4).alpha).toBe(0.502);
+  });
+
+  it("clips wide-gamut channels to the sRGB cube, like toHex()", () => {
+    const { r, g, b } = colordx("oklch(0.7 0.35 140)").toRgb(3);
+    expect(Math.min(r, g, b)).toBe(0);
+    expect(Math.max(r, g, b)).toBeLessThanOrEqual(255);
+  });
+
+  it("returns a copy, never the internal object", () => {
+    const c = colordx("#336699");
+    const out = c.toRgb(5);
+    expect(out).not.toBe(c._rawRgb());
+    out.r = 0;
+    expect(c.toHex()).toBe("#336699");
+  });
+});

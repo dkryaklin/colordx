@@ -81,10 +81,17 @@ export class Colordx {
     return this._valid;
   }
 
-  /** Returns sRGB channels rounded to integers in [0, 255], plus alpha in [0, 1]. */
-  toRgb(): RgbColor {
-    const { r, g, b, alpha } = this._rgb;
-    return { r: toByte(r), g: toByte(g), b: toByte(b), alpha };
+  /**
+   * Returns sRGB channels in [0, 255], plus alpha in [0, 1]. Channels are rounded to integers
+   * by default; pass `precision` to keep that many decimals instead.
+   */
+  toRgb(precision?: number): RgbColor {
+    if (precision === undefined) {
+      const { r, g, b, alpha } = this._rgb;
+      return { r: toByte(r), g: toByte(g), b: toByte(b), alpha };
+    }
+    const { r, g, b, alpha } = this._srgbRgb();
+    return { r: round(r, precision), g: round(g, precision), b: round(b, precision), alpha };
   }
 
   /** Returns the internal unrounded RGB. Intended for plugin use where deferred rounding matters. */
