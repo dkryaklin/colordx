@@ -15,6 +15,7 @@ import { build } from 'esbuild';
 
 const DIST = join(import.meta.dirname, '..', 'dist');
 const CORE = join(DIST, 'index.mjs');
+const FN = join(DIST, 'fn.mjs');
 
 interface Plugin {
   name: string;
@@ -41,7 +42,7 @@ const PLUGINS: Plugin[] = [
   { name: 'tinycolor', entry: join(DIST, 'tinycolor.mjs') },
 ];
 
-async function bundle(entries: string[]): Promise<{ raw: number; gzip: number }> {
+async function bundle(entries: string[], names?: string[]): Promise<{ raw: number; gzip: number }> {
   for (const e of entries) {
     try {
       statSync(e);
@@ -53,7 +54,11 @@ async function bundle(entries: string[]): Promise<{ raw: number; gzip: number }>
   // them into one artifact so we can measure combined gzipped size (the shape a real
   // consumer's bundle would take when importing core + plugins together).
   const synthetic = join(tmpdir(), `colordx-size-${process.pid}-${Math.random().toString(36).slice(2)}.mjs`);
-  writeFileSync(synthetic, entries.map((e, i) => `export * as _${i} from ${JSON.stringify(e)};`).join('\n'));
+  const what = names ? `{ ${names.join(', ')} }` : null;
+  writeFileSync(
+    synthetic,
+    entries.map((e, i) => `export ${what ?? `* as _${i}`} from ${JSON.stringify(e)};`).join('\n')
+  );
   const result = await build({
     entryPoints: [synthetic],
     bundle: true,
@@ -77,7 +82,12 @@ async function main(): Promise<void> {
   const core = await bundle([CORE]);
 
   type Row = { label: string; raw: number; gzip: number };
-  const rows: Row[] = [{ label: 'core', ...core }];
+  const rows: Row[] = [
+    { label: 'core', ...core },
+    { label: 'core: colordx only', ...(await bundle([CORE], ['colordx'])) },
+    { label: 'fn: parse', ...(await bundle([FN], ['parse'])) },
+    { label: 'fn: parseHex + rgbToHex', ...(await bundle([FN], ['parseHex', 'rgbToHex'])) },
+  ];
 
   for (const p of PLUGINS) {
     const combined = await bundle([CORE, p.entry]);
@@ -97,6 +107,7 @@ async function main(): Promise<void> {
 
   console.log();
   console.log(`Core bundle (what \`import '@colordx/core'\` ships): ${fmt(core.gzip)} gzipped`);
+  console.log(`\`colordx only\` is a named import; \`fn\` rows are named imports from '@colordx/core/fn'.`);
   console.log(`Plugin rows show *incremental* cost on top of core.`);
 }
 
