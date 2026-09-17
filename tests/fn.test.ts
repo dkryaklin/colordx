@@ -104,7 +104,7 @@ describe('@colordx/core/fn', () => {
   });
 
   it('parsers compose into a custom parse', () => {
-    const parsers = [fn.parseHex, fn.parseNameString, fn.parseRgbObject, fn.parseHsvObject];
+    const parsers = [fn.parseHex, fn.parseRgbObject, fn.parseHsvObject, fn.parseNameString];
     const parse = (input: unknown) => {
       for (const p of parsers) {
         const rgb = p(input);

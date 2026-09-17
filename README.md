@@ -458,12 +458,12 @@ rgbToOklch(parseHex('#ff0000')!);    // { l: 0.6279…, c: 0.2576…, h: 29.23�
 
 `RgbColor` here is the library's storage form: `r`, `g`, `b` on the 0–255 scale, unrounded and unclamped, so a wide-gamut color keeps its out-of-range channels.
 
-To accept only some formats, compose the single-format parsers instead of calling `parse()`:
+To accept only some formats, compose the single-format parsers instead of calling `parse()`. Order them by how often each format shows up, and keep `parseNameString` last: every other parser rejects a foreign input on its first character or key, while the name lookup lowercases the string first.
 
 ```ts
 import { parseHex, parseHsvObject, parseNameString, parseRgbObject } from '@colordx/core/fn';
 
-const parsers = [parseHex, parseNameString, parseRgbObject, parseHsvObject];
+const parsers = [parseHex, parseRgbObject, parseHsvObject, parseNameString];
 const parseColor = (input: unknown) => {
   for (const p of parsers) {
     const rgb = p(input);

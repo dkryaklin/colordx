@@ -897,7 +897,7 @@ describe('README — `a` alias, toRgb precision, functional API', () => {
     const { l, c, h, alpha } = rgbToOklch(parseHex('#ff0000')!);
     expect([l.toFixed(4), c.toFixed(3), h.toFixed(2), alpha]).toEqual(['0.6280', '0.258', '29.23', 1]);
 
-    const parsers = [parseHex, parseNameString, parseRgbObject, parseHsvObject];
+    const parsers = [parseHex, parseRgbObject, parseHsvObject, parseNameString];
     const parseColor = (input: unknown) => {
       for (const p of parsers) {
         const rgb = p(input);
