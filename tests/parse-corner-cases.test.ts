@@ -309,3 +309,125 @@ describe('the parser registry handed to plugins', () => {
     expect(calls).toHaveLength(2);
   });
 });
+
+describe('hsl() string scanner', () => {
+  const ok = (s: string, hex: string) => expect(colordx(s).toHex(), s).toBe(hex);
+  const bad = (s: string) => expect(colordx(s).isValid(), s).toBe(false);
+
+  it('accepts whitespace before the closing paren with or without alpha', () => {
+    ok('hsl(0, 100%, 50% )', '#ff0000');
+    ok('hsl(0 100% 50% )', '#ff0000');
+    ok('hsl(0 100% 50%\t)', '#ff0000');
+    ok('hsl(0 100% 50% / 0.5 )', '#ff000080');
+    ok('hsla(0, 100%, 50%, 0.5 )', '#ff000080');
+    ok(' \n hsl( 0 100% 50% ) \u00a0\n', '#ff0000');
+  });
+
+  it('reads both syntaxes, any case, with exponents and leading dots', () => {
+    ok('HSLA(1e1GRAD,5%,5%,50%)', '#0d0c0c80');
+    ok('hsl(120 100% 50%)', '#00ff00');
+    ok('hsl(120 100 50)', '#00ff00');
+    ok('hsl(1.2e2, 1e2%, 5e1%)', '#00ff00');
+    ok('hsl(+120 .1e3% 50.0%)', '#00ff00');
+    ok('hsl(120,100%,50%)', '#00ff00');
+    ok('hsl(120 100% 50%/50%)', '#00ff0080');
+    ok('hsl(120 100% 50% / none)', '#00ff0000');
+  });
+
+  it('applies angle units case-insensitively and wraps the hue', () => {
+    ok('hsl(0.5turn 100% 50%)', '#00ffff');
+    ok('hsl(200GRAD 100% 50%)', '#00ffff');
+    ok(`hsl(${Math.PI}rad 100% 50%)`, '#00ffff');
+    ok('hsl(180DEG 100% 50%)', '#00ffff');
+    ok('hsl(-180 100% 50%)', '#00ffff');
+    ok('hsl(540 100% 50%)', '#00ffff');
+  });
+
+  it('`none` is modern-syntax only', () => {
+    ok('hsl(none 100% 50%)', '#ff0000');
+    ok('hsl(NONE none 50%)', '#808080');
+    ok('hsl(nonedeg 100% 50%)', '#ff0000');
+    ok('hsl(0 none% 50%)', '#808080');
+    bad('hsl(none, 100%, 50%)');
+    bad('hsl(0, none, 50%)');
+    bad('hsl(0, 100%, none)');
+    bad('hsl(0, 100%, 50%, none)');
+  });
+
+  it('legacy syntax needs % on s and l and consistent commas', () => {
+    bad('hsl(0, 100, 50%)');
+    bad('hsl(0, 100%, 50)');
+    bad('hsl(0, 100% 50%)');
+    bad('hsl(0 100%, 50%)');
+    bad('hsl(0, 100%, 50% / 0.5)');
+    bad('hsl(0 100% 50%, 0.5)');
+  });
+
+  it('rejects malformed input', () => {
+    for (const s of [
+      'hsl(0 100% 50%',
+      'hsl(0 100% 50%))',
+      'hsl(0 100% 50%) x',
+      'hsl (0 100% 50%)',
+      'hsl(0100%50%)',
+      'hsl(0 100%50%)',
+      'hsl(0% 100% 50%)',
+      'hsl(0 deg 100% 50%)',
+      'hsl(0degs 100% 50%)',
+      'hsl(10constructor 100% 50%)',
+      'hsl(10__proto__ 100% 50%)',
+      'hsl(10toString 100% 50%)',
+      'hsl(1e 100% 50%)',
+      'hsl(5. 100% 50%)',
+      'hsl(. 100% 50%)',
+      'hsl(--1 100% 50%)',
+      'hsl(0 100% 50% 0.5)',
+      'hsl(0 100% 50% / )',
+      'hsl(0 100% 50% / 0.5 0.5)',
+      'hsl(0 100%% 50%)',
+      'hsl(0 100 % 50%)',
+      'hsl(0 100%)',
+      'hsl()',
+      'hslx(0 100% 50%)',
+      'hs(0 100% 50%)',
+      '\u017fsl(0 100% 50%)',
+      'h\u017fl(0 100% 50%)',
+    ])
+      bad(s);
+  });
+
+  it('called directly, checks every delimiter itself', async () => {
+    const { parseHslString, rgbToHex } = await import('../src/fn.js');
+    for (const s of [
+      'xsl(0 100% 50%)',
+      'hsl[0 100% 50%)',
+      'hsla[0 100% 50%)',
+      'hsl(0 100% 50%x',
+      'hsl(0 100% 50%]',
+      'hsl(0deg100% 50%)',
+      'hsl(0-100% 50%)',
+      'hsl(0 100%-50%)',
+      'hsl(0 100% )',
+      'hsl(0 )',
+      'hsl(10z 100% 50%)',
+      'hsl(10{ 100% 50%)',
+    ])
+      expect(parseHslString(s), s).toBeNull();
+    expect(rgbToHex(parseHslString('hsl(0\u00a0100%\u00a050%)')!)).toBe('#ff0000');
+    expect(rgbToHex(parseHslString('hsl(0deg\u00a0100% 50%)')!)).toBe('#ff0000');
+    expect(rgbToHex(parseHslString('\u00a0hsl(0 100% 50%)\ufeff')!)).toBe('#ff0000');
+  });
+
+  it('clamps like the object parser and matches Number() on long tokens', () => {
+    ok('hsl(0 150% 50%)', '#ff0000');
+    ok('hsl(0 -10% 50%)', '#808080');
+    ok('hsl(0 100% 1e400%)', '#ffffff');
+    ok('hsl(0 100% 50% / 7)', '#ff0000');
+    expect(colordx('hsl(210.12345678901234567 50% 40%)')._rawRgb()).toEqual(
+      colordx({ h: Number('210.12345678901234567'), s: 50, l: 40 })._rawRgb()
+    );
+    expect(colordx('hsl(13.64365 33.3333% 66.6667%)')._rawRgb()).toEqual(
+      colordx({ h: 13.64365, s: 33.3333, l: 66.6667 })._rawRgb()
+    );
+  });
+});

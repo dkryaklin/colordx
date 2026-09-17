@@ -61,14 +61,6 @@ export const NUM_OR_NONE = `(?:none|${NUM})`;
 /** Parse a CSS Color 4 channel token. `none` → 0; a plain number is returned as-is. */
 export const parseNum = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
 
-/** `none` check without a regex or a toLowerCase allocation. */
-export const isNone = (v: string): boolean =>
-  v.length === 4 &&
-  (v.charCodeAt(0) | 32) === 110 &&
-  (v.charCodeAt(1) | 32) === 111 &&
-  (v.charCodeAt(2) | 32) === 110 &&
-  (v.charCodeAt(3) | 32) === 101;
-
 /** Clamp+round to a 0-255 byte, avoiding the generic round()'s `10 ** 0` per channel. */
 export const toByte = (n: number): number => (n > 0 ? (n < 255 ? Math.round(n) : 255) : 0);
 
