@@ -85,9 +85,9 @@ const parseObject = (input: AnyColor & object): RgbColor | null => {
   let r: RgbColor | null = null;
   if ('r' in input) r = parseRgbBody(input);
   else if ('l' in input) {
-    if ('a' in input) r = parseOklabObject(input);
-    else if ('c' in input) r = parseOklchObject(input);
+    if ('c' in input) r = parseOklchObject(input);
     else if ('h' in input && 's' in input) r = parseHslBody(input);
+    else if ('a' in input) r = parseOklabObject(input);
   }
   return r ?? runPlugins(input, false);
 };

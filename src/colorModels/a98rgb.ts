@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
 import { a98FromLinear, a98ToLinear, linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { A98Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
@@ -61,7 +61,7 @@ export const parseA98Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'a98-rgb') return null;
   if (!('r' in input && 'g' in input && 'b' in input)) return null;
-  const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
+  const { r, g, b, alpha = alphaAlias(input) } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return a98ToRgbUnclamped({
     r: sanitize(r),

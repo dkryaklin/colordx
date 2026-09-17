@@ -74,3 +74,5 @@ export const toByte = (n: number): number => (n > 0 ? (n < 255 ? Math.round(n) :
 
 /** Clamp+round alpha to 3 decimals, likewise avoiding the generic round(). */
 export const round3 = (n: number): number => (n > 0 ? (n < 1 ? Math.round(n * 1000) / 1000 : 1) : 0);
+
+export const alphaAlias = (input: unknown): unknown => (input as { a?: unknown }).a ?? 1;

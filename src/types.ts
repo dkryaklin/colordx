@@ -13,7 +13,7 @@ export interface RgbColor {
   alpha: number;
 }
 /** Input shape of `RgbColor` — `alpha` is optional and defaults to 1. */
-export type RgbColorInput = Omit<RgbColor, 'alpha'> & { alpha?: number };
+export type RgbColorInput = Omit<RgbColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** HSL color. h in [0, 360); s, l in [0, 100]; alpha in [0, 1]. */
 export interface HslColor {
@@ -23,7 +23,7 @@ export interface HslColor {
   alpha: number;
 }
 /** Input shape of `HslColor` — `alpha` is optional and defaults to 1. */
-export type HslColorInput = Omit<HslColor, 'alpha'> & { alpha?: number };
+export type HslColorInput = Omit<HslColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** HSV color. h in [0, 360); s, v in [0, 100]; alpha in [0, 1]. */
 export interface HsvColor {
@@ -33,7 +33,7 @@ export interface HsvColor {
   alpha: number;
 }
 /** Input shape of `HsvColor` — `alpha` is optional and defaults to 1. */
-export type HsvColorInput = Omit<HsvColor, 'alpha'> & { alpha?: number };
+export type HsvColorInput = Omit<HsvColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** HWB color. h in [0, 360); w, b in [0, 100]; alpha in [0, 1]. */
 export interface HwbColor {
@@ -45,7 +45,7 @@ export interface HwbColor {
   alpha: number;
 }
 /** Input shape of `HwbColor` — `alpha` is optional and defaults to 1. */
-export type HwbColorInput = Omit<HwbColor, 'alpha'> & { alpha?: number };
+export type HwbColorInput = Omit<HwbColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** CIE Lab (D50). L in [0, 100]; a, b roughly in [-128, 128]. */
 export interface LabColor {
@@ -69,7 +69,7 @@ export interface LchColor {
   readonly colorSpace: 'lch';
 }
 /** Input shape of `LchColor` — `alpha` is optional and defaults to 1. */
-export type LchColorInput = Omit<LchColor, 'alpha'> & { alpha?: number };
+export type LchColorInput = Omit<LchColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** CIE XYZ (D50). x, y, z on the library's 0–100 scale. */
 export interface XyzColor {
@@ -79,7 +79,7 @@ export interface XyzColor {
   alpha: number;
 }
 /** Input shape of `XyzColor` — `alpha` is optional and defaults to 1. */
-export type XyzColorInput = Omit<XyzColor, 'alpha'> & { alpha?: number };
+export type XyzColorInput = Omit<XyzColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** CIE XYZ (D65). x, y, z on the library's 0–100 scale. */
 export interface XyzD65Color {
@@ -89,7 +89,7 @@ export interface XyzD65Color {
   alpha: number;
   readonly colorSpace: 'xyz-d65';
 }
-type XyzD65ColorInput = Omit<XyzD65Color, 'alpha'> & { alpha?: number };
+type XyzD65ColorInput = Omit<XyzD65Color, 'alpha'> & { alpha?: number; a?: number };
 
 /** CMYK color. c, m, y, k in [0, 100]; alpha in [0, 1]. */
 export interface CmykColor {
@@ -100,7 +100,7 @@ export interface CmykColor {
   alpha: number;
 }
 /** Input shape of `CmykColor` — `alpha` is optional and defaults to 1. */
-export type CmykColorInput = Omit<CmykColor, 'alpha'> & { alpha?: number };
+export type CmykColorInput = Omit<CmykColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** OKLab. Perceptually uniform (D65). L in [0, 1]; a, b roughly in [-0.4, 0.4]. */
 export interface OklabColor {
@@ -122,7 +122,7 @@ export interface OklchColor {
   alpha: number;
 }
 /** Input shape of `OklchColor` — `alpha` is optional and defaults to 1. */
-export type OklchColorInput = Omit<OklchColor, 'alpha'> & { alpha?: number };
+export type OklchColorInput = Omit<OklchColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** CSS Color 4 Display-P3. r, g, b in [0, 1]. */
 export interface P3Color {
@@ -133,7 +133,7 @@ export interface P3Color {
   readonly colorSpace: 'display-p3';
 }
 /** Input shape of `P3Color` — `alpha` is optional and defaults to 1. */
-export type P3ColorInput = Omit<P3Color, 'alpha'> & { alpha?: number };
+export type P3ColorInput = Omit<P3Color, 'alpha'> & { alpha?: number; a?: number };
 
 /** CSS Color 4 Rec.2020. r, g, b in [0, 1]. */
 export interface Rec2020Color {
@@ -144,7 +144,7 @@ export interface Rec2020Color {
   readonly colorSpace: 'rec2020';
 }
 /** Input shape of `Rec2020Color` — `alpha` is optional and defaults to 1. */
-export type Rec2020ColorInput = Omit<Rec2020Color, 'alpha'> & { alpha?: number };
+export type Rec2020ColorInput = Omit<Rec2020Color, 'alpha'> & { alpha?: number; a?: number };
 
 /** CSS Color 4 A98 (Adobe RGB 1998). r, g, b in [0, 1]. */
 export interface A98Color {
@@ -155,7 +155,7 @@ export interface A98Color {
   readonly colorSpace: 'a98-rgb';
 }
 /** Input shape of `A98Color` — `alpha` is optional and defaults to 1. */
-export type A98ColorInput = Omit<A98Color, 'alpha'> & { alpha?: number };
+export type A98ColorInput = Omit<A98Color, 'alpha'> & { alpha?: number; a?: number };
 
 /** CSS Color 4 ProPhoto (ROMM RGB). r, g, b in [0, 1]. */
 export interface ProPhotoColor {
@@ -166,7 +166,7 @@ export interface ProPhotoColor {
   readonly colorSpace: 'prophoto-rgb';
 }
 /** Input shape of `ProPhotoColor` — `alpha` is optional and defaults to 1. */
-export type ProPhotoColorInput = Omit<ProPhotoColor, 'alpha'> & { alpha?: number };
+export type ProPhotoColorInput = Omit<ProPhotoColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** CSS Color 4 linear-light sRGB. r, g, b in [0, 1] when in gamut. */
 export interface SrgbLinearColor {
@@ -177,7 +177,7 @@ export interface SrgbLinearColor {
   readonly colorSpace: 'srgb-linear';
 }
 /** Input shape of `SrgbLinearColor` — `alpha` is optional and defaults to 1. */
-export type SrgbLinearColorInput = Omit<SrgbLinearColor, 'alpha'> & { alpha?: number };
+export type SrgbLinearColorInput = Omit<SrgbLinearColor, 'alpha'> & { alpha?: number; a?: number };
 
 /** Any color input accepted by `colordx()` and friends — a CSS string or one of the input objects. */
 export type AnyColor =

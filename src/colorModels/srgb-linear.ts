@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
 import { linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { RgbColor, SrgbLinearColor } from '../types.js';
 
@@ -17,7 +17,7 @@ export const parseSrgbLinearObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'srgb-linear') return null;
   if (!('r' in input && 'g' in input && 'b' in input)) return null;
-  const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
+  const { r, g, b, alpha = alphaAlias(input) } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return srgbLinearToRgbUnclamped({
     r: sanitize(r),

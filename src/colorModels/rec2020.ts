@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { linearToStoredRgb, rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
@@ -87,7 +87,7 @@ export const parseRec2020Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'rec2020') return null;
   if (!('r' in input && 'g' in input && 'b' in input)) return null;
-  const { r, g, b, alpha = 1 } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
+  const { r, g, b, alpha = alphaAlias(input) } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(r) || !isAnyNumber(g) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return rec2020ToRgbUnclamped({
     r: sanitize(r),

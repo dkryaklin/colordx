@@ -3,6 +3,7 @@ import {
   ANGLE_UNITS,
   NUM,
   NUM_OR_NONE,
+  alphaAlias,
   clamp,
   isObject,
   normalizeHue,
@@ -279,7 +280,7 @@ export const parseHsvString = (input: unknown): RgbColor | null => {
 };
 
 const parseHsvBody = (input: unknown): RgbColor | null => {
-  const { h, s, v, alpha = 1 } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
+  const { h, s, v, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof v !== 'number' || typeof alpha !== 'number') return null;
   // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()
   return hsvToRgb({

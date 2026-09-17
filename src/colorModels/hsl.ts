@@ -3,6 +3,7 @@ import {
   ANGLE_UNITS,
   NUM,
   NUM_OR_NONE,
+  alphaAlias,
   clamp,
   isNone,
   isObject,
@@ -179,7 +180,7 @@ export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
 };
 
 export const parseHslBody = (input: unknown): RgbColor | null => {
-  const { h, s, l, alpha = 1 } = input as { h: unknown; s: unknown; l: unknown; alpha?: unknown };
+  const { h, s, l, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; l: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof l !== 'number' || typeof alpha !== 'number') return null;
   // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()
   return hslToRgb({

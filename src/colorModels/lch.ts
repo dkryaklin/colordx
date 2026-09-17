@@ -1,6 +1,7 @@
 import {
   ANGLE_UNITS,
   NUM_OR_NONE,
+  alphaAlias,
   clamp,
   isAnyNumber,
   isObject,
@@ -65,7 +66,7 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'lch') return null;
   if (!('l' in input && 'c' in input && 'h' in input)) return null;
-  const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
+  const { l, c, h, alpha = alphaAlias(input) } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   return lchToRgbUnclamped(
     clampLch({

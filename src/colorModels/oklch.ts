@@ -1,6 +1,7 @@
 import {
   ANGLE_UNITS,
   NUM_OR_NONE,
+  alphaAlias,
   clamp,
   isAnyNumber,
   isObject,
@@ -35,7 +36,7 @@ export const parseOklchObjectRaw = (input: unknown): OklabColor | null => {
   if ((input as { colorSpace?: unknown }).colorSpace === 'lch') return null;
   if (!('l' in input && 'c' in input && 'h' in input)) return null;
   if ('r' in input) return null;
-  const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
+  const { l, c, h, alpha = alphaAlias(input) } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   // OKLCH L is [0, 1]; an object above that is a CIE LCH value passed without the colorSpace
   // brand, so reject it rather than clamp it to white. Negative L clamps to 0 like the string form.

@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
 import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -143,7 +143,7 @@ export const parseXyzObject = (input: unknown): RgbColor | null => {
   // Reject D65-discriminated objects — parseXyzD65Object owns those.
   if ((input as { colorSpace?: unknown }).colorSpace === 'xyz-d65') return null;
   if (!('x' in input && 'y' in input && 'z' in input)) return null;
-  const { x, y, z, alpha = 1 } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
+  const { x, y, z, alpha = alphaAlias(input) } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
   if (!isAnyNumber(x) || !isAnyNumber(y) || !isAnyNumber(z) || !isAnyNumber(alpha)) return null;
   return xyzToRgbUnclamped({
     x: sanitize(x),
@@ -157,7 +157,7 @@ export const parseXyzD65Object = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'xyz-d65') return null;
   if (!('x' in input && 'y' in input && 'z' in input)) return null;
-  const { x, y, z, alpha = 1 } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
+  const { x, y, z, alpha = alphaAlias(input) } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
   if (!isAnyNumber(x) || !isAnyNumber(y) || !isAnyNumber(z) || !isAnyNumber(alpha)) return null;
   return xyzD65ToRgbUnclamped({
     x: sanitize(x),
