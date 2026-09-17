@@ -21,11 +21,18 @@ const objectFormatParsers: [ColorParser, ColorFormat][] = [
   [parseOklchObject, 'oklch'],
 ];
 
-const builtinStringParsers: ColorParser[] = stringFormatParsers.map(([p]) => p);
-const builtinObjectParsers: ColorParser[] = objectFormatParsers.map(([p]) => p);
-
-const defaultParsers: ColorParser[] = [...builtinStringParsers, ...builtinObjectParsers];
-export const parsers: ColorParser[] = [...defaultParsers];
+export const parsers: ColorParser[] = [
+  parseHex,
+  parseRgbString,
+  parseSrgbColorString,
+  parseHslString,
+  parseOklchString,
+  parseOklabString,
+  parseRgbObject,
+  parseHslObject,
+  parseOklabObject,
+  parseOklchObject,
+];
 export const pluginFormatParsers: [ColorParser, ColorFormat][] = [];
 
 // Plugin parsers share one flat array (the public `parsers` contract), but a string
@@ -39,7 +46,7 @@ let _objPlugins: ColorParser[] = [];
 const repartition = (): void => {
   _strPlugins = [];
   _objPlugins = [];
-  for (let i = defaultParsers.length; i < parsers.length; i++) {
+  for (let i = stringFormatParsers.length + objectFormatParsers.length; i < parsers.length; i++) {
     const p = parsers[i]!;
     const kind = (p as { inputKind?: string }).inputKind;
     if (kind !== 'object') _strPlugins.push(p);
@@ -71,7 +78,7 @@ const parseString = (input: string): RgbColor | null => {
   else if (c === 111 /* o */) {
     r = (input.charCodeAt(3) | 32) === 99 ? parseOklchString(input) : parseOklabString(input);
   } else if (c0 === 32 || c0 === 9 || c0 === 10 || c0 === 13 || c0 === 12) {
-    for (const p of builtinStringParsers) {
+    for (const [p] of stringFormatParsers) {
       const x = p(input);
       if (x) return x;
     }

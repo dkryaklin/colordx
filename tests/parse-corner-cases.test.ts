@@ -273,3 +273,39 @@ describe('scientific notation: round-trips and grammar parity', () => {
     }
   });
 });
+
+describe('the parser registry handed to plugins', () => {
+  it('starts with the ten built-in parsers, strings first, and plugin parsers run after them', async () => {
+    const fn = await import('../src/fn.js');
+    let seen: unknown[] = [];
+    const calls: unknown[] = [];
+    const probe = (input: unknown) => {
+      calls.push(input);
+      return input === 'probe-color' ? { r: 1, g: 2, b: 3, alpha: 1 } : null;
+    };
+    extend([
+      (_, parsers) => {
+        seen = [...parsers];
+        parsers.push(probe);
+      },
+    ]);
+    expect(seen.slice(0, 10)).toEqual([
+      fn.parseHex,
+      fn.parseRgbString,
+      fn.parseSrgbColorString,
+      fn.parseHslString,
+      fn.parseOklchString,
+      fn.parseOklabString,
+      fn.parseRgbObject,
+      fn.parseHslObject,
+      fn.parseOklabObject,
+      fn.parseOklchObject,
+    ]);
+    expect(colordx('probe-color').toHex()).toBe('#010203');
+    expect(colordx({ probe: true } as never).isValid()).toBe(false);
+    expect(calls).toEqual(['probe-color', { probe: true }]);
+    expect(colordx('  #f00  ').toHex()).toBe('#ff0000');
+    expect(colordx('\toklab(1 0 0)').toHex()).toBe('#ffffff');
+    expect(calls).toHaveLength(2);
+  });
+});

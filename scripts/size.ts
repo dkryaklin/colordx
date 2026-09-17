@@ -87,6 +87,7 @@ async function main(): Promise<void> {
     { label: 'core: colordx only', ...(await bundle([CORE], ['colordx'])) },
     { label: 'fn: parse', ...(await bundle([FN], ['parse'])) },
     { label: 'fn: parseHex + rgbToHex', ...(await bundle([FN], ['parseHex', 'rgbToHex'])) },
+    { label: 'fn: parseHslString', ...(await bundle([FN], ['parseHslString'])) },
   ];
 
   for (const p of PLUGINS) {
