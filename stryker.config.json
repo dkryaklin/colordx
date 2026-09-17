@@ -3,6 +3,7 @@
   "_comment": "Mutation testing focused on the math-heavy color conversion / gamut code where mutations map directly to real bugs.",
   "packageManager": "pnpm",
   "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
   "vitest": {
     "configFile": "vitest.config.ts"
   },
