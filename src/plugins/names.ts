@@ -160,7 +160,7 @@ export const NAMES: Record<string, string> = {
   yellowgreen: '#9acd32',
 };
 
-const parseNameString = (input: unknown): RgbColor | null => {
+export const parseNameString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   const hex = NAMES[input.toLowerCase().trim()];
   return hex ? parseHex(hex) : null;

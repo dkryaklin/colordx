@@ -55,6 +55,16 @@
         "default": "./dist/plugins/*.cjs"
       }
     },
+    "./fn": {
+      "import": {
+        "types": "./dist/fn.d.ts",
+        "default": "./dist/fn.mjs"
+      },
+      "require": {
+        "types": "./dist/fn.d.cts",
+        "default": "./dist/fn.cjs"
+      }
+    },
     "./tinycolor": {
       "import": {
         "types": "./dist/tinycolor.d.ts",
@@ -73,6 +83,9 @@
     "*": {
       "plugins/*": [
         "./dist/plugins/*.d.ts"
+      ],
+      "fn": [
+        "./dist/fn.d.ts"
       ],
       "tinycolor": [
         "./dist/tinycolor.d.ts"
