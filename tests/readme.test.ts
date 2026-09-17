@@ -876,3 +876,36 @@ describe('README — Migrating from tinycolor2', () => {
     expect(tinycolor.names.red).toBe('ff0000');
   });
 });
+
+describe('README — `a` alias, toRgb precision, functional API', () => {
+  it('accepts `a` as an alias for `alpha`', () => {
+    expect(colordx({ r: 255, g: 0, b: 0, a: 0.5 }).toHex()).toBe('#ff000080');
+    expect(colordx({ r: 255, g: 0, b: 0, a: 0.2, alpha: 0.5 }).alpha()).toBe(0.5);
+  });
+
+  it('toRgb(precision) keeps decimals', () => {
+    expect(colordx('hsl(210 40% 47%)').toRgb(2)).toEqual({ r: 71.91, g: 119.85, b: 167.79, alpha: 1 });
+  });
+
+  it('functional API examples', async () => {
+    const { parse, parseHex, parseHsvObject, parseNameString, parseRgbObject, rgbToHex, rgbToOklch } = await import(
+      '../src/fn.js'
+    );
+    expect(rgbToHex(parse('oklch(0.6279 0.2577 29.23)')!)).toBe('#ff0000');
+    expect(parseHex('#ff0000')).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
+    expect(rgbToHex({ r: 255, g: 0, b: 0, alpha: 0.5 })).toBe('#ff000080');
+    const { l, c, h, alpha } = rgbToOklch(parseHex('#ff0000')!);
+    expect([l.toFixed(4), c.toFixed(3), h.toFixed(2), alpha]).toEqual(['0.6280', '0.258', '29.23', 1]);
+
+    const parsers = [parseHex, parseNameString, parseRgbObject, parseHsvObject];
+    const parseColor = (input: unknown) => {
+      for (const p of parsers) {
+        const rgb = p(input);
+        if (rgb) return rgb;
+      }
+      return null;
+    };
+    expect(parseColor('red')).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
+    expect(parseColor('hsl(0 100% 50%)')).toBeNull();
+  });
+});

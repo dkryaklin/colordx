@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.4 KB gzipped. 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.4 KB gzipped (6.2 KB for `colordx()` alone). 0 Dependencies.**
 
 ## Performance
 
@@ -92,6 +92,7 @@ colordx('oklch(0.6279 0.2577 29.23)');
 colordx('oklch(6e-1 1e-7 30)');           // CSS number tokens may carry an exponent
 colordx({ r: 255, g: 0, b: 0 });           // alpha defaults to 1
 colordx({ r: 255, g: 0, b: 0, alpha: 0.5 });
+colordx({ r: 255, g: 0, b: 0, a: 0.5 });   // `a` is an alias for `alpha`
 colordx({ h: 0, s: 100, l: 50 });
 colordx({ l: 0.6279, a: 0.2249, b: 0.1257 }); // OKLab
 colordx({ l: 0.6279, c: 0.2577, h: 29.23 }); // OKLch
@@ -114,6 +115,8 @@ colordx({ h: 0, s: 100, v: 100 }); // HSV
 
 Channels are clamped the way CSS Color 4 clamps them at parsed-value time: `rgb()` / `hsl()` channels to their ranges, `lab()` / `lch()` / `oklab()` / `oklch()` lightness to `[0, 100]` / `[0, 1]`, chroma to `≥ 0`. Lab/LCH `a`, `b`, `c` and OKLab/OKLCh `a`, `b`, `c` are unbounded, which is what makes out-of-gamut colors representable (see [Gamut](#gamut)). Alpha is clamped to `[0, 1]`. One consequence: an imaginary `lab()` / `lch()` / `color(xyz …)` input can have an OKLab lightness outside `[0, 1]`; `.toOklchString()` reports it faithfully, but feeding that string back clamps L, so only colors with L in range round-trip through OKLCh. Two object-only rules: an OKLab/OKLCh object with `l > 1` is rejected as invalid — it is almost certainly a CIE Lab/LCH value missing its `colorSpace: 'lab' | 'lch'` brand, and clamping it to white would hide the mistake — and `NaN` in any channel reads as `0` (an infinite hue reads as `0°`).
 
+Object input accepts `a` as an alias for `alpha` (the `{ r, g, b, a }` shape colord and tinycolor2 use) in every color model except Lab and OKLab, where `a` is a channel. When both are present, `alpha` wins.
+
 TypeScript: input color objects use `*ColorInput` types (`alpha` optional, defaults to 1).
 Output methods like `.toRgb()` / `.toOklch()` return `*Color` types (`alpha` always present).
 
@@ -128,6 +131,7 @@ const output: RgbColor = colordx(input).toRgb();           // alpha guaranteed
 
 ```ts
 .toRgb()           // { r: 255, g: 0, b: 0, alpha: 1 }
+.toRgb(2)          // unrounded channels, kept to 2 decimals: colordx('hsl(210 40% 47%)').toRgb(2) → { r: 71.91, g: 119.85, b: 167.79, alpha: 1 }
 .toRgbString()                    // 'rgb(255 0 0)'                — CSS Color 4 (default)
 .toRgbString({ legacy: true })    // 'rgb(255, 0, 0)'              — CSS Color 3 comma syntax
 // Legacy form also switches to `rgba()` when alpha < 1:
@@ -438,6 +442,38 @@ colordx(lch).mapSrgb().toHex(); // '#008471' — chroma-reduced (CSS Color 4)
 inGamutSrgb('lab(50 100 0)'); // false
 Colordx.toGamutSrgb('lab(50 100 0)'); // → Colordx at the sRGB boundary
 ```
+
+## Functional API
+
+`@colordx/core/fn` exports the parsers and converters behind `colordx()` as plain functions. Nothing is shared with the `Colordx` class, so a bundle only carries what it imports — parsing a hex string and printing it back is about 0.7 KB gzipped.
+
+```ts
+import { parse, parseHex, rgbToHex, rgbToOklch } from '@colordx/core/fn';
+
+parse('oklch(0.6279 0.2577 29.23)'); // { r, g, b, alpha } or null — every format colordx() accepts, plugins included
+parseHex('#ff0000');                 // { r: 255, g: 0, b: 0, alpha: 1 }
+rgbToHex({ r: 255, g: 0, b: 0, alpha: 0.5 }); // '#ff000080'
+rgbToOklch(parseHex('#ff0000')!);    // { l: 0.6279…, c: 0.2576…, h: 29.23…, alpha: 1 } — unrounded
+```
+
+`RgbColor` here is the library's storage form: `r`, `g`, `b` on the 0–255 scale, unrounded and unclamped, so a wide-gamut color keeps its out-of-range channels.
+
+To accept only some formats, compose the single-format parsers instead of calling `parse()`:
+
+```ts
+import { parseHex, parseHsvObject, parseNameString, parseRgbObject } from '@colordx/core/fn';
+
+const parsers = [parseHex, parseNameString, parseRgbObject, parseHsvObject];
+const parseColor = (input: unknown) => {
+  for (const p of parsers) {
+    const rgb = p(input);
+    if (rgb) return rgb;
+  }
+  return null;
+};
+```
+
+Available: `parse`, `parseHex`, `parseRgbString`, `parseRgbObject`, `parseSrgbColorString`, `parseHslString`, `parseHslObject`, `parseHsvString`, `parseHsvObject`, `parseHwbString`, `parseHwbObject`, `parseOklabString`, `parseOklabObject`, `parseOklchString`, `parseOklchObject`, `parseNameString`, `NAMES`, `rgbToHex`, `rgbToHex8`, `rgbToHsl` / `hslToRgb`, `rgbToHsv` / `hsvToRgb`, `rgbToHwb` / `hwbToRgb`, `rgbToOklab` / `oklabToRgb`, `rgbToOklch` / `oklchToRgb`.
 
 ## Plugins
 
