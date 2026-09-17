@@ -145,7 +145,7 @@ export const oklabToLinear = (l: number, a: number, b: number): [number, number,
   ];
 };
 
-export const parseOklabObject = (input: unknown): RgbColor | null => {
+export const parseOklabObjectRaw = (input: unknown): OklabColor | null => {
   if (!isObject(input)) return null;
   // Objects with colorSpace: 'lab' are CIE Lab, not OKLab — let parseLabObject handle them.
   if ((input as { colorSpace?: unknown }).colorSpace === 'lab') return null;
@@ -156,12 +156,12 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   // OKLab L is [0, 1]; an object above that is a CIE Lab value passed without the colorSpace
   // brand, so reject it rather than clamp it to white. Negative L clamps to 0 like the string form.
   if (sanitize(l) > 1) return null;
-  return oklabToRgbUnclamped({
-    l: clamp(sanitize(l), 0, 1),
-    a: sanitize(a),
-    b: sanitize(b),
-    alpha: clamp(sanitize(alpha), 0, 1),
-  });
+  return { l: clamp(sanitize(l), 0, 1), a: sanitize(a), b: sanitize(b), alpha: clamp(sanitize(alpha), 0, 1) };
+};
+
+export const parseOklabObject = (input: unknown): RgbColor | null => {
+  const lab = parseOklabObjectRaw(input);
+  return lab && oklabToRgbUnclamped(lab);
 };
 
 const OKLAB_RE = new RegExp(

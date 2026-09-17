@@ -1,8 +1,9 @@
-import { linearSrgbToOklab, oklabToLinear } from './colorModels/oklab.js';
-import { ANGLE_UNITS, NUM, clamp, isNumber } from './helpers.js';
+import { linearSrgbToOklab, oklabToLinear, parseOklabObjectRaw } from './colorModels/oklab.js';
+import { parseOklchObjectRaw } from './colorModels/oklch.js';
+import { ANGLE_UNITS, NUM, clamp } from './helpers.js';
 import { parse } from './parse.js';
 import { srgbToLinear } from './transfer.js';
-import type { AnyColor, ColorParser, OklabColor, OklchColor } from './types.js';
+import type { AnyColor, ColorParser } from './types.js';
 
 // Same NUM as the parsers so both grammars accept the same tokens (exponents included).
 const OKLCH_RE = new RegExp(
@@ -31,25 +32,8 @@ type RawOklab = { l: number; a: number; b: number; alpha: number };
  */
 const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | undefined => {
   if (typeof input === 'object' && input !== null) {
-    const obj = input as unknown as Record<string, unknown>;
-    // OklabColor: l/a/b present, no 'lab' colorSpace brand
-    if ('l' in obj && 'a' in obj && 'b' in obj && obj.colorSpace !== 'lab' && !('c' in obj) && !('r' in obj)) {
-      const c = input as OklabColor;
-      const alpha = c.alpha === undefined ? 1 : c.alpha;
-      if (isNumber(c.l) && isNumber(c.a) && isNumber(c.b) && isNumber(alpha) && c.l <= 1) {
-        return { l: clamp(c.l, 0, 1), a: c.a, b: c.b, alpha };
-      }
-    }
-    // OklchColor: l/c/h present, no 'lch' colorSpace brand
-    if ('l' in obj && 'c' in obj && 'h' in obj && obj.colorSpace !== 'lch' && !('a' in obj) && !('r' in obj)) {
-      const c = input as OklchColor;
-      const alpha = c.alpha === undefined ? 1 : c.alpha;
-      if (isNumber(c.l) && isNumber(c.c) && isNumber(c.h) && isNumber(alpha) && c.l <= 1) {
-        const hRad = (c.h * Math.PI) / 180;
-        const C = Math.max(0, c.c);
-        return { l: clamp(c.l, 0, 1), a: C * Math.cos(hRad), b: C * Math.sin(hRad), alpha };
-      }
-    }
+    const raw = parseOklchObjectRaw(input) ?? parseOklabObjectRaw(input);
+    if (raw) return raw;
   } else if (typeof input === 'string') {
     let m = OKLCH_RE.exec(input);
     if (m) {

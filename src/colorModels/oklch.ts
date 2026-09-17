@@ -29,22 +29,28 @@ export const rgbToOklch = (rgb: RgbColor): OklchColor => {
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));
 const oklchToRgbUnclamped = (oklch: OklchColor): RgbColor => oklabToRgbUnclamped(oklchToOklab(oklch));
 
-export const parseOklchObject = (input: unknown): RgbColor | null => {
+export const parseOklchObjectRaw = (input: unknown): OklabColor | null => {
   if (!isObject(input)) return null;
   // Objects with colorSpace: 'lch' are CIE LCH, not OKLCH — let parseLchObject handle them.
   if ((input as { colorSpace?: unknown }).colorSpace === 'lch') return null;
   if (!('l' in input && 'c' in input && 'h' in input)) return null;
+  if ('r' in input) return null;
   const { l, c, h, alpha = 1 } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   // OKLCH L is [0, 1]; an object above that is a CIE LCH value passed without the colorSpace
   // brand, so reject it rather than clamp it to white. Negative L clamps to 0 like the string form.
   if (sanitize(l) > 1) return null;
-  return oklchToRgbUnclamped({
+  return oklchToOklab({
     l: clamp(sanitize(l), 0, 1),
     c: Math.max(0, sanitize(c)),
     h: normalizeHue(sanitize(h)),
     alpha: clamp(sanitize(alpha), 0, 1),
   });
+};
+
+export const parseOklchObject = (input: unknown): RgbColor | null => {
+  const lab = parseOklchObjectRaw(input);
+  return lab && oklabToRgbUnclamped(lab);
 };
 
 const OKLCH_RE = new RegExp(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Colordx, colordx, extend, inGamutSrgb } from '../src/index.js';
+import { Colordx, colordx, extend, getFormat, inGamutSrgb } from '../src/index.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
 import p3, { inGamutP3 } from '../src/plugins/p3.js';
@@ -1245,5 +1245,66 @@ describe('XYZ D50 / D65 inputs to gamut helpers', () => {
   it('unbranded { x, y, z } without colorSpace is treated as XYZ D50', () => {
     // Matches parseXyzObject's convention: unbranded XYZ is D50.
     expect(inGamutSrgb({ x: 96.43, y: 100, z: 82.51, alpha: 1 } as any)).toBe(true);
+  });
+});
+
+describe('gamut helpers read OKLab / OKLCH input like the parsers', () => {
+  it('reads every string form the parsers accept', () => {
+    expect(inGamutSrgb('  oklch(0.7 0.35 140)  ')).toBe(false);
+    expect(inGamutSrgb('OKLCH(70% 0.05 140deg / 50%)')).toBe(true);
+    expect(inGamutSrgb('oklch(0.7 none none)')).toBe(true);
+    expect(inGamutSrgb('oklab(0.7 none none)')).toBe(true);
+    expect(inGamutSrgb('oklab(0.7 -0.3 0.3)')).toBe(false);
+    expect(inGamutSrgb('oklch(0.7 0.35 0.4turn)')).toBe(inGamutSrgb('oklch(0.7 0.35 144)'));
+  });
+
+  it('maps padded and `none` strings like their plain spelling', () => {
+    expect(Colordx.toGamutSrgb('  oklch(0.7 0.35 140)  ').toHex()).toBe(Colordx.toGamutSrgb('oklch(0.7 0.35 140)').toHex());
+    expect(Colordx.toGamutSrgb('oklch(0.7 0.35 none)').toHex()).toBe(Colordx.toGamutSrgb('oklch(0.7 0.35 0)').toHex());
+  });
+
+  it('string and object forms of one color agree', () => {
+    expect(Colordx.toGamutSrgb({ l: 0.7, c: 0.35, h: 140 }).toHex()).toBe(Colordx.toGamutSrgb('oklch(0.7 0.35 140)').toHex());
+    expect(Colordx.toGamutSrgb({ l: 0.7, a: -0.3, b: 0.3 }).toHex()).toBe(Colordx.toGamutSrgb('oklab(0.7 -0.3 0.3)').toHex());
+  });
+
+  it('keeps alpha, clamped to [0, 1]', () => {
+    expect(Colordx.toGamutSrgb('oklch(0.7 0.35 140 / 0.25)').alpha()).toBe(0.25);
+    expect(Colordx.toGamutSrgb('oklch(0.7 0.35 140 / 3)').alpha()).toBe(1);
+    expect(Colordx.toGamutSrgb({ l: 0.7, c: 0.35, h: 140, alpha: -1 }).alpha()).toBe(0);
+  });
+
+  it('non-finite and NaN channels terminate and read as the parsers read them', () => {
+    for (const input of [
+      { l: 0.5, c: Infinity, h: 0 },
+      { l: 0.5, a: Infinity, b: 0 },
+      { l: 0.5, a: NaN, b: NaN },
+      { l: NaN, c: 0.1, h: NaN },
+      'oklab(0.5 1e400 0)',
+      'oklch(0.5 0.1 1e400)',
+    ]) {
+      expect(Colordx.toGamutSrgb(input as never).isValid()).toBe(true);
+      expect(typeof inGamutSrgb(input as never)).toBe('boolean');
+    }
+    expect(inGamutSrgb({ l: 0.5, a: NaN, b: NaN })).toBe(true);
+    expect(Colordx.toGamutSrgb({ l: 0.5, a: NaN, b: NaN }).toHex()).toBe(colordx({ l: 0.5, a: 0, b: 0 }).toHex());
+  });
+
+  it('objects the parsers reject are not colors here either', () => {
+    expect(inGamutSrgb({ l: 50, c: 30, h: 30 } as never)).toBe(false);
+    expect(inGamutSrgb({ l: 50, a: 20, b: 20 } as never)).toBe(false);
+    expect(inGamutSrgb({ l: 0.5, a: '0', b: 0 } as never)).toBe(false);
+    for (const mixed of [
+      { l: 0.5, c: 0.1, h: 3, r: 1 },
+      { l: 0.5, a: 0.1, b: 0.1, h: 3 },
+      { l: 0.5, a: 0.1, b: 0.1, c: 0.1 },
+    ]) {
+      expect(colordx(mixed as never).isValid()).toBe(false);
+      expect(getFormat(mixed as never)).toBeUndefined();
+      expect(inGamutSrgb(mixed as never)).toBe(false);
+      expect(Colordx.toGamutSrgb(mixed as never).isValid()).toBe(false);
+    }
+    expect(inGamutSrgb(42 as never)).toBe(false);
+    expect(inGamutSrgb(null as never)).toBe(false);
   });
 });

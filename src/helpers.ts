@@ -24,8 +24,6 @@ export const ACHROMATIC_EPS = 1e-6;
 
 export const ANGLE_UNITS: Record<string, number> = { deg: 1, grad: 0.9, turn: 360, rad: 360 / (2 * Math.PI) };
 
-export const isNumber = (n: unknown): n is number => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
-
 // Accepts any JS number type (including NaN/±Infinity); use sanitize() before clamping
 export const isAnyNumber = (n: unknown): n is number => typeof n === 'number';
 
