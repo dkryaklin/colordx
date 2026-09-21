@@ -733,6 +733,54 @@ describe('Plugins — harmonies', () => {
     expect(h).toHaveLength(2);
     expect(h[1].toHex()).toBe((colordx('#0080ff') as any).rotate(180).toHex());
   });
+
+  // Every harmony carries a zero shift, so its output has to contain the input color untouched.
+  // An HSL round trip does not preserve a color outside sRGB, which is why `rotate` short-circuits
+  // a whole turn instead of computing it.
+  it('preserves a wide-gamut input color exactly', () => {
+    for (const input of ['oklch(0.7 0.35 150)', 'oklab(0.6 0.2 -0.15)', 'oklch(0.55 0.28 20)']) {
+      const base = colordx(input);
+      for (const [type, index] of [
+        ['complementary', 0],
+        ['analogous', 1],
+        ['triadic', 0],
+        ['tetradic', 0],
+        ['rectangle', 0],
+        ['split-complementary', 0],
+        ['double-split-complementary', 1],
+      ] as const) {
+        expect((base as any).harmonies(type)[index].toOklchString(), `${input} ${type}`).toBe(base.toOklchString());
+      }
+    }
+  });
+});
+
+describe('rotate', () => {
+  it('a whole turn is the identity, wide-gamut colors included', () => {
+    for (const input of ['#03ff84', 'oklch(0.7 0.35 150)', 'oklab(0.6 0.2 -0.15)', 'rgb(1.7 2.3 3.9)']) {
+      const base = colordx(input);
+      for (const amount of [0, 360, -360, 720]) {
+        expect(base.rotate(amount).toOklchString(), `${input} rotate(${amount})`).toBe(base.toOklchString());
+      }
+    }
+  });
+
+  it('shifts the unrounded hue, so a non-integer hue survives the round trip', () => {
+    // https://github.com/omgovich/colord/issues/123 — reading the rounded `hue()` getter first
+    // snapped the hue to 2 decimals and moved the color. Two opposite shifts cancel, so anything
+    // left over is the quantization. Compared in OKLCh because 8-bit output hides it.
+    for (const input of ['#03ff84', 'rgb(1.7 2.3 3.9)', 'rgb(12.3 200.7 88.1)']) {
+      const base = colordx(input);
+      expect(base.rotate(90).rotate(-90).toOklchString(), input).toBe(base.toOklchString());
+      expect(base.rotate(180).rotate(180).toOklchString(), input).toBe(base.toOklchString());
+    }
+  });
+
+  it('still rotates around the hue circle', () => {
+    expect(colordx('hsl(350, 100%, 50%)').rotate(20).hue()).toBe(10);
+    expect(colordx('hsl(10, 100%, 50%)').rotate(-20).hue()).toBe(350);
+    expect(colordx('hsl(90, 50%, 50%)').rotate(180).toHslString(0)).toBe('hsl(270 50% 50%)');
+  });
 });
 
 describe('Plugins — minify', () => {

@@ -182,7 +182,7 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .chroma(0.1)       // set chroma (OKLCH, 0–0.4)
 ```
 
-The HSL-based methods (`lighten`, `darken`, `saturate`, `desaturate`, `grayscale`, `rotate`, `hue`) and `invert` work on the sRGB-clipped color — the same color `.toHex()` prints — so on a wide-gamut input they start from what is displayed. `lightness()` and `chroma()` work in OKLCH and clip the result into sRGB.
+The HSL-based methods (`lighten`, `darken`, `saturate`, `desaturate`, `grayscale`, `rotate`, `hue`) and `invert` work on the sRGB-clipped color — the same color `.toHex()` prints — so on a wide-gamut input they start from what is displayed. `lightness()` and `chroma()` work in OKLCH and clip the result into sRGB. The one exception is a whole-turn `rotate` (`0`, `±360`, …): it returns the color untouched rather than clipping it, so `harmonies` can carry a wide-gamut input through unchanged.
 
 ### Getters
 
@@ -645,7 +645,7 @@ for (let y = 0; y < 256; y++) {
 
 ### harmonies plugin
 
-Color harmony generation using hue rotation.
+Color harmony generation using hue rotation. Every harmony includes a 0° entry, which is the input color itself — returned unchanged, so a wide-gamut input survives in its own harmony set.
 
 ```ts
 import harmonies from '@colordx/core/plugins/harmonies';

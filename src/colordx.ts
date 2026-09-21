@@ -310,7 +310,14 @@ export class Colordx {
 
   /** Shifts the HSL hue by `amount` degrees (default 15). */
   rotate(amount = 15): Colordx {
-    return this.hue(this.hue() + amount);
+    // A whole-turn shift is the identity. Returning `this` (instances are immutable, so sharing is
+    // safe) skips an HSL round trip, which would otherwise clip a wide-gamut color into sRGB —
+    // `harmonies` includes a zero shift, so its output has to carry the input color unchanged.
+    if (amount % 360 === 0) return this;
+    // Shift the unrounded hue. Going through the `hue()` getter would quantize it to 2 decimals
+    // first, perturbing a color whose hue is not representable there.
+    const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
+    return Colordx._make(hslToRgb({ h: h + amount, s, l, alpha }));
   }
 
   /** True when both colors round to the same RGBA tuple. */
