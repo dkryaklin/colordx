@@ -1,5 +1,17 @@
 # @colordx/core
 
+## 6.6.0
+
+### Minor Changes
+
+- Fix gamut helpers to accept OKLab and OKLCH objects on the same terms as the object parsers, so non-finite channels are sanitized, alpha is clamped to [0,1], hue is normalized, and objects carrying an r channel are rejected ([96349c3](https://github.com/dkryaklin/colordx/commit/96349c3a597473487d541277e4f05e0a086f7a4a))
+- Accept `a` as an alias for `alpha` on object input for every model except Lab and OKLab, so colord/tinycolor2 `{ r, g, b, a }` objects keep their alpha ([c03b2b4](https://github.com/dkryaklin/colordx/commit/c03b2b47e4a64d0b154dcf3642670829dc12d9d9))
+- Add @colordx/core/fn entry point exporting parse plus per-format parsers and converters (parseHex, rgbToHex, hslToRgb, rgbToOklch, parseNameString, NAMES, etc.) as tree-shakable standalone functions ([376be64](https://github.com/dkryaklin/colordx/commit/376be64a8f47f990769789ab341767e4ca13caba))
+- Add an optional precision argument to toRgb() to return sRGB channels rounded to that many decimals instead of integers ([4221ced](https://github.com/dkryaklin/colordx/commit/4221ced8fec787089f4463501af1d50a4586c62d))
+- Improve tree-shaking so importing a single function such as an HSL or OKLCH parser no longer pulls every built-in parser into the bundle ([cf402ad](https://github.com/dkryaklin/colordx/commit/cf402add5efcaa6611d5b9e7cc235f9f00cab198))
+- Speed up hsl()/hsla() string parsing about 2x with a scanner-based parser and accept whitespace before the closing paren in alpha-less values ([a02962f](https://github.com/dkryaklin/colordx/commit/a02962f8ff3e19bb86941b5616441de535451950))
+- Fix rotate to shift the unrounded HSL hue and return the color unchanged for whole-turn rotations (0, ±360, …), so harmonies preserves a wide-gamut input instead of clipping it to sRGB ([527d9f0](https://github.com/dkryaklin/colordx/commit/527d9f069c2d2c1605197ca7c79ce6f7617c361b))
+
 ## 6.5.0
 
 ### Minor Changes
