@@ -595,20 +595,23 @@ describe('README — okhsl and okhsv plugins', () => {
     const buf = new Float64Array(3);
     const plane = new Uint8ClampedArray(256 * 256 * 4);
     let i = 0;
+    // Range is tracked in the loop and asserted once: 65k cells × 3 expect() calls is too slow for CI.
+    let lo = Infinity,
+      hi = -Infinity;
     for (let y = 0; y < 256; y++) {
       for (let x = 0; x < 256; x++) {
         okhslToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
-        // The s = 100 column can sit a hair outside [0, 1] (reference cusp fit); the byte store absorbs it.
-        for (const v of buf) {
-          expect(v).toBeGreaterThan(-0.01);
-          expect(v).toBeLessThan(1.01);
-        }
+        lo = Math.min(lo, buf[0]!, buf[1]!, buf[2]!);
+        hi = Math.max(hi, buf[0]!, buf[1]!, buf[2]!);
         plane[i++] = buf[0]! * 255;
         plane[i++] = buf[1]! * 255;
         plane[i++] = buf[2]! * 255;
         plane[i++] = 255;
       }
     }
+    // The s = 100 column can sit a hair outside [0, 1] (reference cusp fit); the byte store absorbs it.
+    expect(lo).toBeGreaterThan(-0.01);
+    expect(hi).toBeLessThan(1.01);
     for (const [x, y] of [
       [0, 0],
       [255, 0],
