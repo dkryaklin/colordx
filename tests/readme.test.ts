@@ -35,6 +35,8 @@ import hsv, {
   rgbToHsvChannelsInto,
 } from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
+import okhsl, { okhslToRgbChannelsInto } from '../src/plugins/okhsl.js';
+import okhsv from '../src/plugins/okhsv.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
 import minify from '../src/plugins/minify.js';
@@ -69,6 +71,8 @@ beforeAll(() => {
     lab,
     lch,
     minify,
+    okhsl,
+    okhsv,
     mix,
     names,
     p3,
@@ -556,6 +560,63 @@ describe('README — hsv plugin', () => {
       [128, 64],
     ] as const) {
       const { r, g, b } = colordx({ h: 210, s: (x / 255) * 100, v: (1 - y / 255) * 100 }).toRgb();
+      const o = (y * 256 + x) * 4;
+      expect(Math.abs(plane[o]! - r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(plane[o + 1]! - g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(plane[o + 2]! - b)).toBeLessThanOrEqual(1);
+      expect(plane[o + 3]).toBe(255);
+    }
+  });
+});
+
+describe('README — okhsl and okhsv plugins', () => {
+  it('toOkhsl / toOkhsv', () => {
+    expect((colordx('#3d7a9f') as any).toOkhsl()).toEqual({ h: 237.65614, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' });
+    expect((colordx('#3d7a9f') as any).toOkhsv()).toEqual({ h: 237.65614, s: 65.38076, v: 64.31605, alpha: 1, colorSpace: 'okhsv' });
+  });
+  it('toOkhslString / toOkhsvString', () => {
+    expect((colordx('#3d7a9f') as any).toOkhslString()).toBe('okhsl(237.65614 57.92201% 48.38305%)');
+    expect((colordx('#3d7a9f') as any).toOkhsvString()).toBe('okhsv(237.65614 65.38076% 64.31605%)');
+  });
+  it('parse okhsl string and okhsv object', () => {
+    expect(colordx('okhsl(237.65614 57.92201% 48.38305%)').toHex()).toBe('#3d7a9f');
+    expect(colordx({ colorSpace: 'okhsv', h: 237.65614, s: 65.38076, v: 64.31605 }).toHex()).toBe('#3d7a9f');
+  });
+  it('precision argument and hue identity with toOklch', () => {
+    expect((colordx('#3d7a9f') as any).toOkhsl(2)).toEqual({ h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' });
+    expect((colordx('#3d7a9f') as any).toOkhsl().h === colordx('#3d7a9f').toOklch().h).toBe(true);
+  });
+  it('the documented edge cases: 2 dp near the blue face, the pure-blue edge', () => {
+    expect(colordx((colordx({ r: 0, g: 42, b: 204 }) as any).toOkhslString(2)).toRgb()).toEqual({ r: 7, g: 53, b: 190, alpha: 1 });
+    expect((colordx('#0000ff') as any).toOkhslString()).toBe('okhsl(264.05202 100% 36.65653%)');
+    expect(colordx('okhsl(264.05202 100% 36.65653%)').toHex()).toBe('#0134e2');
+  });
+  it('S/L plane with okhslToRgbChannelsInto is in gamut and matches the object API byte for byte', () => {
+    const buf = new Float64Array(3);
+    const plane = new Uint8ClampedArray(256 * 256 * 4);
+    let i = 0;
+    for (let y = 0; y < 256; y++) {
+      for (let x = 0; x < 256; x++) {
+        okhslToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
+        // The s = 100 column can sit a hair outside [0, 1] (reference cusp fit); the byte store absorbs it.
+        for (const v of buf) {
+          expect(v).toBeGreaterThan(-0.01);
+          expect(v).toBeLessThan(1.01);
+        }
+        plane[i++] = buf[0]! * 255;
+        plane[i++] = buf[1]! * 255;
+        plane[i++] = buf[2]! * 255;
+        plane[i++] = 255;
+      }
+    }
+    for (const [x, y] of [
+      [0, 0],
+      [255, 0],
+      [0, 255],
+      [255, 255],
+      [128, 64],
+    ] as const) {
+      const { r, g, b } = colordx({ colorSpace: 'okhsl', h: 210, s: (x / 255) * 100, l: (1 - y / 255) * 100 }).toRgb();
       const o = (y * 256 + x) * 4;
       expect(Math.abs(plane[o]! - r)).toBeLessThanOrEqual(1);
       expect(Math.abs(plane[o + 1]! - g)).toBeLessThanOrEqual(1);

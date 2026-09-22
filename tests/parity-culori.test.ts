@@ -13,6 +13,8 @@ import {
 } from '../src/index.js';
 import hsvPlugin, { hsvToRgbChannels, rgbToHsvChannels } from '../src/plugins/hsv.js';
 import hwbPlugin from '../src/plugins/hwb.js';
+import okhslPlugin, { okhslToRgbChannels, rgbToOkhslChannels } from '../src/plugins/okhsl.js';
+import okhsvPlugin, { okhsvToRgbChannels, rgbToOkhsvChannels } from '../src/plugins/okhsv.js';
 import labPlugin from '../src/plugins/lab.js';
 import lchPlugin from '../src/plugins/lch.js';
 import mixPlugin from '../src/plugins/mix.js';
@@ -47,6 +49,8 @@ const culoriRec2020GamutMap = toGamut('rec2020', 'oklch');
 const culoriToHsl = converter('hsl');
 const culoriToHsv = converter('hsv');
 const culoriToHwb = converter('hwb');
+const culoriToOkhsl = converter('okhsl');
+const culoriToOkhsv = converter('okhsv');
 const culoriToP3 = converter('p3');
 const culoriToRec2020 = converter('rec2020');
 const culoriToLch = converter('lch');
@@ -82,6 +86,8 @@ const stats: Record<string, FormatStats> = {
   HSL: mkStats(),
   HSV: mkStats(),
   HWB: mkStats(),
+  OKHSL: mkStats(),
+  OKHSV: mkStats(),
   'HEX→OKLch': mkStats(),
   'HEX→lighten': mkStats(),
   'Mix OKLab': mkStats(),
@@ -125,15 +131,24 @@ const stats: Record<string, FormatStats> = {
   'RGB8:HSL': mkStats(),
   'RGB8:HSV': mkStats(),
   'RGB8:HWB': mkStats(),
+  'RGB8:OKHSL': mkStats(),
+  'RGB8:OKHSV': mkStats(),
   'RGB8:darken': mkStats(),
   // Polar channel functions on byte input — the per-pixel picker / vectorscope path. Compared
   // unrounded against culori's converters (both sides are exact double math on the same sRGB cube),
   // so the only legitimate delta is FP noise from the two libraries' different-but-equivalent formulas.
   'RGB8:rgbToHslChannels': mkStats(),
   'RGB8:rgbToHsvChannels': mkStats(),
+  // Okhsl / Okhsv channel functions vs culori's port of the same reference code. Both sides skip the
+  // hue on a grey (culori leaves it undefined; colordx reports 0) and record only l / v there,
+  // since culori's s on a grey is matrix noise (~1e-5) where colordx reports exactly 0.
+  'RGB8:rgbToOkhslChannels': mkStats(),
+  'RGB8:rgbToOkhsvChannels': mkStats(),
   // Inverse direction from fresh polar samples: h in [0, 360), s / l / v in 0–100.
   hslToRgbChannels: mkStats(),
   hsvToRgbChannels: mkStats(),
+  okhslToRgbChannels: mkStats(),
+  okhsvToRgbChannels: mkStats(),
   // Static gamut mapping on non-OKLCH inputs. The original 'RGB' / 'P3 gamut' / 'Rec.2020 gamut'
   // rows only feed OKLCH — a regression in the getRawOklab paths for LCH / Lab / P3 / Rec.2020
   // branded inputs (e.g. Colordx.toGamutSrgb(p3Red) falling back to naive clip) would not
@@ -207,7 +222,7 @@ const recordBool = (key: string, cx: boolean, cu: boolean) => {
 };
 
 const runParity = () => {
-  extend([labPlugin, lchPlugin, p3Plugin, rec2020Plugin, mixPlugin, hsvPlugin, hwbPlugin]);
+  extend([labPlugin, lchPlugin, p3Plugin, rec2020Plugin, mixPlugin, hsvPlugin, hwbPlugin, okhslPlugin, okhsvPlugin]);
 
   for (let i = 0; i < COUNT; i++) {
     const l = rand();
@@ -241,6 +256,8 @@ const runParity = () => {
         'HSL',
         'HSV',
         'HWB',
+        'OKHSL',
+        'OKHSV',
         'HEX→OKLch',
         'HEX→lighten',
         'LCH',
@@ -298,6 +315,26 @@ const runParity = () => {
       const hwbAchromatic = cxHwb.w + cxHwb.b >= 99 || cuHwbW + cuHwbB2 >= 99;
       const hwbHueDelta = hwbAchromatic ? 0 : hueDiff(cxHwb.h, round(cuHwbH, 0));
       record('HWB', Math.max(hwbHueDelta, absDiff(cxHwb.w, round(cuHwbW, 0)), absDiff(cxHwb.b, round(cuHwbB2, 0))), color);
+
+      // culori does not clamp s: the reference cusp fit lets an in-gamut color report s a little
+      // above 1, which toOkhsl() / toOkhsv() clamp to 100. Compare against the clamped value.
+      const cxOkhsl = (cxCs as unknown as { toOkhsl(): { h: number; s: number; l: number } }).toOkhsl();
+      const cuOkhsl = culoriToOkhsl(cuBase)!;
+      const cuOkhslH = cuOkhsl.h ?? 0,
+        cuOkhslS = Math.min(100, (cuOkhsl.s ?? 0) * 100),
+        cuOkhslL = (cuOkhsl.l ?? 0) * 100;
+      const okhslAchromatic = cxOkhsl.s < 1 && cuOkhslS < 1;
+      const okhslHueDelta = okhslAchromatic ? 0 : hueDiff(cxOkhsl.h, round(cuOkhslH, 2));
+      record('OKHSL', Math.max(okhslHueDelta, absDiff(cxOkhsl.s, round(cuOkhslS, 2)), absDiff(cxOkhsl.l, round(cuOkhslL, 2))), color);
+
+      const cxOkhsv = (cxCs as unknown as { toOkhsv(): { h: number; s: number; v: number } }).toOkhsv();
+      const cuOkhsv = culoriToOkhsv(cuBase)!;
+      const cuOkhsvH = cuOkhsv.h ?? 0,
+        cuOkhsvS = Math.min(100, (cuOkhsv.s ?? 0) * 100),
+        cuOkhsvV = Math.min(100, (cuOkhsv.v ?? 0) * 100);
+      const okhsvAchromatic = cxOkhsv.s < 1 && cuOkhsvS < 1;
+      const okhsvHueDelta = okhsvAchromatic ? 0 : hueDiff(cxOkhsv.h, round(cuOkhsvH, 2));
+      record('OKHSV', Math.max(okhsvHueDelta, absDiff(cxOkhsv.s, round(cuOkhsvS, 2)), absDiff(cxOkhsv.v, round(cuOkhsvV, 2))), color);
 
       const cxOklch = cxCs.toOklch();
       const cuOklch = culoriToOklch(cuBase)!;
@@ -1032,6 +1069,32 @@ const runParity = () => {
       rgbLabel
     );
 
+    const cxOkhsl8 = (cxRgb as unknown as { toOkhsl(): { h: number; s: number; l: number } }).toOkhsl();
+    const cuOkhsl8 = culoriToOkhsl(cuBase8)!;
+    const cuOkhsl8H = cuOkhsl8.h ?? 0,
+      cuOkhsl8S = Math.min(100, (cuOkhsl8.s ?? 0) * 100),
+      cuOkhsl8L = (cuOkhsl8.l ?? 0) * 100;
+    const okhsl8Achromatic = cxOkhsl8.s < 1 && cuOkhsl8S < 1;
+    const okhsl8HueDelta = okhsl8Achromatic ? 0 : hueDiff(cxOkhsl8.h, round(cuOkhsl8H, 2));
+    record(
+      'RGB8:OKHSL',
+      Math.max(okhsl8HueDelta, absDiff(cxOkhsl8.s, round(cuOkhsl8S, 2)), absDiff(cxOkhsl8.l, round(cuOkhsl8L, 2))),
+      rgbLabel
+    );
+
+    const cxOkhsv8 = (cxRgb as unknown as { toOkhsv(): { h: number; s: number; v: number } }).toOkhsv();
+    const cuOkhsv8 = culoriToOkhsv(cuBase8)!;
+    const cuOkhsv8H = cuOkhsv8.h ?? 0,
+      cuOkhsv8S = Math.min(100, (cuOkhsv8.s ?? 0) * 100),
+      cuOkhsv8V = Math.min(100, (cuOkhsv8.v ?? 0) * 100);
+    const okhsv8Achromatic = cxOkhsv8.s < 1 && cuOkhsv8S < 1;
+    const okhsv8HueDelta = okhsv8Achromatic ? 0 : hueDiff(cxOkhsv8.h, round(cuOkhsv8H, 2));
+    record(
+      'RGB8:OKHSV',
+      Math.max(okhsv8HueDelta, absDiff(cxOkhsv8.s, round(cuOkhsv8S, 2)), absDiff(cxOkhsv8.v, round(cuOkhsv8V, 2))),
+      rgbLabel
+    );
+
     const { r: cxDR, g: cxDG, b: cxDB } = cxRgb.darken(0.1).toRgb();
     const cuDarkened = culoriToRgb({ ...cuHsl8, l: Math.max(0, (cuHsl8.l ?? 0) - 0.1) })!;
     const cuDR = Math.round((cuDarkened.r ?? 0) * 255);
@@ -1058,6 +1121,30 @@ const runParity = () => {
       rgbLabel
     );
 
+    // Unclamped on both sides, so the s > 100 overshoot of the reference cusp fit is compared as-is.
+    const cuOkhsl8RawS = (cuOkhsl8.s ?? 0) * 100;
+    const [chOkhslH, chOkhslS, chOkhslL] = rgbToOkhslChannels(r8 / 255, g8 / 255, b8 / 255);
+    const chOkhslGrey = chOkhslS < 0.01 && cuOkhsl8RawS < 0.01;
+    record(
+      'RGB8:rgbToOkhslChannels',
+      chOkhslGrey
+        ? absDiff(chOkhslL, cuOkhsl8L)
+        : Math.max(hueDiff(chOkhslH, cuOkhsl8H), absDiff(chOkhslS, cuOkhsl8RawS), absDiff(chOkhslL, cuOkhsl8L)),
+      rgbLabel
+    );
+
+    const cuOkhsv8RawS = (cuOkhsv8.s ?? 0) * 100,
+      cuOkhsv8RawV = (cuOkhsv8.v ?? 0) * 100;
+    const [chOkhsvH, chOkhsvS, chOkhsvV] = rgbToOkhsvChannels(r8 / 255, g8 / 255, b8 / 255);
+    const chOkhsvGrey = chOkhsvS < 0.01 && cuOkhsv8RawS < 0.01;
+    record(
+      'RGB8:rgbToOkhsvChannels',
+      chOkhsvGrey
+        ? absDiff(chOkhsvV, cuOkhsv8RawV)
+        : Math.max(hueDiff(chOkhsvH, cuOkhsv8H), absDiff(chOkhsvS, cuOkhsv8RawS), absDiff(chOkhsvV, cuOkhsv8RawV)),
+      rgbLabel
+    );
+
     const ph = rand() * 360,
       ps = rand() * 100,
       pl = rand() * 100;
@@ -1069,6 +1156,16 @@ const runParity = () => {
     const [chVR, chVG, chVB] = hsvToRgbChannels(ph, ps, pl);
     const cuFromHsv = culoriToRgb({ mode: 'hsv' as const, h: ph, s: ps / 100, v: pl / 100 })!;
     record('hsvToRgbChannels', maxDiff([chVR, cuFromHsv.r], [chVG, cuFromHsv.g], [chVB, cuFromHsv.b]), polarLabel);
+
+    // culori's Okhsl / Okhsv → rgb are unclamped too, so s / l / v draw from the open interval
+    // (exactly 0 or 100 never comes out of rand()) and any overshoot is compared as-is.
+    const [chOkR, chOkG, chOkB] = okhslToRgbChannels(ph, ps, pl);
+    const cuFromOkhsl = culoriToRgb({ mode: 'okhsl' as const, h: ph, s: ps / 100, l: pl / 100 })!;
+    record('okhslToRgbChannels', maxDiff([chOkR, cuFromOkhsl.r], [chOkG, cuFromOkhsl.g], [chOkB, cuFromOkhsl.b]), polarLabel);
+
+    const [chOvR, chOvG, chOvB] = okhsvToRgbChannels(ph, ps, pl);
+    const cuFromOkhsv = culoriToRgb({ mode: 'okhsv' as const, h: ph, s: ps / 100, v: pl / 100 })!;
+    record('okhsvToRgbChannels', maxDiff([chOvR, cuFromOkhsv.r], [chOvG, cuFromOkhsv.g], [chOvB, cuFromOkhsv.b]), polarLabel);
   }
 };
 
@@ -1081,6 +1178,10 @@ const ceilings: Record<string, number> = {
   HSL: 1,
   HSV: 1,
   HWB: 2,
+  // Same algorithm on both sides (culori ports the same reference code), compared at 2 dp after
+  // clamping s to 100; the only legitimate delta is the rounding LSB.
+  OKHSL: 0.011,
+  OKHSV: 0.011,
   'HEX→OKLch': 0.011, // 0.01 floor drift from FP epsilon in rounding
   'HEX→lighten': 2,
   'Mix OKLab': 2,
@@ -1129,6 +1230,8 @@ const ceilings: Record<string, number> = {
   'RGB8:HSL': 1,
   'RGB8:HSV': 1,
   'RGB8:HWB': 1,
+  'RGB8:OKHSL': 0.011,
+  'RGB8:OKHSV': 0.011,
   'RGB8:darken': 2,
   // Unrounded channel functions vs culori. Both compute on the same sRGB cube with exact double
   // math, so the ceiling is FP noise: 1e-9 on the 0–100 / degree scale, 1e-12 on 0–1 RGB. A
@@ -1137,6 +1240,16 @@ const ceilings: Record<string, number> = {
   'RGB8:rgbToHsvChannels': 1e-9,
   hslToRgbChannels: 1e-12,
   hsvToRgbChannels: 1e-12,
+  // Okhsl / Okhsv share the reference algorithm with culori but not the OKLab matrix: culori
+  // carries the 2021 re-derived coefficients (0.412221469470763…), colordx the ones the OKLab post
+  // prints (0.4122214708). The 1e-9 difference is amplified where the spaces are ill-conditioned —
+  // hue near grey, s next to white where C_max → 0 — to ~1.6e-3 degrees / 8e-4 on the 0–100
+  // scale (worst observed over 100k bytes); l / v and the inverse direction sit at 1e-5 / 2e-7.
+  // A scale slip (turns vs degrees, 0–1 vs 0–100) or a missed toe lands in the tens.
+  'RGB8:rgbToOkhslChannels': 3e-3,
+  'RGB8:rgbToOkhsvChannels': 3e-3,
+  okhslToRgbChannels: 1e-6,
+  okhsvToRgbChannels: 1e-6,
   // Same ceilings as the OKLCH-feed equivalents: 2 rgb-channel integers for sRGB gamut maps,
   // 0.1 on the 0–1 float scale for P3/Rec.2020. Tighter would falsely fail on CSS Color 4
   // implementation latitude (JND is 0.02 in deltaEOK, culori and colordx each pick their own

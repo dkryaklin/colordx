@@ -34,6 +34,8 @@ const PLUGINS: Plugin[] = [
   { name: 'minify', entry: join(DIST, 'plugins', 'minify.mjs') },
   { name: 'mix', entry: join(DIST, 'plugins', 'mix.mjs') },
   { name: 'names', entry: join(DIST, 'plugins', 'names.mjs') },
+  { name: 'okhsl', entry: join(DIST, 'plugins', 'okhsl.mjs') },
+  { name: 'okhsv', entry: join(DIST, 'plugins', 'okhsv.mjs') },
   { name: 'p3', entry: join(DIST, 'plugins', 'p3.mjs') },
   { name: 'rec2020', entry: join(DIST, 'plugins', 'rec2020.mjs') },
   { name: 'a98rgb', entry: join(DIST, 'plugins', 'a98rgb.mjs') },

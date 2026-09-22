@@ -6,40 +6,40 @@ import { clampRgb } from './rgb.js';
 // Björn Ottosson's OKLab matrix coefficients. Referenced by both the allocating
 // and zero-alloc (*Into) variants so the math lives in one place.
 // sRGB linear → LMS (cubed roots taken at M1 stage)
-const M1_LR = 0.4122214708,
+export const M1_LR = 0.4122214708,
   M1_LG = 0.5363325363,
   M1_LB = 0.0514459929;
-const M1_MR = 0.2119034982,
+export const M1_MR = 0.2119034982,
   M1_MG = 0.6806995451,
   M1_MB = 0.1073969566;
-const M1_SR = 0.0883024619,
+export const M1_SR = 0.0883024619,
   M1_SG = 0.2817188376,
   M1_SB = 0.6299787005;
 // LMS' → OKLab
-const M2_L_L = 0.2104542553,
+export const M2_L_L = 0.2104542553,
   M2_M_L = 0.793617785,
   M2_S_L = -0.0040720468;
-const M2_L_A = 1.9779984951,
+export const M2_L_A = 1.9779984951,
   M2_M_A = -2.428592205,
   M2_S_A = 0.4505937099;
-const M2_L_B = 0.0259040371,
+export const M2_L_B = 0.0259040371,
   M2_M_B = 0.7827717662,
   M2_S_B = -0.808675766;
 // OKLab → LMS' (inverse of M2)
-const M2I_A_L = 0.3963377774,
+export const M2I_A_L = 0.3963377774,
   M2I_B_L = 0.2158037573;
-const M2I_A_M = -0.1055613458,
+export const M2I_A_M = -0.1055613458,
   M2I_B_M = -0.0638541728;
-const M2I_A_S = -0.0894841775,
+export const M2I_A_S = -0.0894841775,
   M2I_B_S = -1.291485548;
 // LMS → linear sRGB (inverse of M1)
-const M1I_L_R = 4.0767416613,
+export const M1I_L_R = 4.0767416613,
   M1I_M_R = -3.3077115904,
   M1I_S_R = 0.2309699287;
-const M1I_L_G = -1.2684380041,
+export const M1I_L_G = -1.2684380041,
   M1I_M_G = 2.6097574007,
   M1I_S_G = -0.3413193963;
-const M1I_L_B = -0.0041960865,
+export const M1I_L_B = -0.0041960865,
   M1I_M_B = -0.7034186145,
   M1I_S_B = 1.7076147009;
 

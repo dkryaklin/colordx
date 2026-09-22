@@ -280,6 +280,8 @@ export const parseHsvString = (input: unknown): RgbColor | null => {
 };
 
 const parseHsvBody = (input: unknown): RgbColor | null => {
+  // `{ colorSpace: 'okhsv', h, s, v }` is Okhsv (the okhsv plugin), not HSV — same shape, different space.
+  if ((input as { colorSpace?: unknown }).colorSpace === 'okhsv') return null;
   const { h, s, v, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof v !== 'number' || typeof alpha !== 'number') return null;
   // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()

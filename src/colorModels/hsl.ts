@@ -169,6 +169,8 @@ export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
 };
 
 export const parseHslBody = (input: unknown): RgbColor | null => {
+  // `{ colorSpace: 'okhsl', h, s, l }` is Okhsl (the okhsl plugin), not HSL — same shape, different space.
+  if ((input as { colorSpace?: unknown }).colorSpace === 'okhsl') return null;
   const { h, s, l, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; l: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof l !== 'number' || typeof alpha !== 'number') return null;
   // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()

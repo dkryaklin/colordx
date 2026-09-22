@@ -6,6 +6,8 @@ import hsv from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
+import okhsl from '../src/plugins/okhsl.js';
+import okhsv from '../src/plugins/okhsv.js';
 import names from '../src/plugins/names.js';
 import p3 from '../src/plugins/p3.js';
 import prophoto from '../src/plugins/prophoto.js';
@@ -13,7 +15,7 @@ import rec2020 from '../src/plugins/rec2020.js';
 import srgbLinear from '../src/plugins/srgb-linear.js';
 import tinycolor from '../src/tinycolor.js';
 
-beforeAll(() => extend([a98rgb, cmyk, hsv, hwb, lab, lch, names, p3, prophoto, rec2020, srgbLinear]));
+beforeAll(() => extend([a98rgb, cmyk, hsv, hwb, lab, lch, names, okhsl, okhsv, p3, prophoto, rec2020, srgbLinear]));
 
 /**
  * Rejection has to stay linear in the length of the input.
@@ -64,6 +66,9 @@ describe('rejects oversized malformed colors in linear time', () => {
     ['lch', `lch(${digits}!`],
     ['oklab', `oklab(${digits}!`],
     ['oklch', `oklch(${digits}!`],
+    ['okhsl', `okhsl(${digits}!`],
+    ['okhsl, alpha position', `okhsl(1deg 2% 3% / ${digits}!`],
+    ['okhsv', `okhsv(${spaces}${digits}!`],
     ['device-cmyk', `device-cmyk(${digits}!`],
     ['color()', `color(display-p3 ${digits}!`],
     ['hex', `#${digits}`],

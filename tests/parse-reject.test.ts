@@ -5,10 +5,12 @@ import hsv from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
+import okhsl from '../src/plugins/okhsl.js';
+import okhsv from '../src/plugins/okhsv.js';
 import p3 from '../src/plugins/p3.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
-beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk]));
+beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk, okhsl, okhsv]));
 
 // Parser robustness battery. Every row is a literal input that MUST be
 // accepted or rejected. The point is to guard against overly-permissive
@@ -321,6 +323,63 @@ rejectMany('hsv — legacy requires `%`', [
 rejectMany('hsv — legacy rejects `none`', [
   'hsv(none, 100%, 100%)',
   'hsva(0, 100%, 100%, none)',
+]);
+
+// ─── okhsl / okhsv (non-standard but ours) ─────────────────────────────
+
+rejectMany('okhsl / okhsv — structural', [
+  'okhsl()',
+  'okhsl(0)',
+  'okhsl(0 100%)',
+  'okhsl(0 100% 50% 0.5)',
+  'okhsl(0 100% 50% / 0.5 / 1)',
+  'okhsl(0, 100%, 50%)', // no legacy comma form
+  'okhsla(0 100% 50%)',
+  'okhsl[0 100% 50%]',
+  'okhsv()',
+  'okhsv(0, 100%, 100%)',
+  'okhsva(0 100% 100% / 0.5)',
+  'ok hsl(0 100% 50%)',
+  'okhsl (0 100% 50%)',
+]);
+
+rejectMany('okhsl / okhsv — token-level', [
+  'okhsl(0% 100% 50%)', // hue takes an angle, not a percentage
+  'okhsl(0 100%% 50%)',
+  'okhsl(abc 100% 50%)',
+  'okhsl(0 100% 50% / 50%%)',
+  'okhsv(0deg 100% 100% / )',
+  'okhsv(0 100% 100% /)',
+  'okhsl(0 100% 50% / 0.5 %)',
+  'okhsl(0 1e 50%)',
+]);
+
+acceptMany('okhsl / okhsv — valid forms', [
+  'okhsl(0 0% 0%)',
+  'okhsl(360 100% 100%)',
+  'okhsl(180 50% 50%)',
+  'okhsl(180 50 50)',
+  'okhsl(0 100% 50% / 0.5)',
+  'okhsl(0 100% 50% / 50%)',
+  'okhsl(none 100% 50%)',
+  'okhsl(0 none 50%)',
+  'okhsl(0 100% none / 0.5)',
+  'okhsl(0 100% 50% / none)',
+  'okhsl(0deg 100% 50%)',
+  'okhsl(0.5turn 100% 50%)',
+  'okhsl(200grad 100% 50%)',
+  'okhsl(3.14rad 100% 50%)',
+  'okhsl(-30 100% 50%)',
+  'okhsl(1e2 5e1% 5e1%)',
+  'OKHSL(180 50% 50%)',
+  '  okhsl( 180   50%   50% )  ',
+  'okhsv(0 0% 0%)',
+  'okhsv(360 100% 100%)',
+  'okhsv(180 50% 50% / 0.5)',
+  'okhsv(none none none)',
+  'okhsv(0.25turn 50 50)',
+  'OKHSV(180 50% 50%)',
+  '  okhsv( 180   50%   50% )  ',
 ]);
 
 acceptMany('hsv — valid forms', [

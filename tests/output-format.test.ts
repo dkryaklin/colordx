@@ -5,10 +5,12 @@ import hsv from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
+import okhsl from '../src/plugins/okhsl.js';
+import okhsv from '../src/plugins/okhsv.js';
 import p3 from '../src/plugins/p3.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
-beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk]));
+beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk, okhsl, okhsv]));
 
 // Format-stability tests. Every string-output method is pinned literally for one
 // opaque and one translucent canonical input. Any change to the emitted format
@@ -25,6 +27,8 @@ interface WithStrings {
   toOklchString(): string;
   toHwbString(): string;
   toHsvString(): string;
+  toOkhslString(): string;
+  toOkhsvString(): string;
   toLabString(): string;
   toLchString(): string;
   toCmykString(): string;
@@ -39,6 +43,9 @@ describe('output format — opaque', () => {
   it('toRgbString', () => expect(o.toRgbString()).toBe('rgb(61 122 159)'));
   it('toHslString', () => expect(o.toHslString()).toBe('hsl(202.65 44.55% 43.14%)'));
   it('toHsvString', () => expect(o.toHsvString()).toBe('hsv(202.65 61.64% 62.35%)'));
+  // 5 dp by default (see the okhsl plugin): the OKLCH hue needs it to round-trip at the cube edges.
+  it('toOkhslString', () => expect(o.toOkhslString()).toBe('okhsl(237.65614 57.92201% 48.38305%)'));
+  it('toOkhsvString', () => expect(o.toOkhsvString()).toBe('okhsv(237.65614 65.38076% 64.31605%)'));
   it('toHwbString', () => expect(o.toHwbString()).toBe('hwb(203 24% 38%)'));
   it('toOklabString', () => expect(o.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224)'));
   it('toOklchString', () => expect(o.toOklchString()).toBe('oklch(0.55476 0.08551 237.65614)'));
@@ -53,6 +60,8 @@ describe('output format — with alpha (slash syntax)', () => {
   it('toRgbString', () => expect(a.toRgbString()).toBe('rgb(61 122 159 / 0.5)'));
   it('toHslString', () => expect(a.toHslString()).toBe('hsl(202.65 44.55% 43.14% / 0.5)'));
   it('toHsvString', () => expect(a.toHsvString()).toBe('hsv(202.65 61.64% 62.35% / 0.5)'));
+  it('toOkhslString', () => expect(a.toOkhslString()).toBe('okhsl(237.65614 57.92201% 48.38305% / 0.5)'));
+  it('toOkhsvString', () => expect(a.toOkhsvString()).toBe('okhsv(237.65614 65.38076% 64.31605% / 0.5)'));
   it('toHwbString', () => expect(a.toHwbString()).toBe('hwb(203 24% 38% / 0.5)'));
   it('toOklabString', () => expect(a.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224 / 0.5)'));
   it('toOklchString', () => expect(a.toOklchString()).toBe('oklch(0.55476 0.08551 237.65614 / 0.5)'));

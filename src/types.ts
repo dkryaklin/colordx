@@ -47,6 +47,34 @@ export interface HwbColor {
 /** Input shape of `HwbColor` — `alpha` is optional and defaults to 1. */
 export type HwbColorInput = Omit<HwbColor, 'alpha'> & { alpha?: number; a?: number };
 
+/**
+ * Okhsl color (Björn Ottosson). h in [0, 360) — the OKLCH hue; s, l in [0, 100]; alpha in [0, 1].
+ * The `colorSpace` brand tells it apart from an HSL object.
+ */
+export interface OkhslColor {
+  h: number;
+  s: number;
+  l: number;
+  alpha: number;
+  readonly colorSpace: 'okhsl';
+}
+/** Input shape of `OkhslColor` — `alpha` is optional and defaults to 1. */
+export type OkhslColorInput = Omit<OkhslColor, 'alpha'> & { alpha?: number; a?: number };
+
+/**
+ * Okhsv color (Björn Ottosson). h in [0, 360) — the OKLCH hue; s, v in [0, 100]; alpha in [0, 1].
+ * The `colorSpace` brand tells it apart from an HSV object.
+ */
+export interface OkhsvColor {
+  h: number;
+  s: number;
+  v: number;
+  alpha: number;
+  readonly colorSpace: 'okhsv';
+}
+/** Input shape of `OkhsvColor` — `alpha` is optional and defaults to 1. */
+export type OkhsvColorInput = Omit<OkhsvColor, 'alpha'> & { alpha?: number; a?: number };
+
 /** CIE Lab (D50). L in [0, 100]; a, b roughly in [-128, 128]. */
 export interface LabColor {
   l: number;
@@ -186,6 +214,8 @@ export type AnyColor =
   | HslColorInput
   | HsvColorInput
   | HwbColorInput
+  | OkhslColorInput
+  | OkhsvColorInput
   | LabColorInput
   | LchColorInput
   | XyzColorInput
@@ -214,6 +244,8 @@ export type ColorFormat =
   | 'hwb'
   | 'oklab'
   | 'oklch'
+  | 'okhsl'
+  | 'okhsv'
   | 'lab'
   | 'lch'
   | 'xyz'

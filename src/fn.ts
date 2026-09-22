@@ -15,5 +15,18 @@ export { hsvToRgb, parseHsvObject, parseHsvString, rgbToHsv } from './colorModel
 export { hwbToRgb, parseHwbObject, parseHwbString, rgbToHwb } from './colorModels/hwb.js';
 export { oklabToRgb, parseOklabObject, parseOklabString, rgbToOklab } from './colorModels/oklab.js';
 export { oklchToRgb, parseOklchObject, parseOklchString, rgbToOklch } from './colorModels/oklch.js';
+export { okhslToRgb, parseOkhslObject, parseOkhslString, rgbToOkhsl } from './colorModels/okhsl.js';
+export { okhsvToRgb, parseOkhsvObject, parseOkhsvString, rgbToOkhsv } from './colorModels/okhsv.js';
 export { NAMES, parseNameString } from './plugins/names.js';
-export type { AnyColor, ColorParser, HslColor, HsvColor, HwbColor, OklabColor, OklchColor, RgbColor } from './types.js';
+export type {
+  AnyColor,
+  ColorParser,
+  HslColor,
+  HsvColor,
+  HwbColor,
+  OkhslColor,
+  OkhsvColor,
+  OklabColor,
+  OklchColor,
+  RgbColor,
+} from './types.js';

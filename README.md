@@ -219,7 +219,7 @@ getFormat({ r: 255, g: 0, b: 0 }); // 'rgb'
 getFormat({ h: 0, s: 100, l: 50 }); // 'hsl'
 getFormat('notacolor'); // undefined
 // Plugin-added parsers register their own format:
-// p3 → 'p3', hsv → 'hsv', hwb → 'hwb', cmyk → 'cmyk', lch → 'lch', lab → 'lab' | 'xyz' | 'xyz-d65', names → 'name', rec2020 → 'rec2020', a98rgb → 'a98-rgb', prophoto → 'prophoto-rgb', srgb-linear → 'srgb-linear'
+// p3 → 'p3', hsv → 'hsv', hwb → 'hwb', okhsl → 'okhsl', okhsv → 'okhsv', cmyk → 'cmyk', lch → 'lch', lab → 'lab' | 'xyz' | 'xyz-d65', names → 'name', rec2020 → 'rec2020', a98rgb → 'a98-rgb', prophoto → 'prophoto-rgb', srgb-linear → 'srgb-linear'
 
 nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via OKLab
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
@@ -473,7 +473,7 @@ const parseColor = (input: unknown) => {
 };
 ```
 
-Available: `parse`, `parseHex`, `parseRgbString`, `parseRgbObject`, `parseSrgbColorString`, `parseHslString`, `parseHslObject`, `parseHsvString`, `parseHsvObject`, `parseHwbString`, `parseHwbObject`, `parseOklabString`, `parseOklabObject`, `parseOklchString`, `parseOklchObject`, `parseNameString`, `NAMES`, `rgbToHex`, `rgbToHex8`, `rgbToHsl` / `hslToRgb`, `rgbToHsv` / `hsvToRgb`, `rgbToHwb` / `hwbToRgb`, `rgbToOklab` / `oklabToRgb`, `rgbToOklch` / `oklchToRgb`.
+Available: `parse`, `parseHex`, `parseRgbString`, `parseRgbObject`, `parseSrgbColorString`, `parseHslString`, `parseHslObject`, `parseHsvString`, `parseHsvObject`, `parseHwbString`, `parseHwbObject`, `parseOklabString`, `parseOklabObject`, `parseOklchString`, `parseOklchObject`, `parseNameString`, `NAMES`, `rgbToHex`, `rgbToHex8`, `rgbToHsl` / `hslToRgb`, `rgbToHsv` / `hsvToRgb`, `rgbToHwb` / `hwbToRgb`, `rgbToOklab` / `oklabToRgb`, `rgbToOklch` / `oklchToRgb`, `rgbToOkhsl` / `okhslToRgb`, `rgbToOkhsv` / `okhsvToRgb`, `parseOkhslString`, `parseOkhslObject`, `parseOkhsvString`, `parseOkhsvObject`.
 
 ## Plugins
 
@@ -493,6 +493,10 @@ import hwb from '@colordx/core/plugins/hwb';
 // toHwb(), toHwbString(), parses hwb() strings and HWB objects
 import hsv from '@colordx/core/plugins/hsv';
 // toHsv(), toHsvString(), parses hsv() strings and HSV objects
+import okhsl from '@colordx/core/plugins/okhsl';
+// toOkhsl(), toOkhslString(), okhslToRgbChannels(), parses okhsl() strings and { colorSpace: 'okhsl' } objects
+import okhsv from '@colordx/core/plugins/okhsv';
+// toOkhsv(), toOkhsvString(), okhsvToRgbChannels(), parses okhsv() strings and { colorSpace: 'okhsv' } objects
 import lab from '@colordx/core/plugins/lab';
 // toLab(), toLabString(), toXyz(), toXyzString(), toXyzD65(), toXyzD65String(), mixLab(), delta(), parses Lab/XYZ(D50+D65) objects and strings
 import lch from '@colordx/core/plugins/lch';
@@ -514,7 +518,7 @@ import prophoto from '@colordx/core/plugins/prophoto';
 import srgbLinear from '@colordx/core/plugins/srgb-linear';
 // toSrgbLinear(), toSrgbLinearString(), parses color(srgb-linear ...) strings
 
-extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, mix, minify, p3, rec2020, a98rgb, prophoto, srgbLinear]);
+extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, okhsl, okhsv, mix, minify, p3, rec2020, a98rgb, prophoto, srgbLinear]);
 ```
 
 ### lab plugin
@@ -635,6 +639,48 @@ let i = 0;
 for (let y = 0; y < 256; y++) {
   for (let x = 0; x < 256; x++) {
     hsvToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
+    plane[i++] = buf[0] * 255;
+    plane[i++] = buf[1] * 255;
+    plane[i++] = buf[2] * 255;
+    plane[i++] = 255;
+  }
+}
+```
+
+### okhsl and okhsv plugins
+
+[Okhsl and Okhsv](https://bottosson.github.io/posts/colorpicker/) are Björn Ottosson's color-picker spaces: the shape of HSL / HSV (the sRGB gamut becomes a cylinder, so every `h`/`s`/`l` combination is a real sRGB color) with the perceptual behaviour of OKLCH. `h` is exactly the OKLCH hue, so a hue ramp stays the same hue instead of drifting purple in the blues; Okhsl's `l` is a lightness estimate that tracks CIELab L (`toe(OKLab L)`); `s` remaps chroma onto 0–100 with the interior kept smooth across hues. Same scale as `toHsl()` / `toHsv()`: h in degrees, s / l / v in 0–100. `okhsl()` / `okhsv()` strings are library-defined (no CSS syntax exists); objects carry a `colorSpace` brand because `{ h, s, l }` alone is HSL.
+
+```ts
+import okhsl from '@colordx/core/plugins/okhsl';
+import okhsv from '@colordx/core/plugins/okhsv';
+
+extend([okhsl, okhsv]);
+
+colordx('#3d7a9f').toOkhsl();       // { h: 237.65614, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' }
+colordx('#3d7a9f').toOkhsv();       // { h: 237.65614, s: 65.38076, v: 64.31605, alpha: 1, colorSpace: 'okhsv' }
+colordx('#3d7a9f').toOkhslString(); // 'okhsl(237.65614 57.92201% 48.38305%)'
+colordx('#3d7a9f').toOkhsvString(); // 'okhsv(237.65614 65.38076% 64.31605%)'
+colordx('okhsl(237.65614 57.92201% 48.38305%)').toHex(); // '#3d7a9f'
+colordx({ colorSpace: 'okhsv', h: 237.65614, s: 65.38076, v: 64.31605 }).toHex(); // '#3d7a9f'
+colordx('#3d7a9f').toOkhsl(2);      // { h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' }
+colordx('#3d7a9f').toOkhsl().h === colordx('#3d7a9f').toOklch().h; // true
+```
+
+Both spaces are defined for sRGB only; a wide-gamut input reads as its sRGB clip, like `toHsl()`. The default precision is 5 dp rather than the 2 of `toHsl()`: the OKLCH hue is sensitive around the edges of the sRGB cube, and at 2 dp `rgb(0, 42, 204)` comes back as `rgb(7, 53, 190)`. Two edge behaviours are inherent to the spaces and shared with every implementation of the reference code: pure blues (`r = g = 0`) do not round-trip at any printed precision (`#0000ff` → `okhsl(264.05202 100% 36.65653%)` → `#0134e2` — at that hue and lightness the most chromatic sRGB color really is that one; the hue would need ~8 dp), and the reference approximates the gamut cusp with a polynomial, so ~0.1% of colors report a raw `s` a little above 100 (`toOkhsl()` clamps, the channel functions do not) and come back a few bytes inside the gamut.
+
+The plugin entries also export channel functions — `rgbToOkhslChannels`, `okhslToRgbChannels`, `rgbToOkhsvChannels`, `okhsvToRgbChannels` and their `*Into` siblings — for per-pixel work. Same shape as the HSV ones (RGB in 0–1), so a picker plane is a drop-in:
+
+```ts
+import { okhslToRgbChannelsInto } from '@colordx/core/plugins/okhsl';
+
+// 256×256 saturation / lightness plane for a fixed hue → RGBA bytes. Every cell is in gamut.
+const buf = new Float64Array(3);
+const plane = new Uint8ClampedArray(256 * 256 * 4);
+let i = 0;
+for (let y = 0; y < 256; y++) {
+  for (let x = 0; x < 256; x++) {
+    okhslToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
     plane[i++] = buf[0] * 255;
     plane[i++] = buf[1] * 255;
     plane[i++] = buf[2] * 255;

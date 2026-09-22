@@ -29,9 +29,11 @@ import minify from '../src/plugins/minify.js';
 import mix from '../src/plugins/mix.js';
 import hwb from '../src/plugins/hwb.js';
 import names from '../src/plugins/names.js';
+import okhsl from '../src/plugins/okhsl.js';
+import okhsv from '../src/plugins/okhsv.js';
 
 beforeAll(() => {
-  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020]);
+  extend([a11y, cmyk, harmonies, hsv, hwb, lab, lch, minify, mix, names, okhsl, okhsv, p3, rec2020]);
 });
 
 // Deterministic LCG — results are reproducible across runs
@@ -471,6 +473,8 @@ describe('fuzz: invariants — sRGB-bounded formatters describe the color toHex(
       expect(c.toHsl(4), label).toEqual(clipped.toHsl(4));
       expect(c.toHsv(4), label).toEqual(clipped.toHsv(4));
       expect(c.toHwb(4), label).toEqual(clipped.toHwb(4));
+      expect(c.toOkhsl(4), label).toEqual(clipped.toOkhsl(4));
+      expect(c.toOkhsv(4), label).toEqual(clipped.toOkhsv(4));
       expect(c.toCmyk(4), label).toEqual(clipped.toCmyk(4));
       expect(c.brightness(), label).toBe(clipped.brightness());
       expect(c.hue(), label).toBe(clipped.hue());
@@ -484,6 +488,30 @@ describe('fuzz: invariants — sRGB-bounded formatters describe the color toHex(
       const bytes = c.toRgb();
       for (const str of [c.toHslString(4), c.toHsvString(4), c.toHwbString(2), c.toCmykString(4)]) {
         expect(rgbClose(colordx(str).toRgb(), bytes), `${label}: ${str}`).toBe(true);
+      }
+    }
+  });
+
+  it('toOkhslString / toOkhsvString parse back to the same Okhsl / Okhsv coordinates', () => {
+    // Bytes are not the invariant here: clampSrgb() lands many of these on the cube's edges, where
+    // the most chromatic color of a hue moves fast with the hue (pure blue at 5 dp comes back as
+    // rgb(1, 52, 226)) and where the reference's cusp fit clamps s at 100. What the string must
+    // preserve is the coordinates: h / l / v to the printed precision, and s too unless it was
+    // clamped, in which case the parsed color sits just inside the gamut and reports s a little
+    // below 100. tests/okhsl-okhsv.test.ts pins the byte behaviour.
+    for (const { input, label } of wide) {
+      const c = colordx(input as never) as any;
+      for (const [str, key] of [
+        [c.toOkhslString(), 'toOkhsl'],
+        [c.toOkhsvString(), 'toOkhsv'],
+      ] as const) {
+        const want = c[key]();
+        const got = colordx(str)[key]();
+        const ctx = `${label}: ${str}`;
+        if (want.s >= 1) expect(Math.abs(got.h - want.h) <= 0.001 || Math.abs(got.h - want.h) >= 359.999, ctx).toBe(true);
+        expect(Math.abs((got.l ?? got.v) - (want.l ?? want.v)), ctx).toBeLessThanOrEqual(0.001);
+        if (want.s === 100) expect(got.s, ctx).toBeGreaterThan(99);
+        else expect(Math.abs(got.s - want.s), ctx).toBeLessThanOrEqual(0.001);
       }
     }
   });
@@ -530,6 +558,8 @@ describe('fuzz: invariants — every hue is in [0, 360) at every precision', () 
         hueRange(c.toHsl(p).h, `toHsl(${p})`);
         hueRange(c.toHsv(p).h, `toHsv(${p})`);
         hueRange(c.toHwb(p).h, `toHwb(${p})`);
+        hueRange(c.toOkhsl(p).h, `toOkhsl(${p})`);
+        hueRange(c.toOkhsv(p).h, `toOkhsv(${p})`);
         hueRange(c.toLch(p).h, `toLch(${p})`);
         hueRange(c.toOklch(p).h, `toOklch(${p})`);
       }
@@ -635,7 +665,7 @@ describe('fuzz: invariants — no rounded output carries a signed zero', () => {
     const inputs = [...colors.slice(0, 2000), ...wide.map((w) => w.input)];
     for (const input of inputs) {
       const c = colordx(input as never) as any;
-      for (const obj of [c.toRgb(), c.toHsl(), c.toHsv(), c.toHwb(), c.toOklab(), c.toOklch(), c.toLab(), c.toLch(), c.toXyz(), c.toXyzD65(), c.toCmyk(), c.toP3(), c.toRec2020()]) {
+      for (const obj of [c.toRgb(), c.toHsl(), c.toHsv(), c.toHwb(), c.toOkhsl(), c.toOkhsv(), c.toOklab(), c.toOklch(), c.toLab(), c.toLch(), c.toXyz(), c.toXyzD65(), c.toCmyk(), c.toP3(), c.toRec2020()]) {
         for (const [k, v] of Object.entries(obj)) expect(isNegZero(v), `${k} of ${JSON.stringify(input)}`).toBe(false);
       }
     }
@@ -653,6 +683,8 @@ describe('fuzz: invariants — hostile input never reaches a formatter', () => {
     { h: 200, s: 50, l: 50 },
     { h: 200, s: 50, v: 50 },
     { h: 200, w: 20, b: 20 },
+    { h: 200, s: 50, l: 50, colorSpace: 'okhsl' },
+    { h: 200, s: 50, v: 50, colorSpace: 'okhsv' },
     { l: 0.5, a: 0.1, b: -0.1 },
     { l: 0.5, c: 0.1, h: 200 },
     { l: 50, a: 20, b: -20, colorSpace: 'lab' },
@@ -669,6 +701,9 @@ describe('fuzz: invariants — hostile input never reaches a formatter', () => {
     'hsl(_ _% _%)',
     'hsv(_ _% _%)',
     'hwb(_ _% _%)',
+    'okhsl(_ _% _%)',
+    'okhsl(_ _% _% / _)',
+    'okhsv(_ _% _%)',
     'oklch(_ _ _)',
     'oklch(_ _ _ / _)',
     'oklab(_ _ _)',
@@ -710,7 +745,7 @@ describe('fuzz: invariants — hostile input never reaches a formatter', () => {
     expect(alpha, ctx).toBeGreaterThanOrEqual(0);
     expect(alpha, ctx).toBeLessThanOrEqual(1);
     expect(colordx(c.toRgbString()).isValid(), ctx).toBe(true);
-    for (const obj of [c.toHsl(), c.toHsv(), c.toHwb(), c.toOklab(), c.toOklch(), c.toLab(), c.toLch(), c.toCmyk()]) {
+    for (const obj of [c.toHsl(), c.toHsv(), c.toHwb(), c.toOkhsl(), c.toOkhsv(), c.toOklab(), c.toOklch(), c.toLab(), c.toLch(), c.toCmyk()]) {
       for (const [k, v] of Object.entries(obj)) {
         if (typeof v === 'number') expect(Number.isFinite(v), `${ctx} → ${k}`).toBe(true);
       }

@@ -24,10 +24,12 @@ import hsv from '../src/plugins/hsv.js';
 import hwb from '../src/plugins/hwb.js';
 import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
+import okhsl from '../src/plugins/okhsl.js';
+import okhsv from '../src/plugins/okhsv.js';
 import p3 from '../src/plugins/p3.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
-beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk]));
+beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk, okhsl, okhsv]));
 
 const reject = (input: unknown) => expect(colordx(input as never).isValid()).toBe(false);
 const accept = (input: unknown) => expect(colordx(input as never).isValid()).toBe(true);
@@ -94,6 +96,9 @@ describe('A. object parsers — single-field invalid value', () => {
 // And two negative gates:
 //   parseOklabObject:  colorSpace === 'lab' → null
 //   parseOklchObject:  colorSpace === 'lch' → null
+// The okhsl / okhsv plugins add a positive gate each (colorSpace !== 'okhsl' / 'okhsv' → null)
+// and the matching negative gates in parseHslBody / parseHsvBody, since `{ h, s, l }` and
+// `{ h, s, v }` are the HSL / HSV shapes.
 //
 // To kill the StringLiteral / EqualityOperator mutants on these checks,
 // we need (a) a positive case with the exact brand and (b) a negative case
@@ -111,6 +116,30 @@ describe('B. colorSpace brand gates', () => {
   it('lch brand is required (and accepted)', () => accept({ colorSpace: 'lch', l: 50, c: 30, h: 180 }));
   it('lch without brand is rejected', () => reject({ l: 50, c: 30, h: 180 }));
   it('lch with non-lch brand is rejected', () => reject({ colorSpace: 'oklch', l: 50, c: 30, h: 180 }));
+
+  it('okhsl brand selects Okhsl; the same numbers without it are HSL', () => {
+    const ok = colordx({ colorSpace: 'okhsl', h: 237.66, s: 57.92, l: 48.38 } as never).toHex();
+    const hsl = colordx({ h: 237.66, s: 57.92, l: 48.38 }).toHex();
+    expect(ok).toBe('#3d7a9f');
+    expect(hsl).not.toBe(ok);
+    expect(hsl).toBe(colordx('hsl(237.66 57.92% 48.38%)').toHex());
+  });
+  it('okhsl brand on an hsv shape is plain HSV (foreign brands are ignored, as everywhere)', () =>
+    expect(colordx({ colorSpace: 'okhsl', h: 200, s: 50, v: 50 } as never).toHex()).toBe(colordx('hsv(200 50% 50%)').toHex()));
+  it('non-okhsl brand on an hsl shape stays HSL', () =>
+    expect(colordx({ colorSpace: 'hsl', h: 237.66, s: 57.92, l: 48.38 } as never).toHex()).toBe(
+      colordx('hsl(237.66 57.92% 48.38%)').toHex()
+    ));
+
+  it('okhsv brand selects Okhsv; the same numbers without it are HSV', () => {
+    const ok = colordx({ colorSpace: 'okhsv', h: 237.66, s: 65.38, v: 64.32 } as never).toHex();
+    const hsv = colordx({ h: 237.66, s: 65.38, v: 64.32 } as never).toHex();
+    expect(ok).toBe('#3d7a9f');
+    expect(hsv).not.toBe(ok);
+    expect(hsv).toBe(colordx('hsv(237.66 65.38% 64.32%)').toHex());
+  });
+  it('okhsv brand on an hsl shape is plain HSL', () =>
+    expect(colordx({ colorSpace: 'okhsv', h: 200, s: 50, l: 50 } as never).toHex()).toBe(colordx('hsl(200 50% 50%)').toHex()));
 
   it('p3 brand produces a different result than unbranded rgb fallback', () => {
     // Pin: without the strict 'display-p3' brand check, parseP3Object would

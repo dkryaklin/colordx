@@ -40,6 +40,18 @@ import {
   oklabToLinearInto,
 } from '../src/colorModels/oklab.js';
 import {
+  okhslToRgbChannels,
+  okhslToRgbChannelsInto,
+  rgbToOkhslChannels,
+  rgbToOkhslChannelsInto,
+} from '../src/colorModels/okhsl.js';
+import {
+  okhsvToRgbChannels,
+  okhsvToRgbChannelsInto,
+  rgbToOkhsvChannels,
+  rgbToOkhsvChannelsInto,
+} from '../src/colorModels/okhsv.js';
+import {
   linearP3ToSrgb,
   linearP3ToSrgbInto,
   oklabToLinearP3,
@@ -316,6 +328,43 @@ describe('oklab *Into parity', () => {
       lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
       expectTripleEqual(linOut, wantLin);
       expectTripleEqual(srgbOut, wantSrgb);
+    }
+  });
+});
+
+describe('okhsl / okhsv *Into parity', () => {
+  const out = new Float64Array(3);
+
+  it('rgbToOkhslChannelsInto matches rgbToOkhslChannels', () => {
+    for (const [r, g, b] of RGB_UNIT_CASES) {
+      const want = rgbToOkhslChannels(r, g, b);
+      rgbToOkhslChannelsInto(out, r, g, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('rgbToOkhsvChannelsInto matches rgbToOkhsvChannels', () => {
+    for (const [r, g, b] of RGB_UNIT_CASES) {
+      const want = rgbToOkhsvChannels(r, g, b);
+      rgbToOkhsvChannelsInto(out, r, g, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('okhslToRgbChannelsInto matches okhslToRgbChannels', () => {
+    // Includes l = 0 / l = 100 (the black / white guards) and s out of range.
+    for (const [h, s, l] of [...POLAR_CASES, [200, 50, 100], [200, 50, 120], [200, 50, -5]] as Array<[number, number, number]>) {
+      const want = okhslToRgbChannels(h, s, l);
+      okhslToRgbChannelsInto(out, h, s, l);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('okhsvToRgbChannelsInto matches okhsvToRgbChannels', () => {
+    for (const [h, s, v] of POLAR_CASES) {
+      const want = okhsvToRgbChannels(h, s, v);
+      okhsvToRgbChannelsInto(out, h, s, v);
+      expectTripleEqual(out, want);
     }
   });
 });
