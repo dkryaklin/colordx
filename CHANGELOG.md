@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 6.7.0
+
+### Minor Changes
+
+- Add okhsl and okhsv plugins with toOkhsl()/toOkhsv(), toOkhslString()/toOkhsvString(), okhsl()/okhsv() string and `colorSpace`-branded object parsing, and per-pixel channel helpers (rgbToOkhslChannels, okhslToRgbChannelsInto, rgbToOkhsvChannels, okhsvToRgbChannelsInto) ([7f900c0](https://github.com/dkryaklin/colordx/commit/7f900c0a2dc9786311baa66670f0f03f89ad3426))
+
 ## 6.6.0
 
 ### Minor Changes
