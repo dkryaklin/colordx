@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, WS, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
-import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb, srgbFromLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -70,7 +70,7 @@ export const linearSrgbToOklab = (lr: number, lg: number, lb: number): [number, 
 };
 
 export const rgbToOklab = ({ r, g, b, alpha }: RgbColor): OklabColor => {
-  const [l, a, bv] = linearSrgbToOklab(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [l, a, bv] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return { l, a, b: bv, alpha };
 };
 

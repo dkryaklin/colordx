@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
-import { linearToStoredRgb, prophotoFromLinear, prophotoToLinear, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb, prophotoFromLinear, prophotoToLinear } from '../transfer.js';
 import type { ProPhotoColor, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 
@@ -47,7 +47,7 @@ export const linearProphotoToSrgb = (r: number, g: number, b: number): [number, 
 ];
 
 export const rgbToProphotoRaw = ({ r, g, b, alpha }: RgbColor): ProPhotoColor => {
-  const [pr, pg, pb] = srgbLinearToProphotoLinear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [pr, pg, pb] = srgbLinearToProphotoLinear(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return {
     r: prophotoFromLinear(pr),
     g: prophotoFromLinear(pg),

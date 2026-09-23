@@ -10,7 +10,7 @@ import {
   sanitize,
   trimWs,
 } from '../helpers.js';
-import { linearToStoredRgb, rec2020FromLinear, rec2020ToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb, rec2020FromLinear, rec2020ToLinear, srgbFromLinear } from '../transfer.js';
 import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
@@ -64,7 +64,7 @@ export const linearRec2020ToSrgb = (r: number, g: number, b: number): [number, n
 ];
 
 export const rgbToRec2020Raw = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
-  const [rr, rg, rb] = srgbLinearToRec2020Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [rr, rg, rb] = srgbLinearToRec2020Linear(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return {
     r: rec2020FromLinear(rr),
     g: rec2020FromLinear(rg),

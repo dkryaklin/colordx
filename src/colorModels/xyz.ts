@@ -10,7 +10,7 @@ import {
   sanitize,
   trimWs,
 } from '../helpers.js';
-import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb, srgbFromLinear } from '../transfer.js';
 import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -68,9 +68,9 @@ const D50_TO_D65_ZX = 0.012314014864481998,
 
 /** sRGB (0–255) → XYZ D65 (0–100, screen-native, no Bradford adaptation). */
 export const rgbToXyzD65 = ({ r, g, b, alpha }: RgbColor): XyzD65Color => {
-  const lr = srgbToLinear(r / 255),
-    lg = srgbToLinear(g / 255),
-    lb = srgbToLinear(b / 255);
+  const lr = byteToLinear(r),
+    lg = byteToLinear(g),
+    lb = byteToLinear(b);
   return {
     x: 100 * (S_XR * lr + S_XG * lg + S_XB * lb),
     y: 100 * (S_YR * lr + S_YG * lg + S_YB * lb),
@@ -95,9 +95,9 @@ const xyzD65ToRgbUnclamped = ({ x, y, z, alpha }: XyzD65Color): RgbColor => {
 // ── RGB ↔ XYZ D50 ───────────────────────────────────────────────────────────
 
 export const rgbToXyz = ({ r, g, b, alpha }: RgbColor): XyzColor => {
-  const lr = srgbToLinear(r / 255),
-    lg = srgbToLinear(g / 255),
-    lb = srgbToLinear(b / 255);
+  const lr = byteToLinear(r),
+    lg = byteToLinear(g),
+    lb = byteToLinear(b);
   const xd65 = 100 * (S_XR * lr + S_XG * lg + S_XB * lb);
   const yd65 = 100 * (S_YR * lr + S_YG * lg + S_YB * lb);
   const zd65 = 100 * (S_ZR * lr + S_ZG * lg + S_ZB * lb);

@@ -1,5 +1,5 @@
 import type { Colordx, Plugin } from '../colordx.js';
-import { srgbToLinear } from '../transfer.js';
+import { byteToLinear } from '../transfer.js';
 
 export type CvdType = 'protanopia' | 'deuteranopia' | 'tritanopia';
 
@@ -37,9 +37,9 @@ const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 const cvd: Plugin = (ColordxClass) => {
   ColordxClass.prototype.simulate = function (this: Colordx, type: CvdType): Colordx {
     const { r, g, b, alpha } = this.mapSrgb()._rawRgb();
-    const lr = srgbToLinear(r / 255);
-    const lg = srgbToLinear(g / 255);
-    const lb = srgbToLinear(b / 255);
+    const lr = byteToLinear(r);
+    const lg = byteToLinear(g);
+    const lb = byteToLinear(b);
     let m: Matrix | undefined;
     if (type === 'tritanopia') {
       const [nr, ng, nb] = BRETTEL_TRITAN.plane;

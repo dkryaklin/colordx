@@ -97,3 +97,18 @@ export const prophotoFromLinear = (n: number): number => {
   const encoded = abs >= 1 / 512 ? abs ** (1 / 1.8) : 16 * abs;
   return n < 0 ? -encoded : encoded;
 };
+
+// srgbToLinear(i / 255) for every byte, so the common integer-channel case skips the pow().
+// Values are produced by the same function, so lookups are bit-identical to the direct call.
+// Built on first use: a top-level initializer would survive tree-shaking in every bundle that
+// touches this chunk, since the minified dist carries no #__PURE__ annotations.
+let byteLin: Float64Array | undefined;
+const buildByteLin = (): Float64Array => {
+  const t = new Float64Array(256);
+  for (let i = 0; i < 256; i++) t[i] = srgbToLinear(i / 255);
+  return t;
+};
+
+/** srgbToLinear(n / 255), table-driven for integer n in [0, 255]. */
+export const byteToLinear = (n: number): number =>
+  (n & 255) === n ? (byteLin ??= buildByteLin())[n]! : srgbToLinear(n / 255);

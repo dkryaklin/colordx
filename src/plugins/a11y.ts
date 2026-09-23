@@ -4,7 +4,7 @@ import { linearP3ToSrgb, oklabToLinearP3, srgbLinearToP3Linear } from '../colorM
 import type { Colordx, Plugin } from '../colordx.js';
 import { toGamutCustom } from '../gamut.js';
 import { round, toByte } from '../helpers.js';
-import { srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { byteToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { AnyColor } from '../types.js';
 
 export type ApcaSpace = 'srgb' | 'p3';
@@ -56,7 +56,7 @@ const p3FromLinear = (r: number, g: number, b: number): [number, number, number]
 // WCAG relative luminance of the sRGB-mapped color (WCAG has no other form).
 const wcagY = (c: Colordx): number => {
   const { r, g, b } = c.mapSrgb()._rawRgb();
-  return 0.2126 * srgbToLinear(r / 255) + 0.7152 * srgbToLinear(g / 255) + 0.0722 * srgbToLinear(b / 255);
+  return 0.2126 * byteToLinear(r) + 0.7152 * byteToLinear(g) + 0.0722 * byteToLinear(b);
 };
 
 const wcagRatio = (fg: Colordx, bg: Colordx): number => {
@@ -72,9 +72,9 @@ const apcaChannels = (c: Colordx, space: ApcaSpace): [number, number, number] =>
     return [r / 255, g / 255, b / 255];
   }
   const { r, g, b, alpha } = c._rawRgb();
-  const lr = srgbToLinear(r / 255);
-  const lg = srgbToLinear(g / 255);
-  const lb = srgbToLinear(b / 255);
+  const lr = byteToLinear(r);
+  const lg = byteToLinear(g);
+  const lb = byteToLinear(b);
   let p3 = srgbLinearToP3Linear(lr, lg, lb);
   if (p3.some((v) => v < 0 || v > 1)) {
     const [l, a, bb] = linearSrgbToOklab(lr, lg, lb);

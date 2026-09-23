@@ -2,7 +2,7 @@ import { linearSrgbToOklab, oklabToLinear, parseOklabObjectRaw } from './colorMo
 import { parseOklchObjectRaw } from './colorModels/oklch.js';
 import { ANGLE_UNITS, NUM, WS, clamp, trimWs } from './helpers.js';
 import { parse } from './parse.js';
-import { srgbToLinear } from './transfer.js';
+import { byteToLinear } from './transfer.js';
 import type { AnyColor, ColorParser } from './types.js';
 
 // Same NUM as the parsers so both grammars accept the same tokens (exponents included).
@@ -61,7 +61,7 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | unde
   if (rgb === null) return undefined;
   const { r, g, b, alpha } = rgb;
   if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return null;
-  const [l, a, bb] = linearSrgbToOklab(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [l, a, bb] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return { l, a, b: bb, alpha };
 };
 

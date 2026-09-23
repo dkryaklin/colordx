@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, WS, clamp, isAnyNumber, isObject, parseNum, round, sanitize, trimWs } from '../helpers.js';
-import { linearToStoredRgb, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzD50ToLinearSrgb, xyzToRgb } from './xyz.js';
 
@@ -55,9 +55,9 @@ export const rgbToLab = (rgb: RgbColor): LabColor => xyzToLab(rgbToXyz(rgb));
 
 /** RGB → CIE Lab using D65 white point (screen-native; used for perceptual difference). */
 export const rgbToLabD65 = ({ r, g, b, alpha }: RgbColor): LabColor => {
-  const lr = srgbToLinear(r / 255),
-    lg = srgbToLinear(g / 255),
-    lb = srgbToLinear(b / 255);
+  const lr = byteToLinear(r),
+    lg = byteToLinear(g),
+    lb = byteToLinear(b);
   const x = 100 * (0.41239079926595951 * lr + 0.35758433938387796 * lg + 0.18048078840183429 * lb);
   const y = 100 * (0.21263900587151036 * lr + 0.71516867876775592 * lg + 0.072192315360733714 * lb);
   const z = 100 * (0.019330818715591849 * lr + 0.11919477979462599 * lg + 0.95053215224966059 * lb);

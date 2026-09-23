@@ -10,7 +10,7 @@ import {
   sanitize,
   trimWs,
 } from '../helpers.js';
-import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
@@ -63,7 +63,7 @@ export const linearP3ToSrgb = (r: number, g: number, b: number): [number, number
 // No clamping on output: P3 is wide-gamut, sRGB values can legitimately sit outside [0,1] in P3 space.
 // p3ToRgb clips back to sRGB gamut on the way out.
 export const rgbToP3Raw = ({ r, g, b, alpha }: RgbColor): P3Color => {
-  const [p3r, p3g, p3b] = srgbLinearToP3Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [p3r, p3g, p3b] = srgbLinearToP3Linear(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return {
     r: srgbFromLinear(p3r),
     g: srgbFromLinear(p3g),

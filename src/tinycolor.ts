@@ -18,7 +18,7 @@ import { hsvToRgb, rgbToHsvRaw } from './colorModels/hsv.js';
 import { Colordx } from './colordx.js';
 import { ANGLE_UNITS, clamp, isObject } from './helpers.js';
 import { NAMES } from './plugins/names.js';
-import { srgbToLinear } from './transfer.js';
+import { byteToLinear } from './transfer.js';
 import type { RgbColor } from './types.js';
 
 type Unit = number | string;
@@ -286,7 +286,7 @@ class TinyColor {
   /** 0–1 */
   getLuminance(): number {
     const { r, g, b } = this.toRgb();
-    return 0.2126 * srgbToLinear(r / 255) + 0.7152 * srgbToLinear(g / 255) + 0.0722 * srgbToLinear(b / 255);
+    return 0.2126 * byteToLinear(r) + 0.7152 * byteToLinear(g) + 0.0722 * byteToLinear(b);
   }
   setAlpha(value: unknown): this {
     this._a = boundAlpha(value);

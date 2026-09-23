@@ -1,12 +1,12 @@
 import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
-import { linearToStoredRgb, srgbToLinear } from '../transfer.js';
+import { byteToLinear, linearToStoredRgb } from '../transfer.js';
 import type { RgbColor, SrgbLinearColor } from '../types.js';
 
 // No clamping: srgb-linear may hold values outside [0, 1]. Callers clip on sRGB output.
 export const rgbToSrgbLinearRaw = ({ r, g, b, alpha }: RgbColor): SrgbLinearColor => ({
-  r: srgbToLinear(r / 255),
-  g: srgbToLinear(g / 255),
-  b: srgbToLinear(b / 255),
+  r: byteToLinear(r),
+  g: byteToLinear(g),
+  b: byteToLinear(b),
   alpha,
   colorSpace: 'srgb-linear',
 });

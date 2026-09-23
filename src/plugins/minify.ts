@@ -1,6 +1,6 @@
 import type { Colordx, Plugin } from '../colordx.js';
 import { isLinearInGamut } from '../gamut.js';
-import { srgbToLinear } from '../transfer.js';
+import { byteToLinear } from '../transfer.js';
 
 interface MinifyOptions {
   hex?: boolean;
@@ -46,7 +46,7 @@ const isAlphaHexLossless = (alpha: number): boolean => {
 // original. Such a color minifies to its oklch() string instead, with leading zeros dropped.
 const outsideSrgb = (c: Colordx): boolean => {
   const { r, g, b } = c._rawRgb();
-  return !isLinearInGamut(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  return !isLinearInGamut(byteToLinear(r), byteToLinear(g), byteToLinear(b));
 };
 
 const minifyPlugin: Plugin = (ColordxClass) => {

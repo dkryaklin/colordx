@@ -1,5 +1,5 @@
 import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
-import { a98FromLinear, a98ToLinear, linearToStoredRgb, srgbToLinear } from '../transfer.js';
+import { a98FromLinear, a98ToLinear, byteToLinear, linearToStoredRgb } from '../transfer.js';
 import type { A98Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 
@@ -41,7 +41,7 @@ export const linearA98ToSrgb = (r: number, g: number, b: number): [number, numbe
 // No clamping on output: A98 is wide-gamut, sRGB values can legitimately sit outside [0,1] in A98 space.
 // a98ToRgbUnclamped converts back on the way out; callers clip to sRGB gamut.
 export const rgbToA98Raw = ({ r, g, b, alpha }: RgbColor): A98Color => {
-  const [ar, ag, ab] = srgbLinearToA98Linear(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+  const [ar, ag, ab] = srgbLinearToA98Linear(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return {
     r: a98FromLinear(ar),
     g: a98FromLinear(ag),

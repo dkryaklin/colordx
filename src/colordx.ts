@@ -5,7 +5,7 @@ import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, fixedNotation, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
-import { srgbFromLinear, srgbToLinear } from './transfer.js';
+import { byteToLinear, srgbFromLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
@@ -364,7 +364,7 @@ export class Colordx {
   mapSrgb(): Colordx {
     const { r, g, b, alpha } = this._rgb;
     if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
-    const [lRaw, a, bv] = linearSrgbToOklab(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+    const [lRaw, a, bv] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
     // The gamma-encoded round-trip drifts L by ~1e-9 at boundaries; snap so that inputs with
     // exact L=0 or L=1 hit the same white/black shortcut the static gamut map uses.
     const l = lRaw > 1 - 1e-7 ? 1 : lRaw < 1e-7 ? 0 : lRaw;
