@@ -1,4 +1,5 @@
-import { NUM_OR_NONE, WS, clamp, isAnyNumber, isObject, parseNum, round, sanitize, trimWs } from '../helpers.js';
+import { clamp, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { SC, scanFunc, scanPctMask } from '../scan.js';
 import { linearToStoredRgb } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import {
@@ -146,25 +147,14 @@ export const labToRgbUnclamped = ({ l, a, b, alpha }: LabColor): RgbColor => {
 
 // CSS Color 4: lab(L a b / alpha). L: number|percentage|none (100% = 100).
 // a/b: number|percentage|none (100% = 125).
-const LAB_RE = new RegExp(
-  `^lab\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<a>${NUM_OR_NONE})(?<ap>%?)${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
 export const parseLabString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = LAB_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const l = parseNum(g.l!); // 100% = 100, so value is unchanged whether `%` present
-  const a = g.ap ? parseNum(g.a!) * 1.25 : parseNum(g.a!);
-  const b = g.bp ? parseNum(g.b!) * 1.25 : parseNum(g.b!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
+  if (typeof input !== 'string' || !scanFunc(input, 'lab(', -1)) return null;
+  const m = scanPctMask();
   return labToRgbUnclamped({
-    l: clamp(l, 0, 100),
-    a,
-    b,
-    alpha: clamp(alpha, 0, 1),
+    l: clamp(SC[0]!, 0, 100), // 100% = 100, so value is unchanged whether `%` present
+    a: m & 2 ? SC[1]! * 1.25 : SC[1]!,
+    b: m & 4 ? SC[2]! * 1.25 : SC[2]!,
+    alpha: clamp(SC[3]!, 0, 1),
     colorSpace: 'lab',
   });
 };

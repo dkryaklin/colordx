@@ -1,15 +1,5 @@
-import {
-  ANGLE_UNITS,
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isObject,
-  normalizeHue,
-  parseNum,
-  round,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isObject, normalizeHue, round } from '../helpers.js';
+import { SC, scanFunc } from '../scan.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OkhslColor, RgbColor } from '../types.js';
 import { CS, LAB, LIN, findCs, linearToOklabScratch, oklabToLinearScratch, toe, toeInv } from './okgamut.js';
@@ -279,30 +269,16 @@ export const okhslToRgb = ({ h, s, l, alpha }: OkhslColor): RgbColor => {
 
 // okhsl() is a library-defined syntax (no CSS spec defines one). Modern space form only, in the
 // shape of hsl(): optional `%` on s / l, angle units on h, the CSS Color 4 `none` keyword.
-const OKHSL_RE = new RegExp(
-  `^okhsl\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `${WS}+(?<s>${NUM_OR_NONE})%?${WS}+(?<l>${NUM_OR_NONE})%?` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseOkhslString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = OKHSL_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const unit = g.hu?.toLowerCase() ?? 'deg';
-  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
-  const s = parseNum(g.s!);
-  const l = parseNum(g.l!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return okhslToRgb({
-    h: normalizeHue(h),
-    s: clamp(s, 0, 100),
-    l: clamp(l, 0, 100),
-    alpha: clamp(round(alpha, 3), 0, 1),
-    colorSpace: 'okhsl',
-  });
-};
+export const parseOkhslString = (input: unknown): RgbColor | null =>
+  typeof input === 'string' && scanFunc(input, 'okhsl(', 0)
+    ? okhslToRgb({
+        h: normalizeHue(SC[0]!),
+        s: clamp(SC[1]!, 0, 100),
+        l: clamp(SC[2]!, 0, 100),
+        alpha: clamp(round(SC[3]!, 3), 0, 1),
+        colorSpace: 'okhsl',
+      })
+    : null;
 
 // `{ h, s, l }` alone is HSL; the brand is what selects Okhsl (parseHslBody rejects it in turn).
 export const parseOkhslObject = (input: unknown): RgbColor | null => {

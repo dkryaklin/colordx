@@ -101,6 +101,16 @@ describe('hwb — number vs percentage on w/b', () => {
   });
 });
 
+describe('hsv — whitespace before the closing paren', () => {
+  // The old hsv() regex allowed it only after an alpha; hsl() was fixed the same way earlier.
+  it('with or without alpha', () => {
+    valid('hsv(0 50 50 )');
+    valid('hsv(0 50% 50%\t)');
+    valid('hsv(0 50 50 / 1 )');
+    expect(colordx('hsv(0 50 50 )').toHex()).toBe(colordx('hsv(0 50 50)').toHex());
+  });
+});
+
 describe('lab — L `%` is optional', () => {
   it('lab(50 ...) parses', () => valid('lab(50 0 0)'));
   it('lab(50% ...) parses', () => valid('lab(50% 0 0)'));

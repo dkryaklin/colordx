@@ -1,4 +1,5 @@
-import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, sanitize } from '../helpers.js';
+import { SC, scanColorRgb } from '../scan.js';
 import { byteToLinear, linearToStoredRgb } from '../transfer.js';
 import type { RgbColor, SrgbLinearColor } from '../types.js';
 
@@ -29,25 +30,10 @@ export const parseSrgbLinearObject = (input: unknown): RgbColor | null => {
 };
 
 // CSS Color 4: color(srgb-linear r g b / alpha). Channels accept number|percentage|none; 100% = 1.
-const SRGB_LINEAR_RE = new RegExp(
-  `^color\\(${WS}*srgb-linear${WS}+(?<r>${NUM_OR_NONE})(?<rp>%?)${WS}+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
-    `${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
+export const parseSrgbLinearString = (input: unknown): RgbColor | null =>
+  scanColorRgb(input, 'color(srgb-linear ')
+    ? srgbLinearToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'srgb-linear' })
+    : null;
 
-export const parseSrgbLinearString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = SRGB_LINEAR_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
-  const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);
-  const b = g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return srgbLinearToRgbUnclamped({
-    r,
-    g: gc,
-    b,
-    alpha: clamp(alpha, 0, 1),
-    colorSpace: 'srgb-linear',
-  });
-};
+parseSrgbLinearObject.inputKind = 'object' as const;
+parseSrgbLinearString.inputKind = 'string' as const;

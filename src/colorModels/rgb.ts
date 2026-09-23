@@ -1,5 +1,5 @@
-import { NUM_OR_NONE, WS, alphaAlias, clamp, isObject, parseNum, round, trimWs } from '../helpers.js';
-import { scanChannel, scanNone, scanPct, scanPos, skipWs } from '../scan.js';
+import { alphaAlias, clamp, isObject, round } from '../helpers.js';
+import { SC, scanChannel, scanColorRgb, scanNone, scanPct, scanPos, skipWs } from '../scan.js';
 import { boundChannel } from '../transfer.js';
 import type { RgbColor } from '../types.js';
 
@@ -113,21 +113,7 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
 
 // CSS Color 4: color(srgb r g b / alpha). Channels are 0–1, percent or none; 100% = 1.
 // Not clamped: out-of-range channels are valid out-of-gamut colors.
-const SRGB_RE = new RegExp(
-  `^color\\(${WS}*srgb${WS}+(?<r>${NUM_OR_NONE})(?<rp>%?)${WS}+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
-    `${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseSrgbColorString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = SRGB_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return {
-    r: boundChannel((g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!)) * 255),
-    g: boundChannel((g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!)) * 255),
-    b: boundChannel((g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!)) * 255),
-    alpha: clamp(alpha, 0, 1),
-  };
-};
+export const parseSrgbColorString = (input: unknown): RgbColor | null =>
+  scanColorRgb(input, 'color(srgb ')
+    ? { r: boundChannel(SC[0]! * 255), g: boundChannel(SC[1]! * 255), b: boundChannel(SC[2]! * 255), alpha: SC[3]! }
+    : null;

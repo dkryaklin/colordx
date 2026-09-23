@@ -1,4 +1,5 @@
-import { NUM_OR_NONE, WS, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
+import { clamp, isAnyNumber, isObject, sanitize } from '../helpers.js';
+import { SC, scanFunc, scanPctMask } from '../scan.js';
 import { byteToLinear, linearToStoredRgb, srgbFromLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -152,20 +153,19 @@ export const parseOklabObject = (input: unknown): RgbColor | null => {
   return lab && oklabToRgbUnclamped(lab);
 };
 
-const OKLAB_RE = new RegExp(
-  `^oklab\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<a>${NUM_OR_NONE})(?<ap>%?)${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
+export const parseOklabStringRaw = (input: unknown): OklabColor | null => {
+  if (typeof input !== 'string' || !scanFunc(input, 'oklab(', -1)) return null;
+  const m = scanPctMask();
+  // CSS Color 4: L outside [0, 1] is clamped at parsed-value time; a and b are unbounded.
+  return {
+    l: clamp(m & 1 ? SC[0]! / 100 : SC[0]!, 0, 1), // 100% = 1
+    a: m & 2 ? SC[1]! * 0.004 : SC[1]!, // 100% = 0.4
+    b: m & 4 ? SC[2]! * 0.004 : SC[2]!,
+    alpha: clamp(SC[3]!, 0, 1),
+  };
+};
 
 export const parseOklabString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = OKLAB_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  // CSS Color 4: L outside [0, 1] is clamped at parsed-value time; a and b are unbounded.
-  const L = clamp(g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!), 0, 1); // 100% = 1
-  const a = g.ap ? parseNum(g.a!) * 0.004 : parseNum(g.a!); // 100% = 0.4
-  const b = g.bp ? parseNum(g.b!) * 0.004 : parseNum(g.b!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return oklabToRgbUnclamped({ l: L, a, b, alpha: clamp(alpha, 0, 1) });
+  const lab = parseOklabStringRaw(input);
+  return lab && oklabToRgbUnclamped(lab);
 };

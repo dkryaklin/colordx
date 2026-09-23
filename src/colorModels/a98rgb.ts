@@ -1,4 +1,5 @@
-import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, sanitize } from '../helpers.js';
+import { SC, scanColorRgb } from '../scan.js';
 import { a98FromLinear, a98ToLinear, byteToLinear, linearToStoredRgb } from '../transfer.js';
 import type { A98Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
@@ -73,28 +74,10 @@ export const parseA98Object = (input: unknown): RgbColor | null => {
 };
 
 // CSS Color 4: color(a98-rgb r g b / alpha). Channels accept number|percentage|none; 100% = 1.
-const A98_RE = new RegExp(
-  `^color\\(${WS}*a98-rgb${WS}+(?<r>${NUM_OR_NONE})(?<rp>%?)${WS}+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
-    `${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseA98String = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = A98_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
-  const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);
-  const b = g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return a98ToRgbUnclamped({
-    r,
-    g: gc,
-    b,
-    alpha: clamp(alpha, 0, 1),
-    colorSpace: 'a98-rgb',
-  });
-};
+export const parseA98String = (input: unknown): RgbColor | null =>
+  scanColorRgb(input, 'color(a98-rgb ')
+    ? a98ToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'a98-rgb' })
+    : null;
 
 /** Unclamped linear A98 channels from OKLab values. */
 export const oklabToLinearA98 = (l: number, a: number, b: number): [number, number, number] =>

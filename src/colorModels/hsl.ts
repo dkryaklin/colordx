@@ -1,5 +1,5 @@
-import { ACHROMATIC_EPS, ANGLE_UNITS, alphaAlias, clamp, isObject, normalizeHue, round } from '../helpers.js';
-import { scanChannel, scanNone, scanPct, scanPos, skipWs } from '../scan.js';
+import { ACHROMATIC_EPS, alphaAlias, clamp, isObject, normalizeHue, round } from '../helpers.js';
+import { SC, scanHsx } from '../scan.js';
 import type { HslColor, RgbColor } from '../types.js';
 
 const clampHsl = (hsl: HslColor): HslColor => ({
@@ -190,66 +190,7 @@ export const parseHslObject = (input: unknown): RgbColor | null => {
 
 // Legacy comma form requires `%` on s/l and disallows `none`. Modern space form
 // allows optional `%` and the CSS Color 4 `none` keyword on any channel.
-export const parseHslString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const str = input;
-  const n = str.length;
-  let i = skipWs(str, 0, n);
-
-  if ((str.charCodeAt(i) | 32) !== 104) return null;
-  if ((str.charCodeAt(i + 1) | 32) !== 115) return null;
-  if ((str.charCodeAt(i + 2) | 32) !== 108) return null;
-  i += 3;
-  if ((str.charCodeAt(i) | 32) === 97) i++;
-  if (str.charCodeAt(i) !== 40) return null;
-  i = skipWs(str, i + 1, n);
-
-  let h = scanChannel(str, i, n);
-  if (h !== h || scanPct()) return null;
-  const hNone = scanNone();
-  i = scanPos();
-  let u = i;
-  while (u < n && (str.charCodeAt(u) | 32) >= 97 && (str.charCodeAt(u) | 32) <= 122) u++;
-  if (u > i) {
-    if (hNone) return null; // `nonedeg`: none is an ident and takes no unit
-    const factor = ANGLE_UNITS[str.slice(i, u).toLowerCase()];
-    if (typeof factor !== 'number') return null;
-    h *= factor;
-    i = u;
-  }
-
-  let j = skipWs(str, i, n);
-  const comma = str.charCodeAt(j) === 44;
-  if (comma) {
-    if (hNone) return null;
-    j = skipWs(str, j + 1, n);
-  } else if (j === i) return null;
-
-  const s = scanChannel(str, j, n);
-  if (s !== s || (comma && (!scanPct() || scanNone()))) return null;
-  j = scanPos();
-
-  let k = skipWs(str, j, n);
-  if (comma) {
-    if (str.charCodeAt(k) !== 44) return null;
-    k = skipWs(str, k + 1, n);
-  } else if (k === j) return null;
-
-  const l = scanChannel(str, k, n);
-  if (l !== l || (comma && (!scanPct() || scanNone()))) return null;
-  k = scanPos();
-
-  let m = skipWs(str, k, n);
-  let alpha = 1;
-  if (str.charCodeAt(m) === (comma ? 44 : 47)) {
-    m = skipWs(str, m + 1, n);
-    const a = scanChannel(str, m, n);
-    if (a !== a || (comma && scanNone())) return null;
-    alpha = scanPct() ? a / 100 : a;
-    m = skipWs(str, scanPos(), n);
-  }
-  if (str.charCodeAt(m) !== 41) return null;
-  if (skipWs(str, m + 1, n) !== n) return null;
-
-  return hslToRgb(clampHsl({ h, s, l, alpha }));
-};
+export const parseHslString = (input: unknown): RgbColor | null =>
+  typeof input === 'string' && scanHsx(input, 108)
+    ? hslToRgb(clampHsl({ h: SC[0]!, s: SC[1]!, l: SC[2]!, alpha: SC[3]! }))
+    : null;

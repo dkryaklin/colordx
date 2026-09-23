@@ -37,9 +37,6 @@ export const isObject = (v: unknown): v is Record<string, unknown> =>
 // also accept NBSP, \v, U+2028, the BOM and other Unicode spaces, which no CSS parser does.
 export const isWs = (c: number): boolean => c === 32 || c === 9 || c === 10 || c === 13 || c === 12;
 
-/** Regex fragment matching one CSS whitespace character, for the color-function patterns. */
-export const WS = '[ \\t\\n\\r\\f]';
-
 /** String.trim() restricted to CSS whitespace. Linear: a `^ws+|ws+$` regex backtracks quadratically. */
 export const trimWs = (s: string): string => {
   let i = 0,
@@ -49,16 +46,11 @@ export const trimWs = (s: string): string => {
   return i === 0 && j === s.length ? s : s.slice(i, j);
 };
 
-// Shared regex fragments. NUM matches a CSS Syntax 3 <number-token>: a signed decimal with an
-// optional exponent (`1e2`, `6e-1`). NUM_OR_NONE adds the CSS Color 4 `none` keyword, which is
-// an ident, so it can't take a `%` or an angle unit (`none%`, `nonedeg` are invalid).
-// The alternation is deliberate: the shorter `\\d*\\.?\\d+` is ambiguous and backtracks
-// quadratically on a long digit run that ultimately fails to match.
+// NUM is a CSS Syntax 3 <number-token> as a regex: a signed decimal with an optional exponent
+// (`1e2`, `6e-1`). The parsers use the hand-written scanners in scan.ts; this is the reference
+// grammar the tests hold them to. The alternation is deliberate: the shorter `\\d*\\.?\\d+` is
+// ambiguous and backtracks quadratically on a long digit run that ultimately fails to match.
 export const NUM = '[+-]?(?:\\d*\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?';
-export const NUM_OR_NONE = `(?:none(?![%a-zA-Z])|${NUM})`;
-
-/** Parse a CSS Color 4 channel token. `none` → 0; a plain number is returned as-is. */
-export const parseNum = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
 
 /**
  * Rewrites exponent-notation numbers (`4e-8`) in a serialized color as fixed decimals. CSS accepts

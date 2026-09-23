@@ -1,17 +1,5 @@
-import {
-  ANGLE_UNITS,
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isAnyNumber,
-  isObject,
-  normalizeHue,
-  parseNum,
-  round,
-  sanitize,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { SC, scanFunc, scanPctMask } from '../scan.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, labToRgbUnclamped, rgbToLab } from './lab.js';
 
@@ -81,21 +69,8 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
 };
 
 // CSS Color 4: lch(L C H / alpha). L: 100%=100. C: 100%=150. H: number|angle|none.
-const LCH_RE = new RegExp(
-  `^lch\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
-    `${WS}+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
 export const parseLchString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = LCH_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const l = parseNum(g.l!); // 100% = 100
-  const c = g.cp ? parseNum(g.c!) * 1.5 : parseNum(g.c!); // 100% = 150
-  const unit = g.hu?.toLowerCase() ?? 'deg';
-  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return lchToRgbUnclamped(clampLch({ l, c, h, alpha }));
+  if (typeof input !== 'string' || !scanFunc(input, 'lch(', 2)) return null;
+  const c = scanPctMask() & 2 ? SC[1]! * 1.5 : SC[1]!; // 100% = 150
+  return lchToRgbUnclamped(clampLch({ l: SC[0]!, c, h: SC[2]!, alpha: SC[3]! }));
 };

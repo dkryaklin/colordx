@@ -1,20 +1,9 @@
-import { linearSrgbToOklab, oklabToLinear, parseOklabObjectRaw } from './colorModels/oklab.js';
-import { parseOklchObjectRaw } from './colorModels/oklch.js';
-import { ANGLE_UNITS, NUM, WS, clamp, trimWs } from './helpers.js';
+import { linearSrgbToOklab, oklabToLinear, parseOklabObjectRaw, parseOklabStringRaw } from './colorModels/oklab.js';
+import { parseOklchObjectRaw, parseOklchStringRaw } from './colorModels/oklch.js';
+import { clamp } from './helpers.js';
 import { parse } from './parse.js';
 import { byteToLinear } from './transfer.js';
 import type { AnyColor, ColorParser } from './types.js';
-
-// Same NUM as the parsers so both grammars accept the same tokens (exponents included).
-const OKLCH_RE = new RegExp(
-  `^oklch\\(${WS}*(${NUM})(%?)${WS}+(${NUM})(%?)${WS}+(${NUM})(deg|rad|grad|turn)?${WS}*(?:\\/${WS}*(${NUM})(%)?${WS}*)?\\)$`,
-  'i'
-);
-
-const OKLAB_RE = new RegExp(
-  `^oklab\\(${WS}*(${NUM})(%?)${WS}+(${NUM})(%?)${WS}+(${NUM})(%?)${WS}*(?:\\/${WS}*(${NUM})(%)?${WS}*)?\\)$`,
-  'i'
-);
 
 type RawOklab = { l: number; a: number; b: number; alpha: number };
 
@@ -35,24 +24,8 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | unde
     const raw = parseOklchObjectRaw(input) ?? parseOklabObjectRaw(input);
     if (raw) return raw;
   } else if (typeof input === 'string') {
-    let m = OKLCH_RE.exec(trimWs(input));
-    if (m) {
-      const l = clamp(m[2] ? Number(m[1]) / 100 : Number(m[1]), 0, 1);
-      const c = Math.max(0, m[4] ? Number(m[3]) * 0.004 : Number(m[3]));
-      const unit = m[6]?.toLowerCase() ?? 'deg';
-      const hDeg = Number(m[5]) * (ANGLE_UNITS[unit] ?? 1);
-      const hRad = (hDeg * Math.PI) / 180;
-      const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
-      return { l, a: c * Math.cos(hRad), b: c * Math.sin(hRad), alpha };
-    }
-    m = OKLAB_RE.exec(trimWs(input));
-    if (m) {
-      const l = clamp(m[2] ? Number(m[1]) / 100 : Number(m[1]), 0, 1);
-      const a = m[4] ? Number(m[3]) * 0.004 : Number(m[3]);
-      const b = m[6] ? Number(m[5]) * 0.004 : Number(m[5]);
-      const alpha = m[7] === undefined ? 1 : Number(m[7]) / (m[8] ? 100 : 1);
-      return { l, a, b, alpha };
-    }
+    const raw = parseOklchStringRaw(input) ?? parseOklabStringRaw(input);
+    if (raw) return raw;
   } else {
     return undefined;
   }

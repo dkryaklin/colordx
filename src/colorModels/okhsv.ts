@@ -1,15 +1,5 @@
-import {
-  ANGLE_UNITS,
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isObject,
-  normalizeHue,
-  parseNum,
-  round,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isObject, normalizeHue, round } from '../helpers.js';
+import { SC, scanFunc } from '../scan.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OkhsvColor, RgbColor } from '../types.js';
 import { CUSP, LAB, LIN, findCusp, linearToOklabScratch, oklabToLinearScratch, toe, toeInv } from './okgamut.js';
@@ -293,30 +283,16 @@ export const okhsvToRgb = ({ h, s, v, alpha }: OkhsvColor): RgbColor => {
 
 // okhsv() is a library-defined syntax (no CSS spec defines one). Modern space form only, in the
 // shape of hsv(): optional `%` on s / v, angle units on h, the CSS Color 4 `none` keyword.
-const OKHSV_RE = new RegExp(
-  `^okhsv\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `${WS}+(?<s>${NUM_OR_NONE})%?${WS}+(?<v>${NUM_OR_NONE})%?` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseOkhsvString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = OKHSV_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const unit = g.hu?.toLowerCase() ?? 'deg';
-  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
-  const s = parseNum(g.s!);
-  const v = parseNum(g.v!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return okhsvToRgb({
-    h: normalizeHue(h),
-    s: clamp(s, 0, 100),
-    v: clamp(v, 0, 100),
-    alpha: clamp(round(alpha, 3), 0, 1),
-    colorSpace: 'okhsv',
-  });
-};
+export const parseOkhsvString = (input: unknown): RgbColor | null =>
+  typeof input === 'string' && scanFunc(input, 'okhsv(', 0)
+    ? okhsvToRgb({
+        h: normalizeHue(SC[0]!),
+        s: clamp(SC[1]!, 0, 100),
+        v: clamp(SC[2]!, 0, 100),
+        alpha: clamp(round(SC[3]!, 3), 0, 1),
+        colorSpace: 'okhsv',
+      })
+    : null;
 
 // `{ h, s, v }` alone is HSV (the hsv plugin); the brand is what selects Okhsv.
 export const parseOkhsvObject = (input: unknown): RgbColor | null => {

@@ -1,16 +1,5 @@
-import {
-  ANGLE_UNITS,
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isAnyNumber,
-  isObject,
-  normalizeHue,
-  parseNum,
-  sanitize,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
+import { SC, scanFunc, scanPctMask } from '../scan.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, oklabToRgbUnclamped, rgbToOklab } from './oklab.js';
 
@@ -33,7 +22,6 @@ export const rgbToOklch = (rgb: RgbColor): OklchColor => {
 };
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));
-const oklchToRgbUnclamped = (oklch: OklchColor): RgbColor => oklabToRgbUnclamped(oklchToOklab(oklch));
 
 export const parseOklchObjectRaw = (input: unknown): OklabColor | null => {
   if (!isObject(input)) return null;
@@ -60,27 +48,19 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
   return lab && oklabToRgbUnclamped(lab);
 };
 
-const OKLCH_RE = new RegExp(
-  `^oklch\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
-    `${WS}+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
+export const parseOklchStringRaw = (input: unknown): OklabColor | null => {
+  if (typeof input !== 'string' || !scanFunc(input, 'oklch(', 2)) return null;
+  const m = scanPctMask();
+  // CSS Color 4: L outside [0, 1] and negative C are clamped at parsed-value time.
+  return oklchToOklab({
+    l: clamp(m & 1 ? SC[0]! / 100 : SC[0]!, 0, 1), // 100% = 1
+    c: Math.max(0, m & 2 ? SC[1]! * 0.004 : SC[1]!), // 100% = 0.4
+    h: normalizeHue(SC[2]!),
+    alpha: clamp(SC[3]!, 0, 1),
+  });
+};
 
 export const parseOklchString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = OKLCH_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  // CSS Color 4: L outside [0, 1] and negative C are clamped at parsed-value time.
-  const L = clamp(g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!), 0, 1); // 100% = 1
-  const C = Math.max(0, g.cp ? parseNum(g.c!) * 0.004 : parseNum(g.c!)); // 100% = 0.4
-  const unit = g.hu?.toLowerCase() ?? 'deg';
-  const H = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return oklchToRgbUnclamped({
-    l: L,
-    c: C,
-    h: normalizeHue(H),
-    alpha: clamp(alpha, 0, 1),
-  });
+  const lab = parseOklchStringRaw(input);
+  return lab && oklabToRgbUnclamped(lab);
 };

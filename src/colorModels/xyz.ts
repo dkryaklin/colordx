@@ -1,15 +1,5 @@
-import {
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isAnyNumber,
-  isObject,
-  parseNum,
-  round,
-  sanitize,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { SC, scanFunc, scanPctMask } from '../scan.js';
 import { byteToLinear, linearToStoredRgb, srgbFromLinear } from '../transfer.js';
 import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -185,49 +175,23 @@ export const parseXyzD65Object = (input: unknown): RgbColor | null => {
 // toXyzString / toXyzD65String divide by 100 on emit. This keeps strings interoperable with browsers,
 // culori, and colorjs.io while the object convention stays colord-compatible.
 /** CSS `color(xyz-*)` channel → library 0–100 scale: numbers are 0–1 (×100), percentages are already 0–100. */
-const cssXyzChannel = (v: string, pct: string | undefined): number => (pct ? parseNum(v) : parseNum(v) * 100);
-
-const XYZ_D65_RE = new RegExp(
-  `^color\\(${WS}*xyz(?:-d65)?${WS}+(?<x>${NUM_OR_NONE})(?<xp>%?)${WS}+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
-    `${WS}+(?<z>${NUM_OR_NONE})(?<zp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-const XYZ_D50_RE = new RegExp(
-  `^color\\(${WS}*xyz-d50${WS}+(?<x>${NUM_OR_NONE})(?<xp>%?)${WS}+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
-    `${WS}+(?<z>${NUM_OR_NONE})(?<zp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseXyzD65String = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = XYZ_D65_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const x = cssXyzChannel(g.x!, g.xp);
-  const y = cssXyzChannel(g.y!, g.yp);
-  const z = cssXyzChannel(g.z!, g.zp);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return xyzD65ToRgbUnclamped({
-    x,
-    y,
-    z,
-    alpha: clamp(alpha, 0, 1),
-    colorSpace: 'xyz-d65',
-  });
+/** CSS `color(xyz-*)` channel → library 0–100 scale: numbers are 0–1 (×100), percentages are already 0–100. */
+const scanXyz = (input: unknown, prefix: string): boolean => {
+  if (typeof input !== 'string' || !scanFunc(input, prefix, -1)) return false;
+  const m = scanPctMask();
+  for (let c = 0; c < 3; c++) if (!(m & (1 << c))) SC[c]! *= 100;
+  SC[3] = clamp(SC[3]!, 0, 1);
+  return true;
 };
 
-export const parseXyzD50String = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = XYZ_D50_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const x = cssXyzChannel(g.x!, g.xp);
-  const y = cssXyzChannel(g.y!, g.yp);
-  const z = cssXyzChannel(g.z!, g.zp);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return xyzToRgbUnclamped({
-    x,
-    y,
-    z,
-    alpha: clamp(alpha, 0, 1),
-  });
-};
+export const parseXyzD65String = (input: unknown): RgbColor | null =>
+  scanXyz(input, 'color(xyz ') || scanXyz(input, 'color(xyz-d65 ')
+    ? xyzD65ToRgbUnclamped({ x: SC[0]!, y: SC[1]!, z: SC[2]!, alpha: SC[3]!, colorSpace: 'xyz-d65' })
+    : null;
+
+export const parseXyzD50String = (input: unknown): RgbColor | null =>
+  scanXyz(input, 'color(xyz-d50 ') ? xyzToRgbUnclamped({ x: SC[0]!, y: SC[1]!, z: SC[2]!, alpha: SC[3]! }) : null;
+parseXyzObject.inputKind = 'object' as const;
+parseXyzD65Object.inputKind = 'object' as const;
+parseXyzD65String.inputKind = 'string' as const;
+parseXyzD50String.inputKind = 'string' as const;

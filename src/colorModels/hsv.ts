@@ -1,17 +1,5 @@
-import {
-  ACHROMATIC_EPS,
-  ANGLE_UNITS,
-  NUM,
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isObject,
-  normalizeHue,
-  parseNum,
-  round,
-  trimWs,
-} from '../helpers.js';
+import { ACHROMATIC_EPS, alphaAlias, clamp, isObject, normalizeHue, round } from '../helpers.js';
+import { SC, scanHsx } from '../scan.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -253,33 +241,10 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
 // Format mirrors HSL for consistency. Legacy comma form kept for back-compat input;
 // modern space form supports optional `%` and the CSS Color 4 `none` keyword.
 // Named groups: `_c` = comma/legacy branch, `_s` = space/modern branch.
-const HSV_RE = new RegExp(
-  `^hsva?\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?${WS}*(?:` +
-    `,${WS}*(?<s_c>${NUM})%${WS}*,${WS}*(?<v_c>${NUM})%` +
-    `(?:${WS}*,${WS}*(?<al_c>${NUM})(?<alp_c>%?)?${WS}*)?` +
-    `|` +
-    `${WS}+(?<s_s>${NUM_OR_NONE})(?<sp_s>%?)${WS}+(?<v_s>${NUM_OR_NONE})(?<vp_s>%?)` +
-    `(?:${WS}*/${WS}*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?)?${WS}*)?` +
-    `)\\)$`,
-  'i'
-);
-
-export const parseHsvString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = HSV_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const isComma = g.s_c !== undefined;
-  if (isComma && /^none$/i.test(g.h!)) return null;
-  const unit = g.hu?.toLowerCase() ?? 'deg';
-  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
-  const s = parseNum((g.s_c ?? g.s_s)!);
-  const v = parseNum((g.v_c ?? g.v_s)!);
-  const rawA = g.al_c ?? g.al_s;
-  if (isComma && rawA !== undefined && /^none$/i.test(rawA)) return null;
-  const isPercent = !!(g.alp_c ?? g.alp_s);
-  const alpha = rawA === undefined ? 1 : parseNum(rawA) / (isPercent ? 100 : 1);
-  return hsvToRgb(clampHsv({ h, s, v, alpha }));
-};
+export const parseHsvString = (input: unknown): RgbColor | null =>
+  typeof input === 'string' && scanHsx(input, 118)
+    ? hsvToRgb(clampHsv({ h: SC[0]!, s: SC[1]!, v: SC[2]!, alpha: SC[3]! }))
+    : null;
 
 const parseHsvBody = (input: unknown): RgbColor | null => {
   // `{ colorSpace: 'okhsv', h, s, v }` is Okhsv (the okhsv plugin), not HSV — same shape, different space.

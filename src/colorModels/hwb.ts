@@ -1,17 +1,5 @@
-import {
-  ANGLE_UNITS,
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isAnyNumber,
-  isObject,
-  normalizeHue,
-  parseNum,
-  round,
-  sanitize,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { SC, scanFunc } from '../scan.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
 
@@ -58,21 +46,9 @@ export const parseHwbObject = (input: unknown): RgbColor | null => {
   return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), alpha: sanitize(alpha) }));
 };
 
-const HWB_RE = new RegExp(
-  `^hwb\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?${WS}+` +
-    `(?<w>${NUM_OR_NONE})(?<wp>%?)${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseHwbString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = HWB_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const unit = g.hu?.toLowerCase() ?? 'deg';
-  const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);
-  const w = parseNum(g.w!);
-  const b = parseNum(g.b!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return hwbToRgb(clampHwb({ h, w, b, alpha }));
-};
+export const parseHwbString = (input: unknown): RgbColor | null =>
+  typeof input === 'string' && scanFunc(input, 'hwb(', 0)
+    ? hwbToRgb(clampHwb({ h: SC[0]!, w: SC[1]!, b: SC[2]!, alpha: SC[3]! }))
+    : null;
+parseHwbObject.inputKind = 'object' as const;
+parseHwbString.inputKind = 'string' as const;

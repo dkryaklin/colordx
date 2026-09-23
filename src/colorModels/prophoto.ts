@@ -1,4 +1,5 @@
-import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, sanitize } from '../helpers.js';
+import { SC, scanColorRgb } from '../scan.js';
 import { byteToLinear, linearToStoredRgb, prophotoFromLinear, prophotoToLinear } from '../transfer.js';
 import type { ProPhotoColor, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
@@ -79,28 +80,10 @@ export const parseProphotoObject = (input: unknown): RgbColor | null => {
 };
 
 // CSS Color 4: color(prophoto-rgb r g b / alpha). Channels accept number|percentage|none; 100% = 1.
-const PROPHOTO_RE = new RegExp(
-  `^color\\(${WS}*prophoto-rgb${WS}+(?<r>${NUM_OR_NONE})(?<rp>%?)${WS}+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
-    `${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
-export const parseProphotoString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = PROPHOTO_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
-  const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
-  const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);
-  const b = g.bp ? parseNum(g.b!) / 100 : parseNum(g.b!);
-  const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
-  return prophotoToRgbUnclamped({
-    r,
-    g: gc,
-    b,
-    alpha: clamp(alpha, 0, 1),
-    colorSpace: 'prophoto-rgb',
-  });
-};
+export const parseProphotoString = (input: unknown): RgbColor | null =>
+  scanColorRgb(input, 'color(prophoto-rgb ')
+    ? prophotoToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'prophoto-rgb' })
+    : null;
 
 /** Unclamped linear ProPhoto channels from OKLab values. */
 export const oklabToLinearProphoto = (l: number, a: number, b: number): [number, number, number] =>

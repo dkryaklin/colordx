@@ -1,15 +1,5 @@
-import {
-  NUM_OR_NONE,
-  WS,
-  alphaAlias,
-  clamp,
-  isAnyNumber,
-  isObject,
-  parseNum,
-  round,
-  sanitize,
-  trimWs,
-} from '../helpers.js';
+import { alphaAlias, clamp, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { SC, scanFunc, scanPctMask } from '../scan.js';
 import type { CmykColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
 
@@ -68,26 +58,10 @@ export const parseCmykObject = (input: unknown): RgbColor | null => {
   );
 };
 
-const CMYK_RE = new RegExp(
-  `^device-cmyk\\(${WS}*(?<c>${NUM_OR_NONE})(?<cp>%?)${WS}+(?<m>${NUM_OR_NONE})(?<mp>%?)` +
-    `${WS}+(?<y>${NUM_OR_NONE})(?<yp>%?)${WS}+(?<k>${NUM_OR_NONE})(?<kp>%?)` +
-    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
-  'i'
-);
-
 export const parseCmykString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
-  const g = CMYK_RE.exec(trimWs(input))?.groups;
-  if (!g) return null;
+  if (typeof input !== 'string' || !scanFunc(input, 'device-cmyk(', -1, 4)) return null;
   // Numbers are treated as 0-1 fractions, percentages as 0-100; normalize both to the internal 0-100 range.
-  const toPercent = (v: string, pct: string) => parseNum(v) * (pct ? 1 : 100);
-  return cmykToRgb(
-    clampCmyk({
-      c: toPercent(g.c!, g.cp!),
-      m: toPercent(g.m!, g.mp!),
-      y: toPercent(g.y!, g.yp!),
-      k: toPercent(g.k!, g.kp!),
-      alpha: g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1),
-    })
-  );
+  const m = scanPctMask();
+  const p = (c: number) => SC[c]! * (m & (1 << c) ? 1 : 100);
+  return cmykToRgb(clampCmyk({ c: p(0), m: p(1), y: p(2), k: p(3), alpha: SC[4]! }));
 };
