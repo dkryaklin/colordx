@@ -46,7 +46,7 @@ describe('output format — opaque', () => {
   // 5 dp by default (see the okhsl plugin): the OKLCH hue needs it to round-trip at the cube edges.
   it('toOkhslString', () => expect(o.toOkhslString()).toBe('okhsl(237.65615 57.92201% 48.38305%)'));
   it('toOkhsvString', () => expect(o.toOkhsvString()).toBe('okhsv(237.65615 65.38077% 64.31605%)'));
-  it('toHwbString', () => expect(o.toHwbString()).toBe('hwb(203 24% 38%)'));
+  it('toHwbString', () => expect(o.toHwbString()).toBe('hwb(202.65 23.92% 37.65%)'));
   it('toOklabString', () => expect(o.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224)'));
   it('toOklchString', () => expect(o.toOklchString()).toBe('oklch(0.55476 0.08551 237.65615)'));
   it('toLabString', () => expect(o.toLabString()).toBe('lab(48.38 -11.65 -26.34)'));
@@ -62,7 +62,7 @@ describe('output format — with alpha (slash syntax)', () => {
   it('toHsvString', () => expect(a.toHsvString()).toBe('hsv(202.65 61.64% 62.35% / 0.5)'));
   it('toOkhslString', () => expect(a.toOkhslString()).toBe('okhsl(237.65615 57.92201% 48.38305% / 0.5)'));
   it('toOkhsvString', () => expect(a.toOkhsvString()).toBe('okhsv(237.65615 65.38077% 64.31605% / 0.5)'));
-  it('toHwbString', () => expect(a.toHwbString()).toBe('hwb(203 24% 38% / 0.5)'));
+  it('toHwbString', () => expect(a.toHwbString()).toBe('hwb(202.65 23.92% 37.65% / 0.5)'));
   it('toOklabString', () => expect(a.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224 / 0.5)'));
   it('toOklchString', () => expect(a.toOklchString()).toBe('oklch(0.55476 0.08551 237.65615 / 0.5)'));
   it('toLabString', () => expect(a.toLabString()).toBe('lab(48.38 -11.65 -26.34 / 0.5)'));

@@ -265,14 +265,21 @@ describe('scientific notation: round-trips and grammar parity', () => {
     expect(colordx(a).toHex8()).toBe(colordx(b).toHex8());
   };
 
-  it('high-precision formatter output that carries an exponent re-parses to the same color', () => {
-    // toOklchString(10) prints a tiny chroma as `1.105e-7`; before exponents were accepted the
-    // library could not read its own output.
+  it('high-precision formatter output prints tiny values in fixed decimals and re-parses to the same color', () => {
+    // A chroma of ~1e-7 used to print as `1.105e-7` at 10 dp — valid CSS, but not what a caller asking
+    // for 10 decimals expects. It prints as fixed decimals now; the parser still reads exponents.
     const c = colordx('oklch(0.5 1e-7 30)');
     const s = c.toOklchString(10);
-    expect(s).toMatch(/e-\d/);
+    expect(s).not.toMatch(/e-\d/);
+    expect(s).toMatch(/ 0\.0000001\d* /);
     expect(colordx(s).isValid()).toBe(true);
     expect(colordx(s).toHex8()).toBe(c.toHex8());
+  });
+
+  it('every formatter prints fixed decimals at 7+ dp', () => {
+    expect(colordx('oklab(0.5 0.00000004 -0.00000012)').toOklabString(8)).toBe('oklab(0.5 0.00000004 -0.00000012)');
+    expect((colordx('lab(50 0.0000002 0)') as any).toLabString(8)).toBe('lab(50 0.0000002 0)');
+    expect(colordx('oklab(0.5 0.00000004 0)').toOklabString()).toBe('oklab(0.5 0 0)');
   });
 
   it('overflowing and underflowing exponents clamp like their long spellings', () => {

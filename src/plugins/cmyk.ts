@@ -1,6 +1,6 @@
 import { parseCmykObject, parseCmykString, rgbToCmykRaw } from '../colorModels/cmyk.js';
 import type { Plugin } from '../colordx.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import type { CmykColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -17,7 +17,10 @@ const cmyk: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toCmykString = function (precision = 2) {
     const { c, m, y, k, alpha } = this.toCmyk(precision);
-    return alpha < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${alpha})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`;
+    return fixedNotation(
+      alpha < 1 ? `device-cmyk(${c}% ${m}% ${y}% ${k}% / ${alpha})` : `device-cmyk(${c}% ${m}% ${y}% ${k}%)`,
+      precision
+    );
   };
   parsers.push(parseCmykObject, parseCmykString);
   formatParsers.push([parseCmykObject, 'cmyk'], [parseCmykString, 'cmyk']);

@@ -525,8 +525,8 @@ describe("toHsl precision option", () => {
 });
 
 describe("toHwb precision option", () => {
-  it("default precision=0 matches existing behavior", () => {
-    expect(colordx("#c06060").toHwb()).toEqual(colordx("#c06060").toHwb(0));
+  it("default precision is 2, like toHsl()", () => {
+    expect(colordx("#c06060").toHwb()).toEqual(colordx("#c06060").toHwb(2));
   });
 
   it("precision=2 provides sub-integer whiteness/blackness", () => {

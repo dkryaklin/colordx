@@ -60,6 +60,18 @@ export const NUM_OR_NONE = `(?:none(?![%a-zA-Z])|${NUM})`;
 /** Parse a CSS Color 4 channel token. `none` → 0; a plain number is returned as-is. */
 export const parseNum = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));
 
+/**
+ * Rewrites exponent-notation numbers (`4e-8`) in a serialized color as fixed decimals. CSS accepts
+ * both, but a caller asking for 7+ decimals wants to read them. Only a nonzero value below 1e-6
+ * prints with an exponent, and none survives rounding to 6 dp, so the defaults skip the regex.
+ */
+export const fixedNotation = (s: string, precision: number): string =>
+  precision < 7
+    ? s
+    : s.replace(/-?\d+(?:\.(\d+))?e-(\d+)/g, (m, frac: string | undefined, exp: string) =>
+        Number(m).toFixed((frac?.length ?? 0) + Number(exp))
+      );
+
 /** Clamp+round to a 0-255 byte, avoiding the generic round()'s `10 ** 0` per channel. */
 export const toByte = (n: number): number => (n > 0 ? (n < 255 ? Math.round(n) : 255) : 0);
 

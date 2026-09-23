@@ -11,7 +11,7 @@ import {
 } from '../colorModels/p3.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import { srgbFromLinear } from '../transfer.js';
 import type { AnyColor, ColorParser, P3Color } from '../types.js';
 
@@ -124,7 +124,10 @@ const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toP3String = function (precision = 4) {
     const { r, g, b, alpha } = this.toP3(precision);
-    return alpha < 1 ? `color(display-p3 ${r} ${g} ${b} / ${alpha})` : `color(display-p3 ${r} ${g} ${b})`;
+    return fixedNotation(
+      alpha < 1 ? `color(display-p3 ${r} ${g} ${b} / ${alpha})` : `color(display-p3 ${r} ${g} ${b})`,
+      precision
+    );
   };
   parsers.push(parseP3String, parseP3Object);
   formatParsers.push([parseP3String, 'p3'], [parseP3Object, 'p3']);

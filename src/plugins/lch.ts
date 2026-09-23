@@ -1,6 +1,6 @@
 import { parseLchObject, parseLchString, rgbToLchRaw } from '../colorModels/lch.js';
 import type { Plugin } from '../colordx.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import type { LchColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -29,7 +29,7 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { l, c, h, alpha } = this.toLch(precision);
     // `none` when the unrounded chroma is achromatic — the same test toLch() uses to zero the hue.
     const H = c === 0 || (h === 0 && rgbToLchRaw(this._rawRgb()).c < 0.0015) ? 'none' : h;
-    return alpha < 1 ? `lch(${l} ${c} ${H} / ${alpha})` : `lch(${l} ${c} ${H})`;
+    return fixedNotation(alpha < 1 ? `lch(${l} ${c} ${H} / ${alpha})` : `lch(${l} ${c} ${H})`, precision);
   };
   parsers.push(parseLchObject, parseLchString);
   formatParsers.push([parseLchObject, 'lch'], [parseLchString, 'lch']);

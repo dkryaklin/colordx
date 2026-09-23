@@ -1,6 +1,6 @@
 import { parseOkhslObject, parseOkhslString, rgbToOkhslRaw } from '../colorModels/okhsl.js';
 import type { Colordx, Plugin } from '../colordx.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import type { OkhslColor } from '../types.js';
 
 // Channel functions (allocation-free `*Into` siblings included) for per-pixel Okhsl work —
@@ -34,7 +34,7 @@ const okhsl: Plugin = (ColordxClass, parsers, formatParsers) => {
 
   ColordxClass.prototype.toOkhslString = function (this: Colordx, precision = 5): string {
     const { h, s, l, alpha } = this.toOkhsl(precision);
-    return alpha < 1 ? `okhsl(${h} ${s}% ${l}% / ${alpha})` : `okhsl(${h} ${s}% ${l}%)`;
+    return fixedNotation(alpha < 1 ? `okhsl(${h} ${s}% ${l}% / ${alpha})` : `okhsl(${h} ${s}% ${l}%)`, precision);
   };
 
   parsers.push(parseOkhslString, parseOkhslObject);

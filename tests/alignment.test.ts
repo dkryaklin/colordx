@@ -78,9 +78,9 @@ describe('rounded outputs never carry a signed zero', () => {
 
 describe('hue output stays in [0, 360) after rounding', () => {
   // Hues that sit within half a unit of 360 at the given precision used to print as 360.
-  it('toHwb() at the default 0 dp', () => {
-    expect(colordx('#ff0001').toHwb().h).toBe(0);
-    expect(colordx('#ff0001').toHwbString()).toBe('hwb(0 0% 0%)');
+  it('toHwb() at 0 dp', () => {
+    expect(colordx('#ff0001').toHwb(0).h).toBe(0);
+    expect(colordx('#ff0001').toHwbString(0)).toBe('hwb(0 0% 0%)');
   });
   it('toLch() at 2 dp', () => {
     expect(colordx('#300718').toLch().h).toBe(0);

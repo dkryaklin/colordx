@@ -11,7 +11,7 @@ import {
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import { a98FromLinear } from '../transfer.js';
 import type { A98Color, AnyColor, ColorParser } from '../types.js';
 
@@ -121,7 +121,10 @@ const a98: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toA98String = function (precision = 4) {
     const { r, g, b, alpha } = this.toA98(precision);
-    return alpha < 1 ? `color(a98-rgb ${r} ${g} ${b} / ${alpha})` : `color(a98-rgb ${r} ${g} ${b})`;
+    return fixedNotation(
+      alpha < 1 ? `color(a98-rgb ${r} ${g} ${b} / ${alpha})` : `color(a98-rgb ${r} ${g} ${b})`,
+      precision
+    );
   };
   parsers.push(parseA98String, parseA98Object);
   formatParsers.push([parseA98String, 'a98-rgb'], [parseA98Object, 'a98-rgb']);

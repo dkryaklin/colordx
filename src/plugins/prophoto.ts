@@ -11,7 +11,7 @@ import {
 } from '../colorModels/prophoto.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import { prophotoFromLinear } from '../transfer.js';
 import type { AnyColor, ColorParser, ProPhotoColor } from '../types.js';
 
@@ -114,7 +114,7 @@ const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
     const [lr, lg, lb] = linearProphotoToSrgb(lrR, lrG, lrB);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha);
   };
-  ColordxClass.prototype.toProphoto = function (precision = 4) {
+  ColordxClass.prototype.toProphoto = function (precision = 5) {
     const { r, g, b, alpha } = rgbToProphotoRaw(this._rawRgb());
     return {
       r: round(r, precision),
@@ -124,9 +124,12 @@ const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
       colorSpace: 'prophoto-rgb' as const,
     };
   };
-  ColordxClass.prototype.toProphotoString = function (precision = 4) {
+  ColordxClass.prototype.toProphotoString = function (precision = 5) {
     const { r, g, b, alpha } = this.toProphoto(precision);
-    return alpha < 1 ? `color(prophoto-rgb ${r} ${g} ${b} / ${alpha})` : `color(prophoto-rgb ${r} ${g} ${b})`;
+    return fixedNotation(
+      alpha < 1 ? `color(prophoto-rgb ${r} ${g} ${b} / ${alpha})` : `color(prophoto-rgb ${r} ${g} ${b})`,
+      precision
+    );
   };
   parsers.push(parseProphotoString, parseProphotoObject);
   formatParsers.push([parseProphotoString, 'prophoto-rgb'], [parseProphotoObject, 'prophoto-rgb']);

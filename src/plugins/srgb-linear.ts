@@ -1,6 +1,6 @@
 import { parseSrgbLinearObject, parseSrgbLinearString, rgbToSrgbLinearRaw } from '../colorModels/srgb-linear.js';
 import type { Plugin } from '../colordx.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import type { SrgbLinearColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -25,7 +25,10 @@ const srgbLinear: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toSrgbLinearString = function (precision = 5) {
     const { r, g, b, alpha } = this.toSrgbLinear(precision);
-    return alpha < 1 ? `color(srgb-linear ${r} ${g} ${b} / ${alpha})` : `color(srgb-linear ${r} ${g} ${b})`;
+    return fixedNotation(
+      alpha < 1 ? `color(srgb-linear ${r} ${g} ${b} / ${alpha})` : `color(srgb-linear ${r} ${g} ${b})`,
+      precision
+    );
   };
   parsers.push(parseSrgbLinearString, parseSrgbLinearObject);
   formatParsers.push([parseSrgbLinearString, 'srgb-linear'], [parseSrgbLinearObject, 'srgb-linear']);

@@ -7,8 +7,11 @@ import lab from '../src/plugins/lab.js';
 import lch from '../src/plugins/lch.js';
 import p3 from '../src/plugins/p3.js';
 import rec2020 from '../src/plugins/rec2020.js';
+import a98rgb from '../src/plugins/a98rgb.js';
+import prophoto from '../src/plugins/prophoto.js';
+import srgbLinear from '../src/plugins/srgb-linear.js';
 
-beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk]));
+beforeAll(() => extend([hsv, hwb, lab, lch, p3, rec2020, cmyk, a98rgb, prophoto, srgbLinear]));
 
 interface WithAll {
   toHsl(p?: number): { h: number; s: number; l: number; alpha: number };
@@ -58,19 +61,21 @@ const c = colordx('#3d7a9f') as unknown as WithAll;
 describe('precision arg — per-format default dp matches prior behavior', () => {
   it('toHslString default = 2dp', () => expect(c.toHslString()).toBe('hsl(202.65 44.55% 43.14%)'));
   it('toHsvString default = 2dp', () => expect(c.toHsvString()).toBe('hsv(202.65 61.64% 62.35%)'));
-  it('toHwbString default = 0dp', () => expect(c.toHwbString()).toBe('hwb(203 24% 38%)'));
+  it('toHwbString default = 2dp, like toHslString', () => expect(c.toHwbString()).toBe('hwb(202.65 23.92% 37.65%)'));
   it('toCmykString default = 2dp', () => expect(c.toCmykString()).toBe('device-cmyk(61.64% 23.27% 0% 37.65%)'));
   it('toLabString default = 2dp', () => expect(c.toLabString()).toBe('lab(48.38 -11.65 -26.34)'));
   it('toLchString default = 2dp', () => expect(c.toLchString()).toBe('lch(48.38 28.8 246.13)'));
-  it('toXyzString default = 4dp on the CSS 0–1 scale', () =>
-    expect(c.toXyzString()).toBe('color(xyz-d50 0.1449 0.1709 0.2671)'));
-  it('toXyzD65String default = 4dp on the CSS 0–1 scale', () =>
-    expect(c.toXyzD65String()).toMatch(/^color\(xyz-d65 0\.\d{1,4} 0\.\d{1,4} 0\.\d{1,4}\)$/));
+  // 5 dp is the fewest at which every 8-bit color parses back to the same bytes.
+  it('toXyzString default = 5dp on the CSS 0–1 scale', () =>
+    expect(c.toXyzString()).toBe('color(xyz-d50 0.14491 0.17092 0.26712)'));
+  it('toXyzD65String default = 5dp on the CSS 0–1 scale', () =>
+    expect(c.toXyzD65String()).toBe('color(xyz-d65 0.15141 0.17414 0.35365)'));
   it('toOklabString default = 5dp', () => expect(c.toOklabString()).toBe('oklab(0.55476 -0.04575 -0.07224)'));
   it('toOklchString default = 5dp', () => expect(c.toOklchString()).toBe('oklch(0.55476 0.08551 237.65615)'));
   it('toP3String default = 4dp', () => expect(c.toP3String()).toBe('color(display-p3 0.2994 0.4728 0.6102)'));
-  it('toRec2020String default = 4dp', () =>
-    expect(c.toRec2020String()).toBe('color(rec2020 0.3962 0.4963 0.6288)'));
+  // 5 dp: the 2.4 gamma is steep near black, and at 4 dp 35 of 636k 8-bit colors came back a byte off.
+  it('toRec2020String default = 5dp', () =>
+    expect(c.toRec2020String()).toBe('color(rec2020 0.39618 0.49631 0.62878)'));
 });
 
 describe('precision arg — custom precision controls decimal places', () => {
@@ -153,4 +158,38 @@ describe('precision arg — alpha precision is always 3dp regardless of precisio
   it('p3 alpha stays 3dp when precision=6', () => expect(a.toP3(6).alpha).toBe(0.123));
   it('rec2020 alpha stays 3dp when precision=6', () => expect(a.toRec2020(6).alpha).toBe(0.123));
   it('cmyk alpha stays 3dp when precision=6', () => expect(a.toCmyk(6).alpha).toBe(0.123));
+});
+
+// README: each string default is the fewest decimals at which every 8-bit color parses back to the
+// same bytes. Checked on 636k colors (every third level of each channel); sampled here on a 20³ grid
+// that includes the near-black levels where steep transfer curves lose a byte first.
+describe('every default string round-trips 8-bit colors', () => {
+  const methods = [
+    'toRgbString',
+    'toHslString',
+    'toHsvString',
+    'toHwbString',
+    'toCmykString',
+    'toLabString',
+    'toLchString',
+    'toXyzString',
+    'toXyzD65String',
+    'toOklabString',
+    'toOklchString',
+    'toP3String',
+    'toRec2020String',
+    'toA98String',
+    'toProphotoString',
+    'toSrgbLinearString',
+  ] as const;
+  const levels = [0, 1, 2, 3, 4, 5, 15, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240, 250, 254, 255];
+  it.each(methods)('%s', (m) => {
+    for (const r of levels)
+      for (const g of levels)
+        for (const b of levels) {
+          const c = colordx({ r, g, b }) as unknown as Record<string, () => string> & { toHex(): string };
+          const out = c[m]!();
+          expect(colordx(out).toHex(), out).toBe(c.toHex());
+        }
+  });
 });

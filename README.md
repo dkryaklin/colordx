@@ -99,11 +99,11 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23 }); // OKLch
 // With p3 plugin loaded:
 colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
-colordx('color(rec2020 0.8235 0.3284 0.1803)'); // Rec.2020 string
+colordx('color(rec2020 0.82346 0.32843 0.18034)'); // Rec.2020 string
 // With a98rgb plugin loaded:
 colordx('color(a98-rgb 0.8586 0 0)'); // A98 (Adobe RGB 1998) string
 // With prophoto plugin loaded:
-colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)'); // ProPhoto string
+colordx('color(prophoto-rgb 0.70225 0.27572 0.10355)'); // ProPhoto string
 // With srgb-linear plugin loaded:
 colordx('color(srgb-linear 1 0 0)'); // linear-light sRGB string
 // With hwb plugin loaded:
@@ -536,11 +536,11 @@ colordx('lab(54.29 80.8 69.89)').toHex(); // '#ff0000'  — lab strings are pars
 
 // XYZ D50 (chromatic-adapted; matches Lab's white point)
 colordx('#ff0000').toXyz(); // { x: 43.61, y: 22.25, z: 1.39, alpha: 1 }
-colordx('#ff0000').toXyzString(); // 'color(xyz-d50 0.4361 0.2225 0.0139)' — CSS scale (1 = reference white)
+colordx('#ff0000').toXyzString(); // 'color(xyz-d50 0.43607 0.22249 0.01392)' — CSS scale (1 = reference white)
 
 // XYZ D65 (screen-native; no Bradford adaptation — same illuminant as sRGB/OKLab)
 colordx('#ff0000').toXyzD65(); // { x: 41.24, y: 21.26, z: 1.93, alpha: 1, colorSpace: 'xyz-d65' }
-colordx('#ff0000').toXyzD65String(); // 'color(xyz-d65 0.4124 0.2126 0.0193)'
+colordx('#ff0000').toXyzD65String(); // 'color(xyz-d65 0.41239 0.21264 0.01933)'
 
 // Lab and XYZ objects parse as color input (with lab plugin loaded)
 // Lab objects require colorSpace: 'lab' to distinguish from OKLab (which has the same l/a/b shape)
@@ -550,8 +550,8 @@ colordx({ x: 41.24, y: 21.26, z: 1.93, colorSpace: 'xyz-d65' as const }).toHex()
 
 // color() strings parse for both white points. Per CSS Color 4 the string channels are 0–1
 // (1 = reference-white Y, 100% = 1), unlike the 0–100 object convention above.
-colordx('color(xyz-d50 0.4361 0.2225 0.0139)').toHex(); // '#ff0000'
-colordx('color(xyz-d65 0.4124 0.2126 0.0193)').toHex(); // '#ff0000'
+colordx('color(xyz-d50 0.43607 0.22249 0.01392)').toHex(); // '#ff0000'
+colordx('color(xyz-d65 0.41239 0.21264 0.01933)').toHex(); // '#ff0000'
 colordx('color(xyz 0.4124 0.2126 0.0193)').toHex(); // '#ff0000' — bare xyz is the spec alias for xyz-d65
 colordx('color(xyz-d65 41.24% 21.26% 1.93%)').toHex(); // '#ff0000'
 
@@ -723,9 +723,9 @@ colordx('hwb(0 0% 0%)').toHex();   // '#ff0000'
 colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex(); // '#ff0000'
 
 // toHwb accepts an optional precision argument (decimal places):
-colordx('#3d7a9f').toHwb();    // { h: 203, w: 24, b: 38, alpha: 1 }   — default (0)
+colordx('#3d7a9f').toHwb();    // { h: 202.65, w: 23.92, b: 37.65, alpha: 1 }   — default (2)
 colordx('#3d7a9f').toHwb(2);   // { h: 202.65, w: 23.92, b: 37.65, alpha: 1 }
-colordx('#3d7a9f').toHwbString();  // 'hwb(203 24% 38%)'
+colordx('#3d7a9f').toHwbString();  // 'hwb(202.65 23.92% 37.65%)'
 colordx('#3d7a9f').toHwbString(2); // 'hwb(202.65 23.92% 37.65%)'
 ```
 
@@ -892,12 +892,12 @@ import rec2020 from '@colordx/core/plugins/rec2020';
 
 extend([rec2020]);
 
-colordx('#ff0000').toRec2020(); // { r: 0.8235, g: 0.3284, b: 0.1803, alpha: 1, colorSpace: 'rec2020' }
-colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.8235 0.3284 0.1803)'
+colordx('#ff0000').toRec2020(); // { r: 0.82346, g: 0.32843, b: 0.18034, alpha: 1, colorSpace: 'rec2020' }
+colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.82346 0.32843 0.18034)'
 
 // Parse Rec.2020 strings (alpha optional)
-colordx('color(rec2020 0.8235 0.3284 0.1803)').toHex(); // '#ff0000'
-colordx('color(rec2020 0.8235 0.3284 0.1803 / 0.5)').toHex(); // '#ff000080'
+colordx('color(rec2020 0.82346 0.32843 0.18034)').toHex(); // '#ff0000'
+colordx('color(rec2020 0.82346 0.32843 0.18034 / 0.5)').toHex(); // '#ff000080'
 ```
 
 The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutRec2020` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutRec2020` after `extend([rec2020])`:
@@ -917,7 +917,7 @@ oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0
 Object parsing is also supported using the `colorSpace` discriminant:
 
 ```ts
-colordx({ r: 0.8235, g: 0.3284, b: 0.1803, alpha: 1, colorSpace: 'rec2020' }).toHex();
+colordx({ r: 0.82346, g: 0.32843, b: 0.18034, alpha: 1, colorSpace: 'rec2020' }).toHex();
 ```
 
 ### a98rgb plugin
@@ -966,12 +966,12 @@ import prophoto from '@colordx/core/plugins/prophoto';
 
 extend([prophoto]);
 
-colordx('#ff0000').toProphoto(); // { r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' }
-colordx('#ff0000').toProphotoString(); // 'color(prophoto-rgb 0.7022 0.2757 0.1035)'
+colordx('#ff0000').toProphoto(); // { r: 0.70225, g: 0.27572, b: 0.10355, alpha: 1, colorSpace: 'prophoto-rgb' }
+colordx('#ff0000').toProphotoString(); // 'color(prophoto-rgb 0.70225 0.27572 0.10355)'
 
 // Parse ProPhoto strings (alpha optional)
-colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').toHex(); // '#ff0000'
-colordx('color(prophoto-rgb 0.7022 0.2757 0.1035 / 0.5)').toHex(); // '#ff000080'
+colordx('color(prophoto-rgb 0.70225 0.27572 0.10355)').toHex(); // '#ff0000'
+colordx('color(prophoto-rgb 0.70225 0.27572 0.10355 / 0.5)').toHex(); // '#ff000080'
 ```
 
 The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutProphoto` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutProphoto` after `extend([prophoto])`:
@@ -991,7 +991,7 @@ oklchToProphotoChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded ProPhoto in [
 Object parsing is also supported using the `colorSpace` discriminant:
 
 ```ts
-colordx({ r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' }).toHex();
+colordx({ r: 0.70225, g: 0.27572, b: 0.10355, alpha: 1, colorSpace: 'prophoto-rgb' }).toHex();
 ```
 
 ### srgb-linear plugin
@@ -1072,10 +1072,11 @@ Every `toX()` / `toXString()` method accepts an optional `precision` (decimal pl
 
 | format | default |
 |---|---|
-| `toHsl`, `toHsv`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
-| `toHwb` | `0` |
-| `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toXyzString`, `toXyzD65String` | `4` |
-| `toOklab`, `toOklch`, `toSrgbLinear` | `5` |
+| `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
+| `toP3`, `toA98` | `4` |
+| `toOklab`, `toOklch`, `toSrgbLinear`, `toRec2020`, `toProphoto`, `toXyzString`, `toXyzD65String` | `5` |
+
+Each string default is the fewest decimals at which every 8-bit sRGB color parses back to the same bytes.
 
 ```ts
 colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }

@@ -114,9 +114,9 @@ describe('README — Parsing (core)', () => {
 
 describe('README — Parsing (plugins)', () => {
   it('display-p3 string', () => expect(colordx('color(display-p3 0.9176 0.2003 0.1386)').isValid()).toBe(true));
-  it('rec2020 string', () => expect(colordx('color(rec2020 0.8235 0.3284 0.1803)').isValid()).toBe(true));
+  it('rec2020 string', () => expect(colordx('color(rec2020 0.82346 0.32843 0.18034)').isValid()).toBe(true));
   it('a98-rgb string', () => expect(colordx('color(a98-rgb 0.8586 0 0)').isValid()).toBe(true));
-  it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').isValid()).toBe(true));
+  it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.70225 0.27572 0.10355)').isValid()).toBe(true));
   it('srgb-linear string', () => expect(colordx('color(srgb-linear 1 0 0)').isValid()).toBe(true));
   it('color(srgb) string', () => expect(colordx('color(srgb 1 0 0)').toHex()).toBe('#ff0000'));
   it('hwb string', () => expect(colordx('hwb(0 0% 0%)').toHex()).toBe('#ff0000'));
@@ -439,7 +439,7 @@ describe('README — lab plugin', () => {
     expect((colordx('#ff0000') as any).toXyz()).toEqual({ x: 43.61, y: 22.25, z: 1.39, alpha: 1 });
   });
   it('toXyzString', () => {
-    expect((colordx('#ff0000') as any).toXyzString()).toBe('color(xyz-d50 0.4361 0.2225 0.0139)');
+    expect((colordx('#ff0000') as any).toXyzString()).toBe('color(xyz-d50 0.43607 0.22249 0.01392)');
   });
   it('toXyzD65', () => {
     expect((colordx('#ff0000') as any).toXyzD65()).toEqual({
@@ -451,7 +451,7 @@ describe('README — lab plugin', () => {
     });
   });
   it('toXyzD65String', () => {
-    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 0.4124 0.2126 0.0193)');
+    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 0.41239 0.21264 0.01933)');
   });
   it('parse lab object (colorSpace discriminant)', () => {
     expect(colordx({ l: 54.29, a: 80.82, b: 69.91, alpha: 1, colorSpace: 'lab' as const }).toHex()).toBe('#ff0000');
@@ -463,11 +463,11 @@ describe('README — lab plugin', () => {
     expect(colordx({ x: 41.24, y: 21.26, z: 1.93, alpha: 1, colorSpace: 'xyz-d65' as const }).toHex()).toBe('#ff0000');
   });
   it('parse color(xyz-d65 ...) string', () => {
-    expect(colordx('color(xyz-d65 0.4124 0.2126 0.0193)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz-d65 0.41239 0.21264 0.01933)').toHex()).toBe('#ff0000');
     expect(colordx('color(xyz 0.4124 0.2126 0.0193)').toHex()).toBe('#ff0000');
   });
   it('parse color(xyz-d50 ...) string', () => {
-    expect(colordx('color(xyz-d50 0.4361 0.2225 0.0139)').toHex()).toBe('#ff0000');
+    expect(colordx('color(xyz-d50 0.43607 0.22249 0.01392)').toHex()).toBe('#ff0000');
   });
   it('mixLab', () => {
     expect((colordx('#000000') as any).mixLab('#ffffff').toHex()).toBe('#777777');
@@ -669,14 +669,14 @@ describe('README — hwb plugin', () => {
   it('parse hwb object', () => {
     expect(colordx({ h: 0, w: 0, b: 0, alpha: 1 }).toHex()).toBe('#ff0000');
   });
-  it('toHwb default precision (0)', () => {
-    expect((colordx('#3d7a9f') as any).toHwb()).toEqual({ h: 203, w: 24, b: 38, alpha: 1 });
+  it('toHwb default precision (2)', () => {
+    expect((colordx('#3d7a9f') as any).toHwb()).toEqual({ h: 202.65, w: 23.92, b: 37.65, alpha: 1 });
   });
   it('toHwb precision 2', () => {
     expect((colordx('#3d7a9f') as any).toHwb(2)).toEqual({ h: 202.65, w: 23.92, b: 37.65, alpha: 1 });
   });
   it('toHwbString default', () => {
-    expect((colordx('#3d7a9f') as any).toHwbString()).toBe('hwb(203 24% 38%)');
+    expect((colordx('#3d7a9f') as any).toHwbString()).toBe('hwb(202.65 23.92% 37.65%)');
   });
   it('toHwbString precision 2', () => {
     expect((colordx('#3d7a9f') as any).toHwbString(2)).toBe('hwb(202.65 23.92% 37.65%)');
@@ -814,26 +814,26 @@ describe('README — p3 plugin', () => {
 describe('README — rec2020 plugin', () => {
   it('toRec2020', () => {
     expect((colordx('#ff0000') as any).toRec2020()).toEqual({
-      r: 0.8235,
-      g: 0.3284,
-      b: 0.1803,
+      r: 0.82346,
+      g: 0.32843,
+      b: 0.18034,
       alpha: 1,
       colorSpace: 'rec2020',
     });
   });
   it('toRec2020String', () => {
-    expect((colordx('#ff0000') as any).toRec2020String()).toBe('color(rec2020 0.8235 0.3284 0.1803)');
+    expect((colordx('#ff0000') as any).toRec2020String()).toBe('color(rec2020 0.82346 0.32843 0.18034)');
   });
   it('parse rec2020 string → toHex', () => {
-    expect(colordx('color(rec2020 0.8235 0.3284 0.1803)').toHex()).toBe('#ff0000');
+    expect(colordx('color(rec2020 0.82346 0.32843 0.18034)').toHex()).toBe('#ff0000');
   });
   it('parse rec2020 string with alpha', () => {
-    expect(colordx('color(rec2020 0.8235 0.3284 0.1803 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
+    expect(colordx('color(rec2020 0.82346 0.32843 0.18034 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
   });
   it('inGamutRec2020 outside', () => expect(inGamutRec2020('oklch(0.5 0.4 180)')).toBe(false));
   it('toGamutRec2020 → valid', () => expect(Colordx.toGamutRec2020('oklch(0.5 0.4 180)').isValid()).toBe(true));
   it('parse rec2020 object with colorSpace discriminant', () => {
-    expect(colordx({ r: 0.8235, g: 0.3284, b: 0.1803, alpha: 1, colorSpace: 'rec2020' as const }).isValid()).toBe(true);
+    expect(colordx({ r: 0.82346, g: 0.32843, b: 0.18034, alpha: 1, colorSpace: 'rec2020' as const }).isValid()).toBe(true);
   });
 });
 
@@ -862,27 +862,27 @@ describe('README — a98rgb plugin', () => {
 describe('README — prophoto plugin', () => {
   it('toProphoto', () => {
     expect((colordx('#ff0000') as any).toProphoto()).toEqual({
-      r: 0.7022,
-      g: 0.2757,
-      b: 0.1035,
+      r: 0.70225,
+      g: 0.27572,
+      b: 0.10355,
       alpha: 1,
       colorSpace: 'prophoto-rgb',
     });
   });
   it('toProphotoString', () => {
-    expect((colordx('#ff0000') as any).toProphotoString()).toBe('color(prophoto-rgb 0.7022 0.2757 0.1035)');
+    expect((colordx('#ff0000') as any).toProphotoString()).toBe('color(prophoto-rgb 0.70225 0.27572 0.10355)');
   });
   it('parse prophoto-rgb string → toHex', () => {
-    expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').toHex()).toBe('#ff0000');
+    expect(colordx('color(prophoto-rgb 0.70225 0.27572 0.10355)').toHex()).toBe('#ff0000');
   });
   it('parse prophoto-rgb string with alpha', () => {
-    expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035 / 0.5)').toHex()).toBe('#ff000080');
+    expect(colordx('color(prophoto-rgb 0.70225 0.27572 0.10355 / 0.5)').toHex()).toBe('#ff000080');
   });
   it('inGamutProphoto outside', () => expect(inGamutProphoto('oklch(0.5 0.4 180)')).toBe(false));
   it('toGamutProphoto → valid', () => expect(Colordx.toGamutProphoto('oklch(0.5 0.4 180)').isValid()).toBe(true));
   it('oklchToProphotoChannels returns [r, g, b]', () => expect(oklchToProphotoChannels(0.5, 0.2, 240)).toHaveLength(3));
   it('parse prophoto object with colorSpace discriminant', () => {
-    expect(colordx({ r: 0.7022, g: 0.2757, b: 0.1035, alpha: 1, colorSpace: 'prophoto-rgb' as const }).toHex()).toBe(
+    expect(colordx({ r: 0.70225, g: 0.27572, b: 0.10355, alpha: 1, colorSpace: 'prophoto-rgb' as const }).toHex()).toBe(
       '#ff0000'
     );
   });

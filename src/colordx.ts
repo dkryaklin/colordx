@@ -3,7 +3,7 @@ import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { linearSrgbToOklab, rgbToOklab } from './colorModels/oklab.js';
 import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
-import { clamp, round, round3, toByte } from './helpers.js';
+import { clamp, fixedNotation, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
 import { srgbFromLinear, srgbToLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
@@ -167,7 +167,7 @@ export class Colordx {
   /** Formats as a CSS `hsl()` string. */
   toHslString(precision = 2): string {
     const { h, s, l, alpha } = this.toHsl(precision);
-    return alpha < 1 ? `hsl(${h} ${s}% ${l}% / ${alpha})` : `hsl(${h} ${s}% ${l}%)`;
+    return fixedNotation(alpha < 1 ? `hsl(${h} ${s}% ${l}% / ${alpha})` : `hsl(${h} ${s}% ${l}%)`, precision);
   }
 
   /** Returns OKLab channels: L in [0, 1], a/b roughly in [-0.4, 0.4]. */
@@ -179,7 +179,7 @@ export class Colordx {
   /** Formats as a CSS `oklab()` string. */
   toOklabString(precision = 5): string {
     const { l, a, b, alpha } = this.toOklab(precision);
-    return alpha < 1 ? `oklab(${l} ${a} ${b} / ${alpha})` : `oklab(${l} ${a} ${b})`;
+    return fixedNotation(alpha < 1 ? `oklab(${l} ${a} ${b} / ${alpha})` : `oklab(${l} ${a} ${b})`, precision);
   }
 
   /** Returns OKLCh channels: L in [0, 1], C in [0, ~0.4], H in degrees. */
@@ -200,7 +200,7 @@ export class Colordx {
     const H = c < OKLCH_ACHROMATIC ? 'none' : hr >= 360 ? 0 : hr;
     const L = round(l, precision),
       C = round(c, precision);
-    return alpha < 1 ? `oklch(${L} ${C} ${H} / ${alpha})` : `oklch(${L} ${C} ${H})`;
+    return fixedNotation(alpha < 1 ? `oklch(${L} ${C} ${H} / ${alpha})` : `oklch(${L} ${C} ${H})`, precision);
   }
 
   /** Perceived brightness in [0, 1] using the ITU-R BT.601 weights, on the sRGB-clipped color. */

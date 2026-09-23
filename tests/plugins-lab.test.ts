@@ -646,11 +646,11 @@ describe('XYZ D65 (CSS Color 4, screen-native, no Bradford adaptation)', () => {
     expect(str).toMatch(/ \/ 0\.5\)$/);
   });
 
-  it('toXyzD65String emits CSS 0–1 channels (white ≈ 0.9505 1 1.089)', () => {
+  it('toXyzD65String emits CSS 0–1 channels (white ≈ 0.95046 1 1.08906)', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((colordx('#ffffff') as any).toXyzD65String()).toBe('color(xyz-d65 0.9505 1 1.0891)');
+    expect((colordx('#ffffff') as any).toXyzD65String()).toBe('color(xyz-d65 0.95046 1 1.08906)');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 0.4124 0.2126 0.0193)');
+    expect((colordx('#ff0000') as any).toXyzD65String()).toBe('color(xyz-d65 0.41239 0.21264 0.01933)');
   });
 
   it('parses CSS-scale color(xyz-d65 …) numbers and percentages', () => {

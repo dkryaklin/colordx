@@ -575,7 +575,7 @@ describe('fuzz: invariants — every hue is in [0, 360) at every precision', () 
         if (c.toHsl(4).h > 359.5) {
           hits++;
           expect(c.toHsl(0).h).toBe(0);
-          expect(c.toHwb().h).toBe(0);
+          expect(c.toHwb(0).h).toBe(0);
           expect(c.toHsv(0).h).toBe(0);
         }
       }

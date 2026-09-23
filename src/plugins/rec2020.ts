@@ -11,7 +11,7 @@ import {
 } from '../colorModels/rec2020.js';
 import type { Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
-import { round } from '../helpers.js';
+import { fixedNotation, round } from '../helpers.js';
 import { rec2020FromLinear } from '../transfer.js';
 import type { AnyColor, ColorParser, Rec2020Color } from '../types.js';
 
@@ -110,7 +110,7 @@ const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
     const [lr, lg, lb] = linearRec2020ToSrgb(lrR, lrG, lrB);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha);
   };
-  ColordxClass.prototype.toRec2020 = function (precision = 4) {
+  ColordxClass.prototype.toRec2020 = function (precision = 5) {
     const { r, g, b, alpha } = rgbToRec2020Raw(this._rawRgb());
     return {
       r: round(r, precision),
@@ -120,9 +120,12 @@ const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
       colorSpace: 'rec2020' as const,
     };
   };
-  ColordxClass.prototype.toRec2020String = function (precision = 4) {
+  ColordxClass.prototype.toRec2020String = function (precision = 5) {
     const { r, g, b, alpha } = this.toRec2020(precision);
-    return alpha < 1 ? `color(rec2020 ${r} ${g} ${b} / ${alpha})` : `color(rec2020 ${r} ${g} ${b})`;
+    return fixedNotation(
+      alpha < 1 ? `color(rec2020 ${r} ${g} ${b} / ${alpha})` : `color(rec2020 ${r} ${g} ${b})`,
+      precision
+    );
   };
   parsers.push(parseRec2020String, parseRec2020Object);
   formatParsers.push([parseRec2020String, 'rec2020'], [parseRec2020Object, 'rec2020']);
