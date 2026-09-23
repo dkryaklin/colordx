@@ -87,9 +87,20 @@ describe('cssnano — modern CSS format parsing', () => {
   });
 
   describe('oklch — minify() produces shortest sRGB form', () => {
-    it('oklch(0.5 0.2 240) → #0069c7', () => expect(min('oklch(0.5 0.2 240)')).toBe('#0069c7'));
     // red in oklch — 'red' (3) is shorter than '#f00' (4)
     it('oklch(0.6279 0.2577 29.23) → red', () => expect(min('oklch(0.6279 0.2577 29.23)')).toBe('red'));
+  });
+
+  // Hex would clip these, and a wide-gamut display renders the original, so they stay oklch().
+  describe('outside sRGB — minify() keeps the color as oklch()', () => {
+    it('oklch(0.5 0.2 240) → oklch(.5 .2 240)', () => expect(min('oklch(0.5 0.2 240)')).toBe('oklch(.5 .2 240)'));
+    it('keeps alpha', () => expect(min('oklch(0.5 0.2 240 / 0.5)')).toBe('oklch(.5 .2 240 / .5)'));
+    it('oklab(0.5 0.4 0) → oklch(.5 .4 0)', () => expect(min('oklab(0.5 0.4 0)')).toBe('oklch(.5 .4 0)'));
+    it('never picks hex, rgb, hsl or a name', () => {
+      for (const s of ['oklch(0.7 0.3 150)', 'oklab(0.5 0.4 0)', 'color(srgb 1.2 0 0)']) {
+        expect(min(s)).toMatch(/^oklch\(/);
+      }
+    });
   });
 
   describe('oklab — minify() produces shortest sRGB form', () => {

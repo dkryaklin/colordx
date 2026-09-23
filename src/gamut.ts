@@ -75,7 +75,7 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | unde
 //      colors (typically 1e-3 and above).
 const EPS = 5e-4;
 
-const isLinearInGamut = (r: number, g: number, b: number): boolean =>
+export const isLinearInGamut = (r: number, g: number, b: number): boolean =>
   r >= -EPS && r <= 1 + EPS && g >= -EPS && g <= 1 + EPS && b >= -EPS && b <= 1 + EPS;
 
 const strictInGamut = (r: number, g: number, b: number): boolean =>

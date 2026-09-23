@@ -1,4 +1,6 @@
 import type { Colordx, Plugin } from '../colordx.js';
+import { isLinearInGamut } from '../gamut.js';
+import { srgbToLinear } from '../transfer.js';
 
 interface MinifyOptions {
   hex?: boolean;
@@ -37,8 +39,17 @@ const isAlphaHexLossless = (alpha: number): boolean => {
   return Math.round((byte / 255) * 100) === Math.round(alpha * 100);
 };
 
+// A color outside sRGB (a wide-gamut oklch/oklab/lab/lch/color() input) has no hex, rgb, hsl or
+// name form: each of those would clip it, and on a wide-gamut display the browser renders the
+// original. Such a color minifies to its oklch() string instead, with leading zeros dropped.
+const outsideSrgb = (c: Colordx): boolean => {
+  const { r, g, b } = c._rawRgb();
+  return !isLinearInGamut(srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255));
+};
+
 const minifyPlugin: Plugin = (ColordxClass) => {
   ColordxClass.prototype.minify = function (this: Colordx, options: MinifyOptions = {}) {
+    if (outsideSrgb(this)) return this.toOklchString().replace(/([ (])0\./g, '$1.');
     const opts = { hex: true, rgb: true, hsl: true, ...options };
     const { r, g, b } = this.toRgb();
     const alpha = this.alpha();

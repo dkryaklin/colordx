@@ -750,6 +750,8 @@ colordx('#ff0000').palette(3, '#0000ff'); // [#ff0000, #800080, #0000ff]
 
 Returns the shortest valid CSS representation of a color. By default tries hex, RGB, and HSL and picks the shortest.
 
+A color outside sRGB (a wide-gamut `oklch()`, `oklab()`, `lab()`, `lch()` or `color()` input) has no hex, RGB, HSL or name form — each would clip it, while a wide-gamut display renders the original — so it minifies to its `oklch()` string instead, with leading zeros dropped: `oklch(0.5 0.2 240)` → `'oklch(.5 .2 240)'`.
+
 ```ts
 import minify from '@colordx/core/plugins/minify';
 
@@ -1084,7 +1086,7 @@ colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23389)'
 colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 ```
 
-The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb.
+The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. Colors outside sRGB are never clipped to hex; they stay `oklch()`.
 
 ## Relative lighten/darken
 
