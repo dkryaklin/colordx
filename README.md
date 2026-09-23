@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.4 KB gzipped (6.2 KB for `colordx()` alone). 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.5 KB gzipped (6.5 KB for `colordx()` alone). 0 Dependencies.**
 
 ## Performance
 
@@ -24,21 +24,21 @@ tinycolor2 1.6.0, @texel/color 1.1.11.
 
 | Benchmark | **colordx** | @texel/color | colord | culori | chroma-js | color | tinycolor2 |
 |---|---|---|---|---|---|---|---|
-| Parse HEX → toHex | **39M** | 8.2M | 7.8M | 7.2M | 3.7M | 1.6M | 2.9M |
-| Parse HEX → toHsl | **37M** | — | 29M | 7.9M | 3.8M | 3.4M | 2.9M |
-| Parse RGB object → toHex | **51M** | — | 35M | 49M | 5.2M | 1.6M | 5.9M |
-| Parse rgb() string → toHex | **11M** | — | 7.3M | 3.1M | 230K | 1.5M | 3.0M |
-| Parse hsl() string → toHex | **6.7M** | — | 4.9M | 3.1M | 222K | 1.4M | 2.0M |
-| Parse named color → toHex | **11M** | — | 4.6M | 3.9M | 4.5M | 1.3M | 2.6M |
-| Parse HEX → lighten → toHex | **19M** | — | 13M | 5.3M | 1.9M | 1.3M | 1.2M |
-| Mix two colors | **16M** | 6.3M | 2.6M | 1.3M | 1.3M | 694K | 1.3M |
-| WCAG contrast ratio | **12M** | — | 3.7M | 3.3M | 2.0M | — | 1.5M |
-| Parse HEX → toOklch | **11M** | 6.7M | — | 4.9M | 1.4M | 2.6M | — |
-| inGamutP3 | **6.6M** | 3.9M | — | 1.5M | — | — | — |
-| inGamutRec2020 | **6.5M** | 3.8M | — | 1.5M | — | — | — |
-| CIEDE2000 delta | **4.2M** | — | — | 2.0M | 1.3M | — | — |
-| OKLCH string → HEX | **3.6M** | 2.8M | — | 1.7M | 192K | — | — |
-| Gamut map → sRGB | **1.0M** | — | — | 522K | — | — | — |
+| Parse HEX → toHex | **38M** | 8.0M | 7.5M | 7.1M | 3.7M | 1.6M | 2.9M |
+| Parse HEX → toHsl | **35M** | — | 29M | 7.7M | 3.8M | 3.4M | 2.8M |
+| Parse RGB object → toHex | **50M** | — | 35M | 49M | 5.2M | 1.6M | 5.8M |
+| Parse rgb() string → toHex | **12M** | — | 7.4M | 3.1M | 227K | 1.5M | 3.0M |
+| Parse hsl() string → toHex | **11M** | — | 4.9M | 3.1M | 219K | 1.4M | 2.0M |
+| Parse named color → toHex | **14M** | — | 4.5M | 3.9M | 4.5M | 1.3M | 2.6M |
+| Parse HEX → lighten → toHex | **18M** | — | 13M | 5.2M | 1.9M | 1.2M | 1.1M |
+| Mix two colors | **19M** | 6.0M | 2.5M | 1.3M | 1.3M | 678K | 1.3M |
+| WCAG contrast ratio | **21M** | — | 3.6M | 3.3M | 2.0M | — | 1.5M |
+| Parse HEX → toOklch | **14M** | 6.6M | — | 4.7M | 1.3M | 2.6M | — |
+| inGamutP3 | **8.9M** | 3.9M | — | 1.5M | — | — | — |
+| inGamutRec2020 | **8.7M** | 3.9M | — | 1.5M | — | — | — |
+| CIEDE2000 delta | **6.0M** | — | — | 2.0M | 1.3M | — | — |
+| OKLCH string → HEX | **6.3M** | 2.8M | — | 1.7M | 191K | — | — |
+| Gamut map → sRGB | **1.7M** | — | — | 509K | — | — | — |
 
 In the RGB object row culori gets its own `{ mode, r, g, b }` format, so it skips parsing.
 
