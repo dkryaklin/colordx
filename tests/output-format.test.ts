@@ -112,3 +112,17 @@ describe('toRgbString legacy option — CSS Color 3 comma syntax', () => {
     expect(a.toRgbString()).toBe('rgb(61 122 159 / 0.5)');
   });
 });
+
+// The hue is powerless below the achromatic chroma threshold; printing it as 0 at a high precision
+// would name a hue the color does not have.
+describe('output format — hue is none whenever the unrounded chroma is achromatic', () => {
+  it('oklch', () => {
+    expect(colordx('oklch(0.5 0.000003 120)').toOklchString(8)).toBe('oklch(0.5 0.000003 none)');
+    expect(colordx('#808080').toOklchString(9)).toMatch(/ none\)$/);
+  });
+  it('lch', () => {
+    expect((colordx('lch(50 0.001 120)') as any).toLchString(4)).toBe('lch(50 0.001 none)');
+    expect((colordx('#808080') as any).toLchString(6)).toMatch(/ 0 none\)$/);
+  });
+});
+

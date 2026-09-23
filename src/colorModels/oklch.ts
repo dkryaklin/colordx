@@ -21,12 +21,15 @@ const oklchToOklab = ({ l, c, h, alpha }: OklchColor): OklabColor => ({
   alpha,
 });
 
+/** Below this OKLCH chroma the hue is powerless and reported as 0 (or `none` in strings). */
+export const OKLCH_ACHROMATIC = 0.000004;
+
 export const rgbToOklch = (rgb: RgbColor): OklchColor => {
   const { l: ol, a: oa, b: ob, alpha } = rgbToOklab(rgb);
   const C = Math.sqrt(oa * oa + ob * ob);
   const H = (Math.atan2(ob, oa) * 180) / Math.PI;
   // Achromatic threshold on OKLCH scale (0–~0.4): proportionally equivalent to LCH's 0.0015 threshold.
-  return { l: ol, c: C, h: C < 0.000004 ? 0 : normalizeHue(H), alpha };
+  return { l: ol, c: C, h: C < OKLCH_ACHROMATIC ? 0 : normalizeHue(H), alpha };
 };
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));

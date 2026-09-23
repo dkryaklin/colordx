@@ -27,7 +27,8 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toLchString = function (precision = 2) {
     const { l, c, h, alpha } = this.toLch(precision);
-    const H = c === 0 ? 'none' : h;
+    // `none` when the unrounded chroma is achromatic — the same test toLch() uses to zero the hue.
+    const H = c === 0 || (h === 0 && rgbToLchRaw(this._rawRgb()).c < 0.0015) ? 'none' : h;
     return alpha < 1 ? `lch(${l} ${c} ${H} / ${alpha})` : `lch(${l} ${c} ${H})`;
   };
   parsers.push(parseLchObject, parseLchString);

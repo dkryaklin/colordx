@@ -1,7 +1,7 @@
 import { rgbToHex, rgbToHex8 } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { linearSrgbToOklab, rgbToOklab } from './colorModels/oklab.js';
-import { oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
+import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
@@ -190,11 +190,17 @@ export class Colordx {
     return { l: round(l, precision), c: round(c, precision), h: hr >= 360 ? 0 : hr, alpha };
   }
 
-  /** Formats as a CSS `oklch()` string. Hue is `none` when chroma is 0. */
+  /**
+   * Formats as a CSS `oklch()` string. Hue is `none` when the unrounded chroma is below the
+   * achromatic threshold rgbToOklch() uses, so a high precision never prints a meaningless hue 0.
+   */
   toOklchString(precision = 5): string {
-    const { l, c, h, alpha } = this.toOklch(precision);
-    const H = c === 0 ? 'none' : h;
-    return alpha < 1 ? `oklch(${l} ${c} ${H} / ${alpha})` : `oklch(${l} ${c} ${H})`;
+    const { l, c, h, alpha } = rgbToOklch(this._rgb);
+    const hr = round(h, precision);
+    const H = c < OKLCH_ACHROMATIC ? 'none' : hr >= 360 ? 0 : hr;
+    const L = round(l, precision),
+      C = round(c, precision);
+    return alpha < 1 ? `oklch(${L} ${C} ${H} / ${alpha})` : `oklch(${L} ${C} ${H})`;
   }
 
   /** Perceived brightness in [0, 1] using the ITU-R BT.601 weights, on the sRGB-clipped color. */

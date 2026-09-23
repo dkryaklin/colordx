@@ -356,6 +356,14 @@ describe('mix plugin: premultiplied alpha, like CSS color-mix()', () => {
   });
 });
 
+describe('minify plugin: alphaHex at the byte extremes', () => {
+  const min = (s: string) => (colordx(s) as any).minify({ alphaHex: true });
+  it('an alpha whose byte is ff is opaque in hex', () => expect(min('hsl(0 0% 50% / 0.999)')).toBe('#808080'));
+  it('a visible alpha whose byte is 00 does not become transparent hex', () =>
+    expect(min('rgba(255,0,0,0.001)')).toBe('rgba(255,0,0,.001)'));
+  it('alpha 0 still minifies to hex', () => expect(min('rgba(0,0,0,0)')).toBe('#0000'));
+});
+
 describe('mix plugin: count=1', () => {
   it('tints(1) → [original], valid', () => {
     const t: any[] = (colordx('#ff0000') as any).tints(1);

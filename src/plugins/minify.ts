@@ -34,8 +34,10 @@ const tryShortHex = (hex: string, alpha: number): string | null => {
 
 // Returns true if alpha (0–1) can be represented as an 8-bit hex byte without perceptible loss.
 // Uses 2-decimal-place comparison to match browser rounding behaviour.
+// A visible alpha whose byte rounds to 00 is not lossless: #f000 is fully transparent.
 const isAlphaHexLossless = (alpha: number): boolean => {
   const byte = Math.round(alpha * 255);
+  if (byte === 0 && alpha > 0) return false;
   return Math.round((byte / 255) * 100) === Math.round(alpha * 100);
 };
 
@@ -57,8 +59,10 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     const candidates: string[] = [];
 
     if (opts.hex && (alpha === 1 || (opts.alphaHex && isAlphaHexLossless(alpha)))) {
-      const short = tryShortHex(targetHex, alpha);
-      candidates.push(short ?? targetHex);
+      // An alpha whose byte is ff (0.999) is opaque in hex, so drop the byte: #808080, not #808080ff.
+      const opaque = alpha === 1 || Math.round(alpha * 255) === 255;
+      const hex = opaque ? targetHex.slice(0, 7) : targetHex;
+      candidates.push(tryShortHex(hex, opaque ? 1 : alpha) ?? hex);
     }
 
     // Legacy comma syntax below is intentional — byte-optimal AND IE11-safe for the
