@@ -1,7 +1,15 @@
 import { NUM_OR_NONE, WS, clamp, isAnyNumber, isObject, parseNum, round, sanitize, trimWs } from '../helpers.js';
-import { byteToLinear, linearToStoredRgb } from '../transfer.js';
+import { linearToStoredRgb } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
-import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzD50ToLinearSrgb, xyzToRgb } from './xyz.js';
+import {
+  D50_WX as WX,
+  D50_WY as WY,
+  D50_WZ as WZ,
+  rgbToXyz,
+  rgbToXyzD65,
+  xyzD50ToLinearSrgb,
+  xyzToRgb,
+} from './xyz.js';
 
 // D65 white point derived from CIE chromaticity (x=0.3127, y=0.329)
 const D65_WX = (0.3127 / 0.329) * 100;
@@ -54,19 +62,14 @@ export const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
 export const rgbToLab = (rgb: RgbColor): LabColor => xyzToLab(rgbToXyz(rgb));
 
 /** RGB → CIE Lab using D65 white point (screen-native; used for perceptual difference). */
-export const rgbToLabD65 = ({ r, g, b, alpha }: RgbColor): LabColor => {
-  const lr = byteToLinear(r),
-    lg = byteToLinear(g),
-    lb = byteToLinear(b);
-  const x = 100 * (0.41239079926595951 * lr + 0.35758433938387796 * lg + 0.18048078840183429 * lb);
-  const y = 100 * (0.21263900587151036 * lr + 0.71516867876775592 * lg + 0.072192315360733714 * lb);
-  const z = 100 * (0.019330818715591849 * lr + 0.11919477979462599 * lg + 0.95053215224966059 * lb);
+export const rgbToLabD65 = (rgb: RgbColor): LabColor => {
+  const { x, y, z } = rgbToXyzD65(rgb);
   const fy = f(y / D65_WY);
   return {
     l: 116 * fy - 16,
     a: 500 * (f(x / D65_WX) - fy) || 0,
     b: 200 * (fy - f(z / D65_WZ)) || 0,
-    alpha: round(alpha, 3),
+    alpha: round(rgb.alpha, 3),
     colorSpace: 'lab' as const,
   };
 };
@@ -79,7 +82,9 @@ export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
 
   const C1 = Math.sqrt(a1 ** 2 + b1 ** 2);
   const C2 = Math.sqrt(a2 ** 2 + b2 ** 2);
-  const Cab = ((C1 + C2) / 2) ** 7;
+  const Cm = (C1 + C2) / 2,
+    Cm3 = Cm * Cm * Cm;
+  const Cab = Cm3 * Cm3 * Cm; // Cm ** 7 without the pow() call
   const G = 0.5 * (1 - Math.sqrt(Cab / (Cab + 25 ** 7)));
   const a1p = a1 * (1 + G);
   const a2p = a2 * (1 + G);
@@ -117,7 +122,8 @@ export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
   const SC = 1 + 0.045 * Cp;
   const SH = 1 + 0.015 * Cp * T;
 
-  const RC7 = Cp ** 7;
+  const Cp3 = Cp * Cp * Cp;
+  const RC7 = Cp3 * Cp3 * Cp;
   const RC = 2 * Math.sqrt(RC7 / (RC7 + 25 ** 7));
   const dTheta = 30 * Math.exp(-(((Hm - 275) / 25) ** 2));
   const RT = -RC * Math.sin(2 * rad * dTheta);
