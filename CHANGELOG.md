@@ -1,5 +1,28 @@
 # @colordx/core
 
+## 7.0.0
+
+### Major Changes
+
+- Fix crash in apcaContrast and fixContrast for out-of-range colors by clamping OKLab lightness before P3 gamut mapping ([cee329c](https://github.com/dkryaklin/colordx/commit/cee329c98e7bd285afbb9b6248c8823c6e72ec65))
+- Fix CSS gamut mapping to return the clipped color once its deltaEOK is within epsilon of the JND, matching the CSS Color 4 algorithm ([6f8df65](https://github.com/dkryaklin/colordx/commit/6f8df65992216328be4a53032703f55d04de1177))
+- Fix quadratic backtracking that made parsing rgb()/hsl()/hsv() strings with long trailing whitespace extremely slow ([0a02be7](https://github.com/dkryaklin/colordx/commit/0a02be7dc406034ac8b7ebce4db62da64e55d79f))
+- Reject invalid channel syntax like "none%" and "nonedeg" in color string parsing, and match "transparent" case-insensitively with surrounding whitespace in parse and getFormat ([1c4cd0a](https://github.com/dkryaklin/colordx/commit/1c4cd0a03e8974ed71af17207865c24da03ebc18))
+- Fix minify() clipping out-of-sRGB colors to hex — wide-gamut colors now minify to a shortened oklch() string with leading zeros dropped ([5a533bf](https://github.com/dkryaklin/colordx/commit/5a533bf3e765e9f16e1a2f91fbcf581e6a349d15))
+- Fix D50 white point X to be derived from the CSS chromaticity so white round-trips to lab(100 0 0) exactly in XYZ-D50 and Lab conversions ([07339e0](https://github.com/dkryaklin/colordx/commit/07339e03a70fe97c0a8237bbf6c35066359a82a9))
+- Fix HWB clamping so an infinite whiteness or blackness normalizes to black or white instead of producing NaN channels ([ae4cde6](https://github.com/dkryaklin/colordx/commit/ae4cde6cebc3c47f11ca79e62e89af5b437c47dd))
+- Fix Display-P3 and Rec.2020 conversions to use full-precision sRGB matrices so round-trips through toP3/toRec2020 and back are exact ([9dabb0c](https://github.com/dkryaklin/colordx/commit/9dabb0cab1460f3da878119d6252388bb9817dd5))
+- Use full-precision CSS Color 4 OKLab matrices so oklab()/oklch() round-trip through sRGB, and accept object L values up to 1e-9 above 1 — expect last-digit shifts in toOklab, toOklch, toOkhsl, and toOkhsv output ([0137cf7](https://github.com/dkryaklin/colordx/commit/0137cf7aef535bf90565f21f2dced64f2ad7f1c1))
+- Fix mix(), mixOklab() and mixLab() to premultiply channels by alpha like CSS color-mix(), so translucent colors no longer contribute hue in proportion to their transparency ([58ba59c](https://github.com/dkryaklin/colordx/commit/58ba59cc51e084be181131fbceafe19a31b55222))
+- Encode rec2020 with the pure 2.4 gamma curve CSS Color 4 now specifies instead of the BT.2020 camera OETF, changing all `color(rec2020 ...)` channel values produced and parsed by `toRec2020`, `toRec2020String`, `rec2020ToLinear`, `rec2020FromLinear`, and the `*ToRec2020Channels` helpers ([e2c4942](https://github.com/dkryaklin/colordx/commit/e2c4942a8e14c88b81dbeef40ae0ec79db827913))
+- Treat only CSS whitespace (space, tab, LF, CR, FF) as whitespace when parsing color strings, so inputs padded or separated by NBSP, U+2028, BOM or other Unicode spaces are now rejected like in CSS ([57ead92](https://github.com/dkryaklin/colordx/commit/57ead927eb139a960c06e8e5a239d8ec9e1b9337))
+- Fix minify to drop a redundant ff alpha byte and stop emitting alphaHex output for near-zero alphas that round to 00, and print none in toOklchString/toLchString whenever the unrounded chroma is achromatic ([9b1848a](https://github.com/dkryaklin/colordx/commit/9b1848aa7a782a31c881e11e0bf0779c849a173a))
+- Reject `{ a: null }` in object input instead of treating it as alpha 1, matching `{ alpha: null }` ([91a3c72](https://github.com/dkryaklin/colordx/commit/91a3c72389cdf8c85577771ce95d78573c31e2bd))
+- Raise default precision for toHwb/toHwbString (0 to 2), toRec2020, toProphoto, toXyzString and toXyzD65String (4 to 5) so every 8-bit sRGB color round-trips, and serialize tiny channel values as fixed decimals instead of exponent notation ([678f869](https://github.com/dkryaklin/colordx/commit/678f869ba21c014469352003dbef078ecde6c5a7))
+- Round rgbToRec2020 channels to 5 decimal places instead of 4, matching toRec2020() so near-black colors round-trip ([5bef672](https://github.com/dkryaklin/colordx/commit/5bef672504fddf7cca122c6681bbfb2b6bb8f88f))
+- Let plugins take precedence over non-exact "transparent" keywords, so case-variant or whitespace-padded transparent strings in parse and getFormat are only resolved after all parsers and plugins decline ([4de134f](https://github.com/dkryaklin/colordx/commit/4de134ff6e391120e0a55d97e275f5e588b70ef1))
+- Stop publishing source maps, reducing package size by roughly 70% ([23cba9b](https://github.com/dkryaklin/colordx/commit/23cba9bb4eea60e8dade4933ecb1818fd8146ecf))
+
 ## 6.7.0
 
 ### Minor Changes
