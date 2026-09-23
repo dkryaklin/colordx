@@ -102,13 +102,14 @@ describe('round-trip: OKLab ↔ linear sRGB is exact', () => {
         fc.integer({ min: 1, max: 40000 }),
         fc.integer({ min: 0, max: 35999999 }),
         (l, c, h) => {
-          // The stored color is gamma-encoded RGB, so a far-out-of-gamut or near-black input picks up
-          // float error through the cube and cube root: measured at most 5e-8 in L, 2e-7 in C and
-          // 3e-5° in hue over 400k samples. The old 10-digit matrices were off by up to 1.6e-4.
+          // The stored color is gamma-encoded RGB. Far out of gamut, one LMS component can land near 0,
+          // where the cube root magnifies float error (oklch(0.16823 0.38975 225.53749) is one), so the
+          // worst case over 2M random samples and a fine grid is 5e-6 in L and C and 8e-4° in hue.
+          // The bounds are ten times that; the old 10-digit matrices drifted by up to 1.6e-4.
           const { l: L, c: C, h: H } = colordx(`oklch(${l / 1e5} ${c / 1e5} ${h / 1e5})`).toOklch(12);
-          expect(Math.abs(L - l / 1e5)).toBeLessThan(1e-6);
-          expect(Math.abs(C - c / 1e5)).toBeLessThan(1e-6);
-          if (c >= 1000) expect(Math.abs(((H - h / 1e5 + 540) % 360) - 180)).toBeLessThan(1e-3);
+          expect(Math.abs(L - l / 1e5)).toBeLessThan(5e-5);
+          expect(Math.abs(C - c / 1e5)).toBeLessThan(5e-5);
+          if (c >= 1000) expect(Math.abs(((H - h / 1e5 + 540) % 360) - 180)).toBeLessThan(1e-2);
         }
       ),
       { numRuns: 2000 }
