@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { linearRec2020ToSrgb, srgbLinearToRec2020Linear } from '../src/colorModels/rec2020.js';
 import { colordx, extend, getFormat } from '../src/index.js';
 import rec2020 from '../src/plugins/rec2020.js';
 
@@ -204,6 +205,23 @@ describe('Rec.2020 object parsing', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rec = (colordx(input) as any).toRec2020();
       expect(colordx(rec).toHex()).toBe(colordx(input).toHex());
+    }
+  });
+});
+
+describe('linear sRGB ↔ linear rec2020 matrices', () => {
+  it('are float64 inverses of each other and keep white at exactly 1', () => {
+    for (const v of srgbLinearToRec2020Linear(1, 1, 1)) expect(v).toBeCloseTo(1, 15);
+    const probes: [number, number, number][] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+      [0.2, 0.7, 0.4],
+      [-0.3, 1.2, 0.5],
+    ];
+    for (const p of probes) {
+      const back = linearRec2020ToSrgb(...srgbLinearToRec2020Linear(...p));
+      for (let i = 0; i < 3; i++) expect(back[i]).toBeCloseTo(p[i]!, 15);
     }
   });
 });

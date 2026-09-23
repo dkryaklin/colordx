@@ -4,16 +4,17 @@ import type { P3Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
 
-// Linear sRGB ↔ Linear Display-P3 (D65, CSS Color 4). The forward matrix has zero
-// blue-output coefficients on the r/g rows — correct per spec, not a bug.
+// Linear sRGB ↔ Linear Display-P3 (D65, CSS Color 4): XYZ_to_lin_P3 · lin_sRGB_to_XYZ at full
+// float64 precision. The forward matrix has zero blue-output coefficients on the r/g rows —
+// sRGB and P3 share a blue primary, so this is correct per spec, not a bug.
 // Shared between the allocating and *Into variants.
-const SP3_RR = 0.8224619687,
-  SP3_RG = 0.1775380313;
-const SP3_GR = 0.0331941989,
-  SP3_GG = 0.9668058011;
-const SP3_BR = 0.0170826307,
-  SP3_BG = 0.0723974407,
-  SP3_BB = 0.9105199286;
+const SP3_RR = 0.8224619687143623,
+  SP3_RG = 0.17753803128563772;
+const SP3_GR = 0.03319419885096158,
+  SP3_GG = 0.9668058011490382;
+const SP3_BR = 0.017082630721120033,
+  SP3_BG = 0.07239744066396347,
+  SP3_BB = 0.9105199286149166;
 const P3S_RR = 1.2249401762805598,
   P3S_RG = -0.22494017628055996;
 const P3S_GR = -0.042056954709688163,

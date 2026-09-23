@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { linearP3ToSrgb, srgbLinearToP3Linear } from '../src/colorModels/p3.js';
 import { colordx, extend, getFormat } from '../src/index.js';
 import p3 from '../src/plugins/p3.js';
 
@@ -218,6 +219,23 @@ describe('P3 object parsing', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const p3Color = (colordx(input) as any).toP3();
       expect(colordx(p3Color).toHex()).toBe(colordx(input).toHex());
+    }
+  });
+});
+
+describe('linear sRGB ↔ linear p3 matrices', () => {
+  it('are float64 inverses of each other and keep white at exactly 1', () => {
+    for (const v of srgbLinearToP3Linear(1, 1, 1)) expect(v).toBeCloseTo(1, 15);
+    const probes: [number, number, number][] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+      [0.2, 0.7, 0.4],
+      [-0.3, 1.2, 0.5],
+    ];
+    for (const p of probes) {
+      const back = linearP3ToSrgb(...srgbLinearToP3Linear(...p));
+      for (let i = 0; i < 3; i++) expect(back[i]).toBeCloseTo(p[i]!, 15);
     }
   });
 });

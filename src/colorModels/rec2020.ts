@@ -4,17 +4,18 @@ import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
 
-// Linear sRGB ↔ Linear Rec.2020 (D65 via XYZ, CSS Color 4).
+// Linear sRGB ↔ Linear Rec.2020 (D65 via XYZ, CSS Color 4): XYZ_to_lin_2020 · lin_sRGB_to_XYZ at
+// full float64 precision.
 // Shared between the allocating and *Into variants.
-const SR2_RR = 0.6274038959,
-  SR2_RG = 0.3292830384,
-  SR2_RB = 0.0433130657;
-const SR2_GR = 0.0690972894,
-  SR2_GG = 0.9195403951,
-  SR2_GB = 0.0113623156;
-const SR2_BR = 0.0163914389,
-  SR2_BG = 0.0880133079,
-  SR2_BB = 0.8955952532;
+const SR2_RR = 0.627403895934699,
+  SR2_RG = 0.3292830383778836,
+  SR2_RB = 0.043313065687417246;
+const SR2_GR = 0.06909728935823205,
+  SR2_GG = 0.9195403950754587,
+  SR2_GB = 0.011362315566309173;
+const SR2_BR = 0.01639143887515028,
+  SR2_BG = 0.08801330787722576,
+  SR2_BB = 0.895595253247624;
 const R2S_RR = 1.6604910021084345,
   R2S_RG = -0.58764113878854951,
   R2S_RB = -0.072849863319884883;
