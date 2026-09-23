@@ -101,10 +101,10 @@ const JND = 0.02;
 const GAMUT_EPSILON = 0.0001;
 
 /** Euclidean distance in OKLab — the CSS Color 4 deltaEOK metric. */
-const deltaEOK = (lab1: readonly [number, number, number], lab2: readonly [number, number, number]): number => {
-  const dl = lab1[0] - lab2[0];
-  const da = lab1[1] - lab2[1];
-  const db = lab1[2] - lab2[2];
+const deltaEOK = (lab1: readonly [number, number, number], l: number, a: number, b: number): number => {
+  const dl = lab1[0] - l;
+  const da = lab1[1] - a;
+  const db = lab1[2] - b;
   return Math.sqrt(dl * dl + da * da + db * db);
 };
 
@@ -141,7 +141,7 @@ const cssGamutMap = (
   const c0r = clamp(r0, 0, 1),
     c0g = clamp(g0, 0, 1),
     c0b = clamp(b0, 0, 1);
-  if (deltaEOK(fromLinear(c0r, c0g, c0b), [l, a, b]) <= JND) return [c0r, c0g, c0b];
+  if (deltaEOK(fromLinear(c0r, c0g, c0b), l, a, b) <= JND) return [c0r, c0g, c0b];
 
   const hRad = Math.atan2(b, a);
   // hypot rather than sqrt(a² + b²): a finite a of 1e308 squares to Infinity. An infinite or NaN
@@ -153,14 +153,16 @@ const cssGamutMap = (
   let lo = 0;
   let hi = C;
   let minInGamut = true;
+  const cosH = Math.cos(hRad),
+    sinH = Math.sin(hRad);
   let lastR = c0r,
     lastG = c0g,
     lastB = c0b;
 
   while (hi - lo > GAMUT_EPSILON) {
     const mid = (lo + hi) / 2;
-    const ma = mid * Math.cos(hRad);
-    const mb = mid * Math.sin(hRad);
+    const ma = mid * cosH;
+    const mb = mid * sinH;
     const [lr, lg, lb] = toLinear(l, ma, mb);
 
     if (minInGamut && strictInGamut(lr, lg, lb)) {
@@ -174,7 +176,7 @@ const cssGamutMap = (
     lastR = cr;
     lastG = cg;
     lastB = cb;
-    const E = deltaEOK(fromLinear(cr, cg, cb), [l, ma, mb]);
+    const E = deltaEOK(fromLinear(cr, cg, cb), l, ma, mb);
 
     if (E <= JND) {
       // CSS Color 4: once the clipped color is within epsilon of the JND, it is the answer.

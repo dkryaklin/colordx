@@ -70,7 +70,7 @@ export const oklabToLinearScratch = (l: number, a: number, b: number): void => {
   // an exact C = 0) would otherwise come out with channels ~1e-11 apart — a phantom hue downstream,
   // and an Okhsl grey that differs from the same Okhsv grey.
   if (a === 0 && b === 0) {
-    const v = l ** 3;
+    const v = l * l * l;
     LIN[0] = v;
     LIN[1] = v;
     LIN[2] = v;
@@ -79,9 +79,9 @@ export const oklabToLinearScratch = (l: number, a: number, b: number): void => {
   const l_ = l + M2I_A_L * a + M2I_B_L * b;
   const m_ = l + M2I_A_M * a + M2I_B_M * b;
   const s_ = l + M2I_A_S * a + M2I_B_S * b;
-  const lv = l_ ** 3,
-    mv = m_ ** 3,
-    sv = s_ ** 3;
+  const lv = l_ * l_ * l_,
+    mv = m_ * m_ * m_,
+    sv = s_ * s_ * s_;
   LIN[0] = M1I_L_R * lv + M1I_M_R * mv + M1I_S_R * sv;
   LIN[1] = M1I_L_G * lv + M1I_M_G * mv + M1I_S_G * sv;
   LIN[2] = M1I_L_B * lv + M1I_M_B * mv + M1I_S_B * sv;

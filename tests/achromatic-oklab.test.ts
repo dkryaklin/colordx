@@ -43,7 +43,7 @@ describe("achromatic OKLab/OKLCH → internal sRGB invariant", () => {
     oklabToLinearInto(out, 0.6, 0, 0);
     expect(out[0]).toBe(out[1]);
     expect(out[1]).toBe(out[2]);
-    expect(out[0]).toBe(0.6 ** 3);
+    expect(out[0]).toBe(0.6 * 0.6 * 0.6);
   });
 
   it("oklabToLinearInto also works with Float64Array", () => {

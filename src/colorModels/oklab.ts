@@ -96,7 +96,7 @@ export const oklabToLinearInto = (out: Float64Array | number[], l: number, a: nu
   // rounding leaves lr/lg/lb ~1 ULP apart, which gets amplified into a phantom hue
   // downstream in rgbToHslRaw. Explicitly return lv for all channels.
   if (a === 0 && b === 0) {
-    const v = l ** 3;
+    const v = l * l * l;
     out[0] = v;
     out[1] = v;
     out[2] = v;
@@ -105,9 +105,9 @@ export const oklabToLinearInto = (out: Float64Array | number[], l: number, a: nu
   const l_ = l + M2I_A_L * a + M2I_B_L * b;
   const m_ = l + M2I_A_M * a + M2I_B_M * b;
   const s_ = l + M2I_A_S * a + M2I_B_S * b;
-  const lv = l_ ** 3,
-    mv = m_ ** 3,
-    sv = s_ ** 3;
+  const lv = l_ * l_ * l_,
+    mv = m_ * m_ * m_,
+    sv = s_ * s_ * s_;
   out[0] = M1I_L_R * lv + M1I_M_R * mv + M1I_S_R * sv;
   out[1] = M1I_L_G * lv + M1I_M_G * mv + M1I_S_G * sv;
   out[2] = M1I_L_B * lv + M1I_M_B * mv + M1I_S_B * sv;
@@ -116,15 +116,15 @@ export const oklabToLinearInto = (out: Float64Array | number[], l: number, a: nu
 /** Unclamped linear sRGB channels from OKLab values. Channels may exceed [0, 1] for out-of-gamut colors. */
 export const oklabToLinear = (l: number, a: number, b: number): [number, number, number] => {
   if (a === 0 && b === 0) {
-    const v = l ** 3;
+    const v = l * l * l;
     return [v, v, v];
   }
   const l_ = l + M2I_A_L * a + M2I_B_L * b;
   const m_ = l + M2I_A_M * a + M2I_B_M * b;
   const s_ = l + M2I_A_S * a + M2I_B_S * b;
-  const lv = l_ ** 3,
-    mv = m_ ** 3,
-    sv = s_ ** 3;
+  const lv = l_ * l_ * l_,
+    mv = m_ * m_ * m_,
+    sv = s_ * s_ * s_;
   return [
     M1I_L_R * lv + M1I_M_R * mv + M1I_S_R * sv,
     M1I_L_G * lv + M1I_M_G * mv + M1I_S_G * sv,
