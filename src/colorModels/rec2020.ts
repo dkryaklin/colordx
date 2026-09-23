@@ -76,7 +76,8 @@ export const rgbToRec2020Raw = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
 
 export const rgbToRec2020 = (rgb: RgbColor): Rec2020Color => {
   const { r, g, b, alpha } = rgbToRec2020Raw(rgb);
-  return { r: round(r, 4), g: round(g, 4), b: round(b, 4), alpha, colorSpace: 'rec2020' };
+  // 5 dp, like toRec2020(): the 2.4 gamma is steep near black, and 4 dp loses a byte there.
+  return { r: round(r, 5), g: round(g, 5), b: round(b, 5), alpha, colorSpace: 'rec2020' };
 };
 
 export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
