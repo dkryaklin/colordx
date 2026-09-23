@@ -1053,7 +1053,7 @@ What is different:
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
 
-`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab.
+`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab. All three premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
 
 ```ts
 colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)

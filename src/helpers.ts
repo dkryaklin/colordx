@@ -69,3 +69,16 @@ export const toByte = (n: number): number => (n > 0 ? (n < 255 ? Math.round(n) :
 export const round3 = (n: number): number => (n > 0 ? (n < 1 ? Math.round(n * 1000) / 1000 : 1) : 0);
 
 export const alphaAlias = (input: unknown): unknown => (input as { a?: unknown }).a ?? 1;
+
+/**
+ * Channel weights for mixing `a1`-alpha and `a2`-alpha colors at ratio `w`, the way CSS color-mix()
+ * does it: premultiply each color by its alpha, interpolate, then divide by the mixed alpha.
+ * Returns [k1, k2, alpha] so a channel mixes as `c1 * k1 + c2 * k2`. Opaque colors get (1 − w, w).
+ * When the mixed alpha is 0 there is nothing to divide by, so the straight weights are kept.
+ */
+export const mixWeights = (a1: number, a2: number, w: number): [number, number, number] => {
+  const p1 = a1 * (1 - w),
+    p2 = a2 * w,
+    alpha = p1 + p2;
+  return alpha > 0 ? [p1 / alpha, p2 / alpha, alpha] : [1 - w, w, 0];
+};

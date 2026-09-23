@@ -336,6 +336,26 @@ describe('mix plugin: boundary values', () => {
   });
 });
 
+// CSS color-mix() premultiplies by alpha before interpolating: a fully transparent color adds no
+// hue, and a half-transparent one counts half as much.
+describe('mix plugin: premultiplied alpha, like CSS color-mix()', () => {
+  const c = (s: string) => colordx(s) as any;
+  it('a transparent color contributes no hue', () => {
+    expect(c('rgba(255,0,0,0)').mix('#0000ff', 0.5).toRgbString()).toBe('rgb(0 0 255 / 0.5)');
+    expect(c('rgba(255,0,0,0)').mixOklab('#0000ff', 0.5).toHex()).toBe('#0000ff80');
+    expect(c('rgba(255,0,0,0)').mixLab('#0000ff', 0.5).toHex()).toBe('#0000ff80');
+  });
+  it('color-mix(in srgb, rgb(255 0 0 / .5), blue) = rgb(85 0 170 / .75)', () => {
+    expect(c('rgba(255,0,0,0.5)').mix('#0000ff', 0.5).toRgbString()).toBe('rgb(85 0 170 / 0.75)');
+  });
+  it('two transparent colors keep straight weights and alpha 0', () => {
+    expect(c('rgba(255,0,0,0)').mix('rgba(0,0,255,0)', 0.25).toRgbString()).toBe('rgb(191 0 64 / 0)');
+  });
+  it('opaque colors are unaffected', () => {
+    expect(c('#ff0000').mix('#0000ff', 0.25).toHex()).toBe('#bf0040');
+  });
+});
+
 describe('mix plugin: count=1', () => {
   it('tints(1) → [original], valid', () => {
     const t: any[] = (colordx('#ff0000') as any).tints(1);

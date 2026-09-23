@@ -8,7 +8,7 @@ import {
   rgbToXyzD65,
 } from '../colorModels/xyz.js';
 import type { Colordx, Plugin } from '../colordx.js';
-import { clamp, round } from '../helpers.js';
+import { clamp, mixWeights, round } from '../helpers.js';
 import type { AnyColor, LabColor, XyzColor, XyzD65Color } from '../types.js';
 
 declare module '@colordx/core' {
@@ -71,13 +71,13 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {
     const lab1 = rgbToLab(this._rawRgb());
     const lab2 = rgbToLab(new ColordxClass(color)._rawRgb());
-    const w = clamp(ratio, 0, 1);
+    const [k1, k2, alpha] = mixWeights(lab1.alpha, lab2.alpha, clamp(ratio, 0, 1));
     return new ColordxClass(
       labToRgb({
-        l: lab1.l * (1 - w) + lab2.l * w,
-        a: lab1.a * (1 - w) + lab2.a * w,
-        b: lab1.b * (1 - w) + lab2.b * w,
-        alpha: round(lab1.alpha * (1 - w) + lab2.alpha * w, 3),
+        l: lab1.l * k1 + lab2.l * k2,
+        a: lab1.a * k1 + lab2.a * k2,
+        b: lab1.b * k1 + lab2.b * k2,
+        alpha: round(alpha, 3),
         colorSpace: 'lab',
       })
     );

@@ -1,6 +1,6 @@
 import { oklabToRgb, rgbToOklab } from '../colorModels/oklab.js';
 import type { Colordx, Plugin } from '../colordx.js';
-import { clamp, round } from '../helpers.js';
+import { clamp, mixWeights, round } from '../helpers.js';
 import type { AnyColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -19,25 +19,25 @@ const mix: Plugin = (ColordxClass) => {
     // Both sides unrounded so a.mix(b, t) and b.mix(a, 1 - t) land on the same byte.
     const other = new ColordxClass(color)._rawRgb();
     const self = this._rawRgb();
-    const w = clamp(ratio, 0, 1);
+    const [k1, k2, alpha] = mixWeights(self.alpha, other.alpha, clamp(ratio, 0, 1));
     return new ColordxClass({
-      r: round(self.r * (1 - w) + other.r * w),
-      g: round(self.g * (1 - w) + other.g * w),
-      b: round(self.b * (1 - w) + other.b * w),
-      alpha: round(self.alpha * (1 - w) + other.alpha * w, 3),
+      r: round(self.r * k1 + other.r * k2),
+      g: round(self.g * k1 + other.g * k2),
+      b: round(self.b * k1 + other.b * k2),
+      alpha: round(alpha, 3),
     });
   };
 
   ColordxClass.prototype.mixOklab = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
     const oklab1 = rgbToOklab(this._rawRgb());
     const oklab2 = rgbToOklab(new ColordxClass(color)._rawRgb());
-    const w = clamp(ratio, 0, 1);
+    const [k1, k2, alpha] = mixWeights(oklab1.alpha, oklab2.alpha, clamp(ratio, 0, 1));
     return new ColordxClass(
       oklabToRgb({
-        l: oklab1.l * (1 - w) + oklab2.l * w,
-        a: oklab1.a * (1 - w) + oklab2.a * w,
-        b: oklab1.b * (1 - w) + oklab2.b * w,
-        alpha: round(oklab1.alpha * (1 - w) + oklab2.alpha * w, 3),
+        l: oklab1.l * k1 + oklab2.l * k2,
+        a: oklab1.a * k1 + oklab2.a * k2,
+        b: oklab1.b * k1 + oklab2.b * k2,
+        alpha: round(alpha, 3),
       })
     );
   };
