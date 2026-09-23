@@ -100,3 +100,18 @@ describe('`a` as an alias for `alpha` on object input', () => {
     expectTypeOf<LabColorInput['a']>().toEqualTypeOf<number>();
   });
 });
+
+describe('`a: null` is invalid, exactly like `alpha: null`', () => {
+  it.each([
+    { r: 1, g: 2, b: 3, a: null },
+    { h: 0, s: 50, l: 50, a: null },
+    { l: 0.5, c: 0.1, h: 30, a: null },
+  ])('%o', (input) => {
+    expect(colordx(input as never).isValid()).toBe(false);
+    expect(colordx({ ...input, a: undefined, alpha: null } as never).isValid()).toBe(false);
+  });
+  it('a missing or undefined `a` still defaults to 1', () => {
+    expect(colordx({ r: 1, g: 2, b: 3, a: undefined } as never).alpha()).toBe(1);
+  });
+});
+

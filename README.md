@@ -113,7 +113,7 @@ colordx({ h: 0, w: 0, b: 0 });
 colordx({ h: 0, s: 100, v: 100 }); // HSV
 ```
 
-Channels are clamped the way CSS Color 4 clamps them at parsed-value time: `rgb()` / `hsl()` channels to their ranges, `lab()` / `lch()` / `oklab()` / `oklch()` lightness to `[0, 100]` / `[0, 1]`, chroma to `≥ 0`. Lab/LCH `a`, `b`, `c` and OKLab/OKLCh `a`, `b`, `c` are unbounded, which is what makes out-of-gamut colors representable (see [Gamut](#gamut)). Alpha is clamped to `[0, 1]`. One consequence: an imaginary `lab()` / `lch()` / `color(xyz …)` input can have an OKLab lightness outside `[0, 1]`; `.toOklchString()` reports it faithfully, but feeding that string back clamps L, so only colors with L in range round-trip through OKLCh. Two object-only rules: an OKLab/OKLCh object with `l > 1` is rejected as invalid — it is almost certainly a CIE Lab/LCH value missing its `colorSpace: 'lab' | 'lch'` brand, and clamping it to white would hide the mistake — and `NaN` in any channel reads as `0` (an infinite hue reads as `0°`).
+Channels are clamped the way CSS Color 4 clamps them at parsed-value time: `rgb()` / `hsl()` channels to their ranges, `lab()` / `lch()` / `oklab()` / `oklch()` lightness to `[0, 100]` / `[0, 1]`, chroma to `≥ 0`. Lab/LCH `a`, `b`, `c` and OKLab/OKLCh `a`, `b`, `c` are unbounded, which is what makes out-of-gamut colors representable (see [Gamut](#gamut)). Alpha is clamped to `[0, 1]`. One consequence: an imaginary `lab()` / `lch()` / `color(xyz …)` input can have an OKLab lightness outside `[0, 1]`; `.toOklchString()` reports it faithfully, but feeding that string back clamps L, so only colors with L in range round-trip through OKLCh. The same holds the other way for CIE Lab: a far-out-of-gamut `oklch()` / `oklab()` / `color()` input can have a Lab lightness below 0 (`oklch(0.31924 0.4 279.2)` → `lab(-7.33 212.95 -169.91)`), which `.toLabString()` / `.toLchString()` print as is and a browser clamps to 0. Two object-only rules: an OKLab/OKLCh object with `l > 1` is rejected as invalid — it is almost certainly a CIE Lab/LCH value missing its `colorSpace: 'lab' | 'lch'` brand, and clamping it to white would hide the mistake — and `NaN` in any channel reads as `0` (an infinite hue reads as `0°`).
 
 Object input accepts `a` as an alias for `alpha` (the `{ r, g, b, a }` shape colord and tinycolor2 use) in every color model except Lab and OKLab, where `a` is a channel. When both are present, `alpha` wins.
 
@@ -598,7 +598,7 @@ colordx({ c: 0, m: 100, y: 100, k: 0 }).toHex(); // '#ff0000'
 
 ### names plugin
 
-CSS named color support (140 names from the CSS spec). `toName()` returns `undefined` for colors with no CSS name.
+CSS named color support (all 148 names from the CSS spec). `toName()` returns `undefined` for colors with no CSS name.
 
 ```ts
 import names from '@colordx/core/plugins/names';

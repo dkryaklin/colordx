@@ -1308,3 +1308,17 @@ describe('gamut helpers read OKLab / OKLCH input like the parsers', () => {
     expect(inGamutSrgb(null as never)).toBe(false);
   });
 });
+
+// getRawOklab's fast-path regexes spell numbers without `none`; such input falls through to the full
+// parser, which reads `none` as 0. Pin that the result is the same either way.
+describe('gamut helpers read `none` like 0', () => {
+  it.each([
+    ['oklch(0.7 0.4 none)', 'oklch(0.7 0.4 0)'],
+    ['oklab(0.5 none 0.4)', 'oklab(0.5 0 0.4)'],
+    ['oklch(none 0.4 150)', 'oklch(0 0.4 150)'],
+  ])('%s', (withNone, withZero) => {
+    expect(inGamutSrgb(withNone)).toBe(inGamutSrgb(withZero));
+    expect(Colordx.toGamutSrgb(withNone).toHex()).toBe(Colordx.toGamutSrgb(withZero).toHex());
+  });
+});
+

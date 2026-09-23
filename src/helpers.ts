@@ -66,7 +66,12 @@ export const toByte = (n: number): number => (n > 0 ? (n < 255 ? Math.round(n) :
 /** Clamp+round alpha to 3 decimals, likewise avoiding the generic round(). */
 export const round3 = (n: number): number => (n > 0 ? (n < 1 ? Math.round(n * 1000) / 1000 : 1) : 0);
 
-export const alphaAlias = (input: unknown): unknown => (input as { a?: unknown }).a ?? 1;
+// Only a missing `a` defaults to 1, like a missing `alpha` (a destructuring default): `{ a: null }`
+// is as invalid as `{ alpha: null }`.
+export const alphaAlias = (input: unknown): unknown => {
+  const a = (input as { a?: unknown }).a;
+  return a === undefined ? 1 : a;
+};
 
 /**
  * Channel weights for mixing `a1`-alpha and `a2`-alpha colors at ratio `w`, the way CSS color-mix()
