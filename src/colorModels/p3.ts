@@ -142,5 +142,3 @@ export const oklabToLinearP3Into = (out: Float64Array | number[], l: number, a: 
   oklabToLinearInto(out, l, a, b);
   srgbLinearToP3LinearInto(out, out[0]!, out[1]!, out[2]!);
 };
-parseP3Object.inputKind = 'object' as const;
-parseP3String.inputKind = 'string' as const;

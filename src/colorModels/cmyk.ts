@@ -91,5 +91,3 @@ export const parseCmykString = (input: unknown): RgbColor | null => {
     })
   );
 };
-parseCmykObject.inputKind = 'object' as const;
-parseCmykString.inputKind = 'string' as const;

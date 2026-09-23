@@ -126,6 +126,8 @@ const a98: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseA98String as ColorParser).inputKind = 'string';
+  (parseA98Object as ColorParser).inputKind = 'object';
   parsers.push(parseA98String, parseA98Object);
   formatParsers.push([parseA98String, 'a98-rgb'], [parseA98Object, 'a98-rgb']);
 };

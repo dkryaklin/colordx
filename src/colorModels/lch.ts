@@ -99,5 +99,3 @@ export const parseLchString = (input: unknown): RgbColor | null => {
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return lchToRgbUnclamped(clampLch({ l, c, h, alpha }));
 };
-parseLchObject.inputKind = 'object' as const;
-parseLchString.inputKind = 'string' as const;

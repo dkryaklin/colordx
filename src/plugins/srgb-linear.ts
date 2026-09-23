@@ -1,7 +1,7 @@
 import { parseSrgbLinearObject, parseSrgbLinearString, rgbToSrgbLinearRaw } from '../colorModels/srgb-linear.js';
 import type { Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { SrgbLinearColor } from '../types.js';
+import type { ColorParser, SrgbLinearColor } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -30,6 +30,8 @@ const srgbLinear: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseSrgbLinearString as ColorParser).inputKind = 'string';
+  (parseSrgbLinearObject as ColorParser).inputKind = 'object';
   parsers.push(parseSrgbLinearString, parseSrgbLinearObject);
   formatParsers.push([parseSrgbLinearString, 'srgb-linear'], [parseSrgbLinearObject, 'srgb-linear']);
 };

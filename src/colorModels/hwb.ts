@@ -76,5 +76,3 @@ export const parseHwbString = (input: unknown): RgbColor | null => {
   const alpha = g.al === undefined ? 1 : parseNum(g.al) / (g.alp ? 100 : 1);
   return hwbToRgb(clampHwb({ h, w, b, alpha }));
 };
-parseHwbObject.inputKind = 'object' as const;
-parseHwbString.inputKind = 'string' as const;

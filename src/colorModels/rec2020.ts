@@ -144,5 +144,3 @@ export const oklabToLinearRec2020Into = (out: Float64Array | number[], l: number
   oklabToLinearInto(out, l, a, b);
   srgbLinearToRec2020LinearInto(out, out[0]!, out[1]!, out[2]!);
 };
-parseRec2020Object.inputKind = 'object' as const;
-parseRec2020String.inputKind = 'string' as const;

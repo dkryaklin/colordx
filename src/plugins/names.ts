@@ -1,7 +1,7 @@
 import { parseHex } from '../colorModels/hex.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { trimWs } from '../helpers.js';
-import type { RgbColor } from '../types.js';
+import type { ColorParser, RgbColor } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -166,9 +166,9 @@ export const parseNameString = (input: unknown): RgbColor | null => {
   const hex = NAMES[trimWs(input).toLowerCase()];
   return hex ? parseHex(hex) : null;
 };
-parseNameString.inputKind = 'string' as const;
 
 const names: Plugin = (ColordxClass, parsers, formatParsers) => {
+  (parseNameString as ColorParser).inputKind = 'string';
   parsers.push(parseNameString);
   formatParsers.push([parseNameString, 'name']);
 

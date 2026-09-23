@@ -131,6 +131,8 @@ const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseProphotoString as ColorParser).inputKind = 'string';
+  (parseProphotoObject as ColorParser).inputKind = 'object';
   parsers.push(parseProphotoString, parseProphotoObject);
   formatParsers.push([parseProphotoString, 'prophoto-rgb'], [parseProphotoObject, 'prophoto-rgb']);
 };

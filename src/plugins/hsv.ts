@@ -1,7 +1,7 @@
 import { parseHsvObject, parseHsvString, rgbToHsvRaw } from '../colorModels/hsv.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { HsvColor } from '../types.js';
+import type { ColorParser, HsvColor } from '../types.js';
 
 // Channel functions (allocation-free `*Into` siblings included) for per-pixel HSV work — pickers,
 // vectorscopes, hue wheels. Same scale as toHsv(): h in degrees, s/v in 0–100; RGB in 0–1.
@@ -27,6 +27,9 @@ const hsv: Plugin = (ColordxClass, parsers, formatParsers) => {
     return fixedNotation(alpha < 1 ? `hsv(${h} ${s}% ${v}% / ${alpha})` : `hsv(${h} ${s}% ${v}%)`, precision);
   };
 
+  (parseHsvString as ColorParser).inputKind = 'string';
+
+  (parseHsvObject as ColorParser).inputKind = 'object';
   parsers.push(parseHsvString, parseHsvObject);
   formatParsers.push([parseHsvString, 'hsv'], [parseHsvObject, 'hsv']);
 };

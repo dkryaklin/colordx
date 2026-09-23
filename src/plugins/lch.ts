@@ -1,7 +1,7 @@
 import { parseLchObject, parseLchString, rgbToLchRaw } from '../colorModels/lch.js';
 import type { Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { LchColor } from '../types.js';
+import type { ColorParser, LchColor } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -31,6 +31,8 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
     const H = c === 0 || (h === 0 && rgbToLchRaw(this._rawRgb()).c < 0.0015) ? 'none' : h;
     return fixedNotation(alpha < 1 ? `lch(${l} ${c} ${H} / ${alpha})` : `lch(${l} ${c} ${H})`, precision);
   };
+  (parseLchObject as ColorParser).inputKind = 'object';
+  (parseLchString as ColorParser).inputKind = 'string';
   parsers.push(parseLchObject, parseLchString);
   formatParsers.push([parseLchObject, 'lch'], [parseLchString, 'lch']);
 };

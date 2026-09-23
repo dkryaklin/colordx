@@ -51,6 +51,3 @@ export const parseSrgbLinearString = (input: unknown): RgbColor | null => {
     colorSpace: 'srgb-linear',
   });
 };
-
-parseSrgbLinearObject.inputKind = 'object' as const;
-parseSrgbLinearString.inputKind = 'string' as const;

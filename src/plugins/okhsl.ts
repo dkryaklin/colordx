@@ -1,7 +1,7 @@
 import { parseOkhslObject, parseOkhslString, rgbToOkhslRaw } from '../colorModels/okhsl.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { OkhslColor } from '../types.js';
+import type { ColorParser, OkhslColor } from '../types.js';
 
 // Channel functions (allocation-free `*Into` siblings included) for per-pixel Okhsl work —
 // pickers, hue wheels, lightness ramps. Same scale as toOkhsl(): h in degrees, s/l in 0–100; RGB in 0–1.
@@ -37,6 +37,9 @@ const okhsl: Plugin = (ColordxClass, parsers, formatParsers) => {
     return fixedNotation(alpha < 1 ? `okhsl(${h} ${s}% ${l}% / ${alpha})` : `okhsl(${h} ${s}% ${l}%)`, precision);
   };
 
+  (parseOkhslString as ColorParser).inputKind = 'string';
+
+  (parseOkhslObject as ColorParser).inputKind = 'object';
   parsers.push(parseOkhslString, parseOkhslObject);
   formatParsers.push([parseOkhslString, 'okhsl'], [parseOkhslObject, 'okhsl']);
 };

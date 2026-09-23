@@ -129,6 +129,8 @@ const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseP3String as ColorParser).inputKind = 'string';
+  (parseP3Object as ColorParser).inputKind = 'object';
   parsers.push(parseP3String, parseP3Object);
   formatParsers.push([parseP3String, 'p3'], [parseP3Object, 'p3']);
 };

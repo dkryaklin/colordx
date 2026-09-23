@@ -1,7 +1,7 @@
 import { parseCmykObject, parseCmykString, rgbToCmykRaw } from '../colorModels/cmyk.js';
 import type { Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { CmykColor } from '../types.js';
+import type { CmykColor, ColorParser } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -22,6 +22,8 @@ const cmyk: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseCmykObject as ColorParser).inputKind = 'object';
+  (parseCmykString as ColorParser).inputKind = 'string';
   parsers.push(parseCmykObject, parseCmykString);
   formatParsers.push([parseCmykObject, 'cmyk'], [parseCmykString, 'cmyk']);
 };

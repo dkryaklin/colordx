@@ -99,6 +99,3 @@ export const parseA98String = (input: unknown): RgbColor | null => {
 /** Unclamped linear A98 channels from OKLab values. */
 export const oklabToLinearA98 = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToA98Linear(...oklabToLinear(l, a, b));
-
-parseA98Object.inputKind = 'object' as const;
-parseA98String.inputKind = 'string' as const;

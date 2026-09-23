@@ -231,7 +231,3 @@ export const parseXyzD50String = (input: unknown): RgbColor | null => {
     alpha: clamp(alpha, 0, 1),
   });
 };
-parseXyzObject.inputKind = 'object' as const;
-parseXyzD65Object.inputKind = 'object' as const;
-parseXyzD65String.inputKind = 'string' as const;
-parseXyzD50String.inputKind = 'string' as const;

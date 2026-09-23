@@ -177,5 +177,3 @@ export const parseLabObject = (input: unknown): RgbColor | null => {
     colorSpace: 'lab',
   });
 };
-parseLabString.inputKind = 'string' as const;
-parseLabObject.inputKind = 'object' as const;

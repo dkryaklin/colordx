@@ -105,6 +105,3 @@ export const parseProphotoString = (input: unknown): RgbColor | null => {
 /** Unclamped linear ProPhoto channels from OKLab values. */
 export const oklabToLinearProphoto = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToProphotoLinear(...oklabToLinear(l, a, b));
-
-parseProphotoObject.inputKind = 'object' as const;
-parseProphotoString.inputKind = 'string' as const;

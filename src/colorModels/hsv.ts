@@ -300,5 +300,3 @@ export const parseHsvObject = (input: unknown): RgbColor | null => {
   if (!('h' in input && 's' in input && 'v' in input)) return null;
   return parseHsvBody(input);
 };
-parseHsvObject.inputKind = 'object' as const;
-parseHsvString.inputKind = 'string' as const;

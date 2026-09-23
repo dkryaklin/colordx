@@ -1,7 +1,7 @@
 import { parseOkhsvObject, parseOkhsvString, rgbToOkhsvRaw } from '../colorModels/okhsv.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { OkhsvColor } from '../types.js';
+import type { ColorParser, OkhsvColor } from '../types.js';
 
 // Channel functions (allocation-free `*Into` siblings included) for per-pixel Okhsv work —
 // pickers, saturation/value planes. Same scale as toOkhsv(): h in degrees, s/v in 0–100; RGB in 0–1.
@@ -37,6 +37,9 @@ const okhsv: Plugin = (ColordxClass, parsers, formatParsers) => {
     return fixedNotation(alpha < 1 ? `okhsv(${h} ${s}% ${v}% / ${alpha})` : `okhsv(${h} ${s}% ${v}%)`, precision);
   };
 
+  (parseOkhsvString as ColorParser).inputKind = 'string';
+
+  (parseOkhsvObject as ColorParser).inputKind = 'object';
   parsers.push(parseOkhsvString, parseOkhsvObject);
   formatParsers.push([parseOkhsvString, 'okhsv'], [parseOkhsvObject, 'okhsv']);
 };

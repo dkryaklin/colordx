@@ -1,7 +1,7 @@
 import { parseHwbObject, parseHwbString, rgbToHwb } from '../colorModels/hwb.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
-import type { HwbColor } from '../types.js';
+import type { ColorParser, HwbColor } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -21,6 +21,8 @@ const hwb: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { h, w, b, alpha } = this.toHwb(precision);
     return fixedNotation(alpha < 1 ? `hwb(${h} ${w}% ${b}% / ${alpha})` : `hwb(${h} ${w}% ${b}%)`, precision);
   };
+  (parseHwbString as ColorParser).inputKind = 'string';
+  (parseHwbObject as ColorParser).inputKind = 'object';
   parsers.push(parseHwbString, parseHwbObject);
   formatParsers.push([parseHwbString, 'hwb'], [parseHwbObject, 'hwb']);
 };

@@ -9,7 +9,7 @@ import {
 } from '../colorModels/xyz.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { clamp, fixedNotation, mixWeights, round } from '../helpers.js';
-import type { AnyColor, LabColor, XyzColor, XyzD65Color } from '../types.js';
+import type { AnyColor, ColorParser, LabColor, XyzColor, XyzD65Color } from '../types.js';
 
 declare module '@colordx/core' {
   interface Colordx {
@@ -95,6 +95,12 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseLabString as ColorParser).inputKind = 'string';
+  (parseLabObject as ColorParser).inputKind = 'object';
+  (parseXyzD65String as ColorParser).inputKind = 'string';
+  (parseXyzD65Object as ColorParser).inputKind = 'object';
+  (parseXyzD50String as ColorParser).inputKind = 'string';
+  (parseXyzObject as ColorParser).inputKind = 'object';
   parsers.push(parseLabString, parseLabObject, parseXyzD65String, parseXyzD65Object, parseXyzD50String, parseXyzObject);
   formatParsers.push(
     [parseLabString, 'lab'],

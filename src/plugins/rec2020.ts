@@ -127,6 +127,8 @@ const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
+  (parseRec2020String as ColorParser).inputKind = 'string';
+  (parseRec2020Object as ColorParser).inputKind = 'object';
   parsers.push(parseRec2020String, parseRec2020Object);
   formatParsers.push([parseRec2020String, 'rec2020'], [parseRec2020Object, 'rec2020']);
 };

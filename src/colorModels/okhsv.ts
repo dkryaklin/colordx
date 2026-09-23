@@ -334,5 +334,3 @@ export const parseOkhsvObject = (input: unknown): RgbColor | null => {
     colorSpace: 'okhsv',
   });
 };
-parseOkhsvObject.inputKind = 'object' as const;
-parseOkhsvString.inputKind = 'string' as const;
