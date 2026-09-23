@@ -15,8 +15,13 @@ import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
 
 export const clampHwb = (hwb: HwbColor): HwbColor => {
   // Infinity upper bound = reject negatives only; proportional normalization handles w+b > 100 below.
-  const w = clamp(hwb.w, 0, Infinity);
-  const b = clamp(hwb.b, 0, Infinity);
+  let w = clamp(hwb.w, 0, Infinity);
+  let b = clamp(hwb.b, 0, Infinity);
+  // An infinite channel dominates the ratio; normalizing ∞/∞ directly would give NaN.
+  if (w === Infinity || b === Infinity) {
+    w = w === Infinity ? 100 : 0;
+    b = b === Infinity ? 100 : 0;
+  }
   const sum = w + b;
   return {
     h: normalizeHue(hwb.h),

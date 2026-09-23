@@ -94,6 +94,11 @@ describe('hwb — number vs percentage on w/b', () => {
     // 60+60=120, scaled to 50/50 → gray
     expect(colordx('hwb(0 60% 60%)').toHex()).toBe(colordx('hwb(0 50% 50%)').toHex());
   });
+  it('an infinite w or b dominates the normalization', () => {
+    expect(colordx('hwb(0 1e999% 0%)').toHex()).toBe('#ffffff');
+    expect(colordx('hwb(0 0% 1e999%)').toHex()).toBe('#000000');
+    expect(colordx('hwb(0 1e999% 1e999%)').toHex()).toBe('#808080');
+  });
 });
 
 describe('lab — L `%` is optional', () => {
