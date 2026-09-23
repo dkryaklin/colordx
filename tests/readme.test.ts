@@ -85,10 +85,10 @@ beforeAll(() => {
 
 describe('README — Usage', () => {
   it('toOklch', () => {
-    expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.62796, c: 0.25768, h: 29.23389, alpha: 1 });
+    expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.62796, c: 0.25768, h: 29.23388, alpha: 1 });
   });
   it('toOklchString', () => {
-    expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.62796 0.25768 29.23389)');
+    expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.62796 0.25768 29.23388)');
   });
   it('lighten then toHex', () => {
     expect(colordx('#ff0000').lighten(0.1).toHex()).toBe('#ff3333');
@@ -158,8 +158,8 @@ describe('README — Conversion', () => {
 
   it('toOklab', () => expect(colordx('#ff0000').toOklab()).toEqual({ l: 0.62796, a: 0.22486, b: 0.12585, alpha: 1 }));
   it('toOklabString', () => expect(colordx('#ff0000').toOklabString()).toBe('oklab(0.62796 0.22486 0.12585)'));
-  it('toOklch', () => expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.62796, c: 0.25768, h: 29.23389, alpha: 1 }));
-  it('toOklchString', () => expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.62796 0.25768 29.23389)'));
+  it('toOklch', () => expect(colordx('#ff0000').toOklch()).toEqual({ l: 0.62796, c: 0.25768, h: 29.23388, alpha: 1 }));
+  it('toOklchString', () => expect(colordx('#ff0000').toOklchString()).toBe('oklch(0.62796 0.25768 29.23388)'));
   it('toOklchString precision 2', () => expect(colordx('#ff0000').toOklchString(2)).toBe('oklch(0.63 0.26 29.23)'));
 
   it('toP3', () =>
@@ -571,16 +571,16 @@ describe('README — hsv plugin', () => {
 
 describe('README — okhsl and okhsv plugins', () => {
   it('toOkhsl / toOkhsv', () => {
-    expect((colordx('#3d7a9f') as any).toOkhsl()).toEqual({ h: 237.65614, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' });
-    expect((colordx('#3d7a9f') as any).toOkhsv()).toEqual({ h: 237.65614, s: 65.38076, v: 64.31605, alpha: 1, colorSpace: 'okhsv' });
+    expect((colordx('#3d7a9f') as any).toOkhsl()).toEqual({ h: 237.65615, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' });
+    expect((colordx('#3d7a9f') as any).toOkhsv()).toEqual({ h: 237.65615, s: 65.38077, v: 64.31605, alpha: 1, colorSpace: 'okhsv' });
   });
   it('toOkhslString / toOkhsvString', () => {
-    expect((colordx('#3d7a9f') as any).toOkhslString()).toBe('okhsl(237.65614 57.92201% 48.38305%)');
-    expect((colordx('#3d7a9f') as any).toOkhsvString()).toBe('okhsv(237.65614 65.38076% 64.31605%)');
+    expect((colordx('#3d7a9f') as any).toOkhslString()).toBe('okhsl(237.65615 57.92201% 48.38305%)');
+    expect((colordx('#3d7a9f') as any).toOkhsvString()).toBe('okhsv(237.65615 65.38077% 64.31605%)');
   });
   it('parse okhsl string and okhsv object', () => {
-    expect(colordx('okhsl(237.65614 57.92201% 48.38305%)').toHex()).toBe('#3d7a9f');
-    expect(colordx({ colorSpace: 'okhsv', h: 237.65614, s: 65.38076, v: 64.31605 }).toHex()).toBe('#3d7a9f');
+    expect(colordx('okhsl(237.65615 57.92201% 48.38305%)').toHex()).toBe('#3d7a9f');
+    expect(colordx({ colorSpace: 'okhsv', h: 237.65615, s: 65.38077, v: 64.31605 }).toHex()).toBe('#3d7a9f');
   });
   it('precision argument and hue identity with toOklch', () => {
     expect((colordx('#3d7a9f') as any).toOkhsl(2)).toEqual({ h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' });
@@ -933,7 +933,7 @@ describe('README — Migrating from tinycolor2', () => {
     expect(tinycolor('rgb 255 0 0').toHslString()).toBe('hsl(0, 100%, 50%)');
     expect(tinycolor.mix('#f00', '#00f', 50).toHexString()).toBe('#800080');
     expect(tinycolor.isReadable('#777', '#fff')).toBe(false);
-    expect(tinycolor('#f00').toColordx().toOklchString()).toBe('oklch(0.62796 0.25768 29.23389)');
+    expect(tinycolor('#f00').toColordx().toOklchString()).toBe('oklch(0.62796 0.25768 29.23388)');
     expect(tinycolor('f00').toHexString()).toBe('#ff0000');
     expect(tinycolor({ h: 0, s: 1, l: 0.5 }).toHexString()).toBe('#ff0000');
     expect(tinycolor('#663399').toName()).toBe('rebeccapurple');

@@ -4,7 +4,9 @@
  * The reference vectors were produced by running the author's own colorconversion.js (the source
  * of the interactive picker demo) and rescaling: his h is in turns and s / l / v in 0–1, here h is
  * degrees and s / l / v are 0–100, the toHsl() / toHsv() scale. The port uses the library's OKLab
- * matrices, which differ from the post's in the 10th digit, so the ceilings are 1e-5 rather than 0.
+ * matrices — the CSS Color 4 ones, recomputed at full float64 precision — while the reference uses
+ * the post's 10-digit values, so the ceilings are 5e-5 rather than 0 (and looser for #fffffe, whose
+ * hue next to white amplifies the difference).
  * tests/parity-culori.test.ts runs the same comparison against culori's port on random samples.
  *
  * Two things here are deliberately NOT what the reference code does:
@@ -171,19 +173,21 @@ const hexToUnit = (hex: string): [number, number, number] => [
 
 describe('reference vectors — sRGB → Okhsl / Okhsv', () => {
   for (const [hex, [h, s, l], [hv, sv, v]] of FORWARD) {
+    // Next to white, a 1e-8 matrix difference in a / b is a 5e-4° hue difference.
+    const tol = hex === '#fffffe' ? 2e-3 : 5e-5;
     it(`${hex} okhsl(${h.toFixed(2)} ${s.toFixed(2)}% ${l.toFixed(2)}%)`, () => {
       const [r, g, b] = hexToUnit(hex);
       const got = rgbToOkhslChannels(r, g, b);
-      near(got[0], h, 1e-6, 'h');
-      near(got[1], s, 1e-5, 's');
-      near(got[2], l, 1e-6, 'l');
+      near(got[0], h, tol, 'h');
+      near(got[1], s, tol, 's');
+      near(got[2], l, tol, 'l');
     });
     it(`${hex} okhsv(${hv.toFixed(2)} ${sv.toFixed(2)}% ${v.toFixed(2)}%)`, () => {
       const [r, g, b] = hexToUnit(hex);
       const got = rgbToOkhsvChannels(r, g, b);
-      near(got[0], hv, 1e-6, 'h');
-      near(got[1], sv, 1e-6, 's');
-      near(got[2], v, 1e-6, 'v');
+      near(got[0], hv, tol, 'h');
+      near(got[1], sv, tol, 's');
+      near(got[2], v, tol, 'v');
     });
   }
   it('#808080: the reference reports h = 89.88, s = 1e-5 from matrix noise; a grey reads h = 0, s = 0 here', () => {
@@ -196,25 +200,24 @@ describe('reference vectors — Okhsl / Okhsv → sRGB', () => {
   for (const [[h, s, x], rgbL, rgbV] of INVERSE) {
     it(`okhsl(${h} ${s}% ${x}%) → rgb(${rgbL.map((c) => c.toFixed(2)).join(', ')})`, () => {
       const got = okhslToRgbChannels(h, s, x);
-      for (let i = 0; i < 3; i++) near(got[i]! * 255, rgbL[i]!, 1e-5, `channel ${i}`);
+      for (let i = 0; i < 3; i++) near(got[i]! * 255, rgbL[i]!, 5e-5, `channel ${i}`);
     });
     it(`okhsv(${h} ${s}% ${x}%) → rgb(${rgbV.map((c) => c.toFixed(2)).join(', ')})`, () => {
       const got = okhsvToRgbChannels(h, s, x);
-      for (let i = 0; i < 3; i++) near(got[i]! * 255, rgbV[i]!, 1e-5, `channel ${i}`);
+      for (let i = 0; i < 3; i++) near(got[i]! * 255, rgbV[i]!, 5e-5, `channel ${i}`);
     });
   }
-  it('s = 100 exactly can land a hair outside sRGB — the reference cusp fit, kept on purpose', () => {
-    // okhsl(29.23 100% 56.81%) is #ff0000: the reference puts g and b at −1e-5 / 255.
+  it('s = 100 exactly lands within a hair of the sRGB edge — the reference cusp fit, kept on purpose', () => {
+    // okhsl(29.23 100% 56.81%) is #ff0000: the reference puts g and b at −1e-5 / 255, just outside;
+    // with the full-precision OKLab matrices they land at +5e-12, just inside. Either way, a hair.
     const [, g, b] = okhslToRgbChannels(29.2338802796, 100, 56.808465632);
-    expect(g).toBeLessThan(0);
-    expect(b).toBeLessThan(0);
-    expect(g).toBeGreaterThan(-1e-6);
-    expect(b).toBeGreaterThan(-1e-6);
+    expect(Math.abs(g)).toBeLessThan(1e-6);
+    expect(Math.abs(b)).toBeLessThan(1e-6);
     // The clamped object converter and the public API print the byte the picker expects.
     const { r, g: g2, b: b2 } = okhslToRgb({ h: 29.2338802796, s: 100, l: 56.808465632, alpha: 1, colorSpace: 'okhsl' });
     expect(r).toBeCloseTo(255, 9);
-    expect(g2).toBe(0);
-    expect(b2).toBe(0);
+    expect(g2).toBeCloseTo(0, 6);
+    expect(b2).toBeCloseTo(0, 6);
     expect(colordx('okhsl(29.2338802796 100% 56.808465632%)').toHex()).toBe('#ff0000');
   });
 });
@@ -447,23 +450,23 @@ describe('invariants', () => {
 
 describe('okhsl / okhsv plugins — output', () => {
   it('toOkhsl / toOkhsv default to 5 dp (like toOklch) and carry the colorSpace brand', () => {
-    expect(cx('#3d7a9f').toOkhsl()).toEqual({ h: 237.65614, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' });
-    expect(cx('#3d7a9f').toOkhsv()).toEqual({ h: 237.65614, s: 65.38076, v: 64.31605, alpha: 1, colorSpace: 'okhsv' });
-    expect(cx('#ff0000').toOkhsl()).toEqual({ h: 29.23389, s: 100, l: 56.80847, alpha: 1, colorSpace: 'okhsl' });
-    expect(cx('#ff0000').toOkhsv()).toEqual({ h: 29.23389, s: 99.9522, v: 100, alpha: 1, colorSpace: 'okhsv' });
+    expect(cx('#3d7a9f').toOkhsl()).toEqual({ h: 237.65615, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' });
+    expect(cx('#3d7a9f').toOkhsv()).toEqual({ h: 237.65615, s: 65.38077, v: 64.31605, alpha: 1, colorSpace: 'okhsv' });
+    expect(cx('#ff0000').toOkhsl()).toEqual({ h: 29.23388, s: 100, l: 56.80847, alpha: 1, colorSpace: 'okhsl' });
+    expect(cx('#ff0000').toOkhsv()).toEqual({ h: 29.23388, s: 99.9522, v: 100, alpha: 1, colorSpace: 'okhsv' });
     expect(cx('#3d7a9f').toOkhsl(2)).toEqual({ h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' });
     expect(cx('#3d7a9f').toOkhsv(2)).toEqual({ h: 237.66, s: 65.38, v: 64.32, alpha: 1, colorSpace: 'okhsv' });
   });
   it('precision argument', () => {
     expect(cx('#3d7a9f').toOkhsl(0)).toEqual({ h: 238, s: 58, l: 48, alpha: 1, colorSpace: 'okhsl' });
-    expect(cx('#3d7a9f').toOkhsl(4)).toEqual({ h: 237.6561, s: 57.922, l: 48.3831, alpha: 1, colorSpace: 'okhsl' });
-    expect(cx('#3d7a9f').toOkhsv(4)).toEqual({ h: 237.6561, s: 65.3808, v: 64.316, alpha: 1, colorSpace: 'okhsv' });
+    expect(cx('#3d7a9f').toOkhsl(4)).toEqual({ h: 237.6562, s: 57.922, l: 48.3831, alpha: 1, colorSpace: 'okhsl' });
+    expect(cx('#3d7a9f').toOkhsv(4)).toEqual({ h: 237.6562, s: 65.3808, v: 64.3161, alpha: 1, colorSpace: 'okhsv' });
   });
   it('toOkhslString / toOkhsvString', () => {
-    expect(cx('#3d7a9f').toOkhslString()).toBe('okhsl(237.65614 57.92201% 48.38305%)');
-    expect(cx('#3d7a9f').toOkhsvString()).toBe('okhsv(237.65614 65.38076% 64.31605%)');
-    expect(cx('#3d7a9f80').toOkhslString()).toBe('okhsl(237.65614 57.92201% 48.38305% / 0.502)');
-    expect(cx('#3d7a9f80').toOkhsvString()).toBe('okhsv(237.65614 65.38076% 64.31605% / 0.502)');
+    expect(cx('#3d7a9f').toOkhslString()).toBe('okhsl(237.65615 57.92201% 48.38305%)');
+    expect(cx('#3d7a9f').toOkhsvString()).toBe('okhsv(237.65615 65.38077% 64.31605%)');
+    expect(cx('#3d7a9f80').toOkhslString()).toBe('okhsl(237.65615 57.92201% 48.38305% / 0.502)');
+    expect(cx('#3d7a9f80').toOkhsvString()).toBe('okhsv(237.65615 65.38077% 64.31605% / 0.502)');
     expect(cx('#3d7a9f').toOkhslString(2)).toBe('okhsl(237.66 57.92% 48.38%)');
     expect(cx('#3d7a9f').toOkhsvString(2)).toBe('okhsv(237.66 65.38% 64.32%)');
     expect(cx('#3d7a9f').toOkhslString(0)).toBe('okhsl(238 58% 48%)');
@@ -527,8 +530,8 @@ describe('okhsl / okhsv plugins — output', () => {
     // The unrounded value is exact: the sensitivity is in the 8th decimal of the hue.
     const [h, s, l] = rgbToOkhslChannels(0, 0, 1);
     const [r, g, b] = okhslToRgbChannels(h, s, l);
-    expect(Math.round(r * 255)).toBe(0);
-    expect(Math.round(g * 255)).toBe(0);
+    expect(Math.round(r * 255)).toBeCloseTo(0); // may be -0: r lands at -1e-12
+    expect(Math.round(g * 255)).toBeCloseTo(0);
     expect(Math.round(b * 255)).toBe(255);
     expect(colordx(blue.toOkhslString(8)).toHex()).toBe('#0000ff');
   });

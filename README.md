@@ -58,8 +58,8 @@ import { colordx } from '@colordx/core';
 // Parse any CSS color string or color object, then chain conversions:
 colordx('#ff0000').toRgbString();     // 'rgb(255 0 0)'
 colordx('#ff0000').toHex();           // '#ff0000'
-colordx('#ff0000').toOklch();         // { l: 0.62796, c: 0.25768, h: 29.23389, alpha: 1 }
-colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23389)'
+colordx('#ff0000').toOklch();         // { l: 0.62796, c: 0.25768, h: 29.23388, alpha: 1 }
+colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
 
 // Works from any input format — hex, rgb(), hsl(), oklch(), oklab(), plain objects:
 colordx('oklch(0.5 0.2 240)').toHex();                     // '#0069c7'
@@ -152,8 +152,8 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .toHwbString()     // 'hwb(0 0% 0%)'
 .toOklab()         // { l: 0.62796, a: 0.22486, b: 0.12585, alpha: 1 }
 .toOklabString()   // 'oklab(0.62796 0.22486 0.12585)'
-.toOklch()         // { l: 0.62796, c: 0.25768, h: 29.23389, alpha: 1 }
-.toOklchString()   // 'oklch(0.62796 0.25768 29.23389)'
+.toOklch()         // { l: 0.62796, c: 0.25768, h: 29.23388, alpha: 1 }
+.toOklchString()   // 'oklch(0.62796 0.25768 29.23388)'
 // With p3 plugin loaded:
 .toP3()            // { r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }
 .toP3String()      // 'color(display-p3 0.9175 0.2003 0.1386)'
@@ -383,7 +383,7 @@ colordx(input).mapSrgb().toOklchString();   // 'oklch(0.50907 0.09379 177.84892)
 colordx(input).mapSrgb().toRgbString();     // 'rgb(0 119 102)'
 
 // 3. Clamp — naive-clip into sRGB as a Colordx (matches browser, but hue drifts)
-colordx(input).clampSrgb().toOklchString(); // 'oklch(0.60125 0.1276 164.29892)'
+colordx(input).clampSrgb().toOklchString(); // 'oklch(0.60125 0.1276 164.29893)'
 colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes as (1)
 ```
 
@@ -657,12 +657,12 @@ import okhsv from '@colordx/core/plugins/okhsv';
 
 extend([okhsl, okhsv]);
 
-colordx('#3d7a9f').toOkhsl();       // { h: 237.65614, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' }
-colordx('#3d7a9f').toOkhsv();       // { h: 237.65614, s: 65.38076, v: 64.31605, alpha: 1, colorSpace: 'okhsv' }
-colordx('#3d7a9f').toOkhslString(); // 'okhsl(237.65614 57.92201% 48.38305%)'
-colordx('#3d7a9f').toOkhsvString(); // 'okhsv(237.65614 65.38076% 64.31605%)'
-colordx('okhsl(237.65614 57.92201% 48.38305%)').toHex(); // '#3d7a9f'
-colordx({ colorSpace: 'okhsv', h: 237.65614, s: 65.38076, v: 64.31605 }).toHex(); // '#3d7a9f'
+colordx('#3d7a9f').toOkhsl();       // { h: 237.65615, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' }
+colordx('#3d7a9f').toOkhsv();       // { h: 237.65615, s: 65.38077, v: 64.31605, alpha: 1, colorSpace: 'okhsv' }
+colordx('#3d7a9f').toOkhslString(); // 'okhsl(237.65615 57.92201% 48.38305%)'
+colordx('#3d7a9f').toOkhsvString(); // 'okhsv(237.65615 65.38077% 64.31605%)'
+colordx('okhsl(237.65615 57.92201% 48.38305%)').toHex(); // '#3d7a9f'
+colordx({ colorSpace: 'okhsv', h: 237.65615, s: 65.38077, v: 64.31605 }).toHex(); // '#3d7a9f'
 colordx('#3d7a9f').toOkhsl(2);      // { h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' }
 colordx('#3d7a9f').toOkhsl().h === colordx('#3d7a9f').toOklch().h; // true
 ```
@@ -1035,7 +1035,7 @@ tinycolor('#f00').lighten(20).toHexString();     // '#ff6666'
 tinycolor('rgb 255 0 0').toHslString();          // 'hsl(0, 100%, 50%)'
 tinycolor.mix('#f00', '#00f', 50).toHexString(); // '#800080'
 tinycolor.isReadable('#777', '#fff');            // false
-tinycolor('#f00').toColordx().toOklchString();   // 'oklch(0.62796 0.25768 29.23389)'
+tinycolor('#f00').toColordx().toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
 ```
 
 Same API, same input quirks (`f00`, `rgb 255 0 0`, `{ h: 0, s: 1, l: 0.5 }` read as fractions), same output strings, mutable instances (`lighten()` changes the instance and returns it). Types come along: `tinycolor.Instance`, `tinycolor.ColorInput`.
@@ -1082,7 +1082,7 @@ colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }
 colordx('#3d7a9f').toHsl(4);     // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
 colordx('#3d7a9f').toHsl(0);     // { h: 203, s: 45, l: 43, alpha: 1 }
 
-colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23389)'
+colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
 colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 ```
 

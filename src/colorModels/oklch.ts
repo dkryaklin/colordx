@@ -40,7 +40,8 @@ export const parseOklchObjectRaw = (input: unknown): OklabColor | null => {
   if (!isAnyNumber(l) || !isAnyNumber(c) || !isAnyNumber(h) || !isAnyNumber(alpha)) return null;
   // OKLCH L is [0, 1]; an object above that is a CIE LCH value passed without the colorSpace
   // brand, so reject it rather than clamp it to white. Negative L clamps to 0 like the string form.
-  if (sanitize(l) > 1) return null;
+  // The 1e-9 margin admits float noise: white converts to L = 1.0000000000000002.
+  if (sanitize(l) > 1 + 1e-9) return null;
   return oklchToOklab({
     l: clamp(sanitize(l), 0, 1),
     c: Math.max(0, sanitize(c)),

@@ -122,3 +122,12 @@ describe('@colordx/core/fn', () => {
     expect(fn.NAMES.rebeccapurple).toBe('#663399');
   });
 });
+
+describe('fn — raw OKLab / OKLCh objects of white parse back', () => {
+  // White converts to L = 1.0000000000000002; the "L > 1 is an unbranded CIE value" guard must not
+  // reject float noise.
+  const white = { r: 255, g: 255, b: 255, alpha: 1 };
+  it('rgbToOklab → parseOklabObject', () => expect(fn.parseOklabObject(fn.rgbToOklab(white))).not.toBeNull());
+  it('rgbToOklch → parseOklchObject', () => expect(fn.parseOklchObject(fn.rgbToOklch(white))).not.toBeNull());
+  it('a CIE-sized L is still rejected', () => expect(fn.parseOklabObject({ l: 50, a: 10, b: 10 })).toBeNull());
+});
