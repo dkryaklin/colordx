@@ -99,7 +99,7 @@ colordx({ l: 0.6279, c: 0.2577, h: 29.23 }); // OKLch
 // With p3 plugin loaded:
 colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
-colordx('color(rec2020 0.7919 0.2307 0.0739)'); // Rec.2020 string
+colordx('color(rec2020 0.8235 0.3284 0.1803)'); // Rec.2020 string
 // With a98rgb plugin loaded:
 colordx('color(a98-rgb 0.8586 0 0)'); // A98 (Adobe RGB 1998) string
 // With prophoto plugin loaded:
@@ -269,7 +269,7 @@ import {
 } from '@colordx/core/plugins/rec2020';
 
 oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3 in [0, 1]
-oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (BT.2020 gamma)
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (2.4 gamma)
 
 // CIE Lab/LCH → P3 / Rec.2020 (hot path for LCH renderers without OKLCH detour):
 labToP3Channels(54.29, 80.8, 69.89);      // [r, g, b] gamma P3
@@ -280,7 +280,7 @@ lchToRec2020Channels(54.29, 106.84, 40.86);
 // Split-step API: compute the shared expensive OKLCH→linear sRGB step once,
 // then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
 linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
-linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (BT.2020 gamma)
+linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (2.4 gamma)
 
 // sRGB ↔ HSL / HSV on the same scale toHsl() / toHsv() report: h in degrees, s and l/v in 0–100.
 // RGB is 0–1 gamma sRGB, like rgbToLinear. This is the per-pixel path for pickers, hue wheels
@@ -885,19 +885,19 @@ colordx({ r: 0.9505, g: 0.2856, b: 0.0459, alpha: 1, colorSpace: 'display-p3' })
 
 ### rec2020 plugin
 
-Adds Rec.2020 (BT.2020) color space support. Rec.2020 has the widest gamut of the three — it covers most of the visible spectrum.
+Adds Rec.2020 (BT.2020) color space support. Rec.2020 has the widest gamut of the three — it covers most of the visible spectrum. The transfer function is the pure 2.4 gamma CSS Color 4 now defines for `rec2020` ([csswg-drafts#12574](https://github.com/w3c/csswg-drafts/issues/12574), shipped in Safari 26), not the BT.2020 camera curve earlier drafts used, so `color(rec2020 …)` values differ from those of libraries still on the old curve (culori 4, for one).
 
 ```ts
 import rec2020 from '@colordx/core/plugins/rec2020';
 
 extend([rec2020]);
 
-colordx('#ff0000').toRec2020(); // { r: 0.792, g: 0.231, b: 0.0738, alpha: 1, colorSpace: 'rec2020' }
-colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.792 0.231 0.0738)'
+colordx('#ff0000').toRec2020(); // { r: 0.8235, g: 0.3284, b: 0.1803, alpha: 1, colorSpace: 'rec2020' }
+colordx('#ff0000').toRec2020String(); // 'color(rec2020 0.8235 0.3284 0.1803)'
 
 // Parse Rec.2020 strings (alpha optional)
-colordx('color(rec2020 0.792 0.231 0.0738)').toHex(); // '#ff0000'
-colordx('color(rec2020 0.792 0.231 0.0738 / 0.5)').toHex(); // '#ff000080'
+colordx('color(rec2020 0.8235 0.3284 0.1803)').toHex(); // '#ff0000'
+colordx('color(rec2020 0.8235 0.3284 0.1803 / 0.5)').toHex(); // '#ff000080'
 ```
 
 The plugin also exports standalone gamut utilities and low-level channel functions. `inGamutRec2020` and the channel helpers need no `extend()`. Gamut mapping is available as `Colordx.toGamutRec2020` after `extend([rec2020])`:
@@ -917,7 +917,7 @@ oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0
 Object parsing is also supported using the `colorSpace` discriminant:
 
 ```ts
-colordx({ r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1, colorSpace: 'rec2020' }).toHex();
+colordx({ r: 0.8235, g: 0.3284, b: 0.1803, alpha: 1, colorSpace: 'rec2020' }).toHex();
 ```
 
 ### a98rgb plugin

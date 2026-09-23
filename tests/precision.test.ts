@@ -70,7 +70,7 @@ describe('precision arg — per-format default dp matches prior behavior', () =>
   it('toOklchString default = 5dp', () => expect(c.toOklchString()).toBe('oklch(0.55476 0.08551 237.65615)'));
   it('toP3String default = 4dp', () => expect(c.toP3String()).toBe('color(display-p3 0.2994 0.4728 0.6102)'));
   it('toRec2020String default = 4dp', () =>
-    expect(c.toRec2020String()).toBe('color(rec2020 0.3051 0.4166 0.5667)'));
+    expect(c.toRec2020String()).toBe('color(rec2020 0.3962 0.4963 0.6288)'));
 });
 
 describe('precision arg — custom precision controls decimal places', () => {

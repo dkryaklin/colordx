@@ -186,16 +186,16 @@ describe('oklchToRec2020Channels', () => {
     expect(b).toBeCloseTo(0, 5);
   });
 
-  it('uses BT.2020 gamma, not sRGB gamma', () => {
+  it('uses the Rec.2020 2.4 gamma, not sRGB gamma', () => {
     // For oklch(0.5, 0, 0), linear value ≈ 0.125 for all channels
     // sRGB gamma of 0.125 ≈ 0.3886
-    // BT.2020 gamma of 0.125: alpha * 0.125^0.45 - (alpha-1) ≈ 0.3322
+    // Rec.2020 gamma (CSS Color 4: a pure 2.4 power) of 0.125: 0.125^(1/2.4) ≈ 0.4204
     // These are meaningfully different — test confirms correct transfer function
     const [r] = oklchToRec2020Channels(0.5, 0, 0);
     const [rSrgb] = oklchToRgbChannels(0.5, 0, 0);
     expect(r).not.toBeCloseTo(rSrgb, 2);
-    // BT.2020 result for this linear value should be ~0.332
-    expect(r).toBeCloseTo(0.332, 2);
+    // Rec.2020 result for this linear value should be ~0.4204
+    expect(r).toBeCloseTo(0.4204, 4);
   });
 
   it('returns different values than P3 channels for saturated colors', () => {

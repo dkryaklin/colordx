@@ -31,7 +31,7 @@ declare module '@colordx/core' {
 
 /**
  * Convert linear sRGB channels (from oklchToLinear) to gamma-encoded Rec.2020 channels.
- * This is the cheap step — only a matrix multiply + BT.2020 gamma, no cbrt.
+ * This is the cheap step — only a matrix multiply + the Rec.2020 2.4 gamma, no cbrt.
  */
 export const linearToRec2020Channels = (lr: number, lg: number, lb: number): [number, number, number] => {
   const [r, g, b] = srgbLinearToRec2020Linear(lr, lg, lb);
@@ -50,7 +50,7 @@ export const linearToRec2020ChannelsInto = (out: Float64Array | number[], lr: nu
  * Convert OKLCH to gamma-encoded Rec.2020 channels without object allocation.
  * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
  * exceed this range — callers are responsible for clamping before byte encoding.
- * Uses the BT.2020 transfer function (exponent 0.45, distinct from sRGB 1/2.4).
+ * Uses the CSS Color 4 Rec.2020 transfer function: a pure 2.4 power (BT.1886), no linear segment.
  */
 export const oklchToRec2020Channels = (l: number, c: number, h: number): [number, number, number] =>
   linearToRec2020Channels(...oklchToLinear(l, c, h));
@@ -66,7 +66,7 @@ const DEG_TO_RAD = Math.PI / 180;
 /**
  * Convert CIE Lab (D50) to gamma-encoded Rec.2020 channels without object allocation.
  * Returns [r, g, b] in [0, 1] for in-gamut colors; out-of-gamut channels may exceed [0, 1].
- * Goes Lab → XYZ D50 → linear sRGB → linear Rec.2020 → BT.2020 gamma.
+ * Goes Lab → XYZ D50 → linear sRGB → linear Rec.2020 → Rec.2020 2.4 gamma.
  */
 export const labToRec2020Channels = (l: number, a: number, b: number): [number, number, number] =>
   linearToRec2020Channels(...labToLinearSrgb(l, a, b));

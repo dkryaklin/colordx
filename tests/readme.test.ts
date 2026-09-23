@@ -114,7 +114,7 @@ describe('README — Parsing (core)', () => {
 
 describe('README — Parsing (plugins)', () => {
   it('display-p3 string', () => expect(colordx('color(display-p3 0.9176 0.2003 0.1386)').isValid()).toBe(true));
-  it('rec2020 string', () => expect(colordx('color(rec2020 0.7919 0.2307 0.0739)').isValid()).toBe(true));
+  it('rec2020 string', () => expect(colordx('color(rec2020 0.8235 0.3284 0.1803)').isValid()).toBe(true));
   it('a98-rgb string', () => expect(colordx('color(a98-rgb 0.8586 0 0)').isValid()).toBe(true));
   it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.7022 0.2757 0.1035)').isValid()).toBe(true));
   it('srgb-linear string', () => expect(colordx('color(srgb-linear 1 0 0)').isValid()).toBe(true));
@@ -814,26 +814,26 @@ describe('README — p3 plugin', () => {
 describe('README — rec2020 plugin', () => {
   it('toRec2020', () => {
     expect((colordx('#ff0000') as any).toRec2020()).toEqual({
-      r: 0.792,
-      g: 0.231,
-      b: 0.0738,
+      r: 0.8235,
+      g: 0.3284,
+      b: 0.1803,
       alpha: 1,
       colorSpace: 'rec2020',
     });
   });
   it('toRec2020String', () => {
-    expect((colordx('#ff0000') as any).toRec2020String()).toBe('color(rec2020 0.792 0.231 0.0738)');
+    expect((colordx('#ff0000') as any).toRec2020String()).toBe('color(rec2020 0.8235 0.3284 0.1803)');
   });
   it('parse rec2020 string → toHex', () => {
-    expect(colordx('color(rec2020 0.792 0.231 0.0738)').toHex()).toBe('#ff0000');
+    expect(colordx('color(rec2020 0.8235 0.3284 0.1803)').toHex()).toBe('#ff0000');
   });
   it('parse rec2020 string with alpha', () => {
-    expect(colordx('color(rec2020 0.792 0.231 0.0738 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
+    expect(colordx('color(rec2020 0.8235 0.3284 0.1803 / 0.5)').alpha()).toBeCloseTo(0.5, 2);
   });
   it('inGamutRec2020 outside', () => expect(inGamutRec2020('oklch(0.5 0.4 180)')).toBe(false));
   it('toGamutRec2020 → valid', () => expect(Colordx.toGamutRec2020('oklch(0.5 0.4 180)').isValid()).toBe(true));
   it('parse rec2020 object with colorSpace discriminant', () => {
-    expect(colordx({ r: 0.7919, g: 0.2307, b: 0.0739, alpha: 1, colorSpace: 'rec2020' as const }).isValid()).toBe(true);
+    expect(colordx({ r: 0.8235, g: 0.3284, b: 0.1803, alpha: 1, colorSpace: 'rec2020' as const }).isValid()).toBe(true);
   });
 });
 

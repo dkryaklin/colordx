@@ -49,21 +49,20 @@ export const linearToStoredRgb = (lr: number, lg: number, lb: number, alpha: num
   alpha,
 });
 
-/** BT.2020 transfer function constants. */
-const REC2020_ALPHA = 1.09929682680944;
-const REC2020_BETA = 0.018053968510807;
-
-/** BT.2020 gamma-encoded → linear. Extended to the full real line (sign-preserving). */
+/**
+ * Rec.2020 transfer function: a pure 2.4 power curve, the BT.1886 reference display EOTF with no
+ * black lift. CSS Color 4 defines `rec2020` as display-referred this way (lin_2020 / gam_2020 in
+ * conversions.js); earlier drafts used the BT.2020 camera OETF (α = 1.0993, exponent 0.45), which
+ * encodes the same linear value up to 27/255 higher. Extended to the full real line (sign-preserving).
+ */
 export const rec2020ToLinear = (c: number): number => {
-  const abs = Math.abs(c);
-  const linear = abs < REC2020_BETA * 4.5 ? abs / 4.5 : ((abs + REC2020_ALPHA - 1) / REC2020_ALPHA) ** (1 / 0.45);
+  const linear = Math.abs(c) ** 2.4;
   return c < 0 ? -linear : linear;
 };
 
-/** BT.2020 linear → gamma-encoded. Extended to the full real line (sign-preserving). */
+/** Linear → Rec.2020 gamma-encoded (the inverse 1/2.4 power). Sign-preserving. */
 export const rec2020FromLinear = (n: number): number => {
-  const abs = Math.abs(n);
-  const encoded = abs < REC2020_BETA ? 4.5 * abs : REC2020_ALPHA * abs ** 0.45 - (REC2020_ALPHA - 1);
+  const encoded = Math.abs(n) ** (1 / 2.4);
   return n < 0 ? -encoded : encoded;
 };
 

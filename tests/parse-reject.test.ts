@@ -932,9 +932,9 @@ describe('channel slot assignments — hwb/cmyk/p3/rec2020', () => {
       toP3: () => { r: number; g: number; b: number };
     }).toP3();
     // Via P3 space since rec2020 → sRGB → P3 round-trips the component order predictably for these safe values.
-    expect(v.r).toBeCloseTo(0.11, 1);
-    expect(v.g).toBeCloseTo(0.22, 1);
-    expect(v.b).toBeCloseTo(0.31, 1);
+    expect(v.r).toBeCloseTo(-0.05, 1);
+    expect(v.g).toBeCloseTo(0.16, 1);
+    expect(v.b).toBeCloseTo(0.26, 1);
   });
 });
 

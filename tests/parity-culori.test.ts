@@ -1,4 +1,4 @@
-import { converter, parse as culoriParse, differenceCiede2000, formatCss, toGamut } from 'culori';
+import { converter, parse as culoriParse, differenceCiede2000, formatCss, modeRec2020, toGamut, useMode } from 'culori';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   Colordx,
@@ -38,6 +38,38 @@ import rec2020Plugin, {
 //
 // The counts default low enough to keep `pnpm test` snappy. Set
 // `PARITY_COUNT=100000` to reproduce the long-form script run.
+
+// culori 4 still encodes rec2020 with the BT.2020 camera curve (α = 1.0993, exponent 0.45); CSS
+// Color 4 now uses a pure 2.4 gamma (csswg-drafts#12574), which this library follows. Re-register
+// culori's rec2020 mode with its gamma swapped so every row below still checks the matrices and
+// gamut mapping against culori, on the current definition.
+const BT2020_A = 1.09929682680944;
+const BT2020_B = 0.018053968510807;
+const signed = (f: (x: number) => number) => (v: number) => (v < 0 ? -f(-v) : f(v));
+const oldToLinear = signed((v) => (v < BT2020_B * 4.5 ? v / 4.5 : ((v + BT2020_A - 1) / BT2020_A) ** (1 / 0.45)));
+const oldFromLinear = signed((v) => (v < BT2020_B ? 4.5 * v : BT2020_A * v ** 0.45 - (BT2020_A - 1)));
+const newToLinear = signed((v) => v ** 2.4);
+const newFromLinear = signed((v) => v ** (1 / 2.4));
+type Rec = { mode: 'rec2020'; r: number; g: number; b: number; alpha?: number };
+const regamma = (c: Rec, from: (v: number) => number, to: (v: number) => number): Rec => ({
+  ...c,
+  r: to(from(c.r)),
+  g: to(from(c.g)),
+  b: to(from(c.b)),
+});
+const toOld = (c: Rec) => regamma(c, newToLinear, oldFromLinear);
+const toNew = (c: Rec) => regamma(c, oldToLinear, newFromLinear);
+useMode({
+  ...modeRec2020,
+  toMode: {
+    xyz65: (c: Rec) => modeRec2020.toMode.xyz65(toOld(c)),
+    rgb: (c: Rec) => modeRec2020.toMode.rgb(toOld(c)),
+  },
+  fromMode: {
+    xyz65: (c: never) => toNew(modeRec2020.fromMode.xyz65(c) as Rec),
+    rgb: (c: never) => toNew(modeRec2020.fromMode.rgb(c) as Rec),
+  },
+} as typeof modeRec2020);
 
 const COUNT = Number(process.env.PARITY_COUNT ?? 10_000);
 const COUNT_RGB = COUNT;
