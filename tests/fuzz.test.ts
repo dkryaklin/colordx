@@ -48,6 +48,10 @@ const lcg = (seed: number) => {
 const rand = lcg(42);
 const N = 10_000;
 
+// The heaviest invariants run hundreds of thousands of conversions: about 1.3 s locally, and CI
+// runners have measured 4× slower, which lands at vitest's 5 s default. Give them headroom.
+const HEAVY_TIMEOUT = 30_000;
+
 const colors = Array.from({ length: N }, () => ({
   r: Math.floor(rand() * 256),
   g: Math.floor(rand() * 256),
@@ -564,7 +568,7 @@ describe('fuzz: invariants — every hue is in [0, 360) at every precision', () 
         hueRange(c.toOklch(p).h, `toOklch(${p})`);
       }
     }
-  });
+  }, HEAVY_TIMEOUT);
 
   it('the rounding band near 360 is actually exercised', () => {
     // Colors whose raw hue sits within half a unit of 360 at 0 dp: the wrap must fire, not round up.
@@ -669,7 +673,7 @@ describe('fuzz: invariants — no rounded output carries a signed zero', () => {
         for (const [k, v] of Object.entries(obj)) expect(isNegZero(v), `${k} of ${JSON.stringify(input)}`).toBe(false);
       }
     }
-  });
+  }, HEAVY_TIMEOUT);
 });
 
 describe('fuzz: invariants — hostile input never reaches a formatter', () => {
@@ -781,5 +785,5 @@ describe('fuzz: invariants — hostile input never reaches a formatter', () => {
         wellFormed(x.mixOklab('#fff', bad), `${ctx} mixOklab`);
       }
     }
-  });
+  }, HEAVY_TIMEOUT);
 });
