@@ -360,7 +360,7 @@ describe('gamut strategies — the three distinct outputs', () => {
 
   it('map → hue-preserving chroma reduction (CSS Color 4)', () => {
     const mapped = colordx(input).mapSrgb();
-    expect(mapped.toOklchString()).toBe('oklch(0.50907 0.09379 177.84892)');
+    expect(mapped.toOklchString()).toBe('oklch(0.50903 0.09378 177.85845)');
     expect(mapped.toRgbString()).toBe('rgb(0 119 102)');
   });
 

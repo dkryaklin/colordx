@@ -177,6 +177,8 @@ const cssGamutMap = (
     const E = deltaEOK(fromLinear(cr, cg, cb), [l, ma, mb]);
 
     if (E <= JND) {
+      // CSS Color 4: once the clipped color is within epsilon of the JND, it is the answer.
+      if (JND - E < GAMUT_EPSILON) return [cr, cg, cb];
       lo = mid;
       minInGamut = false;
     } else {
