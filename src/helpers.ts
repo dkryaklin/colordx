@@ -78,14 +78,14 @@ export const alphaAlias = (input: unknown): unknown => {
 };
 
 /**
- * Channel weights for mixing `a1`-alpha and `a2`-alpha colors at ratio `w`, the way CSS color-mix()
- * does it: premultiply each color by its alpha, interpolate, then divide by the mixed alpha.
- * Returns [k1, k2, alpha] so a channel mixes as `c1 * k1 + c2 * k2`. Opaque colors get (1 − w, w).
- * When the mixed alpha is 0 there is nothing to divide by, so the straight weights are kept.
+ * Weight of the second color when mixing an `a1`-alpha and an `a2`-alpha color at ratio `w`, the way
+ * CSS color-mix() does it: premultiply by alpha, interpolate, divide by the mixed alpha. A channel
+ * mixes as `c1 * (1 - k) + c2 * k`. Equal alphas cancel out, so opaque colors get exactly `w`; when
+ * the mixed alpha is 0 there is nothing to divide by, so the straight weight is kept.
  */
-export const mixWeights = (a1: number, a2: number, w: number): [number, number, number] => {
-  const p1 = a1 * (1 - w),
-    p2 = a2 * w,
-    alpha = p1 + p2;
-  return alpha > 0 ? [p1 / alpha, p2 / alpha, alpha] : [1 - w, w, 0];
+export const mixWeight = (a1: number, a2: number, w: number): number => {
+  if (a1 === a2) return w;
+  const p2 = a2 * w,
+    alpha = a1 * (1 - w) + p2;
+  return alpha > 0 ? p2 / alpha : w;
 };
