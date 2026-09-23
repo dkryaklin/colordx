@@ -4,7 +4,7 @@ import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
 import { clampRgb } from './rgb.js';
 
 // D50 white point (CSS Color 4: xy = 0.3457/0.3585)
-export const D50_WX = 96.42956752983539;
+export const D50_WX = (0.3457 / 0.3585) * 100;
 export const D50_WY = 100;
 export const D50_WZ = 82.51046025104603;
 

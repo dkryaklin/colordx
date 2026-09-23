@@ -12,6 +12,13 @@ beforeAll(() => {
 
 const inputs = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#c06060'];
 
+describe('D50 white point', () => {
+  it('white is exactly lab(100 0 0)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((colordx('#fff') as any).toLab(12)).toEqual({ l: 100, a: 0, b: 0, alpha: 1, colorSpace: 'lab' });
+  });
+});
+
 describe('toLab round-trip', () => {
   it.each(inputs)('%s', (input) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

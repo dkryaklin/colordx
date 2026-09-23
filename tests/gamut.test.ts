@@ -1217,7 +1217,7 @@ describe('Rec.2020 wide-gamut inputs to gamut helpers', () => {
 
 describe('XYZ D50 / D65 inputs to gamut helpers', () => {
   // Values in the library's 0–100 XYZ convention (matching parseXyzObject / parseXyzD65Object).
-  const whiteD50 = { x: 96.42956752983539, y: 100, z: 82.51046025104603, alpha: 1 };
+  const whiteD50 = { x: 96.42956764295677, y: 100, z: 82.51046025104603, alpha: 1 };
   const whiteD65 = { x: 95.05, y: 100, z: 108.88, alpha: 1, colorSpace: 'xyz-d65' as const };
   const outOfGamut = { x: 150, y: 100, z: 0, alpha: 1 }; // extreme red — far outside sRGB
 

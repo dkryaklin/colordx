@@ -717,7 +717,7 @@ describe('oklabToRgb deferred-rounding precision', () => {
 describe('xyzD50ToLinearSrgb', () => {
   it('returns linear sRGB values outside [0,1] without clamping for out-of-gamut XYZ', () => {
     // D50 white point → linear sRGB should be exactly [1, 1, 1]
-    const [r, g, b] = xyzD50ToLinearSrgb(96.42956752983539, 100, 82.51046025104603);
+    const [r, g, b] = xyzD50ToLinearSrgb(96.42956764295677, 100, 82.51046025104603);
     expect(r).toBeCloseTo(1, 4);
     expect(g).toBeCloseTo(1, 4);
     expect(b).toBeCloseTo(1, 4);
