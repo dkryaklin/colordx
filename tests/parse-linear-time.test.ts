@@ -88,6 +88,8 @@ describe('tinycolor compat answers on oversized malformed colors in linear time'
     ['hsl', `hsl(${digits}!`],
     ['hsv', `hsv(${spaces}${digits}!`],
     ['whitespace after the name', `rgb(${spaces}!`],
+    ['whitespace after a channel', `rgb(1${spaces}!`],
+    ['whitespace between channels', `rgb(1 1${spaces}!`],
     ['hex', `#${digits}`],
   ])('%s', (_label, input) => expect(durationOf(() => tinycolor(input).isValid)).toBeLessThan(BUDGET_MS), 30_000);
 });

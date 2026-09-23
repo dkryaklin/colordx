@@ -105,7 +105,7 @@ const ANGLE_RE = /^([-+]?(?:\d*\.\d+|\d+))(deg|grad|rad|turn)$/;
 // rest. UNIT_RE stays unanchored for object input, where tinycolor2 lets parseFloat read `180foo`.
 const TOKEN_RE = /^[-+]?(?:\d*\.\d+|\d+)%?/;
 const HEX_RE = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
-const FN_RE = /^(rgba?|hsla?|hsva?)[\s(]+([^)]*?)\s*\)?$/;
+const FN_RE = /^(rgba?|hsla?|hsva?)[\s(]+([^)]*)\)?$/;
 
 const isUnit = (v: unknown): v is Unit =>
   typeof v === 'number' ? Number.isFinite(v) : typeof v === 'string' && UNIT_RE.test(v);
