@@ -93,6 +93,15 @@ describe('fixContrast()', () => {
     expect(Math.abs(colordx(p3Fix.toP3String()).apcaContrast('#fff', { space: 'p3' }))).toBeGreaterThanOrEqual(60);
   });
 
+  it('space p3 accepts colors brighter than white (OKLab L > 1)', () => {
+    const bright = 'color(srgb 1.1 1.1 1.1)';
+    expect(colordx(bright).apcaContrast('#000', { space: 'p3' })).toBeCloseTo(
+      colordx('#fff').apcaContrast('#000', { space: 'p3' }),
+      6
+    );
+    expect(colordx('#777').fixContrast(bright, { apca: 60, space: 'p3' })).not.toBeNull();
+  });
+
   it('minReadable is fixContrast at WCAG 4.5, falling back to the input', () => {
     expect(colordx('#777').minReadable('#fff').toHex()).toBe(colordx('#777').fixContrast('#fff')!.toHex());
     const half = colordx('rgba(0, 0, 0, 0.5)');
