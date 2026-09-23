@@ -68,6 +68,13 @@ const runPlugins = (input: AnyColor, isString: boolean): RgbColor | null => {
 
 // The first character identifies the only builtin that can match; a conclusive miss
 // skips the builtin scan and goes straight to plugins.
+// CSS keywords are ASCII case-insensitive, and named colors already accept surrounding whitespace.
+// Tried only once every parser has declined, so the hex / rgb() paths never pay for the trim; it
+// lives here rather than in parse() to keep parse() small enough for V8 to inline.
+const isTransparent = (s: string): boolean => trimWs(s).toLowerCase() === 'transparent';
+const parseTransparentLoose = (s: string): RgbColor | null =>
+  isTransparent(s) ? { r: 0, g: 0, b: 0, alpha: 0 } : null;
+
 const parseString = (input: string): RgbColor | null => {
   const c0 = input.charCodeAt(0);
   const c = c0 | 32; // lowercase-fold for letters; '#' (35) is unaffected
@@ -84,7 +91,7 @@ const parseString = (input: string): RgbColor | null => {
       if (x) return x;
     }
   }
-  return r ?? runPlugins(input, true);
+  return r ?? runPlugins(input, true) ?? parseTransparentLoose(input);
 };
 
 // The key probe is the membership test the parsers would otherwise repeat, so route
@@ -100,12 +107,9 @@ const parseObject = (input: AnyColor & object): RgbColor | null => {
   return r ?? runPlugins(input, false);
 };
 
-// CSS keywords are ASCII case-insensitive, and named colors already accept surrounding whitespace.
-const isTransparent = (s: string): boolean => s === 'transparent' || trimWs(s).toLowerCase() === 'transparent';
-
 export const parse = (input: AnyColor): RgbColor | null => {
   if (typeof input === 'string') {
-    if (isTransparent(input)) return { r: 0, g: 0, b: 0, alpha: 0 };
+    if (input === 'transparent') return { r: 0, g: 0, b: 0, alpha: 0 };
     return parseString(input);
   }
   if (typeof input === 'object' && input !== null && !Array.isArray(input)) return parseObject(input);
@@ -117,7 +121,7 @@ export const parse = (input: AnyColor): RgbColor | null => {
  * Returns `undefined` for unrecognised input. Plugin-registered formats are detected too.
  */
 export const getFormat = (input: AnyColor): ColorFormat | undefined => {
-  if (typeof input === 'string' && isTransparent(input)) return 'name';
+  if (input === 'transparent') return 'name';
   const typed = typeof input === 'string' ? stringFormatParsers : objectFormatParsers;
   for (const [parser, format] of typed) {
     if (parser(input)) return format;
@@ -125,5 +129,5 @@ export const getFormat = (input: AnyColor): ColorFormat | undefined => {
   for (const [parser, format] of pluginFormatParsers) {
     if (parser(input)) return format;
   }
-  return undefined;
+  return typeof input === 'string' && isTransparent(input) ? 'name' : undefined;
 };
