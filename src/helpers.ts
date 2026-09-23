@@ -52,11 +52,12 @@ export const isWs = (c: number): boolean => {
 };
 
 // Shared regex fragments. NUM matches a CSS Syntax 3 <number-token>: a signed decimal with an
-// optional exponent (`1e2`, `6e-1`). NUM_OR_NONE adds the CSS Color 4 `none` keyword.
+// optional exponent (`1e2`, `6e-1`). NUM_OR_NONE adds the CSS Color 4 `none` keyword, which is
+// an ident, so it can't take a `%` or an angle unit (`none%`, `nonedeg` are invalid).
 // The alternation is deliberate: the shorter `\\d*\\.?\\d+` is ambiguous and backtracks
 // quadratically on a long digit run that ultimately fails to match.
 export const NUM = '[+-]?(?:\\d*\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?';
-export const NUM_OR_NONE = `(?:none|${NUM})`;
+export const NUM_OR_NONE = `(?:none(?![%a-zA-Z])|${NUM})`;
 
 /** Parse a CSS Color 4 channel token. `none` → 0; a plain number is returned as-is. */
 export const parseNum = (v: string): number => (v.toLowerCase() === 'none' ? 0 : Number(v));

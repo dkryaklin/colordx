@@ -99,9 +99,12 @@ const parseObject = (input: AnyColor & object): RgbColor | null => {
   return r ?? runPlugins(input, false);
 };
 
+// CSS keywords are ASCII case-insensitive, and named colors already accept surrounding whitespace.
+const isTransparent = (s: string): boolean => s === 'transparent' || s.trim().toLowerCase() === 'transparent';
+
 export const parse = (input: AnyColor): RgbColor | null => {
   if (typeof input === 'string') {
-    if (input === 'transparent') return { r: 0, g: 0, b: 0, alpha: 0 };
+    if (isTransparent(input)) return { r: 0, g: 0, b: 0, alpha: 0 };
     return parseString(input);
   }
   if (typeof input === 'object' && input !== null && !Array.isArray(input)) return parseObject(input);
@@ -113,7 +116,7 @@ export const parse = (input: AnyColor): RgbColor | null => {
  * Returns `undefined` for unrecognised input. Plugin-registered formats are detected too.
  */
 export const getFormat = (input: AnyColor): ColorFormat | undefined => {
-  if (input === 'transparent') return 'name';
+  if (typeof input === 'string' && isTransparent(input)) return 'name';
   const typed = typeof input === 'string' ? stringFormatParsers : objectFormatParsers;
   for (const [parser, format] of typed) {
     if (parser(input)) return format;

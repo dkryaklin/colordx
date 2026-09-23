@@ -211,6 +211,7 @@ export const parseHslString = (input: unknown): RgbColor | null => {
   let u = i;
   while (u < n && (str.charCodeAt(u) | 32) >= 97 && (str.charCodeAt(u) | 32) <= 122) u++;
   if (u > i) {
+    if (hNone) return null; // `nonedeg`: none is an ident and takes no unit
     const factor = ANGLE_UNITS[str.slice(i, u).toLowerCase()];
     if (typeof factor !== 'number') return null;
     h *= factor;

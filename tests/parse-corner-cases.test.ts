@@ -183,6 +183,30 @@ describe('case-insensitive `none` keyword', () => {
   it('nONe in lch hue', () => valid('lch(50 30 nONe)'));
 });
 
+describe('`none` is an ident: no `%` or angle unit', () => {
+  it.each([
+    'rgb(none% 0 0)',
+    'rgb(255 0 0 / none%)',
+    'hsl(nonedeg 50% 50%)',
+    'hsl(120 none% 50%)',
+    'hwb(nonedeg 0% 0%)',
+    'lab(none% 0 0)',
+    'lch(50 30 noneturn)',
+    'oklab(none% 0 0)',
+    'oklch(0.7 0.1 nonedeg)',
+    'oklch(0.7 none% 120)',
+    'color(srgb 1 0 0 / none%)',
+    'color(display-p3 none% 0 0)',
+    'device-cmyk(none% 0 0 0)',
+  ])('%s', invalid);
+});
+
+describe('`transparent` is case-insensitive like other keywords', () => {
+  it.each(['TRANSPARENT', 'Transparent', ' transparent '])('%s', (s) =>
+    expect(colordx(s).toRgb()).toEqual({ r: 0, g: 0, b: 0, alpha: 0 })
+  );
+});
+
 describe('alpha keyword `none`', () => {
   it('rgb modern: alpha none → 0', () => expect(colordx('rgb(255 0 0 / none)').alpha()).toBe(0));
   it('lab modern: alpha none → 0', () => expect(colordx('lab(50 0 0 / none)').alpha()).toBe(0));
@@ -346,8 +370,9 @@ describe('hsl() string scanner', () => {
   it('`none` is modern-syntax only', () => {
     ok('hsl(none 100% 50%)', '#ff0000');
     ok('hsl(NONE none 50%)', '#808080');
-    ok('hsl(nonedeg 100% 50%)', '#ff0000');
-    ok('hsl(0 none% 50%)', '#808080');
+    // `none` is an ident token: it takes no unit or `%`.
+    bad('hsl(nonedeg 100% 50%)');
+    bad('hsl(0 none% 50%)');
     bad('hsl(none, 100%, 50%)');
     bad('hsl(0, none, 50%)');
     bad('hsl(0, 100%, none)');

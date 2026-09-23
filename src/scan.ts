@@ -91,13 +91,14 @@ const scanNum = (s: string, i: number, n: number): number => {
   return sign * (v / scale);
 };
 
-/** NUM/none followed by an optional `%`. Sets _p / _pct / _none. */
+/** NUM followed by an optional `%`, or `none` (an ident, so no `%`). Sets _p / _pct / _none. */
 const scanChannel = (s: string, i: number, n: number): number => {
   const v = scanNum(s, i, n);
   if (v !== v) return NaN;
   i = _p;
   _pct = false;
   if (i < n && s.charCodeAt(i) === 37) {
+    if (_none) return NaN;
     _pct = true;
     i++;
   }
