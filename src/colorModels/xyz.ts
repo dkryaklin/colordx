@@ -1,4 +1,15 @@
-import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import {
+  NUM_OR_NONE,
+  WS,
+  alphaAlias,
+  clamp,
+  isAnyNumber,
+  isObject,
+  parseNum,
+  round,
+  sanitize,
+  trimWs,
+} from '../helpers.js';
 import { linearToStoredRgb, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -177,20 +188,20 @@ export const parseXyzD65Object = (input: unknown): RgbColor | null => {
 const cssXyzChannel = (v: string, pct: string | undefined): number => (pct ? parseNum(v) : parseNum(v) * 100);
 
 const XYZ_D65_RE = new RegExp(
-  `^color\\(\\s*xyz(?:-d65)?\\s+(?<x>${NUM_OR_NONE})(?<xp>%?)\\s+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
-    `\\s+(?<z>${NUM_OR_NONE})(?<zp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^color\\(${WS}*xyz(?:-d65)?${WS}+(?<x>${NUM_OR_NONE})(?<xp>%?)${WS}+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
+    `${WS}+(?<z>${NUM_OR_NONE})(?<zp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 const XYZ_D50_RE = new RegExp(
-  `^color\\(\\s*xyz-d50\\s+(?<x>${NUM_OR_NONE})(?<xp>%?)\\s+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
-    `\\s+(?<z>${NUM_OR_NONE})(?<zp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^color\\(${WS}*xyz-d50${WS}+(?<x>${NUM_OR_NONE})(?<xp>%?)${WS}+(?<y>${NUM_OR_NONE})(?<yp>%?)` +
+    `${WS}+(?<z>${NUM_OR_NONE})(?<zp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseXyzD65String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = XYZ_D65_RE.exec(input.trim())?.groups;
+  const g = XYZ_D65_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const x = cssXyzChannel(g.x!, g.xp);
   const y = cssXyzChannel(g.y!, g.yp);
@@ -207,7 +218,7 @@ export const parseXyzD65String = (input: unknown): RgbColor | null => {
 
 export const parseXyzD50String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = XYZ_D50_RE.exec(input.trim())?.groups;
+  const g = XYZ_D50_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const x = cssXyzChannel(g.x!, g.xp);
   const y = cssXyzChannel(g.y!, g.yp);

@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, clamp, isAnyNumber, isObject, parseNum, round, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, WS, clamp, isAnyNumber, isObject, parseNum, round, sanitize, trimWs } from '../helpers.js';
 import { linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { LabColor, RgbColor, XyzColor } from '../types.js';
 import { D50_WX as WX, D50_WY as WY, D50_WZ as WZ, rgbToXyz, xyzD50ToLinearSrgb, xyzToRgb } from './xyz.js';
@@ -141,14 +141,14 @@ export const labToRgbUnclamped = ({ l, a, b, alpha }: LabColor): RgbColor => {
 // CSS Color 4: lab(L a b / alpha). L: number|percentage|none (100% = 100).
 // a/b: number|percentage|none (100% = 125).
 const LAB_RE = new RegExp(
-  `^lab\\(\\s*(?<l>${NUM_OR_NONE})(?<lp>%?)\\s+(?<a>${NUM_OR_NONE})(?<ap>%?)\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
-    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^lab\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<a>${NUM_OR_NONE})(?<ap>%?)${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
+    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseLabString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = LAB_RE.exec(input.trim())?.groups;
+  const g = LAB_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const l = parseNum(g.l!); // 100% = 100, so value is unchanged whether `%` present
   const a = g.ap ? parseNum(g.a!) * 1.25 : parseNum(g.a!);

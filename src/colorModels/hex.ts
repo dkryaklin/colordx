@@ -1,4 +1,4 @@
-import { isWs, round, toByte } from '../helpers.js';
+import { isWs, round, toByte, trimWs } from '../helpers.js';
 import type { RgbColor } from '../types.js';
 
 const HEX_BYTE = /* #__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
@@ -16,7 +16,7 @@ const hexDigit = (c: number): number => {
 export const parseHex = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
   // trim() allocates; only pay for it when there is actually padding to strip
-  const s = isWs(input.charCodeAt(0)) || isWs(input.charCodeAt(input.length - 1)) ? input.trim() : input;
+  const s = isWs(input.charCodeAt(0)) || isWs(input.charCodeAt(input.length - 1)) ? trimWs(input) : input;
   const n = s.length;
   if (s.charCodeAt(0) !== 35) return null; // '#'
   if (n !== 4 && n !== 5 && n !== 7 && n !== 9) return null;

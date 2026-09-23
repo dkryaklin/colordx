@@ -1,6 +1,7 @@
 import {
   ANGLE_UNITS,
   NUM_OR_NONE,
+  WS,
   alphaAlias,
   clamp,
   isAnyNumber,
@@ -9,6 +10,7 @@ import {
   parseNum,
   round,
   sanitize,
+  trimWs,
 } from '../helpers.js';
 import type { LchColor, RgbColor } from '../types.js';
 import { labToRgb, labToRgbUnclamped, rgbToLab } from './lab.js';
@@ -80,15 +82,15 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
 
 // CSS Color 4: lch(L C H / alpha). L: 100%=100. C: 100%=150. H: number|angle|none.
 const LCH_RE = new RegExp(
-  `^lch\\(\\s*(?<l>${NUM_OR_NONE})(?<lp>%?)\\s+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
-    `\\s+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^lch\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
+    `${WS}+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
+    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseLchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = LCH_RE.exec(input.trim())?.groups;
+  const g = LCH_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const l = parseNum(g.l!); // 100% = 100
   const c = g.cp ? parseNum(g.c!) * 1.5 : parseNum(g.c!); // 100% = 150

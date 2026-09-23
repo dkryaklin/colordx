@@ -3,6 +3,7 @@ import { parseHslBody, parseHslObject, parseHslString } from './colorModels/hsl.
 import { parseOklabObject, parseOklabString } from './colorModels/oklab.js';
 import { parseOklchObject, parseOklchString } from './colorModels/oklch.js';
 import { parseRgbBody, parseRgbObject, parseRgbString, parseSrgbColorString } from './colorModels/rgb.js';
+import { trimWs } from './helpers.js';
 import type { AnyColor, ColorFormat, ColorParser, RgbColor } from './types.js';
 
 const stringFormatParsers: [ColorParser, ColorFormat][] = [
@@ -100,7 +101,7 @@ const parseObject = (input: AnyColor & object): RgbColor | null => {
 };
 
 // CSS keywords are ASCII case-insensitive, and named colors already accept surrounding whitespace.
-const isTransparent = (s: string): boolean => s === 'transparent' || s.trim().toLowerCase() === 'transparent';
+const isTransparent = (s: string): boolean => s === 'transparent' || trimWs(s).toLowerCase() === 'transparent';
 
 export const parse = (input: AnyColor): RgbColor | null => {
   if (typeof input === 'string') {

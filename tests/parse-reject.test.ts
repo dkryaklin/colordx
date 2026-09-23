@@ -994,12 +994,19 @@ describe('unicode and whitespace edges', () => {
   it('full-width digits rejected', () => reject('rgb(２５５ ０ ０)'));
   it('full-width parens rejected', () => reject('rgb（255 0 0）'));
   // \s in JS regex matches standard whitespace including NBSP? Actually \s matches NBSP (U+00A0) in JS.
-  it('NBSP between channels accepted (per \\s semantics)', () =>
-    expect(colordx('rgb(255\u00A00\u00A00)').isValid()).toBe(true));
+  // CSS whitespace is space, tab, LF, CR and FF only (CSS Syntax 3), not JS \\s.
+  it('NBSP between channels rejected', () => reject('rgb(255\u00A00\u00A00)'));
+  it('NBSP in a regex-parsed format rejected', () => reject('oklch(0.5\u00A00.1\u00A0120)'));
+  it('vertical tab rejected', () => reject('rgb(255\v0\v0)'));
+  it('form feed and CR accepted', () => accept('rgb(255\f0\r0)'));
   // Zero-width space is NOT \s; must be rejected.
   it('zero-width space rejected', () => reject('rgb(255\u200B0\u200B0)'));
-  // JS regex `\s` includes U+FEFF (BOM), so it's whitespace here; documented behavior.
-  it('BOM inside accepted (JS \\s matches U+FEFF)', () => accept('rgb(\uFEFF255 0 0)'));
+  it('BOM inside rejected', () => reject('rgb(\uFEFF255 0 0)'));
+  it('leading BOM or NBSP rejected, on named colors too', () => {
+    reject('\uFEFFred');
+    reject('\u00A0#fff');
+    reject('\u00A0transparent');
+  });
   // Newlines inside the value list are whitespace.
   it('newlines between channels accepted', () => accept('rgb(255\n0\n0)'));
   it('mixed tabs and spaces accepted', () => accept('rgb(255 \t 0 \t 0)'));

@@ -1,6 +1,7 @@
 import {
   ANGLE_UNITS,
   NUM_OR_NONE,
+  WS,
   alphaAlias,
   clamp,
   isAnyNumber,
@@ -9,6 +10,7 @@ import {
   parseNum,
   round,
   sanitize,
+  trimWs,
 } from '../helpers.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
@@ -57,15 +59,15 @@ export const parseHwbObject = (input: unknown): RgbColor | null => {
 };
 
 const HWB_RE = new RegExp(
-  `^hwb\\(\\s*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?\\s+` +
-    `(?<w>${NUM_OR_NONE})(?<wp>%?)\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
-    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^hwb\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?${WS}+` +
+    `(?<w>${NUM_OR_NONE})(?<wp>%?)${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)` +
+    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseHwbString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = HWB_RE.exec(input.trim())?.groups;
+  const g = HWB_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const unit = g.hu?.toLowerCase() ?? 'deg';
   const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);

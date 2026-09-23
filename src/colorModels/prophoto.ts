@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
 import { linearToStoredRgb, prophotoFromLinear, prophotoToLinear, srgbToLinear } from '../transfer.js';
 import type { ProPhotoColor, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
@@ -80,14 +80,14 @@ export const parseProphotoObject = (input: unknown): RgbColor | null => {
 
 // CSS Color 4: color(prophoto-rgb r g b / alpha). Channels accept number|percentage|none; 100% = 1.
 const PROPHOTO_RE = new RegExp(
-  `^color\\(\\s*prophoto-rgb\\s+(?<r>${NUM_OR_NONE})(?<rp>%?)\\s+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
-    `\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^color\\(${WS}*prophoto-rgb${WS}+(?<r>${NUM_OR_NONE})(?<rp>%?)${WS}+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
+    `${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseProphotoString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = PROPHOTO_RE.exec(input.trim())?.groups;
+  const g = PROPHOTO_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
   const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);

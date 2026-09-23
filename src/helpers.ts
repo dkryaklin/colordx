@@ -33,22 +33,20 @@ export const sanitize = (n: number): number => (Number.isNaN(n) ? 0 : n);
 export const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
-// Must match JS regex `\s` exactly, since these scanners replace regexes:
-// [\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]
-export const isWs = (c: number): boolean => {
-  if (c === 32 || (c >= 9 && c <= 13)) return true; // space, \t \n \v \f \r — the hot path
-  if (c < 0xa0) return false;
-  return (
-    c === 0xa0 ||
-    c === 0x1680 ||
-    (c >= 0x2000 && c <= 0x200a) ||
-    c === 0x2028 ||
-    c === 0x2029 ||
-    c === 0x202f ||
-    c === 0x205f ||
-    c === 0x3000 ||
-    c === 0xfeff
-  );
+// CSS whitespace (CSS Syntax 3 §4.2): space, tab, LF, CR and FF only. JS `\s` and String.trim()
+// also accept NBSP, \v, U+2028, the BOM and other Unicode spaces, which no CSS parser does.
+export const isWs = (c: number): boolean => c === 32 || c === 9 || c === 10 || c === 13 || c === 12;
+
+/** Regex fragment matching one CSS whitespace character, for the color-function patterns. */
+export const WS = '[ \\t\\n\\r\\f]';
+
+/** String.trim() restricted to CSS whitespace. Linear: a `^ws+|ws+$` regex backtracks quadratically. */
+export const trimWs = (s: string): string => {
+  let i = 0,
+    j = s.length;
+  while (i < j && isWs(s.charCodeAt(i))) i++;
+  while (j > i && isWs(s.charCodeAt(j - 1))) j--;
+  return i === 0 && j === s.length ? s : s.slice(i, j);
 };
 
 // Shared regex fragments. NUM matches a CSS Syntax 3 <number-token>: a signed decimal with an

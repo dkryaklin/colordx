@@ -1,6 +1,7 @@
 import {
   ANGLE_UNITS,
   NUM_OR_NONE,
+  WS,
   alphaAlias,
   clamp,
   isAnyNumber,
@@ -8,6 +9,7 @@ import {
   normalizeHue,
   parseNum,
   sanitize,
+  trimWs,
 } from '../helpers.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, oklabToRgbUnclamped, rgbToOklab } from './oklab.js';
@@ -56,15 +58,15 @@ export const parseOklchObject = (input: unknown): RgbColor | null => {
 };
 
 const OKLCH_RE = new RegExp(
-  `^oklch\\(\\s*(?<l>${NUM_OR_NONE})(?<lp>%?)\\s+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
-    `\\s+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^oklch\\(${WS}*(?<l>${NUM_OR_NONE})(?<lp>%?)${WS}+(?<c>${NUM_OR_NONE})(?<cp>%?)` +
+    `${WS}+(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
+    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseOklchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = OKLCH_RE.exec(input.trim())?.groups;
+  const g = OKLCH_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   // CSS Color 4: L outside [0, 1] and negative C are clamped at parsed-value time.
   const L = clamp(g.lp ? parseNum(g.l!) / 100 : parseNum(g.l!), 0, 1); // 100% = 1

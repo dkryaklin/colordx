@@ -349,7 +349,9 @@ describe('hsl() string scanner', () => {
     ok('hsl(0 100% 50%\t)', '#ff0000');
     ok('hsl(0 100% 50% / 0.5 )', '#ff000080');
     ok('hsla(0, 100%, 50%, 0.5 )', '#ff000080');
-    ok(' \n hsl( 0 100% 50% ) \u00a0\n', '#ff0000');
+    ok(' \n hsl( 0 100% 50% ) \f\r\n', '#ff0000');
+    // CSS whitespace is space, tab, LF, CR and FF only — not JS \s, which adds NBSP and the BOM.
+    bad(' \n hsl( 0 100% 50% ) \u00a0\n');
   });
 
   it('reads both syntaxes, any case, with exponents and leading dots', () => {
@@ -443,9 +445,12 @@ describe('hsl() string scanner', () => {
       'hsl(10{ 100% 50%)',
     ])
       expect(parseHslString(s), s).toBeNull();
-    expect(rgbToHex(parseHslString('hsl(0\u00a0100%\u00a050%)')!)).toBe('#ff0000');
-    expect(rgbToHex(parseHslString('hsl(0deg\u00a0100% 50%)')!)).toBe('#ff0000');
-    expect(rgbToHex(parseHslString('\u00a0hsl(0 100% 50%)\ufeff')!)).toBe('#ff0000');
+    expect(rgbToHex(parseHslString('hsl(0\t100%\n50%)')!)).toBe('#ff0000');
+    expect(rgbToHex(parseHslString('hsl(0deg\f100% 50%)')!)).toBe('#ff0000');
+    expect(rgbToHex(parseHslString('\r\nhsl(0 100% 50%)\n')!)).toBe('#ff0000');
+    // Not CSS whitespace: NBSP, the BOM, \v.
+    for (const s of ['hsl(0\u00a0100%\u00a050%)', 'hsl(0deg\v100% 50%)', '\u00a0hsl(0 100% 50%)\ufeff'])
+      expect(parseHslString(s), s).toBeNull();
   });
 
   it('clamps like the object parser and matches Number() on long tokens', () => {

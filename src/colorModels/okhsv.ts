@@ -1,4 +1,15 @@
-import { ANGLE_UNITS, NUM_OR_NONE, alphaAlias, clamp, isObject, normalizeHue, parseNum, round } from '../helpers.js';
+import {
+  ANGLE_UNITS,
+  NUM_OR_NONE,
+  WS,
+  alphaAlias,
+  clamp,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+  trimWs,
+} from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OkhsvColor, RgbColor } from '../types.js';
 import { CUSP, LAB, LIN, findCusp, linearToOklabScratch, oklabToLinearScratch, toe, toeInv } from './okgamut.js';
@@ -283,15 +294,15 @@ export const okhsvToRgb = ({ h, s, v, alpha }: OkhsvColor): RgbColor => {
 // okhsv() is a library-defined syntax (no CSS spec defines one). Modern space form only, in the
 // shape of hsv(): optional `%` on s / v, angle units on h, the CSS Color 4 `none` keyword.
 const OKHSV_RE = new RegExp(
-  `^okhsv\\(\\s*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `\\s+(?<s>${NUM_OR_NONE})%?\\s+(?<v>${NUM_OR_NONE})%?` +
-    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^okhsv\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
+    `${WS}+(?<s>${NUM_OR_NONE})%?${WS}+(?<v>${NUM_OR_NONE})%?` +
+    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseOkhsvString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = OKHSV_RE.exec(input.trim())?.groups;
+  const g = OKHSV_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const unit = g.hu?.toLowerCase() ?? 'deg';
   const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);

@@ -1,4 +1,4 @@
-import { NUM_OR_NONE, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize } from '../helpers.js';
+import { NUM_OR_NONE, WS, alphaAlias, clamp, isAnyNumber, isObject, parseNum, sanitize, trimWs } from '../helpers.js';
 import { a98FromLinear, a98ToLinear, linearToStoredRgb, srgbToLinear } from '../transfer.js';
 import type { A98Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
@@ -74,14 +74,14 @@ export const parseA98Object = (input: unknown): RgbColor | null => {
 
 // CSS Color 4: color(a98-rgb r g b / alpha). Channels accept number|percentage|none; 100% = 1.
 const A98_RE = new RegExp(
-  `^color\\(\\s*a98-rgb\\s+(?<r>${NUM_OR_NONE})(?<rp>%?)\\s+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
-    `\\s+(?<b>${NUM_OR_NONE})(?<bp>%?)\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^color\\(${WS}*a98-rgb${WS}+(?<r>${NUM_OR_NONE})(?<rp>%?)${WS}+(?<g>${NUM_OR_NONE})(?<gp>%?)` +
+    `${WS}+(?<b>${NUM_OR_NONE})(?<bp>%?)${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseA98String = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = A98_RE.exec(input.trim())?.groups;
+  const g = A98_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const r = g.rp ? parseNum(g.r!) / 100 : parseNum(g.r!);
   const gc = g.gp ? parseNum(g.g!) / 100 : parseNum(g.g!);

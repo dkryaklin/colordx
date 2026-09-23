@@ -1,4 +1,15 @@
-import { ANGLE_UNITS, NUM_OR_NONE, alphaAlias, clamp, isObject, normalizeHue, parseNum, round } from '../helpers.js';
+import {
+  ANGLE_UNITS,
+  NUM_OR_NONE,
+  WS,
+  alphaAlias,
+  clamp,
+  isObject,
+  normalizeHue,
+  parseNum,
+  round,
+  trimWs,
+} from '../helpers.js';
 import { srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { OkhslColor, RgbColor } from '../types.js';
 import { CS, LAB, LIN, findCs, linearToOklabScratch, oklabToLinearScratch, toe, toeInv } from './okgamut.js';
@@ -269,15 +280,15 @@ export const okhslToRgb = ({ h, s, l, alpha }: OkhslColor): RgbColor => {
 // okhsl() is a library-defined syntax (no CSS spec defines one). Modern space form only, in the
 // shape of hsl(): optional `%` on s / l, angle units on h, the CSS Color 4 `none` keyword.
 const OKHSL_RE = new RegExp(
-  `^okhsl\\(\\s*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
-    `\\s+(?<s>${NUM_OR_NONE})%?\\s+(?<l>${NUM_OR_NONE})%?` +
-    `\\s*(?:/\\s*(?<al>${NUM_OR_NONE})(?<alp>%?)\\s*)?\\)$`,
+  `^okhsl\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?` +
+    `${WS}+(?<s>${NUM_OR_NONE})%?${WS}+(?<l>${NUM_OR_NONE})%?` +
+    `${WS}*(?:/${WS}*(?<al>${NUM_OR_NONE})(?<alp>%?)${WS}*)?\\)$`,
   'i'
 );
 
 export const parseOkhslString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = OKHSL_RE.exec(input.trim())?.groups;
+  const g = OKHSL_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const unit = g.hu?.toLowerCase() ?? 'deg';
   const h = parseNum(g.h!) * (ANGLE_UNITS[unit] ?? 1);

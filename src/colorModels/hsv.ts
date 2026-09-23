@@ -3,12 +3,14 @@ import {
   ANGLE_UNITS,
   NUM,
   NUM_OR_NONE,
+  WS,
   alphaAlias,
   clamp,
   isObject,
   normalizeHue,
   parseNum,
   round,
+  trimWs,
 } from '../helpers.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -252,19 +254,19 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
 // modern space form supports optional `%` and the CSS Color 4 `none` keyword.
 // Named groups: `_c` = comma/legacy branch, `_s` = space/modern branch.
 const HSV_RE = new RegExp(
-  `^hsva?\\(\\s*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?\\s*(?:` +
-    `,\\s*(?<s_c>${NUM})%\\s*,\\s*(?<v_c>${NUM})%` +
-    `(?:\\s*,\\s*(?<al_c>${NUM})(?<alp_c>%?)?\\s*)?` +
+  `^hsva?\\(${WS}*(?<h>${NUM_OR_NONE})(?<hu>deg|rad|grad|turn)?${WS}*(?:` +
+    `,${WS}*(?<s_c>${NUM})%${WS}*,${WS}*(?<v_c>${NUM})%` +
+    `(?:${WS}*,${WS}*(?<al_c>${NUM})(?<alp_c>%?)?${WS}*)?` +
     `|` +
-    `\\s+(?<s_s>${NUM_OR_NONE})(?<sp_s>%?)\\s+(?<v_s>${NUM_OR_NONE})(?<vp_s>%?)` +
-    `(?:\\s*/\\s*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?)?\\s*)?` +
+    `${WS}+(?<s_s>${NUM_OR_NONE})(?<sp_s>%?)${WS}+(?<v_s>${NUM_OR_NONE})(?<vp_s>%?)` +
+    `(?:${WS}*/${WS}*(?<al_s>${NUM_OR_NONE})(?<alp_s>%?)?${WS}*)?` +
     `)\\)$`,
   'i'
 );
 
 export const parseHsvString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  const g = HSV_RE.exec(input.trim())?.groups;
+  const g = HSV_RE.exec(trimWs(input))?.groups;
   if (!g) return null;
   const isComma = g.s_c !== undefined;
   if (isComma && /^none$/i.test(g.h!)) return null;
