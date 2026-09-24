@@ -161,8 +161,12 @@ export const NAMES: Record<string, string> = {
   yellowgreen: '#9acd32',
 };
 
+const ASCII_RE = /^[\x00-\x7f]*$/;
+
 export const parseNameString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string') return null;
+  // CSS keywords are ASCII case-insensitive; toLowerCase() alone would fold U+212A KELVIN SIGN to
+  // "k" and read "blac\u212A" as black. Every name is ASCII, so any other input is not one.
+  if (typeof input !== 'string' || !ASCII_RE.test(input)) return null;
   const hex = NAMES[trimWs(input).toLowerCase()];
   return hex ? parseHex(hex) : null;
 };
