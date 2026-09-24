@@ -1,4 +1,4 @@
-import { oklabToRgb, rgbToOklab } from '../colorModels/oklab.js';
+import { oklabToLinear, rgbToOklab } from '../colorModels/oklab.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { clamp, mixWeight, round } from '../helpers.js';
 import type { AnyColor } from '../types.js';
@@ -34,14 +34,13 @@ const mix: Plugin = (ColordxClass) => {
     const oklab2 = rgbToOklab(new ColordxClass(color)._rawRgb());
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(oklab1.alpha, oklab2.alpha, w);
-    return new ColordxClass(
-      oklabToRgb({
-        l: oklab1.l * (1 - k) + oklab2.l * k,
-        a: oklab1.a * (1 - k) + oklab2.a * k,
-        b: oklab1.b * (1 - k) + oklab2.b * k,
-        alpha: round(oklab1.alpha * (1 - w) + oklab2.alpha * w, 3),
-      })
+    // Unclamped, like color-mix(in oklab): a wide-gamut input stays wide-gamut.
+    const [lr, lg, lb] = oklabToLinear(
+      oklab1.l * (1 - k) + oklab2.l * k,
+      oklab1.a * (1 - k) + oklab2.a * k,
+      oklab1.b * (1 - k) + oklab2.b * k
     );
+    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, round(oklab1.alpha * (1 - w) + oklab2.alpha * w, 3), false);
   };
 
   const scale = (self: Colordx, count: number, target: AnyColor): Colordx[] => {

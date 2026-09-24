@@ -1,4 +1,11 @@
-import { deltaE2000, labToRgb, parseLabObject, parseLabString, rgbToLab, rgbToLabD65 } from '../colorModels/lab.js';
+import {
+  deltaE2000,
+  labToXyzValues,
+  parseLabObject,
+  parseLabString,
+  rgbToLab,
+  rgbToLabD65,
+} from '../colorModels/lab.js';
 import {
   parseXyzD50String,
   parseXyzD65Object,
@@ -6,6 +13,7 @@ import {
   parseXyzObject,
   rgbToXyz,
   rgbToXyzD65,
+  xyzD50ToLinearSrgb,
 } from '../colorModels/xyz.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { clamp, fixedNotation, mixWeight, round } from '../helpers.js';
@@ -79,15 +87,14 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     const lab2 = rgbToLab(new ColordxClass(color)._rawRgb());
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(lab1.alpha, lab2.alpha, w);
-    return new ColordxClass(
-      labToRgb({
-        l: lab1.l * (1 - k) + lab2.l * k,
-        a: lab1.a * (1 - k) + lab2.a * k,
-        b: lab1.b * (1 - k) + lab2.b * k,
-        alpha: round(lab1.alpha * (1 - w) + lab2.alpha * w, 3),
-        colorSpace: 'lab',
-      })
+    // Unclamped, like color-mix(in lab): a wide-gamut input stays wide-gamut.
+    const [x, y, z] = labToXyzValues(
+      lab1.l * (1 - k) + lab2.l * k,
+      lab1.a * (1 - k) + lab2.a * k,
+      lab1.b * (1 - k) + lab2.b * k
     );
+    const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
+    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, round(lab1.alpha * (1 - w) + lab2.alpha * w, 3), false);
   };
   /** Returns ΔE2000 color difference normalized to [0, 1] (divide by 100). 0 = identical, 1 = maximally different. */
   ColordxClass.prototype.delta = function (color: AnyColor | Colordx = '#fff', precision = 3) {
