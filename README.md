@@ -708,6 +708,8 @@ colordx('#ff0000').harmonies('rectangle');                   // [0°, 60°, 180�
 colordx('#ff0000').harmonies('double-split-complementary');  // [−30°, 0°, 30°, 150°, 210°] — 5 colors
 ```
 
+An unknown type throws a `RangeError` naming it.
+
 ### hwb plugin
 
 CSS Color Level 4 HWB (Hue, Whiteness, Blackness) color model.

@@ -693,6 +693,10 @@ describe('option matrix — mix(), invalid input and unknown options', () => {
     expect(() => inv.contrast('#fff')).toThrow(new RangeError('contrast: this color is invalid'));
     expect(() => inv.over('#fff')).toThrow(new RangeError('over: this color is invalid'));
   });
+
+  it.each(['nope', 'toString', 'constructor'])('harmonies(%j) throws a RangeError naming the type', (t) => {
+    expect(() => colordx('#f00').harmonies(t as never)).toThrow(new RangeError(`harmonies: unknown type "${t}"`));
+  });
 });
 
 describe('option matrix — known bugs (it.fails until fixed)', () => {
@@ -722,10 +726,6 @@ describe('option matrix — divergences (pinned as current behaviour)', () => {
   it('the Display-P3 red primary is outside Rec.2020 (README says sRGB ⊂ Display-P3 ⊂ Rec.2020)', () => {
     expect(inGamutP3('color(display-p3 1 0 0)')).toBe(true);
     expect(inGamutRec2020('color(display-p3 1 0 0)')).toBe(false);
-  });
-
-  it('harmonies() with an unknown type throws a TypeError rather than a descriptive error', () => {
-    expect(() => colordx('#f00').harmonies('nope' as never)).toThrow(TypeError);
   });
 
   it('a11y on a color outside sRGB judges the gamut-mapped color, not the naive clip the browser shows', () => {
