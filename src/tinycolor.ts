@@ -105,7 +105,23 @@ const ANGLE_RE = /^([-+]?(?:\d*\.\d+|\d+))(deg|grad|rad|turn)$/;
 // rest. UNIT_RE stays unanchored for object input, where tinycolor2 lets parseFloat read `180foo`.
 const TOKEN_RE = /^[-+]?(?:\d*\.\d+|\d+)%?/;
 const HEX_RE = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
-const FN_RE = /^(rgba?|hsla?|hsva?)[\s(]+([^)]*)\)?$/;
+const FN_NAME_RE = /^(rgba?|hsla?|hsva?)/;
+const SPACE_RE = /\s/;
+
+// tinycolor2's `^(rgba?|hsla?|hsva?)[\s(]+([^)]*)\)?$`, scanned once: as a regex, `[\s(]+` and
+// `[^)]*` both match a run of spaces or `(`, so a failing input backtracks over every split of it.
+// Returns [name, body] or null.
+const matchFn = (s: string): [string, string] | null => {
+  const m = FN_NAME_RE.exec(s);
+  if (!m) return null;
+  let i = m[0].length;
+  const start = i;
+  while (i < s.length && (s[i] === '(' || SPACE_RE.test(s[i]!))) i++;
+  if (i === start) return null;
+  const end = s.endsWith(')') ? s.length - 1 : s.length;
+  const body = s.slice(i, end);
+  return body.includes(')') ? null : [m[1]!, body];
+};
 
 const isUnit = (v: unknown): v is Unit =>
   typeof v === 'number' ? Number.isFinite(v) : typeof v === 'string' && UNIT_RE.test(v);
@@ -174,11 +190,11 @@ const parseInput = (input: unknown): Parsed => {
       else if (hex.length === 4) rgb.alpha = parseInt(hex[3]! + hex[3]!, 16) / 255;
       return { rgb, ok: true, format: named ? 'name' : hex.length % 4 === 0 ? 'hex8' : 'hex' };
     }
-    const fm = FN_RE.exec(s);
+    const fm = matchFn(s);
     if (!fm) return invalid;
-    const p = fm[2]!.split(/[\s,/]+/).filter(Boolean);
+    const p = fm[1].split(/[\s,/]+/).filter(Boolean);
     if (p.length < 3 || p.length > 4) return invalid;
-    const k = fm[1]!.slice(0, 3);
+    const k = fm[0].slice(0, 3);
     // tinycolor2's matcher rejects `1e2`, `180foo`, `0x10`; parseFloat would read them as 100, 180, 0.
     const last = p.length - 1;
     for (let i = 0; i <= last; i++) {
