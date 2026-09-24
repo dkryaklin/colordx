@@ -78,9 +78,10 @@ const apcaChannels = (c: Colordx, space: ApcaSpace): [number, number, number] =>
   let p3 = srgbLinearToP3Linear(lr, lg, lb);
   if (p3.some((v) => v < 0 || v > 1)) {
     const [l, a, bb] = linearSrgbToOklab(lr, lg, lb);
-    // Clamp L like mapSrgb does: a brighter-than-white input has L > 1, which the OKLab object
-    // parser rejects as an unbranded CIE Lab value, and toGamutCustom would return null.
-    const lc = l > 1 ? 1 : l < 0 ? 0 : l;
+    // Clamp and snap L like mapSrgb does: a brighter-than-white input has L > 1, which the OKLab
+    // object parser rejects as an unbranded CIE Lab value, and toGamutCustom would return null. The
+    // stored round-trip drifts an exact L = 1 to 0.9999999999999998, which must still map to white.
+    const lc = l > 1 - 1e-7 ? 1 : l < 1e-7 ? 0 : l;
     p3 = toGamutCustom({ l: lc, a, b: bb, alpha }, oklabToLinearP3, p3FromLinear)!.linear as [number, number, number];
   }
   return [srgbFromLinear(p3[0]), srgbFromLinear(p3[1]), srgbFromLinear(p3[2])];
