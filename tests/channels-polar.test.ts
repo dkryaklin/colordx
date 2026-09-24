@@ -23,7 +23,8 @@ extend([hsv]);
 // object path through a `*Into` call costs a Float64Array hop (~2 ns, 14% on lighten()) and lets the
 // library's own array pollute the *Into function's type feedback, which measured 8× slower on a
 // user's render loop. This file is what keeps the two bodies from drifting: every comparison against
-// the object API is bit-exact (`toBe`), not approximate.
+// the object API is bit-exact (`toBe`), not approximate, except hslToRgb, which scales to bytes in a
+// different order to keep half bytes exact and is held to 2 ULP.
 
 let seed = 0x9e3779b9;
 const rand = () => {
@@ -188,13 +189,15 @@ describe('parity with the object API (bit-exact)', () => {
     }
   });
 
-  it('hslToRgbChannels × 255 reproduces hslToRgb exactly', () => {
+  // hslToRgb scales percent by 255 / 100 so an exact half byte stays exact (90% → 229.5), while the
+  // channel function divides by 100 first (0.9 · 255 = 229.49999999999997): they agree to 2 ULP.
+  it('hslToRgbChannels × 255 reproduces hslToRgb to 2 ULP', () => {
     for (const [h, s, l] of polarSamples()) {
       const want = hslToRgb({ h, s, l, alpha: 1 });
       const [r, g, b] = hslToRgbChannels(h, s, l);
-      expect(r * 255).toBe(want.r);
-      expect(g * 255).toBe(want.g);
-      expect(b * 255).toBe(want.b);
+      expect(Math.abs(r * 255 - want.r)).toBeLessThanOrEqual(Math.abs(want.r) * 2 * Number.EPSILON);
+      expect(Math.abs(g * 255 - want.g)).toBeLessThanOrEqual(Math.abs(want.g) * 2 * Number.EPSILON);
+      expect(Math.abs(b * 255 - want.b)).toBeLessThanOrEqual(Math.abs(want.b) * 2 * Number.EPSILON);
     }
   });
 

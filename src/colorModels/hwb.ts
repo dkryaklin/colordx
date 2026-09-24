@@ -1,7 +1,8 @@
 import { alphaAlias, clamp, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import { SC, scanFunc } from '../scan.js';
 import type { HwbColor, RgbColor } from '../types.js';
-import { hsvToRgb, rgbToHsvRaw } from './hsv.js';
+import { hslChannel } from './hsl.js';
+import { rgbToHsvRaw } from './hsv.js';
 
 export const clampHwb = (hwb: HwbColor): HwbColor => {
   // Infinity upper bound = reject negatives only; proportional normalization handles w+b > 100 below.
@@ -31,11 +32,18 @@ export const rgbToHwb = (rgb: RgbColor): HwbColor => {
   });
 };
 
-// Precondition: w + b must be ≤ 100. Call clampHwb first — direct use with unnormalized values
-// produces negative saturation and incorrect output.
+// CSS Color 4 hwbToRgb, in percent like hslChannel: the pure hue at hsl(h 100% 50%), scaled by
+// 100 − w − b and lifted by w. hwb(120 30% 50%) has green = 50% exactly, so it prints 128, not 127.
+// Precondition: w + b must be ≤ 100. Call clampHwb first, which normalizes a larger sum to 100.
 export const hwbToRgb = ({ h, w, b, alpha }: HwbColor): RgbColor => {
-  const s = b === 100 ? 0 : 100 - (w / (100 - b)) * 100;
-  return hsvToRgb({ h, s, v: 100 - b, alpha });
+  const scale = 100 - w - b;
+  const hue = normalizeHue(h);
+  return {
+    r: (((hslChannel(0, hue, 50, 50) * scale) / 100 + w) * 255) / 100,
+    g: (((hslChannel(8, hue, 50, 50) * scale) / 100 + w) * 255) / 100,
+    b: (((hslChannel(4, hue, 50, 50) * scale) / 100 + w) * 255) / 100,
+    alpha,
+  };
 };
 
 export const parseHwbObject = (input: unknown): RgbColor | null => {

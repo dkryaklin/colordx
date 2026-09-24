@@ -698,7 +698,7 @@ describe('Plugins — harmonies', () => {
     expect(h[0].toHex()).toBe('#ff0000');
     expect(h[1].toHex()).toBe('#80ff00'); // rotate(90) → hsl(90)
     expect(h[2].toHex()).toBe('#00ffff'); // rotate(180)
-    expect(h[3].toHex()).toBe('#7f00ff'); // rotate(270) → hsl(270)
+    expect(h[3].toHex()).toBe('#8000ff'); // rotate(270) → hsl(270), red 127.5 exactly
   });
 
   it('split-complementary: 3 colors at 0°, 150°, 210°', () => {
@@ -706,7 +706,7 @@ describe('Plugins — harmonies', () => {
     expect(h).toHaveLength(3);
     expect(h[0].toHex()).toBe('#ff0000');
     expect(h[1].toHex()).toBe('#00ff80'); // rotate(150) → hsl(150)
-    expect(h[2].toHex()).toBe('#007fff'); // rotate(210) → hsl(210)
+    expect(h[2].toHex()).toBe('#0080ff'); // rotate(210) → hsl(210), green 127.5 exactly
   });
 
   it('rectangle: 4 colors at 0°, 60°, 180°, 240°', () => {
@@ -725,7 +725,7 @@ describe('Plugins — harmonies', () => {
     expect(h[1].toHex()).toBe('#ff0000'); // rotate(0)
     expect(h[2].toHex()).toBe('#ff8000'); // rotate(30) → hsl(30)
     expect(h[3].toHex()).toBe('#00ff80'); // rotate(150) → hsl(150)
-    expect(h[4].toHex()).toBe('#007fff'); // rotate(210) → hsl(210)
+    expect(h[4].toHex()).toBe('#0080ff'); // rotate(210) → hsl(210), green 127.5 exactly
   });
 
   it('works with non-primary input', () => {

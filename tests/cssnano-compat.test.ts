@@ -176,16 +176,16 @@ describe('cssnano — HSL decimal precision', () => {
   });
 });
 
-// hsl() values with non-integer RGB equivalents must use floor/round correctly.
-// Old colord used Math.round in hslToRgb, producing off-by-one hex values.
+// hsl() values whose exact RGB is a half byte round up, like CSS and browsers do (WPT
+// color-computed-hsl.html: hsl(270, 100%, 50%) → rgb(128, 0, 255)). The float drift that used to
+// round some of them down is gone.
 
 describe('cssnano — hsl() float-to-hex exact conversion', () => {
-  // hsl(220,80%,50%) = rgb(25.5, 93.5, 230.5) → floor → rgb(25, 93, 230) → #195de6
-  // old colord used Math.round → rgb(26, 94, 231) → #1a5ee7 (wrong)
-  it('hsl(220,80%,50%) → #195de6', () => expect(min('hsl(220, 80%, 50%)')).toBe('#195de6'));
+  // hsl(220,80%,50%) = rgb(25.5, 93.5, 229.5) exactly → rgb(26, 94, 230) → #1a5ee6
+  it('hsl(220,80%,50%) → #1a5ee6', () => expect(min('hsl(220, 80%, 50%)')).toBe('#1a5ee6'));
   it('hsl(20,100%,55%) → #ff661a', () => expect(min('hsl(20, 100%, 55%)')).toBe('#ff661a'));
-  it('hsl(270,80%,50%) → #7f19e6', () => expect(min('hsl(270, 80%, 50%)')).toBe('#7f19e6'));
-  it('hsl(320,80%,50%) → #e619a1', () => expect(min('hsl(320, 80%, 50%)')).toBe('#e619a1'));
+  it('hsl(270,80%,50%) → #801ae6', () => expect(min('hsl(270, 80%, 50%)')).toBe('#801ae6'));
+  it('hsl(320,80%,50%) → #e61aa2', () => expect(min('hsl(320, 80%, 50%)')).toBe('#e61aa2'));
 });
 
 // IE11 / pre-2019 browser safety: minify() must never emit CSS Color 4 modern

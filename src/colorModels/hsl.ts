@@ -11,7 +11,8 @@ const clampHsl = (hsl: HslColor): HslColor => ({
 
 // The channel functions below, their allocating siblings and the object converters (rgbToHslRaw /
 // hslToRgb) deliberately keep separate bodies — see the note in hsv.ts. tests/channels-polar.test.ts
-// and tests/channels-into.test.ts pin them to each other bit-for-bit.
+// and tests/channels-into.test.ts pin them to each other bit-for-bit, except hslToRgb, which scales
+// percent to bytes as `v · 255 / 100` (exact half bytes) and so matches the channels × 255 to 2 ULP.
 
 /**
  * Gamma-encoded sRGB (0–1) → HSL channels. Writes `[h, s, l]` into `out`: h in degrees [0, 360),
@@ -115,13 +116,19 @@ export const rgbToHsl = (rgb: RgbColor): HslColor => {
   return { h: hr >= 360 ? 0 : hr, s: round(s, 2), l: round(l, 2), alpha };
 };
 
-const _hueToRgb = (p: number, q: number, t: number): number => {
-  if (t < 0) t += 1;
-  if (t > 1) t -= 1;
-  if (t < 1 / 6) return p + (q - p) * 6 * t;
-  if (t < 1 / 2) return q;
-  if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-  return p;
+/**
+ * One channel of the CSS Color 4 hslToRgb sample code, in percent: n = 0 (red), 8 (green),
+ * 4 (blue), h in [0, 360), l in 0–100, a = s · min(l, 100 − l) / 100. Returns the channel in
+ * 0–100. Percent keeps integer inputs exact where the textbook hue-sector formula on 0–1 values
+ * drifts: hsl(60 100% 25%) has red = 50%, which that formula computed as 49.999999999999983% and
+ * printed as #7f8000 instead of olive #808000. Byte callers scale by 255 / 100 rather than
+ * dividing first: 90 · 255 / 100 is exactly 229.5, 0.9 · 255 is 229.49999999999997. At l = 100,
+ * a = 0, so white is exact too.
+ */
+export const hslChannel = (n: number, h: number, l: number, a: number): number => {
+  const k = (n + h / 30) % 12;
+  const m = k - 3 < 9 - k ? k - 3 : 9 - k;
+  return l - a * (m > 1 ? 1 : m < -1 ? -1 : m);
 };
 
 /**
@@ -130,40 +137,27 @@ const _hueToRgb = (p: number, q: number, t: number): number => {
  * in-range s/l; nothing is clamped, so out-of-range s/l propagate like every other channel function.
  */
 export const hslToRgbChannelsInto = (out: Float64Array | number[], h: number, s: number, l: number): void => {
-  const sn = s / 100,
-    ln = l / 100;
-  // `ln + sn * (1 - ln)` rather than `ln + sn - ln * sn`: the latter rounds `1 + sn` before
-  // subtracting, so l=100 gives q=0.9999999999999999 and rgbToHsl reads white as chromatic.
-  const q = ln < 0.5 ? ln * (1 + sn) : ln + sn * (1 - ln);
-  const p = 2 * ln - q;
-  const hue = normalizeHue(h) / 360;
-  out[0] = _hueToRgb(p, q, hue + 1 / 3);
-  out[1] = _hueToRgb(p, q, hue);
-  out[2] = _hueToRgb(p, q, hue - 1 / 3);
+  const a = (s * (l < 100 - l ? l : 100 - l)) / 100;
+  const hue = normalizeHue(h);
+  out[0] = hslChannel(0, hue, l, a) / 100;
+  out[1] = hslChannel(8, hue, l, a) / 100;
+  out[2] = hslChannel(4, hue, l, a) / 100;
 };
 
 /** Allocating sibling of `hslToRgbChannelsInto` — returns `[r, g, b]`. Own body: see the note above. */
 export const hslToRgbChannels = (h: number, s: number, l: number): [number, number, number] => {
-  const sn = s / 100,
-    ln = l / 100;
-  const q = ln < 0.5 ? ln * (1 + sn) : ln + sn * (1 - ln);
-  const p = 2 * ln - q;
-  const hue = normalizeHue(h) / 360;
-  return [_hueToRgb(p, q, hue + 1 / 3), _hueToRgb(p, q, hue), _hueToRgb(p, q, hue - 1 / 3)];
+  const a = (s * (l < 100 - l ? l : 100 - l)) / 100;
+  const hue = normalizeHue(h);
+  return [hslChannel(0, hue, l, a) / 100, hslChannel(8, hue, l, a) / 100, hslChannel(4, hue, l, a) / 100];
 };
 
 export const hslToRgb = ({ h, s, l, alpha }: HslColor): RgbColor => {
-  const sn = s / 100,
-    ln = l / 100;
-  // `ln + sn * (1 - ln)` rather than `ln + sn - ln * sn`: the latter rounds `1 + sn` before
-  // subtracting, so l=100 gives q=0.9999999999999999 and rgbToHsl reads white as chromatic.
-  const q = ln < 0.5 ? ln * (1 + sn) : ln + sn * (1 - ln);
-  const p = 2 * ln - q;
-  const hue = normalizeHue(h) / 360;
+  const a = (s * (l < 100 - l ? l : 100 - l)) / 100;
+  const hue = normalizeHue(h);
   return {
-    r: _hueToRgb(p, q, hue + 1 / 3) * 255,
-    g: _hueToRgb(p, q, hue) * 255,
-    b: _hueToRgb(p, q, hue - 1 / 3) * 255,
+    r: (hslChannel(0, hue, l, a) * 255) / 100,
+    g: (hslChannel(8, hue, l, a) * 255) / 100,
+    b: (hslChannel(4, hue, l, a) * 255) / 100,
     alpha,
   };
 };
