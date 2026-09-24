@@ -124,8 +124,8 @@ describe('B. colorSpace brand gates', () => {
     expect(hsl).not.toBe(ok);
     expect(hsl).toBe(colordx('hsl(237.66 57.92% 48.38%)').toHex());
   });
-  it('okhsl brand on an hsv shape is plain HSV (foreign brands are ignored, as everywhere)', () =>
-    expect(colordx({ colorSpace: 'okhsl', h: 200, s: 50, v: 50 } as never).toHex()).toBe(colordx('hsv(200 50% 50%)').toHex()));
+  it('okhsl brand on an hsv shape is rejected, not read as HSV (a known foreign brand is a mistake)', () =>
+    expect(colordx({ colorSpace: 'okhsl', h: 200, s: 50, v: 50 } as never).isValid()).toBe(false));
   it('non-okhsl brand on an hsl shape stays HSL', () =>
     expect(colordx({ colorSpace: 'hsl', h: 237.66, s: 57.92, l: 48.38 } as never).toHex()).toBe(
       colordx('hsl(237.66 57.92% 48.38%)').toHex()
@@ -138,8 +138,8 @@ describe('B. colorSpace brand gates', () => {
     expect(hsv).not.toBe(ok);
     expect(hsv).toBe(colordx('hsv(237.66 65.38% 64.32%)').toHex());
   });
-  it('okhsv brand on an hsl shape is plain HSL', () =>
-    expect(colordx({ colorSpace: 'okhsv', h: 200, s: 50, l: 50 } as never).toHex()).toBe(colordx('hsl(200 50% 50%)').toHex()));
+  it('okhsv brand on an hsl shape is rejected, not read as HSL', () =>
+    expect(colordx({ colorSpace: 'okhsv', h: 200, s: 50, l: 50 } as never).isValid()).toBe(false));
 
   it('p3 brand produces a different result than unbranded rgb fallback', () => {
     // Pin: without the strict 'display-p3' brand check, parseP3Object would

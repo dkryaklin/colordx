@@ -1,4 +1,4 @@
-import { alphaAlias, clamp, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
+import { alphaAlias, clamp, hasBrand, isAnyNumber, isObject, normalizeHue, round, sanitize } from '../helpers.js';
 import { SC, scanFunc } from '../scan.js';
 import type { HwbColor, RgbColor } from '../types.js';
 import { hslChannel } from './hsl.js';
@@ -49,6 +49,7 @@ export const hwbToRgb = ({ h, w, b, alpha }: HwbColor): RgbColor => {
 export const parseHwbObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!('h' in input && 'w' in input && 'b' in input)) return null;
+  if (hasBrand(input)) return null;
   const { h, w, b, alpha = alphaAlias(input) } = input as { h: unknown; w: unknown; b: unknown; alpha?: unknown };
   if (!isAnyNumber(h) || !isAnyNumber(w) || !isAnyNumber(b) || !isAnyNumber(alpha)) return null;
   return hwbToRgb(clampHwb({ h: sanitize(h), w: sanitize(w), b: sanitize(b), alpha: sanitize(alpha) }));

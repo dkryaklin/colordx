@@ -1,4 +1,4 @@
-import { alphaAlias, clamp, isObject, round } from '../helpers.js';
+import { alphaAlias, clamp, hasBrand, isObject, round } from '../helpers.js';
 import { SC, scanChannel, scanColorRgb, scanNone, scanPct, scanPos, skipWs } from '../scan.js';
 import { boundChannel } from '../transfer.js';
 import type { RgbColor } from '../types.js';
@@ -20,9 +20,7 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
  * sanitize()-then-clamp produced, for free and without four extra calls.
  */
 export const parseRgbBody = (input: unknown): RgbColor | null => {
-  const cs = (input as { colorSpace?: unknown }).colorSpace;
-  if (cs === 'display-p3' || cs === 'rec2020' || cs === 'a98-rgb' || cs === 'prophoto-rgb' || cs === 'srgb-linear')
-    return null;
+  if (hasBrand(input)) return null;
   const { r, g, b, alpha = alphaAlias(input) } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
   if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number' || typeof alpha !== 'number') return null;
   const a = alpha > 1 ? 1 : alpha > 0 ? Math.round(alpha * 1000) / 1000 : 0;

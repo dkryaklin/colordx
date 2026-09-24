@@ -1,4 +1,4 @@
-import { ACHROMATIC_EPS, alphaAlias, clamp, isObject, normalizeHue, round } from '../helpers.js';
+import { ACHROMATIC_EPS, alphaAlias, clamp, hasBrand, isObject, normalizeHue, round } from '../helpers.js';
 import { SC, scanHsx } from '../scan.js';
 import type { HsvColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -247,8 +247,9 @@ export const parseHsvString = (input: unknown): RgbColor | null =>
     : null;
 
 const parseHsvBody = (input: unknown): RgbColor | null => {
-  // `{ colorSpace: 'okhsv', h, s, v }` is Okhsv (the okhsv plugin), not HSV — same shape, different space.
-  if ((input as { colorSpace?: unknown }).colorSpace === 'okhsv') return null;
+  // `{ colorSpace: 'okhsv', h, s, v }` is Okhsv (the okhsv plugin), not HSV, and any other brand is
+  // a different space too.
+  if (hasBrand(input)) return null;
   const { h, s, v, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof v !== 'number' || typeof alpha !== 'number') return null;
   // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()

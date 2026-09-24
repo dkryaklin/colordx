@@ -1,4 +1,4 @@
-import { clamp, isAnyNumber, isObject, sanitize } from '../helpers.js';
+import { clamp, hasBrand, isAnyNumber, isObject, sanitize } from '../helpers.js';
 import { SC, scanFunc, scanPctMask } from '../scan.js';
 import { byteToLinear, linearToStoredRgb, srgbFromLinear } from '../transfer.js';
 import type { OklabColor, RgbColor } from '../types.js';
@@ -135,8 +135,9 @@ export const oklabToLinear = (l: number, a: number, b: number): [number, number,
 
 export const parseOklabObjectRaw = (input: unknown): OklabColor | null => {
   if (!isObject(input)) return null;
-  // Objects with colorSpace: 'lab' are CIE Lab, not OKLab — let parseLabObject handle them.
-  if ((input as { colorSpace?: unknown }).colorSpace === 'lab') return null;
+  // Objects with colorSpace: 'lab' are CIE Lab, not OKLab — let parseLabObject handle them. Any
+  // other brand is a different space too.
+  if (hasBrand(input)) return null;
   if (!('l' in input && 'a' in input && 'b' in input)) return null;
   if ('r' in input || 'x' in input || 'c' in input || 'h' in input) return null;
   const { l, a, b, alpha = 1 } = input as { l: unknown; a: unknown; b: unknown; alpha?: unknown };

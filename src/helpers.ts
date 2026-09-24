@@ -104,3 +104,25 @@ export const invalidColorError = (method: string, input: unknown, self = false):
   }
   return new RangeError(`${method}: ${shown} is not a valid color`);
 };
+
+// Every `colorSpace` brand an object input can carry. The unbranded object models (rgb, hsl, hsv,
+// hwb, cmyk, oklab, oklch, D50 xyz) reject all of them: `{ r, g, b, colorSpace: 'lab' }` is a
+// mistake, not an sRGB color, and each branded model already requires its own brand exactly.
+const BRANDS = new Set([
+  'lab',
+  'lch',
+  'xyz-d65',
+  'okhsl',
+  'okhsv',
+  'display-p3',
+  'rec2020',
+  'a98-rgb',
+  'prophoto-rgb',
+  'srgb-linear',
+]);
+
+/** True when an object input carries a known `colorSpace` brand. */
+export const hasBrand = (input: unknown): boolean => {
+  const cs = (input as { colorSpace?: unknown }).colorSpace;
+  return typeof cs === 'string' && BRANDS.has(cs);
+};

@@ -1,4 +1,4 @@
-import { alphaAlias, clamp, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { alphaAlias, clamp, hasBrand, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
 import { SC, scanFunc, scanPctMask } from '../scan.js';
 import { byteToLinear, linearToStoredRgb, srgbFromLinear } from '../transfer.js';
 import type { RgbColor, XyzColor, XyzD65Color } from '../types.js';
@@ -141,8 +141,8 @@ const xyzToRgbUnclamped = ({ x, y, z, alpha }: XyzColor): RgbColor => {
 
 export const parseXyzObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
-  // Reject D65-discriminated objects — parseXyzD65Object owns those.
-  if ((input as { colorSpace?: unknown }).colorSpace === 'xyz-d65') return null;
+  // Reject D65-discriminated objects — parseXyzD65Object owns those — and any other brand.
+  if (hasBrand(input)) return null;
   if (!('x' in input && 'y' in input && 'z' in input)) return null;
   const { x, y, z, alpha = alphaAlias(input) } = input as { x: unknown; y: unknown; z: unknown; alpha?: unknown };
   if (!isAnyNumber(x) || !isAnyNumber(y) || !isAnyNumber(z) || !isAnyNumber(alpha)) return null;

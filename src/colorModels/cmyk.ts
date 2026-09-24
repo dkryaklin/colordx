@@ -1,4 +1,4 @@
-import { alphaAlias, clamp, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
+import { alphaAlias, clamp, hasBrand, isAnyNumber, isObject, round, sanitize } from '../helpers.js';
 import { SC, scanFunc, scanPctMask } from '../scan.js';
 import type { CmykColor, RgbColor } from '../types.js';
 import { clampRgb } from './rgb.js';
@@ -39,6 +39,7 @@ const cmykToRgb = ({ c, m, y, k, alpha }: CmykColor): RgbColor =>
 export const parseCmykObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if (!('c' in input && 'm' in input && 'y' in input && 'k' in input)) return null;
+  if (hasBrand(input)) return null;
   const {
     c,
     m,

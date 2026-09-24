@@ -693,9 +693,9 @@ describe('okhsl / okhsv plugins — parsing', () => {
     expect(getFormat({ h: 200, s: 50, l: 50 })).toBe('hsl');
     expect(getFormat({ h: 200, s: 50, v: 50 })).toBe('hsv');
   });
-  it('a foreign brand on an hsl / hsv shape is ignored, as with every other object parser', () => {
-    expect(colordx({ colorSpace: 'okhsl', h: 200, s: 50, v: 50 } as never).toHex()).toBe(colordx({ h: 200, s: 50, v: 50 }).toHex());
-    expect(colordx({ colorSpace: 'okhsv', h: 200, s: 50, l: 50 } as never).toHex()).toBe(colordx({ h: 200, s: 50, l: 50 }).toHex());
+  it('a foreign brand on an hsl / hsv shape is rejected, as with every other object parser', () => {
+    expect(colordx({ colorSpace: 'okhsl', h: 200, s: 50, v: 50 } as never).isValid()).toBe(false);
+    expect(colordx({ colorSpace: 'okhsv', h: 200, s: 50, l: 50 } as never).isValid()).toBe(false);
   });
   it('the hsv plugin does not swallow an okhsv-branded object', () => {
     // Loaded first, hsv's object parser sees the object before okhsv's does.

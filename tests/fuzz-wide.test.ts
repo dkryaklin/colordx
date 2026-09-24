@@ -1387,17 +1387,28 @@ describe('object input fuzz', () => {
     }
   });
 
-  // Divergences, maybe intentional: an object whose brand names a *different* space of the same key
-  // shape is read as the unbranded model instead of being rejected. parseRgbBody already rejects the
-  // wide-gamut rgb brands for this reason; these slip through. Pinned as current behaviour.
-  it.each<[string, Record<string, unknown>, string]>([
-    ['{ r, g, b } branded lab reads as sRGB', { r: 10, g: 20, b: 30, colorSpace: 'lab' }, 'rgb'],
-    ['{ r, g, b } branded xyz-d65 reads as sRGB', { r: 10, g: 20, b: 30, colorSpace: 'xyz-d65' }, 'rgb'],
-    ['{ h, s, l } branded okhsv reads as HSL', { h: 10, s: 20, l: 30, colorSpace: 'okhsv' }, 'hsl'],
-    ['{ h, s, v } branded okhsl reads as HSV', { h: 10, s: 20, v: 30, colorSpace: 'okhsl' }, 'hsv'],
-    ['{ x, y, z } branded lab reads as XYZ D50', { x: 10, y: 20, z: 30, colorSpace: 'lab' }, 'xyz'],
-    ['{ l, c, h } branded xyz-d65 reads as OKLCh', { l: 0.5, c: 0.1, h: 30, colorSpace: 'xyz-d65' }, 'oklch'],
-  ])('%s', (_label, o, fmt) => expect(getFormat(o as never)).toBe(fmt));
+  // An object whose brand names a *different* space is a mistake, not the unbranded model: every
+  // unbranded object parser rejects a known brand, the way parseRgbBody always did for the
+  // wide-gamut rgb brands.
+  it.each<[string, Record<string, unknown>]>([
+    ['{ r, g, b } branded lab', { r: 10, g: 20, b: 30, colorSpace: 'lab' }],
+    ['{ r, g, b } branded xyz-d65', { r: 10, g: 20, b: 30, colorSpace: 'xyz-d65' }],
+    ['{ h, s, l } branded okhsv', { h: 10, s: 20, l: 30, colorSpace: 'okhsv' }],
+    ['{ h, s, v } branded okhsl', { h: 10, s: 20, v: 30, colorSpace: 'okhsl' }],
+    ['{ h, w, b } branded lch', { h: 10, w: 20, b: 30, colorSpace: 'lch' }],
+    ['{ c, m, y, k } branded display-p3', { c: 10, m: 20, y: 30, k: 40, colorSpace: 'display-p3' }],
+    ['{ x, y, z } branded lab', { x: 10, y: 20, z: 30, colorSpace: 'lab' }],
+    ['{ l, a, b } branded lch', { l: 0.5, a: 0.1, b: 0.1, colorSpace: 'lch' }],
+    ['{ l, c, h } branded xyz-d65', { l: 0.5, c: 0.1, h: 30, colorSpace: 'xyz-d65' }],
+  ])('%s is rejected', (_label, o) => {
+    expect(getFormat(o as never)).toBeUndefined();
+    expect(colordx(o as never).isValid()).toBe(false);
+  });
+
+  it('a colorSpace the library does not know stays ignored', () => {
+    expect(getFormat({ r: 10, g: 20, b: 30, colorSpace: 'srgb' } as never)).toBe('rgb');
+    expect(getFormat({ h: 10, s: 20, l: 30, colorSpace: 'hsl' } as never)).toBe('hsl');
+  });
 });
 
 describe('string and object forms of every model agree', () => {

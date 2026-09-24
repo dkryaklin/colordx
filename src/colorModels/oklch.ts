@@ -1,4 +1,4 @@
-import { alphaAlias, clamp, isAnyNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
+import { alphaAlias, clamp, hasBrand, isAnyNumber, isObject, normalizeHue, sanitize } from '../helpers.js';
 import { SC, scanFunc, scanPctMask } from '../scan.js';
 import type { OklabColor, OklchColor, RgbColor } from '../types.js';
 import { oklabToRgb, oklabToRgbUnclamped, rgbToOklab } from './oklab.js';
@@ -25,8 +25,9 @@ export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOkl
 
 export const parseOklchObjectRaw = (input: unknown): OklabColor | null => {
   if (!isObject(input)) return null;
-  // Objects with colorSpace: 'lch' are CIE LCH, not OKLCH — let parseLchObject handle them.
-  if ((input as { colorSpace?: unknown }).colorSpace === 'lch') return null;
+  // Objects with colorSpace: 'lch' are CIE LCH, not OKLCH — let parseLchObject handle them. Any
+  // other brand is a different space too.
+  if (hasBrand(input)) return null;
   if (!('l' in input && 'c' in input && 'h' in input)) return null;
   if ('r' in input) return null;
   const { l, c, h, alpha = alphaAlias(input) } = input as { l: unknown; c: unknown; h: unknown; alpha?: unknown };
