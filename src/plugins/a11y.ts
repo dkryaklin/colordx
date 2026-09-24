@@ -117,7 +117,7 @@ const quantized = (C: typeof Colordx, l: number, c: number, h: number, alpha: nu
   const [pr, pg, pb] = toGamutCustom(lab, oklabToLinearP3, p3FromLinear)!.linear.map((v) =>
     srgbToLinear(round(srgbFromLinear(v), 4))
   );
-  return C._makeFromLinearSrgb(...linearP3ToSrgb(pr!, pg!, pb!), alpha);
+  return C._makeFromLinearSrgb(...linearP3ToSrgb(pr!, pg!, pb!), alpha, false);
 };
 
 // Spec rule 10: keep hue, move lightness, let the gamut map reduce chroma only when it must,

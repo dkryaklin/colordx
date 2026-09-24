@@ -63,11 +63,15 @@ export class Colordx {
    * the band matches Math.round's own behavior so byte output is unchanged, while HSL / OKLab
    * see a consistent pure white / black / primary. Values outside [0, 255] are wide-gamut
    * (P3 / Rec.2020 targets) and pass through untouched.
+   *
+   * Pass `snap = false` when the channels are not an sRGB clip: a color mapped into P3 or
+   * Rec.2020 is exact in that space, and nudging its sRGB encoding would move it there.
    */
-  static _makeFromLinearSrgb(lr: number, lg: number, lb: number, alpha: number): Colordx {
+  static _makeFromLinearSrgb(lr: number, lg: number, lb: number, alpha: number, snap = true): Colordx {
     const rb = srgbFromLinear(lr) * 255;
     const gb = srgbFromLinear(lg) * 255;
     const bb = srgbFromLinear(lb) * 255;
+    if (!snap) return Colordx._make({ r: rb, g: gb, b: bb, alpha });
     return Colordx._make({
       r: rb >= 0 && rb < 0.5 ? 0 : rb > 254.5 && rb <= 255 ? 255 : rb,
       g: gb >= 0 && gb < 0.5 ? 0 : gb > 254.5 && gb <= 255 ? 255 : gb,
@@ -369,7 +373,7 @@ export class Colordx {
     // exact L=0 or L=1 hit the same white/black shortcut the static gamut map uses.
     const l = lRaw > 1 - 1e-7 ? 1 : lRaw < 1e-7 ? 0 : lRaw;
     const mapped = toGamutSrgbRaw({ l, a, b: bv, alpha });
-    if (mapped === null) return this;
+    if (mapped === null || mapped.inGamut) return this;
     const [mr, mg, mb] = mapped.linear;
     return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha);
   }
@@ -433,7 +437,7 @@ export const random = (): Colordx =>
 
 Colordx.toGamutSrgb = (input: AnyColor): Colordx => {
   const mapped = toGamutSrgbRaw(input);
-  if (mapped === null) return new Colordx(input);
+  if (mapped === null || mapped.inGamut) return new Colordx(input);
   const [mr, mg, mb] = mapped.linear;
   return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha);
 };

@@ -392,7 +392,7 @@ colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes a
 
 Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mixOklab`, `mixLab`, `delta`) read the unclamped color. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
-A static form is also available for one-shot conversion without wrapping first — `Colordx.toGamutSrgb(input)` is equivalent to `colordx(input).mapSrgb()`.
+A static form is also available for one-shot conversion without wrapping first — `Colordx.toGamutSrgb(input)` is equivalent to `colordx(input).mapSrgb()`. Like `mapSrgb()`, it and the wide-gamut `Colordx.toGamutP3()` / `toGamutRec2020()` / `toGamutA98()` / `toGamutProphoto()` return a color already inside the target gamut unchanged.
 
 colordx also includes standalone utilities for checking and mapping into wider gamuts (Display-P3 / Rec.2020, via plugins):
 

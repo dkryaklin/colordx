@@ -102,12 +102,12 @@ export const inGamutA98 = (input: AnyColor): boolean => inGamutCustom(input, okl
 const a98: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutA98 = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearA98, a98FromLinearConverter, parseA98);
-    if (mapped === null) return new ColordxClass(input);
+    if (mapped === null || mapped.inGamut) return new ColordxClass(input);
     // Clipped linear-A98 → linear-sRGB (wide-gamut when the A98 color is outside sRGB),
     // then gamma-encode for storage. No round-trip through OKLab.
     const [lrR, lrG, lrB] = mapped.linear;
     const [lr, lg, lb] = linearA98ToSrgb(lrR, lrG, lrB);
-    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha);
+    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha, false);
   };
   ColordxClass.prototype.toA98 = function (precision = 4) {
     const { r, g, b, alpha } = rgbToA98Raw(this._rawRgb());

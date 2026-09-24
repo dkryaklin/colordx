@@ -84,8 +84,12 @@ const deltaEOK = (lab1: readonly [number, number, number], l: number, a: number,
 type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
 type FromLinearConverter = (r: number, g: number, b: number) => [number, number, number];
 
-/** Clipped linear target-space channels plus alpha. Channels are in [0, 1] on the gamut boundary. */
-type GamutMapResult = { linear: readonly [number, number, number]; alpha: number };
+/**
+ * Clipped linear target-space channels plus alpha. Channels are in [0, 1] on the gamut boundary.
+ * `inGamut` is true when the input was already inside the target gamut and `linear` is its own
+ * channels, unmapped: callers return the input as-is rather than re-encoding it.
+ */
+type GamutMapResult = { linear: readonly [number, number, number]; alpha: number; inGamut: boolean };
 
 /**
  * CSS Color 4 gamut mapping algorithm.
@@ -98,18 +102,30 @@ type GamutMapResult = { linear: readonly [number, number, number]; alpha: number
  * fromLinear: linear target-space channels → OKLab (used to measure deltaEOK of clipped color)
  */
 const cssGamutMap = (
+  raw: { l: number; a: number; b: number; alpha: number },
+  toLinear: LinearConverter,
+  fromLinear: FromLinearConverter
+): GamutMapResult => {
+  const { l, a, b, alpha } = raw;
+  if (l >= 1) return { linear: [1, 1, 1], alpha, inGamut: false };
+  if (l <= 0) return { linear: [0, 0, 0], alpha, inGamut: false };
+
+  const [r0, g0, b0] = toLinear(l, a, b);
+  if (strictInGamut(r0, g0, b0)) return { linear: [r0, g0, b0], alpha, inGamut: true };
+  return { linear: bisectChroma(l, a, b, r0, g0, b0, toLinear, fromLinear), alpha, inGamut: false };
+};
+
+// The chroma-reduction search for an input outside the gamut; returns clipped linear channels.
+const bisectChroma = (
   l: number,
   a: number,
   b: number,
+  r0: number,
+  g0: number,
+  b0: number,
   toLinear: LinearConverter,
   fromLinear: FromLinearConverter
 ): [number, number, number] => {
-  if (l >= 1) return [1, 1, 1];
-  if (l <= 0) return [0, 0, 0];
-
-  const [r0, g0, b0] = toLinear(l, a, b);
-  if (strictInGamut(r0, g0, b0)) return [r0, g0, b0];
-
   // Early exit: if the simple clip is already within JND, use it directly
   const c0r = clamp(r0, 0, 1),
     c0g = clamp(g0, 0, 1),
@@ -172,7 +188,7 @@ const cssGamutMap = (
 export const toGamutSrgbRaw = (input: AnyColor): GamutMapResult | null => {
   const raw = getRawOklab(input);
   if (raw == null) return null;
-  return { linear: cssGamutMap(raw.l, raw.a, raw.b, oklabToLinear, linearSrgbToOklab), alpha: raw.alpha };
+  return cssGamutMap(raw, oklabToLinear, linearSrgbToOklab);
 };
 
 export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter, own?: ColorParser): boolean => {
@@ -200,5 +216,5 @@ export const toGamutCustom = (
 ): GamutMapResult | null => {
   const raw = getRawOklab(input, own);
   if (raw == null) return null;
-  return { linear: cssGamutMap(raw.l, raw.a, raw.b, toLinear, fromLinear), alpha: raw.alpha };
+  return cssGamutMap(raw, toLinear, fromLinear);
 };

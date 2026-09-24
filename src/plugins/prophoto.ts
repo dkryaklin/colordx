@@ -107,12 +107,12 @@ export const inGamutProphoto = (input: AnyColor): boolean => inGamutCustom(input
 const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutProphoto = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearProphoto, prophotoFromLinearConverter, parseProphoto);
-    if (mapped === null) return new ColordxClass(input);
+    if (mapped === null || mapped.inGamut) return new ColordxClass(input);
     // Clipped linear-ProPhoto → linear-sRGB (wide-gamut when the ProPhoto color is outside
     // sRGB), then gamma-encode for storage. No round-trip through OKLab.
     const [lrR, lrG, lrB] = mapped.linear;
     const [lr, lg, lb] = linearProphotoToSrgb(lrR, lrG, lrB);
-    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha);
+    return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha, false);
   };
   ColordxClass.prototype.toProphoto = function (precision = 5) {
     const { r, g, b, alpha } = rgbToProphotoRaw(this._rawRgb());
