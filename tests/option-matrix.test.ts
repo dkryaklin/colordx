@@ -657,6 +657,20 @@ describe('option matrix — fixed bugs', () => {
   });
 });
 
+describe('option matrix — mix(), invalid input and unknown options', () => {
+  // color-mix(in srgb) is unbounded, like mixOklab/mixLab: a wide-gamut color survives mixing with itself.
+  it.each([0, 0.5, 1])('mix(self, %s) of a Display-P3 red stays Display-P3 red', (t) => {
+    const red = 'color(display-p3 1 0 0)';
+    expect(colordx(red).mix(red, t).toP3String()).toBe('color(display-p3 1 0 0)');
+  });
+
+  it('mix() keeps the exact midpoint, so black and white give #808080 and hsl lightness 50%', () => {
+    const m = colordx('#000').mix('#fff');
+    expect(m.toHex()).toBe('#808080');
+    expect(m.toHsl().l).toBe(50);
+  });
+});
+
 describe('option matrix — known bugs (it.fails until fixed)', () => {
   // BUG: a fractional count is truncated by Array.from but still used as the divisor, so the last
   // stop is not the target: palette(2.5, '#00f') → ['#ff0000', '#5500aa'] (t = 1/1.5).
@@ -681,11 +695,6 @@ describe('option matrix — known bugs (it.fails until fixed)', () => {
 // ─── Divergences, maybe intentional ───────────────────────────────────────────────────────────────
 
 describe('option matrix — divergences (pinned as current behaviour)', () => {
-  it('mix() clips a wide-gamut color to sRGB bytes; CSS color-mix(in srgb) is unbounded', () => {
-    const red = 'color(display-p3 1 0 0)';
-    expect(colordx(red).mix(red, 0).toP3String()).toBe('color(display-p3 0.9175 0.2003 0.1386)');
-  });
-
   it('the Display-P3 red primary is outside Rec.2020 (README says sRGB ⊂ Display-P3 ⊂ Rec.2020)', () => {
     expect(inGamutP3('color(display-p3 1 0 0)')).toBe(true);
     expect(inGamutRec2020('color(display-p3 1 0 0)')).toBe(false);

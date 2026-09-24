@@ -44,6 +44,14 @@ export class Colordx {
   }
 
   /**
+   * Construct a Colordx from gamma-encoded ×255 channels as they are, unclamped and unrounded, for
+   * plugins that compute in the stored encoding (mix interpolates it, like color-mix(in srgb)).
+   */
+  static _makeFromStoredRgb(rgb: RgbColor): Colordx {
+    return Colordx._make(rgb);
+  }
+
+  /**
    * Construct a Colordx from linear-sRGB channels, gamma-encoding to the internal ×255 storage.
    * Channels may exceed [0, 1] — wide-gamut inputs (toGamutP3 / toGamutRec2020 applied to a
    * color outside sRGB) land here after the target-space → linear-sRGB matrix, and the stored

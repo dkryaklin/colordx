@@ -16,15 +16,16 @@ declare module '@colordx/core' {
 
 const mix: Plugin = (ColordxClass) => {
   ColordxClass.prototype.mix = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
-    // Both sides unrounded so a.mix(b, t) and b.mix(a, 1 - t) land on the same byte.
+    // Both sides unrounded so a.mix(b, t) and b.mix(a, 1 - t) are the same color, and the result
+    // unclamped like color-mix(in srgb): a wide-gamut input stays wide-gamut.
     const other = new ColordxClass(color)._rawRgb();
     const self = this._rawRgb();
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(self.alpha, other.alpha, w);
-    return new ColordxClass({
-      r: round(self.r * (1 - k) + other.r * k),
-      g: round(self.g * (1 - k) + other.g * k),
-      b: round(self.b * (1 - k) + other.b * k),
+    return ColordxClass._makeFromStoredRgb({
+      r: self.r * (1 - k) + other.r * k,
+      g: self.g * (1 - k) + other.g * k,
+      b: self.b * (1 - k) + other.b * k,
       alpha: round(self.alpha * (1 - w) + other.alpha * w, 3),
     });
   };

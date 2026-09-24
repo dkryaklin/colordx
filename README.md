@@ -390,7 +390,7 @@ colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes a
 - **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Preserves lightness and hue; sacrifices chroma. Use when hue stability matters — design tokens, palettes, programmatic harmonies, OKLCH pickers.
 - **`.clampSrgb()`** — naive clip in linear sRGB. Hue and lightness may drift. Use when you want a `Colordx` whose `.toOklchString()` describes what browsers actually render.
 
-Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mixOklab`, `mixLab`, `delta`) read the unclamped color, and `mixOklab`/`mixLab` keep their result unclamped too, like `color-mix(in oklab | lab)`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
+Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`) read the unclamped color, and the three mixers keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
 A static form is also available for one-shot conversion without wrapping first — `Colordx.toGamutSrgb(input)` is equivalent to `colordx(input).mapSrgb()`. Like `mapSrgb()`, it and the wide-gamut `Colordx.toGamutP3()` / `toGamutRec2020()` / `toGamutA98()` / `toGamutProphoto()` return a color already inside the target gamut unchanged.
 
@@ -1053,7 +1053,7 @@ What is different:
 
 ### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
 
-`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab. All three premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
+`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Like `color-mix()`, it keeps the exact result rather than rounding it to bytes, and a wide-gamut input stays wide-gamut. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab. All three premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
 
 ```ts
 colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
