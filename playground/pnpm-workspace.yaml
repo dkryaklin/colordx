@@ -3,3 +3,5 @@
 # esbuild's postinstall fetches its platform binary; Vite is dead without it.
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@colordx/gpu@1.0.0'
