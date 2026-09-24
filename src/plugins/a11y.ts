@@ -3,7 +3,7 @@ import { rgbToOklch } from '../colorModels/oklch.js';
 import { linearP3ToSrgb, oklabToLinearP3, srgbLinearToP3Linear } from '../colorModels/p3.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { toGamutCustom } from '../gamut.js';
-import { round, toByte } from '../helpers.js';
+import { invalidColorError, round, toByte } from '../helpers.js';
 import { byteToLinear, srgbFromLinear, srgbToLinear } from '../transfer.js';
 import type { AnyColor } from '../types.js';
 
@@ -159,12 +159,20 @@ const a11y: Plugin = (ColordxClass) => {
     return round(wcagY(this), precision);
   };
 
+  // Both colors of a contrast check must parse: an invalid one is a caller error, not black.
+  const pair = (method: string, fg: Colordx, input: AnyColor | Colordx): Colordx => {
+    if (!fg.isValid()) throw invalidColorError(method, fg, true);
+    const bg = new ColordxClass(input);
+    if (!bg.isValid()) throw invalidColorError(method, input);
+    return bg;
+  };
+
   ColordxClass.prototype.contrast = function (
     this: Colordx,
     color: AnyColor | Colordx = '#fff',
     precision = 2
   ): number {
-    return round(wcagRatio(this, new ColordxClass(color)), precision);
+    return round(wcagRatio(this, pair('contrast', this, color)), precision);
   };
 
   ColordxClass.prototype.apcaContrast = function (
@@ -173,7 +181,7 @@ const a11y: Plugin = (ColordxClass) => {
     options: { precision?: number; space?: ApcaSpace } = {}
   ): number {
     const { precision = 1, space = 'srgb' } = options;
-    return round(apcaLc(this, new ColordxClass(background), space), precision);
+    return round(apcaLc(this, pair('apcaContrast', this, background), space), precision);
   };
 
   ColordxClass.prototype.isReadableApca = function (
@@ -182,7 +190,7 @@ const a11y: Plugin = (ColordxClass) => {
     options: { size?: 'normal' | 'large'; space?: ApcaSpace } = {}
   ): boolean {
     const { size = 'normal', space = 'srgb' } = options;
-    const lc = Math.abs(apcaLc(this, new ColordxClass(background), space));
+    const lc = Math.abs(apcaLc(this, pair('isReadableApca', this, background), space));
     // Lc 75 for normal body text, Lc 60 for large/bold — simplified defaults, not the full APCA lookup table.
     return size === 'large' ? lc >= 60 : lc >= 75;
   };
@@ -191,7 +199,7 @@ const a11y: Plugin = (ColordxClass) => {
     this: Colordx,
     background: AnyColor | Colordx = '#fff'
   ): 'AAA' | 'AA' | 'AA large' | 'fail' {
-    const ratio = wcagRatio(this, new ColordxClass(background));
+    const ratio = wcagRatio(this, pair('readableScore', this, background));
     if (ratio >= 7) return 'AAA';
     if (ratio >= 4.5) return 'AA';
     if (ratio >= 3) return 'AA large';
@@ -204,7 +212,7 @@ const a11y: Plugin = (ColordxClass) => {
     options: { level?: 'AA' | 'AAA'; size?: 'normal' | 'large' } = {}
   ): boolean {
     const { level = 'AA', size = 'normal' } = options;
-    const ratio = wcagRatio(this, new ColordxClass(background));
+    const ratio = wcagRatio(this, pair('isReadable', this, background));
     if (level === 'AAA') return size === 'large' ? ratio >= 4.5 : ratio >= 7;
     return size === 'large' ? ratio >= 3 : ratio >= 4.5;
   };
@@ -216,11 +224,11 @@ const a11y: Plugin = (ColordxClass) => {
   ): Colordx | null {
     const { apca, space = 'srgb' } = options;
     const wcag = options.wcag ?? (apca === undefined ? 4.5 : undefined);
-    return fixContrast(ColordxClass, this, new ColordxClass(background), wcag, apca, space);
+    return fixContrast(ColordxClass, this, pair('fixContrast', this, background), wcag, apca, space);
   };
 
   ColordxClass.prototype.minReadable = function (this: Colordx, background: AnyColor | Colordx = '#fff'): Colordx {
-    return this.fixContrast(background) ?? this;
+    return this.fixContrast(pair('minReadable', this, background)) ?? this;
   };
 };
 

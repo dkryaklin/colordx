@@ -669,6 +669,30 @@ describe('option matrix — mix(), invalid input and unknown options', () => {
     expect(m.toHex()).toBe('#808080');
     expect(m.toHsl().l).toBe(50);
   });
+
+  // An invalid color is not black: it is never equal to anything, and a method that needs two real
+  // colors (over(), the contrast checks) throws a RangeError naming the method.
+  it.each(['nope', {}, null])('invalid input %j is not read as black', (bad) => {
+    const black = colordx('#000');
+    const inv = colordx(bad as never);
+    expect(black.isEqual(bad as never)).toBe(false);
+    expect(inv.isEqual('#000')).toBe(false);
+    expect(inv.isEqual(bad as never)).toBe(false);
+    for (const [name, call] of [
+      ['contrast', () => black.contrast(bad as never)],
+      ['apcaContrast', () => black.apcaContrast(bad as never)],
+      ['isReadable', () => black.isReadable(bad as never)],
+      ['readableScore', () => black.readableScore(bad as never)],
+      ['isReadableApca', () => black.isReadableApca(bad as never)],
+      ['fixContrast', () => black.fixContrast(bad as never)],
+      ['minReadable', () => black.minReadable(bad as never)],
+      ['over', () => colordx('rgb(0 0 0 / 0.5)').over(bad as never)],
+      ['over', () => black.over(bad as never)],
+    ] as const)
+      expect(call, name).toThrow(new RangeError(`${name}: ${JSON.stringify(bad)} is not a valid color`));
+    expect(() => inv.contrast('#fff')).toThrow(new RangeError('contrast: this color is invalid'));
+    expect(() => inv.over('#fff')).toThrow(new RangeError('over: this color is invalid'));
+  });
 });
 
 describe('option matrix — known bugs (it.fails until fixed)', () => {

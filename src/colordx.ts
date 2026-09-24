@@ -3,7 +3,7 @@ import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { linearSrgbToOklab, rgbToOklab } from './colorModels/oklab.js';
 import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
-import { clamp, fixedNotation, round, round3, toByte } from './helpers.js';
+import { clamp, fixedNotation, invalidColorError, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
 import { byteToLinear, srgbFromLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
@@ -251,11 +251,17 @@ export class Colordx {
     return Colordx._make(hslToRgb({ h: value, s, l, alpha }));
   }
 
-  /** Source-over composite of this color onto `background`, in gamma sRGB (as browsers blend). */
+  /**
+   * Source-over composite of this color onto `background`, in gamma sRGB (as browsers blend).
+   * Throws a RangeError when either color is invalid.
+   */
   over(background: AnyColor | Colordx): Colordx {
+    if (!this._valid) throw invalidColorError('over', this, true);
+    const back = new Colordx(background);
+    if (!back._valid) throw invalidColorError('over', background);
     const fg = this._rgb;
     if (fg.alpha === 1) return this;
-    const bg = new Colordx(background)._rgb;
+    const bg = back._rgb;
     const alpha = fg.alpha + bg.alpha * (1 - fg.alpha);
     if (alpha === 0) return Colordx._make({ r: 0, g: 0, b: 0, alpha: 0 });
     const w = fg.alpha / alpha;
@@ -338,9 +344,11 @@ export class Colordx {
     return Colordx._make(hslToRgb({ h: h + amount, s, l, alpha }));
   }
 
-  /** True when both colors round to the same RGBA tuple. */
+  /** True when both colors are valid and round to the same RGBA tuple. */
   isEqual(color: AnyColor): boolean {
-    const other = new Colordx(color).toRgb();
+    const o = new Colordx(color);
+    if (!this._valid || !o._valid) return false;
+    const other = o.toRgb();
     const self = this.toRgb();
     return self.r === other.r && self.g === other.g && self.b === other.b && self.alpha === other.alpha;
   }

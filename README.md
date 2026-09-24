@@ -195,7 +195,7 @@ The HSL-based methods (`lighten`, `darken`, `saturate`, `desaturate`, `grayscale
 .brightness()      // perceived brightness (0–1), of the sRGB-clipped color
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
-.isEqual('#f00')   // same RGBA bytes after rounding
+.isEqual('#f00')   // same RGBA bytes after rounding; false if either is invalid
 .over('#fff')      // source-over composite of a translucent color onto a bg
 // With a11y plugin loaded:
 .luminance()       // relative luminance (0–1, WCAG), optional precision
@@ -810,6 +810,8 @@ colordx('rgba(255, 255, 255, 0.6)').over(surface).contrast('#000');
 Colors outside sRGB are gamut-mapped (not clipped) before the check. WCAG always runs on the sRGB-mapped color; APCA can run on the Display-P3-mapped color with its own coefficients via `{ space: 'p3' }`.
 
 APCA (Accessible Perceptual Contrast Algorithm) — the projected replacement for WCAG 2.x in WCAG 3.0:
+
+An invalid color on either side is a mistake, not black: `contrast()`, `apcaContrast()`, the `isReadable*` gates, `readableScore()`, `fixContrast()`, `minReadable()` and `over()` throw a `RangeError` naming the method and the input. Check `isValid()` first when the input is untrusted.
 
 ```ts
 // Returns a signed Lc value: positive = dark text on light bg, negative = light text on dark bg

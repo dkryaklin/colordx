@@ -89,3 +89,18 @@ export const mixWeight = (a1: number, a2: number, w: number): number => {
     alpha = a1 * (1 - w) + p2;
   return alpha > 0 ? p2 / alpha : w;
 };
+
+/**
+ * The error a method that needs two real colors (over(), contrast, fixContrast) throws when one
+ * does not parse: an invalid color is a caller mistake, and reading it as black hides it.
+ */
+export const invalidColorError = (method: string, input: unknown, self = false): RangeError => {
+  if (self) return new RangeError(`${method}: this color is invalid`);
+  let shown: string;
+  try {
+    shown = typeof input === 'string' ? JSON.stringify(input) : (JSON.stringify(input) ?? String(input));
+  } catch {
+    shown = String(input);
+  }
+  return new RangeError(`${method}: ${shown} is not a valid color`);
+};
