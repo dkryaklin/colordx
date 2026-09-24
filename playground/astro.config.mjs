@@ -3,7 +3,7 @@ import react from '@astrojs/react';
 import { fileURLToPath } from 'node:url';
 
 const dist = (file) => fileURLToPath(new URL(`../dist/${file}`, import.meta.url));
-const plugins = ['a11y', 'cvd', 'harmonies', 'hsv', 'hwb', 'lab', 'lch', 'minify', 'mix', 'names', 'p3', 'rec2020'];
+const plugins = ['a11y', 'cvd', 'harmonies', 'hsv', 'hwb', 'lab', 'lch', 'minify', 'mix', 'names', 'okhsl', 'okhsv', 'p3', 'rec2020'];
 
 export default defineConfig({
   site: 'https://colordx.dev',

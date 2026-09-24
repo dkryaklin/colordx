@@ -1438,6 +1438,13 @@ code {
   cursor: pointer;
   min-width: 0;
   padding: 0;
+  overflow: hidden;
+}
+
+.stop-fill,
+.mix-grad-fill {
+  position: absolute;
+  inset: 0;
 }
 
 .stop-hex {
@@ -1453,9 +1460,11 @@ code {
 }
 
 .mix-grad {
+  position: relative;
   height: 26px;
   border-radius: var(--r-md);
   border: 1px solid var(--border);
+  overflow: hidden;
 }
 
 /* ===================================================================

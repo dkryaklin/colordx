@@ -5,9 +5,12 @@ import { SectionHead, Segmented, ColorField, CodeBlock, useCopied } from './ui.j
 
 function Stop({ hex }) {
   const [copied, copy] = useCopied();
-  const dark = colordx(hex).isDark();
+  const c = colordx(hex);
+  // a mostly transparent stop shows the dark checker through it
+  const dark = c.alpha() < 0.5 || c.isDark();
   return (
-    <button type="button" className="stop" style={{ background: hex }} onClick={() => copy(hex)} title="Copy">
+    <button type="button" className="stop checker" onClick={() => copy(hex)} title="Copy">
+      <span className="stop-fill" style={{ background: hex }} />
       <span className={`stop-hex${dark ? '' : ' on-light'}`}>{copied ? 'copied' : hex}</span>
     </button>
   );
@@ -40,7 +43,7 @@ export default function Mixer({ hex }) {
         icon={<GitMerge size={13} />}
         eyebrow="Mix"
         title="Blend two colors"
-        desc="Stops between the active color and a target. sRGB mixes like CSS did. OKLab keeps the path even, with no gray dip in the middle."
+        desc="Stops between the active color and a target. sRGB mixes like CSS did. OKLab keeps the path even, with no gray dip in the middle. Alpha is premultiplied like CSS color-mix(), so a fade to transparent keeps its hue."
       />
       <div className="card mix-card">
         <div className="mix-controls">
@@ -61,7 +64,9 @@ export default function Mixer({ hex }) {
                 <Stop key={i} hex={s} />
               ))}
             </div>
-            <div className="mix-grad" style={{ background: gradient }} />
+            <div className="mix-grad checker">
+              <div className="mix-grad-fill" style={{ background: gradient }} />
+            </div>
             <CodeBlock code={`background: ${gradient};\n\n${code}`} />
           </>
         ) : (

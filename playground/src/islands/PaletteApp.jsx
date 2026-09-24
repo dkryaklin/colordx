@@ -5,7 +5,7 @@ import Harmonies from '../components/Harmonies.jsx';
 import Mixer from '../components/Mixer.jsx';
 
 export default function PaletteApp() {
-  const { S, setColor, hex } = useColor();
+  const { S, setColor, hex, color } = useColor();
   return (
     <>
       <ActiveBar />
@@ -16,7 +16,8 @@ export default function PaletteApp() {
         <Harmonies S={S} setColor={setColor} />
       </section>
       <section className="section" id="mix">
-        <Mixer hex={hex} />
+        {/* keeps the active alpha, so the mix shows premultiplied blending */}
+        <Mixer hex={color.mapSrgb().toHex()} />
       </section>
     </>
   );

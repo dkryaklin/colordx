@@ -30,13 +30,13 @@ const color = colordx('#ff6b35');
 color.toHex()           // '#ff6b35'
 color.toRgbString()     // 'rgb(255 107 53)'
 color.toHslString()     // 'hsl(16.04 100% 60.39%)'
-color.toOklchString()   // 'oklch(0.70452 0.19259 39.23079)'
+color.toOklchString()   // 'oklch(0.70452 0.19259 39.23078)'
 color.lighten(0.1).toHex()   // '#ff9068'`;
   const gamut = `import { colordx, inGamutSrgb } from '@colordx/core';
 
 inGamutSrgb('oklch(0.5 0.4 180)')   // false
 colordx('oklch(0.5 0.4 180)').toHex()                     // '#00986c'  clipped, like a browser
-colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString()   // 'oklch(0.50907 0.09379 177.84892)'  CSS Color 4`;
+colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString()   // 'oklch(0.50903 0.09378 177.85846)'  CSS Color 4`;
   const plugins = `import { colordx, extend } from '@colordx/core';
 import a11y from '@colordx/core/plugins/a11y';
 import p3 from '@colordx/core/plugins/p3';
@@ -46,13 +46,18 @@ extend([a11y, p3]);
 colordx('#777').contrast('#fff')          // 4.48
 colordx('#777').fixContrast('#fff')       // Colordx at 4.5, same hue
 colordx('#ff0000').toP3String()           // 'color(display-p3 0.9175 0.2003 0.1386)'`;
+  const fn = `import { parseHex, rgbToHex, rgbToOklch } from '@colordx/core/fn';
+
+parseHex('#ff0000')                          // { r: 255, g: 0, b: 0, alpha: 1 }
+rgbToHex({ r: 255, g: 0, b: 0, alpha: 0.5 }) // '#ff000080'
+rgbToOklch(parseHex('#ff0000'))              // unrounded { l, c, h, alpha }`;
   return (
     <>
       <SectionHead
         icon={<Terminal size={13} />}
         eyebrow="Library"
         title="Use it in code"
-        desc="8 KB gzipped. Zero dependencies. Typed. Tree-shakeable. Plugins add what you need and nothing else."
+        desc="8.5 KB gzipped. Zero dependencies. Typed. Tree-shakeable. Plugins add what you need and nothing else."
       />
       <div className="gs-steps">
         <div className="gs-step">
@@ -70,6 +75,10 @@ colordx('#ff0000').toP3String()           // 'color(display-p3 0.9175 0.2003 0.1
         <div className="gs-step">
           <div className="gs-step-label">Plugins</div>
           <CodeBlock code={plugins} />
+        </div>
+        <div className="gs-step">
+          <div className="gs-step-label">Plain functions · 0.7 KB</div>
+          <CodeBlock code={fn} />
         </div>
       </div>
       <div className="cli-links">
@@ -91,7 +100,7 @@ export function Faq() {
     ['What is gamut?', 'The set of colors a screen can show. sRGB is the base. P3 is wider. OKLCH can describe colors outside both. The picker shows where the edges are.'],
     ['Clip or map?', 'toHex() clips, like a browser. mapSrgb() reduces chroma and keeps hue and lightness, per CSS Color 4. Use it for tokens and palettes.'],
     ['WCAG or APCA?', 'WCAG 2.2 is the law in most places. APCA is the better model and a WCAG 3 candidate. Check both. The tools here do.'],
-    ['Which formats?', 'Core: HEX, RGB, HSL, OKLab, OKLCH. Plugins: HWB, HSV, Lab, LCH, XYZ, CMYK, P3, Rec.2020, A98, ProPhoto, names, contrast, color blindness, mixing.'],
+    ['Which formats?', 'Core: HEX, RGB, HSL, OKLab, OKLCH. Plugins: HWB, HSV, OKHSL, OKHSV, Lab, LCH, XYZ, CMYK, P3, Rec.2020, A98, ProPhoto, linear sRGB, names, contrast, color blindness, mixing.'],
   ];
   return (
     <>

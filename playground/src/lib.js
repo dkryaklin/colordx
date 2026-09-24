@@ -9,10 +9,12 @@ import lch from '@colordx/core/plugins/lch';
 import minify from '@colordx/core/plugins/minify';
 import mix from '@colordx/core/plugins/mix';
 import names from '@colordx/core/plugins/names';
+import okhsl from '@colordx/core/plugins/okhsl';
+import okhsv from '@colordx/core/plugins/okhsv';
 import p3, { oklchToP3Channels } from '@colordx/core/plugins/p3';
 import rec2020, { oklchToRec2020Channels } from '@colordx/core/plugins/rec2020';
 
-extend([a11y, cvd, harmonies, hsv, hwb, lab, lch, minify, mix, names, p3, rec2020]);
+extend([a11y, cvd, harmonies, hsv, hwb, lab, lch, minify, mix, names, okhsl, okhsv, p3, rec2020]);
 
 // handy in the devtools console
 globalThis.Colordx = Colordx;

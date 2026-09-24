@@ -91,7 +91,6 @@ export default function AppSection({ S, setS, setColor, onRandom }) {
   }
 
   const c = colordx({ l: S.l, c: S.c, h: S.h, alpha: S.alpha });
-  const ob = c.toOklab();
   const cs = colordx(c.toHex()); // the sRGB-clipped color, what a browser shows
   const [linR, linG, linB] = oklchToLinear(S.l, S.c, S.h);
   const [p3R, p3G, p3B] = oklchToP3Channels(S.l, S.c, S.h);
@@ -106,7 +105,7 @@ export default function AppSection({ S, setS, setColor, onRandom }) {
   const sm = c.mapSrgb().toRgb();
   const srgbCss = `rgb(${sm.r} ${sm.g} ${sm.b} / ${S.alpha})`;
   const p3Css = `color(display-p3 ${f(p3R, 4)} ${f(p3G, 4)} ${f(p3B, 4)} / ${S.alpha})`;
-  const rec2020Css = `color(rec2020 ${f(r2R, 4)} ${f(r2G, 4)} ${f(r2B, 4)} / ${S.alpha})`;
+  const rec2020Css = `color(rec2020 ${f(r2R, 5)} ${f(r2G, 5)} ${f(r2B, 5)} / ${S.alpha})`;
 
   const wide = !gamut.srgb; // outside sRGB
   const nativeSpace = gamut.p3 ? 'P3' : gamut.rec2020 ? 'Rec.2020' : null;
@@ -117,7 +116,7 @@ export default function AppSection({ S, setS, setColor, onRandom }) {
   const closestName = cs.toName({ closest: true });
   const outputRows = [
     { lbl: 'OKLCH', val: oklchString },
-    { lbl: 'OKLab', val: `oklab(${f(ob.l)} ${f(ob.a)} ${f(ob.b)}${ob.alpha < 1 ? ` / ${f(ob.alpha, 2)}` : ''})` },
+    { lbl: 'OKLab', val: c.toOklabString() },
     { lbl: 'HEX', val: cs.toHex() },
     { lbl: 'RGB', val: cs.toRgbString() },
     { lbl: 'HSL', val: cs.toHslString() },
@@ -125,11 +124,14 @@ export default function AppSection({ S, setS, setColor, onRandom }) {
     { lbl: 'HSV', val: cs.toHsvString() },
     { lbl: 'Lab', val: cs.toLabString() },
     { lbl: 'LCH', val: cs.toLchString() },
+    { lbl: 'OKHSL', val: cs.toOkhslString() },
+    { lbl: 'OKHSV', val: cs.toOkhsvString() },
     { lbl: 'P3', val: `color(display-p3 ${f(p3R, 4)} ${f(p3G, 4)} ${f(p3B, 4)}${S.alpha < 1 ? ` / ${f(S.alpha, 2)}` : ''})` },
-    { lbl: 'Rec.2020', val: `color(rec2020 ${f(r2R, 4)} ${f(r2G, 4)} ${f(r2B, 4)}${S.alpha < 1 ? ` / ${f(S.alpha, 2)}` : ''})` },
+    { lbl: 'Rec.2020', val: `color(rec2020 ${f(r2R, 5)} ${f(r2G, 5)} ${f(r2B, 5)}${S.alpha < 1 ? ` / ${f(S.alpha, 2)}` : ''})` },
     { lbl: 'Linear', val: `color(srgb-linear ${f(linR, 4)} ${f(linG, 4)} ${f(linB, 4)})` },
     { lbl: 'Figma P3', val: `#${toHex2(p3R)}${toHex2(p3G)}${toHex2(p3B)}${S.alpha < 1 ? toHex2(S.alpha) : ''}` },
-    { lbl: 'Short', val: cs.minify({ alphaHex: true, name: true }) },
+    // minify the real color: outside sRGB it stays oklch() instead of clipping to hex
+    { lbl: 'Short', val: c.minify({ alphaHex: true, name: true }) },
     { lbl: 'Name', val: cs.toName() ?? `${closestName} (near)` },
   ];
 
