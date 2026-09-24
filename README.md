@@ -1087,7 +1087,7 @@ colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
 colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 ```
 
-The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. Colors outside sRGB are never clipped to hex; they stay `oklch()`.
+The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. Colors outside sRGB are never clipped to hex; they stay `oklch()`, or `color(srgb …)` when brighter than white or darker than black, since `oklch()` clamps its lightness at parse time. With every format option turned off, a visible alpha that hex would round to `00` falls back to `rgba()`.
 
 ## Relative lighten/darken
 

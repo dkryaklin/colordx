@@ -1,5 +1,6 @@
 import type { Colordx, Plugin } from '../colordx.js';
 import { isLinearInGamut } from '../gamut.js';
+import { round } from '../helpers.js';
 import { byteToLinear } from '../transfer.js';
 
 interface MinifyOptions {
@@ -49,9 +50,21 @@ const outsideSrgb = (c: Colordx): boolean => {
   return !isLinearInGamut(byteToLinear(r), byteToLinear(g), byteToLinear(b));
 };
 
+// A color brighter than white or darker than black has OKLab L outside [0, 1], which oklch()
+// clamps at parse time, so it would read back as white or black. color(srgb) is not clamped.
+const toSrgbFunction = (c: Colordx): string => {
+  const { r, g, b, alpha } = c._rawRgb();
+  const ch = (v: number) => round(v / 255, 5);
+  return `color(srgb ${ch(r)} ${ch(g)} ${ch(b)}${alpha < 1 ? ` / ${alpha}` : ''})`;
+};
+
 const minifyPlugin: Plugin = (ColordxClass) => {
   ColordxClass.prototype.minify = function (this: Colordx, options: MinifyOptions = {}) {
-    if (outsideSrgb(this)) return this.toOklchString().replace(/([ (])0\./g, '$1.');
+    if (outsideSrgb(this)) {
+      const { l } = this.toOklch();
+      const wide = l >= 0 && l <= 1 ? this.toOklchString() : toSrgbFunction(this);
+      return wide.replace(/([ (-])0\./g, '$1.');
+    }
     const opts = { hex: true, rgb: true, hsl: true, ...options };
     const { r, g, b } = this.toRgb();
     const alpha = this.alpha();
@@ -100,7 +113,12 @@ const minifyPlugin: Plugin = (ColordxClass) => {
       if (name) candidates.push(name);
     }
 
-    if (candidates.length === 0) return targetHex;
+    // Every format turned off: hex is the fallback, unless it would lose the alpha (0.001 is 00 in
+    // hex, fully transparent), and then the legacy rgba() the rgb option would have given.
+    if (candidates.length === 0) {
+      if (alpha === 1 || isAlphaHexLossless(alpha)) return targetHex;
+      return `rgba(${r},${g},${b},${shortenLeadingZero(alpha)})`;
+    }
     return candidates.reduce((shortest, c) => (c.length < shortest.length ? c : shortest));
   };
 };
