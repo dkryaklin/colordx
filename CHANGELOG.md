@@ -1,5 +1,21 @@
 # @colordx/core
 
+## 7.1.0
+
+### Minor Changes
+
+- Fix toGamutSrgb/toGamutP3/toGamutRec2020/toGamutA98/toGamutProphoto and mapSrgb to return colors already inside the target gamut unchanged, and apply 0/255 byte snapping only to sRGB clips so wide-gamut results are no longer nudged ([045e140](https://github.com/dkryaklin/colordx/commit/045e14064d1f9e7b6044c6c5212c536faa22b324))
+- Fix hsl() and hwb() to RGB conversion to use the CSS Color 4 formulas so exact half-byte channels round up like browsers (hsl(60 100% 25%) now yields #808000, hwb(120 30% 50%) green 128) ([fb86de0](https://github.com/dkryaklin/colordx/commit/fb86de0d27fee6ddabb38222d7bf1ab0492112bd))
+- Keep mixOklab() and mixLab() results unclamped like color-mix(in oklab | lab), so wide-gamut colors survive the mix instead of being clipped to sRGB ([a6018d7](https://github.com/dkryaklin/colordx/commit/a6018d7f594582347ca0205d456ff414c6079ed3))
+- Fix quadratic backtracking when parsing malformed rgb/hsl/hsv strings with long whitespace or paren runs in tinycolor-compatible parsing ([3beb0de](https://github.com/dkryaklin/colordx/commit/3beb0de17affdb9f9491d5855dcd4a8eafcf276f))
+- Fix APCA contrast in display-p3 space to treat OKLab L at or near 1 as pure white instead of gamut-mapping it to a tinted color ([ffcd321](https://github.com/dkryaklin/colordx/commit/ffcd32197dc1ba64adaeea39377c9e319b92d46a))
+- Fix minify() to emit color(srgb …) instead of oklch() for colors with OKLab lightness outside 0–1 (which oklch() would clamp to white or black), and fall back to rgba() rather than dropping a visible alpha when hex, rgb, and hsl are all disabled ([2da8dd2](https://github.com/dkryaklin/colordx/commit/2da8dd21e2f07d4deccc811f8440712cc469022e))
+- Reject non-ASCII input in named color parsing so strings like "blac\u212A" (Kelvin sign) no longer match black ([11c13b2](https://github.com/dkryaklin/colordx/commit/11c13b29cce57055478d1c975bffa58525275299))
+- Keep mix() results exact and unclamped like color-mix(in srgb) instead of rounding to bytes, so wide-gamut inputs stay wide-gamut ([fca2568](https://github.com/dkryaklin/colordx/commit/fca2568bbfb6d2c782697e7c7d39b1b65c654473))
+- Throw a RangeError from over(), contrast(), apcaContrast(), isReadable(), isReadableApca(), readableScore(), fixContrast() and minReadable() when either color is invalid instead of treating it as black, and make isEqual() return false when either color is invalid ([1385dad](https://github.com/dkryaklin/colordx/commit/1385dadddbe7293d7641511a2149d4c8a43460dc))
+- Throw a RangeError naming the unknown type from harmonies() instead of a bare TypeError, including for inherited Object.prototype keys like "toString" and "constructor" ([60bd7b5](https://github.com/dkryaklin/colordx/commit/60bd7b5b3e94312a46d85d5540fa6d3f3af7c99d))
+- Reject object input whose colorSpace brand names a different space than its channel keys (e.g. { r, g, b, colorSpace: 'lab' }, { h, s, l, colorSpace: 'okhsv' }) instead of parsing it as the unbranded model ([e8746fe](https://github.com/dkryaklin/colordx/commit/e8746fe0460a00a0be29071aaf82a78d84a89ae8))
+
 ## 7.0.0
 
 ### Major Changes
