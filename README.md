@@ -16,33 +16,16 @@
 
 A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.8 KB gzipped (6.7 KB for `colordx()` alone). 0 Dependencies.**
 
-## Performance
+## Contents
 
-Apple M5 Pro, Node 24, using [mitata](https://github.com/evanwashere/mitata). Operations per
-second — higher is better. Versions: colord 2.10.0, culori 4.0.2, chroma-js 3.2.0, color 5.0.3,
-tinycolor2 1.6.0, @texel/color 1.1.11.
-
-| Benchmark | **colordx** | @texel/color | colord | culori | chroma-js | color | tinycolor2 |
-|---|---|---|---|---|---|---|---|
-| Parse HEX → toHex | **38M** | 8.0M | 7.5M | 7.1M | 3.7M | 1.6M | 2.9M |
-| Parse HEX → toHsl | **35M** | — | 29M | 7.7M | 3.8M | 3.4M | 2.8M |
-| Parse RGB object → toHex | **50M** | — | 35M | 49M | 5.2M | 1.6M | 5.8M |
-| Parse rgb() string → toHex | **12M** | — | 7.4M | 3.1M | 227K | 1.5M | 3.0M |
-| Parse hsl() string → toHex | **11M** | — | 4.9M | 3.1M | 219K | 1.4M | 2.0M |
-| Parse named color → toHex | **14M** | — | 4.5M | 3.9M | 4.5M | 1.3M | 2.6M |
-| Parse HEX → lighten → toHex | **18M** | — | 13M | 5.2M | 1.9M | 1.2M | 1.1M |
-| Mix two colors | **19M** | 6.0M | 2.5M | 1.3M | 1.3M | 678K | 1.3M |
-| WCAG contrast ratio | **21M** | — | 3.6M | 3.3M | 2.0M | — | 1.5M |
-| Parse HEX → toOklch | **14M** | 6.6M | — | 4.7M | 1.3M | 2.6M | — |
-| inGamutP3 | **8.9M** | 3.9M | — | 1.5M | — | — | — |
-| inGamutRec2020 | **8.7M** | 3.9M | — | 1.5M | — | — | — |
-| CIEDE2000 delta | **6.0M** | — | — | 2.0M | 1.3M | — | — |
-| OKLCH string → HEX | **6.3M** | 2.8M | — | 1.7M | 191K | — | — |
-| Gamut map → sRGB | **1.7M** | — | — | 509K | — | — | — |
-
-In the RGB object row culori gets its own `{ mode, r, g, b }` format, so it skips parsing.
-
-Mean of two runs. Run `pnpm bench` to check.
+- [Install](#install) · [Quick start](#quick-start)
+- [API](#api): [Parsing](#parsing) · [Conversion](#conversion) · [Precision](#precision) · [Manipulation](#manipulation) · [Getters](#getters) · [Utilities](#utilities)
+- [Gamut](#gamut)
+- [Plugins](#plugins)
+- [Channel functions](#channel-functions) · [Functional API](#functional-api)
+- [Migrating from tinycolor2](#migrating-from-tinycolor2)
+- [Performance](#performance)
+- [Roadmap](#roadmap) · [Ecosystem](#ecosystem)
 
 ## Install
 
@@ -70,11 +53,13 @@ colordx('#ff0000').lighten(0.1).saturate(0.2).toHex();
 colordx('#3d7a9f').rotate(30).darken(0.1).toRgbString();
 ```
 
-The `colordx()` factory is all you need for day-to-day work. For out-of-gamut `oklch()` / `oklab()` inputs, `.toHex()` / `.toRgbString()` clip in linear sRGB — the same strategy browsers use when rendering `background: oklch(...)` — so your output matches what users see on screen. If you need stricter hue/lightness preservation for authoring workflows, see [Gamut](#gamut).
+`.toHex()` and `.toRgbString()` clip an out-of-gamut `oklch()` / `oklab()` the way browsers render it. For gamut mapping instead, see [Gamut](#gamut).
 
 ## API
 
 All methods are immutable — they return a new `Colordx` instance.
+
+A method that needs two colors (`contrast()`, `mix()`, `delta()`, `over()`, `nearest()`, …) throws a `RangeError` on an invalid one, naming the method and the input. Single-color methods on an invalid instance read it as black, as colord does, so check `isValid()` on untrusted input.
 
 ### Parsing
 
@@ -113,7 +98,17 @@ colordx({ h: 0, w: 0, b: 0 });
 colordx({ h: 0, s: 100, v: 100 }); // HSV
 ```
 
-Channels are clamped the way CSS Color 4 clamps them at parsed-value time: `rgb()` / `hsl()` channels to their ranges, `lab()` / `lch()` / `oklab()` / `oklch()` lightness to `[0, 100]` / `[0, 1]`, chroma to `≥ 0`. Lab/LCH `a`, `b`, `c` and OKLab/OKLCh `a`, `b`, `c` are unbounded, which is what makes out-of-gamut colors representable (see [Gamut](#gamut)). Alpha is clamped to `[0, 1]`. One consequence: an imaginary `lab()` / `lch()` / `color(xyz …)` input can have an OKLab lightness outside `[0, 1]`; `.toOklchString()` reports it faithfully, but feeding that string back clamps L, so only colors with L in range round-trip through OKLCh. The same holds the other way for CIE Lab: a far-out-of-gamut `oklch()` / `oklab()` / `color()` input can have a Lab lightness below 0 (`oklch(0.31924 0.4 279.2)` → `lab(-7.33 212.95 -169.91)`), which `.toLabString()` / `.toLchString()` print as is and a browser clamps to 0. Three object-only rules: an OKLab/OKLCh object with `l > 1` is rejected as invalid — it is almost certainly a CIE Lab/LCH value missing its `colorSpace: 'lab' | 'lch'` brand, and clamping it to white would hide the mistake; an object whose `colorSpace` names a different space than its keys (`{ r, g, b, colorSpace: 'lab' }`, `{ h, s, l, colorSpace: 'okhsv' }`) is rejected rather than read as the unbranded model; and `NaN` in any channel reads as `0` (an infinite hue reads as `0°`).
+Channels are clamped the way CSS Color 4 clamps them at parsed-value time: `rgb()` / `hsl()` channels to their ranges, `lab()` / `lch()` / `oklab()` / `oklch()` lightness to `[0, 100]` / `[0, 1]`, chroma to `≥ 0`. Lab/LCH `a`, `b`, `c` and OKLab/OKLCh `a`, `b`, `c` are unbounded, which is what makes out-of-gamut colors representable (see [Gamut](#gamut)). Alpha is clamped to `[0, 1]`.
+
+<details>
+<summary>Edge cases: lightness round-trips, rejected objects, NaN</summary>
+
+- An imaginary `lab()` / `lch()` / `color(xyz …)` input can have an OKLab lightness outside `[0, 1]`; `.toOklchString()` reports it faithfully, but feeding that string back clamps L, so only colors with L in range round-trip through OKLCh. The same holds the other way for CIE Lab: a far-out-of-gamut `oklch()` / `oklab()` / `color()` input can have a Lab lightness below 0 (`oklch(0.31924 0.4 279.2)` → `lab(-7.33 212.95 -169.91)`), which `.toLabString()` / `.toLchString()` print as is and a browser clamps to 0.
+- An OKLab/OKLCh object with `l > 1` is rejected as invalid — it is almost certainly a CIE Lab/LCH value missing its `colorSpace: 'lab' | 'lch'` brand, and clamping it to white would hide the mistake.
+- An object whose `colorSpace` names a different space than its keys (`{ r, g, b, colorSpace: 'lab' }`, `{ h, s, l, colorSpace: 'okhsv' }`) is rejected rather than read as the unbranded model.
+- `NaN` in any channel reads as `0` (an infinite hue reads as `0°`).
+
+</details>
 
 Object input accepts `a` as an alias for `alpha` (the `{ r, g, b, a }` shape colord and tinycolor2 use) in every color model except Lab and OKLab, where `a` is a channel. When both are present, `alpha` wins.
 
@@ -162,6 +157,27 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .toSrgbLinearString() // 'color(srgb-linear 1 0 0)'
 ```
 
+### Precision
+
+Every `toX()` / `toXString()` method accepts an optional `precision` (decimal places), applied uniformly to every channel of that format. Alpha is fixed at 3 dp globally. Hues are wrapped after rounding, so a hue never prints as `360` at any precision. Format-specific defaults (scale-appropriate):
+
+| format | default |
+|---|---|
+| `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
+| `toP3`, `toA98` | `4` |
+| `toOklab`, `toOklch`, `toOkhsl`, `toOkhsv`, `toSrgbLinear`, `toRec2020`, `toProphoto`, `toXyzString`, `toXyzD65String` | `5` |
+
+Each string default is the fewest decimals at which every 8-bit sRGB color parses back to the same bytes. A precision above 20 reads as 20 (past double precision anyway), and NaN or a negative as 0.
+
+```ts
+colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }
+colordx('#3d7a9f').toHsl(4);     // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
+colordx('#3d7a9f').toHsl(0);     // { h: 203, s: 45, l: 43, alpha: 1 }
+
+colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
+colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
+```
+
 ### Manipulation
 
 ```ts
@@ -182,7 +198,19 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .chroma(0.1)       // set chroma (OKLCH, 0–0.4)
 ```
 
-The HSL-based methods (`lighten`, `darken`, `saturate`, `desaturate`, `grayscale`, `rotate`, `hue`) and `invert` work on the sRGB-clipped color — the same color `.toHex()` prints — so on a wide-gamut input they start from what is displayed. `lightness()` and `chroma()` work in OKLCH and clip the result into sRGB. The one exception is a whole-turn `rotate` (`0`, `±360`, …): it returns the color untouched rather than clipping it, so `harmonies` can carry a wide-gamut input through unchanged.
+The HSL-based methods and `invert` work on the sRGB-clipped color, the one `.toHex()` prints. `lightness()` and `chroma()` work in OKLCH and clip the result. A whole-turn `rotate` (`0`, `±360`, …) returns the color untouched.
+
+By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points. Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
+
+```ts
+colordx('hsl(0 100% 10%)').lighten(0.1); // l = 10 + 10 = 20%  (absolute)
+colordx('hsl(0 100% 10%)').lighten(0.1, { relative: true }); // l = 10 * 1.1 = 11% (relative)
+
+colordx('hsl(0 40% 50%)').saturate(0.1); // s = 40 + 10 = 50%  (absolute)
+colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 44% (relative)
+```
+
+The same flag works on `.darken()` and `.desaturate()`.
 
 ### Getters
 
@@ -208,7 +236,7 @@ The HSL-based methods (`lighten`, `darken`, `saturate`, `desaturate`, `grayscale
 ### Utilities
 
 ```ts
-import { getFormat, nearest, oklchToLinear, oklchToRgbChannels, random } from '@colordx/core';
+import { getFormat, nearest, random } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255 0 0)'); // 'rgb'
@@ -225,151 +253,11 @@ nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
 
 random(); // random Colordx instance
-
-// Low-level functional converters — no object allocation, for hot paths (canvas gradients, etc.)
-oklchToRgbChannels(0.5, 0.2, 240); // [-0.29354, 0.41025, 0.78055] — gamma-encoded sRGB, unclamped
-// Out-of-gamut channels leave [0, 1] (this one is outside sRGB) — callers clamp before byte encoding
-
-const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a free sRGB gamut check
-
-// Non-OKLCH inputs → linear sRGB (same output scale and gamut-check behavior as oklchToLinear).
-// Use these when you already have RGB/Lab/LCH values and want linear pixels without round-tripping through OKLCH.
-import {
-  labToLinearAndSrgb,
-  labToLinearSrgb,
-  labToRgbChannels,
-  lchToLinearAndSrgb,
-  lchToLinearSrgb,
-  lchToRgbChannels,
-  rgbToLinear,
-} from '@colordx/core';
-
-rgbToLinear(1, 0, 0);          // [1, 0, 0]           — 0–1 gamma sRGB in
-labToLinearSrgb(54.29, 80.8, 69.89); // Lab D50 → linear sRGB (via XYZ D50)
-lchToLinearSrgb(54.29, 106.84, 40.86); // LCH D50 → Lab → linear sRGB
-
-// Gamma-encoded sRGB in one call:
-labToRgbChannels(54.29, 80.8, 69.89); // → [r, g, b] gamma sRGB in [0, 1]
-lchToRgbChannels(54.29, 106.84, 40.86);
-
-// Both linear (for gamut check) and gamma (for display) in a single pass:
-const [lin, srgb] = labToLinearAndSrgb(54.29, 80.8, 69.89); // or lchToLinearAndSrgb
-
-// Hex/RGB input? Parse once, then divide by 255:
-const { r, g, b } = colordx('#ff0000').toRgb();
-rgbToLinear(r / 255, g / 255, b / 255); // [1, 0, 0]
-
-// P3/Rec.2020 channel functions live in their plugins:
-import { labToP3Channels, lchToP3Channels, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
-import {
-  labToRec2020Channels,
-  lchToRec2020Channels,
-  linearToRec2020Channels,
-  oklchToRec2020Channels,
-} from '@colordx/core/plugins/rec2020';
-
-oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3, unclamped
-oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020, unclamped (2.4 gamma)
-
-// CIE Lab/LCH → P3 / Rec.2020 (hot path for LCH renderers without OKLCH detour):
-labToP3Channels(54.29, 80.8, 69.89);      // [r, g, b] gamma P3
-lchToP3Channels(54.29, 106.84, 40.86);
-labToRec2020Channels(54.29, 80.8, 69.89); // [r, g, b] gamma Rec.2020
-lchToRec2020Channels(54.29, 106.84, 40.86);
-
-// Split-step API: compute the shared expensive OKLCH→linear sRGB step once,
-// then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
-linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
-linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (2.4 gamma)
-
-// sRGB ↔ HSL / HSV on the same scale toHsl() / toHsv() report: h in degrees, s and l/v in 0–100.
-// RGB is 0–1 gamma sRGB, like rgbToLinear. This is the per-pixel path for pickers, hue wheels
-// and vectorscopes — no parsing, no object, no rounding.
-import { hslToRgbChannels, rgbToHslChannels } from '@colordx/core';
-import { hsvToRgbChannels, rgbToHsvChannels } from '@colordx/core/plugins/hsv';
-
-rgbToHslChannels(1, 0, 0);       // [0, 100, 50]
-rgbToHsvChannels(0, 0, 1);       // [240, 100, 100]
-hslToRgbChannels(120, 100, 50);  // [0, 1, 0]
-hsvToRgbChannels(-30, 50, 50);   // hue wraps: same as hsvToRgbChannels(330, 50, 50)
-// Greys report h = 0, s = 0 (same ACHROMATIC_EPS threshold as toHsl()). Nothing is clipped:
-// HSL/HSV live on the sRGB cube, so clip a wide-gamut color first — for bytes, pass r/255, g/255, b/255.
 ```
 
-**Zero-allocation tight-loop variants (`*Into`).** Every channel function has an `*Into` sibling that writes into a caller-provided `Float64Array | number[]` instead of allocating a new tuple. For per-pixel work (canvas renderers, gradient grids, wide-gamut data viz), this eliminates ~10× the GC pressure and makes interactive redraws smoother. Output is bit-for-bit identical to the allocating version.
+## Gamut
 
-```ts
-import {
-  oklchToLinearInto,
-  oklchToRgbChannelsInto,
-  oklchToLinearAndSrgbInto,
-} from '@colordx/core';
-import { linearToP3ChannelsInto, oklchToP3ChannelsInto } from '@colordx/core/plugins/p3';
-import { linearToRec2020ChannelsInto, oklchToRec2020ChannelsInto } from '@colordx/core/plugins/rec2020';
-
-// Pixel-renderer pattern: allocate one buffer, reuse for every pixel.
-const buf = new Float64Array(3);
-for (let y = 0; y < height; y++) {
-  for (let x = 0; x < width; x++) {
-    const [l, c, h] = getOklch(x, y);
-    oklchToP3ChannelsInto(buf, l, c, h);
-    imageData[i++] = Math.floor(buf[0] * 255);
-    imageData[i++] = Math.floor(buf[1] * 255);
-    imageData[i++] = Math.floor(buf[2] * 255);
-    imageData[i++] = 255;
-  }
-}
-```
-
-Full `*Into` surface (all tree-shakable — unused ones have zero bundle cost):
-
-```ts
-// from '@colordx/core' — OKLCH → linear / sRGB
-oklchToLinearInto(out, l, c, h);           // → [lr, lg, lb] linear sRGB
-oklchToRgbChannelsInto(out, l, c, h);      // → [r, g, b] gamma-encoded sRGB
-oklchToLinearAndSrgbInto(linOut, srgbOut, l, c, h); // both at once (distinct buffers)
-
-// from '@colordx/core' — non-OKLCH inputs → linear / gamma sRGB (complements oklchToLinear)
-rgbToLinearInto(out, r, g, b);             // 0–1 gamma sRGB → linear sRGB
-labToLinearSrgbInto(out, l, a, b);         // CIE Lab (D50) → linear sRGB (via XYZ D50)
-labToRgbChannelsInto(out, l, a, b);        // CIE Lab (D50) → gamma sRGB
-labToLinearAndSrgbInto(linOut, srgbOut, l, a, b); // both (distinct buffers)
-lchToLinearSrgbInto(out, l, c, h);         // CIE LCH (D50) → linear sRGB
-lchToRgbChannelsInto(out, l, c, h);        // CIE LCH (D50) → gamma sRGB
-lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
-
-// from '@colordx/core' — sRGB ↔ HSL (h degrees, s/l 0–100; RGB 0–1)
-rgbToHslChannelsInto(out, r, g, b);        // → [h, s, l]
-hslToRgbChannelsInto(out, h, s, l);        // → [r, g, b] gamma sRGB
-
-// from '@colordx/core/plugins/hsv' — sRGB ↔ HSV (h degrees, s/v 0–100; RGB 0–1)
-rgbToHsvChannelsInto(out, r, g, b);        // → [h, s, v]
-hsvToRgbChannelsInto(out, h, s, v);        // → [r, g, b] gamma sRGB
-
-// from '@colordx/core/plugins/p3'
-linearToP3ChannelsInto(out, lr, lg, lb);
-oklchToP3ChannelsInto(out, l, c, h);
-labToP3ChannelsInto(out, l, a, b);
-lchToP3ChannelsInto(out, l, c, h);
-
-// from '@colordx/core/plugins/rec2020'
-linearToRec2020ChannelsInto(out, lr, lg, lb);
-oklchToRec2020ChannelsInto(out, l, c, h);
-labToRec2020ChannelsInto(out, l, a, b);
-lchToRec2020ChannelsInto(out, l, c, h);
-```
-
-Guidance:
-- Use `Float64Array(3)` for the buffer when you can — it's the convention and keeps the V8 call site monomorphic. `number[]` also works.
-- One buffer per loop is plenty; don't allocate per iteration.
-- `linOut` and `srgbOut` in `oklchToLinearAndSrgbInto` **must be distinct buffers** (the function writes to both).
-- If you're outside a hot loop, the regular allocating versions are more ergonomic — reach for `*Into` only when you've profiled and GC is the bottleneck.
-
-### Gamut
-
-`oklch()` and `oklab()` can describe colors outside the sRGB gamut. **For everyday conversion, `.toRgbString()` / `.toHex()` already do the right thing** — they naive-clip in linear sRGB to match browser rendering, so your output matches what `background: oklch(...)` displays on screen. You only need the methods below when that default isn't what you want.
-
-Internally, out-of-gamut `oklch()` / `oklab()` inputs are stored **unclamped**, so the authored color is preserved losslessly. That means `.toOklchString()` round-trips the original, and you can choose when (and how) to fold the color into sRGB:
+An out-of-gamut `oklch()` / `oklab()` input is stored unclamped, so `.toOklchString()` round-trips what you wrote. `.toHex()` and `.toRgbString()` clip it at output the way browsers do, which is what you want for everyday conversion. When you need a `Colordx` that is itself inside sRGB, choose how it gets there:
 
 ```ts
 const input = 'oklch(0.5 0.4 180)';  // out of sRGB gamut
@@ -387,12 +275,19 @@ colordx(input).clampSrgb().toOklchString(); // 'oklch(0.60125 0.1276 164.29893)'
 colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes as (1)
 ```
 
-- **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Keeps lightness and hue close; sacrifices chroma. Per the spec, the search stops at the first clipped color within a just-noticeable difference (deltaEOK 0.02) of its chroma-reduced candidate, so L and h can drift slightly — most visibly on colors far outside sRGB (the example above lands at hue 177.9°, not 180°; a pale or dark saturated red can move several degrees of hue, or land on pure `#xx0000`). Use when perceptual closeness matters — CSS output, OKLCH pickers, programmatic harmonies. When a palette needs exact L and h per step, bisect chroma with `inGamutSrgb()` instead.
+- **`.mapSrgb()`** — CSS Color 4 gamut mapping: reduces chroma and keeps lightness and hue within a just-noticeable difference. Use for CSS output, OKLCH pickers and harmonies.
 - **`.clampSrgb()`** — naive clip in linear sRGB. Hue and lightness may drift. Use when you want a `Colordx` whose `.toOklchString()` describes what browsers actually render.
+
+<details>
+<summary>How far <code>mapSrgb()</code> can drift, and which methods clip</summary>
+
+Per the spec, the search stops at the first clipped color within a just-noticeable difference (deltaEOK 0.02) of its chroma-reduced candidate, so L and h can drift slightly — most visibly on colors far outside sRGB (the example above lands at hue 177.9°, not 180°; a pale or dark saturated red can move several degrees of hue, or land on pure `#xx0000`). When a palette needs exact L and h per step, bisect chroma with `inGamutSrgb()` instead.
 
 Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`) read the unclamped color, and the three mixers keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
-A static form is also available for one-shot conversion without wrapping first — `Colordx.toGamutSrgb(input)` is equivalent to `colordx(input).mapSrgb()`. Like `mapSrgb()`, it and the wide-gamut `Colordx.toGamutP3()` / `toGamutRec2020()` / `toGamutA98()` / `toGamutProphoto()` return a color already inside the target gamut unchanged.
+</details>
+
+`Colordx.toGamutSrgb(input)` is the static form of `colordx(input).mapSrgb()`. It and the plugin mappers (`toGamutP3()`, `toGamutRec2020()`, `toGamutA98()`, `toGamutProphoto()`) return a color already in the target gamut unchanged.
 
 colordx also includes standalone utilities for checking and mapping into wider gamuts (Display-P3 / Rec.2020, via plugins):
 
@@ -424,9 +319,16 @@ inGamutRec2020('oklch(0.5 0.4 180)'); // false — outside Rec.2020
 Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 ```
 
-Gamut containment is largely hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020 ⊂ ProPhoto. A98 (Adobe RGB 1998) sits between sRGB and Rec.2020 — wider than sRGB, mostly in the greens — but is not a strict superset of Display-P3. All `inGamut*` functions always return `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). The `toGamut*` functions use a binary chroma-reduction search following the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
+`inGamut*` always returns `true` for sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb). Mapping follows the [CSS Color 4 gamut mapping algorithm](https://www.w3.org/TR/css-color-4/#css-gamut-mapping).
 
-Gamut checks and mapping accept wide-gamut inputs in every supported form — `oklab()` / `oklch()`, CIE `lab()` / `lch()` strings, `color(display-p3 …)` and friends, and the corresponding object shapes (including branded `{ colorSpace: 'lab' | 'lch' }` objects). `oklab` / `oklch` are read by core; any other format needs its plugin loaded via `extend()`, exactly like `colordx()` itself. A plugin's own helpers (`inGamutP3`, `inGamutRec2020`, …) always understand their own format:
+<details>
+<summary>How the gamuts nest</summary>
+
+Gamut containment is largely hierarchical: sRGB ⊂ Display-P3 ⊂ Rec.2020 ⊂ ProPhoto. A98 (Adobe RGB 1998) sits between sRGB and Rec.2020 — wider than sRGB, mostly in the greens — but is not a strict superset of Display-P3.
+
+</details>
+
+Checks and mapping accept every wide-gamut input `colordx()` does — `lab()` / `lch()` strings, `color(display-p3 …)` and friends, branded `{ colorSpace: 'lab' | 'lch' }` objects — once that format's plugin is loaded. A plugin's own helpers (`inGamutP3`, `inGamutRec2020`, …) read their own format without `extend()`:
 
 ```ts
 extend([lab, lch]);
@@ -443,80 +345,54 @@ inGamutSrgb('lab(50 100 0)'); // false
 Colordx.toGamutSrgb('lab(50 100 0)'); // → Colordx at the sRGB boundary
 ```
 
-## Functional API
-
-`@colordx/core/fn` exports the parsers and converters behind `colordx()` as plain functions. Nothing is shared with the `Colordx` class, so a bundle only carries what it imports — parsing a hex string and printing it back is about 0.7 KB gzipped.
-
-```ts
-import { parse, parseHex, rgbToHex, rgbToOklch } from '@colordx/core/fn';
-
-parse('oklch(0.6279 0.2577 29.23)'); // { r, g, b, alpha } or null — every format colordx() accepts, plugins included
-parseHex('#ff0000');                 // { r: 255, g: 0, b: 0, alpha: 1 }
-rgbToHex({ r: 255, g: 0, b: 0, alpha: 0.5 }); // '#ff000080'
-rgbToOklch(parseHex('#ff0000')!);    // { l: 0.6279…, c: 0.2576…, h: 29.23…, alpha: 1 } — unrounded
-```
-
-`RgbColor` here is the library's storage form: `r`, `g`, `b` on the 0–255 scale, unrounded and unclamped, so a wide-gamut color keeps its out-of-range channels.
-
-To accept only some formats, compose the single-format parsers instead of calling `parse()`. Order them by how often each format shows up, and keep `parseNameString` last: every other parser rejects a foreign input on its first character or key, while the name lookup lowercases the string first.
-
-```ts
-import { parseHex, parseHsvObject, parseNameString, parseRgbObject } from '@colordx/core/fn';
-
-const parsers = [parseHex, parseRgbObject, parseHsvObject, parseNameString];
-const parseColor = (input: unknown) => {
-  for (const p of parsers) {
-    const rgb = p(input);
-    if (rgb) return rgb;
-  }
-  return null;
-};
-```
-
-Available: `parse`, `parseHex`, `parseRgbString`, `parseRgbObject`, `parseSrgbColorString`, `parseHslString`, `parseHslObject`, `parseHsvString`, `parseHsvObject`, `parseHwbString`, `parseHwbObject`, `parseOklabString`, `parseOklabObject`, `parseOklchString`, `parseOklchObject`, `parseNameString`, `NAMES`, `rgbToHex`, `rgbToHex8`, `rgbToHsl` / `hslToRgb`, `rgbToHsv` / `hsvToRgb`, `rgbToHwb` / `hwbToRgb`, `rgbToOklab` / `oklabToRgb`, `rgbToOklch` / `oklchToRgb`, `rgbToOkhsl` / `okhslToRgb`, `rgbToOkhsv` / `okhsvToRgb`, `parseOkhslString`, `parseOkhslObject`, `parseOkhsvString`, `parseOkhsvObject`.
-
 ## Plugins
 
-Opt-in plugins for less common color spaces and utilities:
+Opt-in plugins for less common color spaces and utilities. Each is imported from `@colordx/core/plugins/<name>` and registered once with `extend()`:
+
+| Plugin | Adds |
+|---|---|
+| **Color spaces** | |
+| [`lab`](#lab-plugin) | CIE Lab and XYZ (D50, D65), `mixLab()`, `delta()` (CIEDE2000) |
+| [`lch`](#lch-plugin) | CIE LCH |
+| [`hsv`](#hsv-plugin) | HSV, plus HSV channel functions |
+| [`hwb`](#hwb-plugin) | HWB |
+| [`cmyk`](#cmyk-plugin) | CMYK, `device-cmyk()` |
+| [`okhsl`, `okhsv`](#okhsl-and-okhsv-plugins) | Okhsl and Okhsv picker spaces |
+| [`p3`](#p3-plugin) | Display-P3, `inGamutP3()`, `Colordx.toGamutP3()` |
+| [`rec2020`](#rec2020-plugin) | Rec.2020, `inGamutRec2020()`, `Colordx.toGamutRec2020()` |
+| [`a98rgb`](#a98rgb-plugin) | A98 (Adobe RGB 1998), `inGamutA98()`, `Colordx.toGamutA98()` |
+| [`prophoto`](#prophoto-plugin) | ProPhoto, `inGamutProphoto()`, `Colordx.toGamutProphoto()` |
+| [`srgb-linear`](#srgb-linear-plugin) | `color(srgb-linear …)` |
+| **Tools** | |
+| [`a11y`](#a11y-plugin) | WCAG and APCA contrast, readability gates, `fixContrast()` |
+| [`cvd`](#cvd-plugin) | Colour vision deficiency simulation |
+| [`mix`](#mix-plugin) | `mix()`, `mixOklab()`, tints, shades, tones, palettes |
+| [`harmonies`](#harmonies-plugin) | Color harmonies |
+| [`names`](#names-plugin) | CSS color names |
+| [`minify`](#minify-plugin) | Shortest CSS string |
+
+All of them at once:
 
 ```ts
 import { extend } from '@colordx/core';
 import a11y from '@colordx/core/plugins/a11y';
-// isReadable(), readableScore(), minReadable(), apcaContrast(), isReadableApca()
 import cmyk from '@colordx/core/plugins/cmyk';
-// toCmyk(), toCmykString(), parses device-cmyk() strings and CMYK objects
 import cvd from '@colordx/core/plugins/cvd';
-// simulate('protanopia' | 'deuteranopia' | 'tritanopia')
 import harmonies from '@colordx/core/plugins/harmonies';
-// harmonies()
 import hwb from '@colordx/core/plugins/hwb';
-// toHwb(), toHwbString(), parses hwb() strings and HWB objects
 import hsv from '@colordx/core/plugins/hsv';
-// toHsv(), toHsvString(), parses hsv() strings and HSV objects
 import okhsl from '@colordx/core/plugins/okhsl';
-// toOkhsl(), toOkhslString(), okhslToRgbChannels(), parses okhsl() strings and { colorSpace: 'okhsl' } objects
 import okhsv from '@colordx/core/plugins/okhsv';
-// toOkhsv(), toOkhsvString(), okhsvToRgbChannels(), parses okhsv() strings and { colorSpace: 'okhsv' } objects
 import lab from '@colordx/core/plugins/lab';
-// toLab(), toLabString(), toXyz(), toXyzString(), toXyzD65(), toXyzD65String(), mixLab(), delta(), parses Lab/XYZ(D50+D65) objects and strings
 import lch from '@colordx/core/plugins/lch';
-// toLch(), toLchString(), parses lch() strings and LCH objects
 import minify from '@colordx/core/plugins/minify';
-// minify() — shortest CSS string
 import mix from '@colordx/core/plugins/mix';
-// mix(), mixOklab(), tints(), shades(), tones(), palette()
 import names from '@colordx/core/plugins/names';
-// toName(), parses CSS color names
 import p3 from '@colordx/core/plugins/p3';
-// toP3(), toP3String(), inGamutP3(), Colordx.toGamutP3(), linearToP3Channels(), oklchToP3Channels(), parses color(display-p3 ...) strings
 import rec2020 from '@colordx/core/plugins/rec2020';
-// toRec2020(), toRec2020String(), inGamutRec2020(), Colordx.toGamutRec2020(), linearToRec2020Channels(), oklchToRec2020Channels(), parses color(rec2020 ...) strings
 import a98rgb from '@colordx/core/plugins/a98rgb';
-// toA98(), toA98String(), inGamutA98(), Colordx.toGamutA98(), linearToA98Channels(), oklchToA98Channels(), parses color(a98-rgb ...) strings
 import prophoto from '@colordx/core/plugins/prophoto';
-// toProphoto(), toProphotoString(), inGamutProphoto(), Colordx.toGamutProphoto(), linearToProphotoChannels(), oklchToProphotoChannels(), parses color(prophoto-rgb ...) strings
 import srgbLinear from '@colordx/core/plugins/srgb-linear';
-// toSrgbLinear(), toSrgbLinearString(), parses color(srgb-linear ...) strings
 
 extend([lab, lch, cmyk, names, a11y, harmonies, hwb, hsv, okhsl, okhsv, mix, minify, p3, rec2020, a98rgb, prophoto, srgbLinear]);
 ```
@@ -581,37 +457,6 @@ colordx('lch(54.29 106.84 40.86)').toHex(); // '#ff0000'
 colordx({ l: 50, c: 50, h: 180, colorSpace: 'lch' as const }).toHex(); // parses as LCH object
 ```
 
-### cmyk plugin
-
-CMYK color model. Parses `device-cmyk()` CSS strings and CMYK objects.
-
-```ts
-import cmyk from '@colordx/core/plugins/cmyk';
-
-extend([cmyk]);
-
-colordx('#ff0000').toCmyk(); // { c: 0, m: 100, y: 100, k: 0, alpha: 1 }
-colordx('#ff0000').toCmykString(); // 'device-cmyk(0% 100% 100% 0%)'
-colordx('device-cmyk(0% 100% 100% 0%)').toHex(); // '#ff0000'
-colordx({ c: 0, m: 100, y: 100, k: 0 }).toHex(); // '#ff0000'
-```
-
-### names plugin
-
-CSS named color support (all 148 names from the CSS spec). `toName()` returns `undefined` for colors with no CSS name.
-
-```ts
-import names from '@colordx/core/plugins/names';
-
-extend([names]);
-
-colordx('red').toHex(); // '#ff0000'
-colordx('rebeccapurple').toHex(); // '#663399'
-colordx('#ff0000').toName(); // 'red'
-colordx('#c06060').toName(); // undefined — no CSS name for this color
-colordx('#c06060').toName({ closest: true }); // nearest named color by RGB distance
-```
-
 ### hsv plugin
 
 HSV/HSVa color model. Parses `hsv()` / `hsva()` strings and HSV objects.
@@ -647,69 +492,6 @@ for (let y = 0; y < 256; y++) {
 }
 ```
 
-### okhsl and okhsv plugins
-
-[Okhsl and Okhsv](https://bottosson.github.io/posts/colorpicker/) are Björn Ottosson's color-picker spaces: the shape of HSL / HSV (the sRGB gamut becomes a cylinder, so every `h`/`s`/`l` combination is a real sRGB color) with the perceptual behaviour of OKLCH. `h` is exactly the OKLCH hue, so a hue ramp stays the same hue instead of drifting purple in the blues; Okhsl's `l` is a lightness estimate that tracks CIELab L (`toe(OKLab L)`); `s` remaps chroma onto 0–100 with the interior kept smooth across hues. Same scale as `toHsl()` / `toHsv()`: h in degrees, s / l / v in 0–100. `okhsl()` / `okhsv()` strings are library-defined (no CSS syntax exists); objects carry a `colorSpace` brand because `{ h, s, l }` alone is HSL.
-
-```ts
-import okhsl from '@colordx/core/plugins/okhsl';
-import okhsv from '@colordx/core/plugins/okhsv';
-
-extend([okhsl, okhsv]);
-
-colordx('#3d7a9f').toOkhsl();       // { h: 237.65615, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' }
-colordx('#3d7a9f').toOkhsv();       // { h: 237.65615, s: 65.38077, v: 64.31605, alpha: 1, colorSpace: 'okhsv' }
-colordx('#3d7a9f').toOkhslString(); // 'okhsl(237.65615 57.92201% 48.38305%)'
-colordx('#3d7a9f').toOkhsvString(); // 'okhsv(237.65615 65.38077% 64.31605%)'
-colordx('okhsl(237.65615 57.92201% 48.38305%)').toHex(); // '#3d7a9f'
-colordx({ colorSpace: 'okhsv', h: 237.65615, s: 65.38077, v: 64.31605 }).toHex(); // '#3d7a9f'
-colordx('#3d7a9f').toOkhsl(2);      // { h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' }
-colordx('#3d7a9f').toOkhsl().h === colordx('#3d7a9f').toOklch().h; // true
-```
-
-Both spaces are defined for sRGB only; a wide-gamut input reads as its sRGB clip, like `toHsl()`. The default precision is 5 dp rather than the 2 of `toHsl()`: the OKLCH hue is sensitive around the edges of the sRGB cube, and at 2 dp `rgb(0, 42, 204)` comes back as `rgb(7, 53, 190)`. Two edge behaviours are inherent to the spaces and shared with every implementation of the reference code: pure blues (`r = g = 0`) do not round-trip at any printed precision (`#0000ff` → `okhsl(264.05202 100% 36.65653%)` → `#0134e2` — at that hue and lightness the most chromatic sRGB color really is that one; the hue would need ~8 dp), and the reference approximates the gamut cusp with a polynomial, so ~0.7% of 8-bit colors report a raw `s` a little above 100 (at most ~101.2). `toOkhsl()` / `toOkhsv()` clamp it, the channel functions do not, and about 1 in 16 of the clamped colors comes back up to 5 bytes off.
-
-The plugin entries also export channel functions — `rgbToOkhslChannels`, `okhslToRgbChannels`, `rgbToOkhsvChannels`, `okhsvToRgbChannels` and their `*Into` siblings — for per-pixel work. Same shape as the HSV ones (RGB in 0–1), so a picker plane is a drop-in:
-
-```ts
-import { okhslToRgbChannelsInto } from '@colordx/core/plugins/okhsl';
-
-// 256×256 saturation / lightness plane for a fixed hue → RGBA bytes. Every cell is in gamut.
-const buf = new Float64Array(3);
-const plane = new Uint8ClampedArray(256 * 256 * 4);
-let i = 0;
-for (let y = 0; y < 256; y++) {
-  for (let x = 0; x < 256; x++) {
-    okhslToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
-    plane[i++] = buf[0] * 255;
-    plane[i++] = buf[1] * 255;
-    plane[i++] = buf[2] * 255;
-    plane[i++] = 255;
-  }
-}
-```
-
-### harmonies plugin
-
-Color harmony generation using hue rotation. Every harmony includes a 0° entry, which is the input color itself — returned unchanged, so a wide-gamut input survives in its own harmony set.
-
-```ts
-import harmonies from '@colordx/core/plugins/harmonies';
-
-extend([harmonies]);
-
-colordx('#ff0000').harmonies();                              // complementary (default) — 2 colors
-colordx('#ff0000').harmonies('complementary');               // [0°, 180°] — 2 colors
-colordx('#ff0000').harmonies('analogous');                   // [−30°, 0°, 30°] — 3 colors
-colordx('#ff0000').harmonies('split-complementary');         // [0°, 150°, 210°] — 3 colors
-colordx('#ff0000').harmonies('triadic');                     // [0°, 120°, 240°] — 3 colors
-colordx('#ff0000').harmonies('tetradic');                    // [0°, 90°, 180°, 270°] — 4 colors (square)
-colordx('#ff0000').harmonies('rectangle');                   // [0°, 60°, 180°, 240°] — 4 colors
-colordx('#ff0000').harmonies('double-split-complementary');  // [−30°, 0°, 30°, 150°, 210°] — 5 colors
-```
-
-An unknown type throws a `RangeError` naming it.
-
 ### hwb plugin
 
 CSS Color Level 4 HWB (Hue, Whiteness, Blackness) color model.
@@ -731,124 +513,68 @@ colordx('#3d7a9f').toHwbString();  // 'hwb(202.65 23.92% 37.65%)'
 colordx('#3d7a9f').toHwbString(2); // 'hwb(202.65 23.92% 37.65%)'
 ```
 
-### mix plugin
+### cmyk plugin
 
-Color mixing helpers built on top of `.mix()`.
+CMYK color model. Parses `device-cmyk()` CSS strings and CMYK objects.
 
 ```ts
-import mix from '@colordx/core/plugins/mix';
+import cmyk from '@colordx/core/plugins/cmyk';
 
-extend([mix]);
+extend([cmyk]);
 
-colordx('#ff0000').tints(5); // [#ff0000, #ff4040, #ff8080, #ffbfbf, #ffffff]
-colordx('#ff0000').shades(3); // [#ff0000, #800000, #000000]
-colordx('#ff0000').tones(3);  // [#ff0000, #c04040, #808080]
-
-// palette: N evenly-spaced stops toward any target (default: white)
-colordx('#ff0000').palette(3, '#0000ff'); // [#ff0000, #800080, #0000ff]
-// A fractional count is floored; 0, a negative count or NaN give []; Infinity throws a RangeError.
+colordx('#ff0000').toCmyk(); // { c: 0, m: 100, y: 100, k: 0, alpha: 1 }
+colordx('#ff0000').toCmykString(); // 'device-cmyk(0% 100% 100% 0%)'
+colordx('device-cmyk(0% 100% 100% 0%)').toHex(); // '#ff0000'
+colordx({ c: 0, m: 100, y: 100, k: 0 }).toHex(); // '#ff0000'
 ```
 
-### minify plugin
+### okhsl and okhsv plugins
 
-Returns the shortest valid CSS representation of a color. By default tries hex, RGB, and HSL and picks the shortest.
-
-A color outside sRGB (a wide-gamut `oklch()`, `oklab()`, `lab()`, `lch()` or `color()` input) has no hex, RGB, HSL or name form — each would clip it, while a wide-gamut display renders the original — so it minifies to its `oklch()` string instead, with leading zeros dropped: `oklch(0.5 0.2 240)` → `'oklch(.5 .2 240)'`.
+[Okhsl and Okhsv](https://bottosson.github.io/posts/colorpicker/) are Björn Ottosson's color-picker spaces: the shape of HSL / HSV, where every `h`/`s`/`l` combination is a real sRGB color, with the perceptual behaviour of OKLCH. Same scale as `toHsl()` / `toHsv()`: h in degrees, s / l / v in 0–100. The `okhsl()` / `okhsv()` strings are this library's own (CSS has no such syntax), and objects carry a `colorSpace` brand because `{ h, s, l }` alone is HSL.
 
 ```ts
-import minify from '@colordx/core/plugins/minify';
+import okhsl from '@colordx/core/plugins/okhsl';
+import okhsv from '@colordx/core/plugins/okhsv';
 
-extend([minify]);
+extend([okhsl, okhsv]);
 
-colordx('#ff0000').minify(); // '#f00'
-colordx('#ffffff').minify(); // '#fff'
-colordx('#ff0000').minify({ name: true }); // 'red'  — requires names plugin
-colordx({ r: 0, g: 0, b: 0, alpha: 0 }).minify({ transparent: true }); // 'transparent'
-colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).minify({ alphaHex: true }); // '#ff000080'
-
-// Disable specific formats to exclude them from candidates:
-colordx('#ff0000').minify({ hsl: false }); // skips HSL, picks from hex/RGB (a preference: see the half-byte note under Precision)
+colordx('#3d7a9f').toOkhsl();       // { h: 237.65615, s: 57.92201, l: 48.38305, alpha: 1, colorSpace: 'okhsl' }
+colordx('#3d7a9f').toOkhsv();       // { h: 237.65615, s: 65.38077, v: 64.31605, alpha: 1, colorSpace: 'okhsv' }
+colordx('#3d7a9f').toOkhslString(); // 'okhsl(237.65615 57.92201% 48.38305%)'
+colordx('#3d7a9f').toOkhsvString(); // 'okhsv(237.65615 65.38077% 64.31605%)'
+colordx('okhsl(237.65615 57.92201% 48.38305%)').toHex(); // '#3d7a9f'
+colordx({ colorSpace: 'okhsv', h: 237.65615, s: 65.38077, v: 64.31605 }).toHex(); // '#3d7a9f'
+colordx('#3d7a9f').toOkhsl(2);      // { h: 237.66, s: 57.92, l: 48.38, alpha: 1, colorSpace: 'okhsl' }
+colordx('#3d7a9f').toOkhsl().h === colordx('#3d7a9f').toOklch().h; // true
 ```
 
-### a11y plugin
+<details>
+<summary>Channels, precision and edge cases</summary>
 
-WCAG 2.x contrast:
+`h` is exactly the OKLCH hue, so a hue ramp stays the same hue instead of drifting purple in the blues; Okhsl's `l` is a lightness estimate that tracks CIELab L (`toe(OKLab L)`); `s` remaps chroma onto 0–100 with the interior kept smooth across hues.
 
-```ts
-colordx('#000').isReadable('#fff'); // true  — AA normal (ratio >= 4.5)
-colordx('#000').isReadable('#fff', { level: 'AAA' }); // true  — AAA normal (ratio >= 7)
-colordx('#000').isReadable('#fff', { size: 'large' }); // true  — AA large (ratio >= 3)
-colordx('#000').readableScore('#fff'); // 'AAA'
-colordx('#e60000').readableScore('#ffff47'); // 'AA'
-colordx('#949494').readableScore('#fff'); // 'AA large'
-colordx('#aaa').readableScore('#fff'); // 'fail'
-colordx('#777').minReadable('#fff'); // fixContrast at 4.5, or the input if nothing passes
-```
+Both spaces are defined for sRGB only; a wide-gamut input reads as its sRGB clip, like `toHsl()`. The default precision is 5 dp rather than the 2 of `toHsl()`: the OKLCH hue is sensitive around the edges of the sRGB cube, and at 2 dp `rgb(0, 42, 204)` comes back as `rgb(7, 53, 190)`. Two edge behaviours are inherent to the spaces and shared with every implementation of the reference code: pure blues (`r = g = 0`) do not round-trip at any printed precision (`#0000ff` → `okhsl(264.05202 100% 36.65653%)` → `#0134e2` — at that hue and lightness the most chromatic sRGB color really is that one; the hue would need ~8 dp), and the reference approximates the gamut cusp with a polynomial, so ~0.7% of 8-bit colors report a raw `s` a little above 100 (at most ~101.2). `toOkhsl()` / `toOkhsv()` clamp it, the channel functions do not, and about 1 in 16 of the clamped colors comes back up to 5 bytes off.
 
-`fixContrast` finds the nearest color that passes a gate. It keeps hue, moves OKLCH lightness, lets the gamut map reduce chroma only when it must, and returns `null` when no color with that hue passes. A darker fg stays darker (APCA sign is kept) unless nothing on that side passes.
+</details>
+
+The plugin entries also export channel functions — `rgbToOkhslChannels`, `okhslToRgbChannels`, `rgbToOkhsvChannels`, `okhsvToRgbChannels` and their `*Into` siblings — for per-pixel work. Same shape as the HSV ones (RGB in 0–1), so a picker plane is a drop-in:
 
 ```ts
-colordx('#3b82f6').fixContrast('#fff'); // #2c72e5 — WCAG 4.5 by default
-colordx('#3b82f6').fixContrast('#fff', { apca: 75 }); // APCA only, |Lc| >= 75
-colordx('#3b82f6').fixContrast('#fff', { wcag: 4.5, apca: 75 }); // #2168da — both
-colordx('#999').fixContrast('#777', { wcag: 7 }); // null — no grey reaches 7:1 on #777
-colordx('oklch(0.9 0.3 145)').fixContrast('#fff', { space: 'p3' }); // fix stays inside Display-P3
-```
+import { okhslToRgbChannelsInto } from '@colordx/core/plugins/okhsl';
 
-Numbers are rounded for display only (`contrast` to 2 decimals, `apcaContrast` to 1). Every `isReadable*` / `readableScore` gate uses the unrounded value, so a true 4.496:1 fails AA even though `contrast()` shows 4.5. Pass a precision to see more digits:
-
-```ts
-colordx('#d200d2').contrast('#fff'); // 4.5
-colordx('#d200d2').contrast('#fff', 4); // 4.4959
-colordx('#d200d2').isReadable('#fff'); // false
-```
-
-A translucent fg is composited over the bg first. To check a stack (fg over a translucent surface over the page), flatten it bottom up with `over()`:
-
-```ts
-const surface = colordx('rgba(255, 255, 255, 0.2)').over('#000');
-colordx('rgba(255, 255, 255, 0.6)').over(surface).contrast('#000');
-```
-
-Colors outside sRGB are gamut-mapped (not clipped) before the check. WCAG always runs on the sRGB-mapped color; APCA can run on the Display-P3-mapped color with its own coefficients via `{ space: 'p3' }`.
-
-An invalid color on either side is a mistake, not black: every method that needs two real colors — `contrast()`, `apcaContrast()`, the `isReadable*` gates, `readableScore()`, `fixContrast()`, `minReadable()`, `over()`, `mix()`, `mixOklab()`, `mixLab()`, `delta()`, `tints()` / `shades()` / `tones()` / `palette()` and the `nearest()` function — throws a `RangeError` naming the method and the input. Single-color conversions and queries on an invalid instance (`toHex()`, `luminance()`, `brightness()`, …) keep reading it as black, as colord does; `isValid()` is the gate. Check it first when the input is untrusted.
-
-APCA (Accessible Perceptual Contrast Algorithm) — the projected replacement for WCAG 2.x in WCAG 3.0:
-
-```ts
-// Returns a signed Lc value: positive = dark text on light bg, negative = light text on dark bg
-colordx('#000').apcaContrast('#fff'); //  106.0
-colordx('#fff').apcaContrast('#000'); // -107.9
-colordx('#202122').apcaContrast('#cf674a'); //  37.2  ← dark text on orange
-colordx('#ffffff').apcaContrast('#cf674a'); // -69.5  ← white text on orange
-
-// Checks readability using |Lc| thresholds: >= 75 for normal text, >= 60 for large text/headings
-colordx('#000').isReadableApca('#fff'); // true
-colordx('#777').isReadableApca('#fff'); // false
-colordx('#777').isReadableApca('#fff', { size: 'large' }); // true
-
-// Options: precision (default 1) and space ('srgb' | 'p3', default 'srgb')
-colordx('#9900ff').apcaContrast('#fff', { precision: 3 }); // 74.956
-colordx('oklch(0.8 0.3 145)').apcaContrast('#000', { space: 'p3' }); // -73.3 (P3-mapped), vs -74.8 in sRGB
-colordx('#777').isReadableApca('#fff', { space: 'p3' }); // false
-```
-
-APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.
-
-### cvd plugin
-
-Simulates colour vision deficiency. Machado 2009 (severity 1.0) for protanopia and deuteranopia, the same matrices Chrome and Firefox DevTools use; Brettel 1997 for tritanopia, where Machado is weak. Runs on linear sRGB; wide-gamut input is gamut-mapped first. Reference values are checked against DaltonLens in the test suite.
-
-```ts
-colordx('#ff0000').simulate('protanopia'); // #6d5f00
-colordx('#ff0000').simulate('deuteranopia'); // #a39000
-colordx('#0000ff').simulate('tritanopia'); // #006087
-
-// Do two status colours collapse? Compare ΔE2000 before and after (lab plugin).
-const [a, b] = [colordx('#ef4444'), colordx('#10b981')];
-a.delta(b, 5); // 0.71465 — clearly distinct
-a.simulate('deuteranopia').delta(b.simulate('deuteranopia'), 5); // ~0.14 — nearly the same colour
+// 256×256 saturation / lightness plane for a fixed hue → RGBA bytes. Every cell is in gamut.
+const buf = new Float64Array(3);
+const plane = new Uint8ClampedArray(256 * 256 * 4);
+let i = 0;
+for (let y = 0; y < 256; y++) {
+  for (let x = 0; x < 256; x++) {
+    okhslToRgbChannelsInto(buf, 210, (x / 255) * 100, (1 - y / 255) * 100);
+    plane[i++] = buf[0] * 255;
+    plane[i++] = buf[1] * 255;
+    plane[i++] = buf[2] * 255;
+    plane[i++] = 255;
+  }
+}
 ```
 
 ### p3 plugin
@@ -890,7 +616,7 @@ colordx({ r: 0.9505, g: 0.2856, b: 0.0459, alpha: 1, colorSpace: 'display-p3' })
 
 ### rec2020 plugin
 
-Adds Rec.2020 (BT.2020) color space support. Rec.2020 has the widest gamut of the three — it covers most of the visible spectrum. The transfer function is the pure 2.4 gamma CSS Color 4 now defines for `rec2020` ([csswg-drafts#12574](https://github.com/w3c/csswg-drafts/issues/12574), shipped in Safari 26), not the BT.2020 camera curve earlier drafts used, so `color(rec2020 …)` values differ from those of libraries still on the old curve (culori 4, for one).
+Adds Rec.2020 (BT.2020) color space support. Rec.2020 is wider than Display-P3 and covers most of the visible spectrum. It uses the pure 2.4 gamma CSS Color 4 now defines for `rec2020` ([csswg-drafts#12574](https://github.com/w3c/csswg-drafts/issues/12574)), so `color(rec2020 …)` values differ from those of libraries still on the older BT.2020 curve (culori 4, for one).
 
 ```ts
 import rec2020 from '@colordx/core/plugins/rec2020';
@@ -1029,6 +755,371 @@ colordx({ r: 0.5, g: 0, b: 0, colorSpace: 'srgb-linear' }).toHex(); // '#bc0000'
 
 For per-pixel work use the core channel helpers instead: `rgbToLinear()` and `oklchToLinear()` return the same linear channels without a `Colordx` instance.
 
+### a11y plugin
+
+WCAG 2.x contrast:
+
+```ts
+import a11y from '@colordx/core/plugins/a11y';
+
+extend([a11y]);
+
+colordx('#000').isReadable('#fff'); // true  — AA normal (ratio >= 4.5)
+colordx('#000').isReadable('#fff', { level: 'AAA' }); // true  — AAA normal (ratio >= 7)
+colordx('#000').isReadable('#fff', { size: 'large' }); // true  — AA large (ratio >= 3)
+colordx('#000').readableScore('#fff'); // 'AAA'
+colordx('#e60000').readableScore('#ffff47'); // 'AA'
+colordx('#949494').readableScore('#fff'); // 'AA large'
+colordx('#aaa').readableScore('#fff'); // 'fail'
+colordx('#777').minReadable('#fff'); // fixContrast at 4.5, or the input if nothing passes
+```
+
+`fixContrast` finds the nearest color that passes a gate. It keeps hue, moves OKLCH lightness, lets the gamut map reduce chroma only when it must, and returns `null` when no color with that hue passes. A darker fg stays darker (APCA sign is kept) unless nothing on that side passes.
+
+```ts
+colordx('#3b82f6').fixContrast('#fff'); // #2c72e5 — WCAG 4.5 by default
+colordx('#3b82f6').fixContrast('#fff', { apca: 75 }); // APCA only, |Lc| >= 75
+colordx('#3b82f6').fixContrast('#fff', { wcag: 4.5, apca: 75 }); // #2168da — both
+colordx('#999').fixContrast('#777', { wcag: 7 }); // null — no grey reaches 7:1 on #777
+colordx('oklch(0.9 0.3 145)').fixContrast('#fff', { space: 'p3' }); // fix stays inside Display-P3
+```
+
+Numbers are rounded for display only (`contrast` to 2 decimals, `apcaContrast` to 1). Every `isReadable*` / `readableScore` gate uses the unrounded value, so a true 4.496:1 fails AA even though `contrast()` shows 4.5. Pass a precision to see more digits:
+
+```ts
+colordx('#d200d2').contrast('#fff'); // 4.5
+colordx('#d200d2').contrast('#fff', 4); // 4.4959
+colordx('#d200d2').isReadable('#fff'); // false
+```
+
+A translucent fg is composited over the bg first. To check a stack (fg over a translucent surface over the page), flatten it bottom up with `over()`:
+
+```ts
+const surface = colordx('rgba(255, 255, 255, 0.2)').over('#000');
+colordx('rgba(255, 255, 255, 0.6)').over(surface).contrast('#000');
+```
+
+Colors outside sRGB are gamut-mapped (not clipped) before the check. WCAG always runs on the sRGB-mapped color; APCA can run on the Display-P3-mapped color with its own coefficients via `{ space: 'p3' }`.
+
+APCA (Accessible Perceptual Contrast Algorithm) — the projected replacement for WCAG 2.x in WCAG 3.0:
+
+```ts
+// Returns a signed Lc value: positive = dark text on light bg, negative = light text on dark bg
+colordx('#000').apcaContrast('#fff'); //  106.0
+colordx('#fff').apcaContrast('#000'); // -107.9
+colordx('#202122').apcaContrast('#cf674a'); //  37.2  ← dark text on orange
+colordx('#ffffff').apcaContrast('#cf674a'); // -69.5  ← white text on orange
+
+// Checks readability using |Lc| thresholds: >= 75 for normal text, >= 60 for large text/headings
+colordx('#000').isReadableApca('#fff'); // true
+colordx('#777').isReadableApca('#fff'); // false
+colordx('#777').isReadableApca('#fff', { size: 'large' }); // true
+
+// Options: precision (default 1) and space ('srgb' | 'p3', default 'srgb')
+colordx('#9900ff').apcaContrast('#fff', { precision: 3 }); // 74.956
+colordx('oklch(0.8 0.3 145)').apcaContrast('#000', { space: 'p3' }); // -73.3 (P3-mapped), vs -74.8 in sRGB
+colordx('#777').isReadableApca('#fff', { space: 'p3' }); // false
+```
+
+APCA is better suited than WCAG 2.x for dark color pairs and more accurately reflects human perception. See [Introduction to APCA](https://git.apcacontrast.com/documentation/APCAeasyIntro) for background.
+
+### cvd plugin
+
+Simulates colour vision deficiency. Machado 2009 (severity 1.0) for protanopia and deuteranopia, the same matrices Chrome and Firefox DevTools use; Brettel 1997 for tritanopia, where Machado is weak. Runs on linear sRGB; wide-gamut input is gamut-mapped first. Reference values are checked against DaltonLens in the test suite.
+
+```ts
+import cvd from '@colordx/core/plugins/cvd';
+
+extend([cvd]);
+
+colordx('#ff0000').simulate('protanopia'); // #6d5f00
+colordx('#ff0000').simulate('deuteranopia'); // #a39000
+colordx('#0000ff').simulate('tritanopia'); // #006087
+
+// Do two status colours collapse? Compare ΔE2000 before and after (lab plugin).
+const [a, b] = [colordx('#ef4444'), colordx('#10b981')];
+a.delta(b, 5); // 0.71465 — clearly distinct
+a.simulate('deuteranopia').delta(b.simulate('deuteranopia'), 5); // ~0.14 — nearly the same colour
+```
+
+### mix plugin
+
+Color mixing helpers built on top of `.mix()`.
+
+```ts
+import mix from '@colordx/core/plugins/mix';
+
+extend([mix]);
+
+colordx('#ff0000').tints(5); // [#ff0000, #ff4040, #ff8080, #ffbfbf, #ffffff]
+colordx('#ff0000').shades(3); // [#ff0000, #800000, #000000]
+colordx('#ff0000').tones(3);  // [#ff0000, #c04040, #808080]
+
+// palette: N evenly-spaced stops toward any target (default: white)
+colordx('#ff0000').palette(3, '#0000ff'); // [#ff0000, #800080, #0000ff]
+// A fractional count is floored; 0, a negative count or NaN give []; Infinity throws a RangeError.
+```
+
+`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Like `color-mix()`, it keeps the exact result rather than rounding it to bytes, and a wide-gamut input stays wide-gamut. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab. All three premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
+
+```ts
+colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
+colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform)
+
+import lab from '@colordx/core/plugins/lab';
+extend([lab]);
+colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab
+```
+
+`tints()`, `shades()`, `tones()` and `palette()` are built on `mix()`, so they blend in sRGB too.
+
+### harmonies plugin
+
+Color harmony generation using hue rotation. Every harmony includes a 0° entry, which is the input color itself — returned unchanged, so a wide-gamut input survives in its own harmony set.
+
+```ts
+import harmonies from '@colordx/core/plugins/harmonies';
+
+extend([harmonies]);
+
+colordx('#ff0000').harmonies();                              // complementary (default) — 2 colors
+colordx('#ff0000').harmonies('complementary');               // [0°, 180°] — 2 colors
+colordx('#ff0000').harmonies('analogous');                   // [−30°, 0°, 30°] — 3 colors
+colordx('#ff0000').harmonies('split-complementary');         // [0°, 150°, 210°] — 3 colors
+colordx('#ff0000').harmonies('triadic');                     // [0°, 120°, 240°] — 3 colors
+colordx('#ff0000').harmonies('tetradic');                    // [0°, 90°, 180°, 270°] — 4 colors (square)
+colordx('#ff0000').harmonies('rectangle');                   // [0°, 60°, 180°, 240°] — 4 colors
+colordx('#ff0000').harmonies('double-split-complementary');  // [−30°, 0°, 30°, 150°, 210°] — 5 colors
+```
+
+An unknown type throws a `RangeError` naming it.
+
+### names plugin
+
+CSS named color support (all 148 names from the CSS spec). `toName()` returns `undefined` for colors with no CSS name.
+
+```ts
+import names from '@colordx/core/plugins/names';
+
+extend([names]);
+
+colordx('red').toHex(); // '#ff0000'
+colordx('rebeccapurple').toHex(); // '#663399'
+colordx('#ff0000').toName(); // 'red'
+colordx('#c06060').toName(); // undefined — no CSS name for this color
+colordx('#c06060').toName({ closest: true }); // nearest named color by RGB distance
+```
+
+### minify plugin
+
+Returns the shortest valid CSS representation of a color. By default tries hex, RGB, and HSL and picks the shortest.
+
+A color outside sRGB (a wide-gamut `oklch()`, `oklab()`, `lab()`, `lch()` or `color()` input) has no hex, RGB, HSL or name form — each would clip it, while a wide-gamut display renders the original — so it minifies to its `oklch()` string instead, with leading zeros dropped: `oklch(0.5 0.2 240)` → `'oklch(.5 .2 240)'`.
+
+```ts
+import minify from '@colordx/core/plugins/minify';
+
+extend([minify]);
+
+colordx('#ff0000').minify(); // '#f00'
+colordx('#ffffff').minify(); // '#fff'
+colordx('#ff0000').minify({ name: true }); // 'red'  — requires names plugin
+colordx({ r: 0, g: 0, b: 0, alpha: 0 }).minify({ transparent: true }); // 'transparent'
+colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).minify({ alphaHex: true }); // '#ff000080'
+
+// Disable specific formats to exclude them from candidates:
+colordx('#ff0000').minify({ hsl: false }); // skips HSL, picks from hex/RGB (a preference: see the half-byte note below)
+```
+
+<details>
+<summary>Rounding and wide-gamut edge cases</summary>
+
+The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. One exception: a color with a channel on an *inexact* half byte (`hsl(220, 80%, 50%)` has a green of 93.50000000000013) stays `hsl()` as written, even with `hsl: false`, because engines round such a channel either way — Chrome paints that color as `rgb(26 93 230)`, exact rounding gives `rgb(26 94 230)` — and hex, `rgb()` or a name would commit to one side. When no `hsl()` reproduces the channels exactly (most `hwb()` sources), they are printed as fractional legacy `rgb()` instead, the tie left for the engine. An exact tie (`rgb(50% 50% 50%)`, `hsl(270 100% 50%)`) comes from exact arithmetic, rounds up in every engine per WPT, and minifies to bytes as usual. Colors outside sRGB are never clipped to hex; they stay `oklch()`, or `color(srgb …)` when brighter than white or darker than black, since `oklch()` clamps its lightness at parse time. With every format option turned off, a visible alpha that hex would round to `00` falls back to `rgba()`.
+
+</details>
+
+## Channel functions
+
+Plain-number converters for per-pixel work (canvas renderers, pickers, gradients): no parsing, no `Colordx` object, no rounding.
+
+```ts
+import { oklchToLinear, oklchToRgbChannels } from '@colordx/core';
+
+oklchToRgbChannels(0.5, 0.2, 240); // [-0.29354, 0.41025, 0.78055] — gamma-encoded sRGB, unclamped
+// Out-of-gamut channels leave [0, 1] (this one is outside sRGB) — callers clamp before byte encoding
+
+const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a free sRGB gamut check
+
+// Non-OKLCH inputs → linear sRGB (same output scale and gamut-check behavior as oklchToLinear).
+// Use these when you already have RGB/Lab/LCH values and want linear pixels without round-tripping through OKLCH.
+import {
+  labToLinearAndSrgb,
+  labToLinearSrgb,
+  labToRgbChannels,
+  lchToLinearAndSrgb,
+  lchToLinearSrgb,
+  lchToRgbChannels,
+  rgbToLinear,
+} from '@colordx/core';
+
+rgbToLinear(1, 0, 0);          // [1, 0, 0]           — 0–1 gamma sRGB in
+labToLinearSrgb(54.29, 80.8, 69.89); // Lab D50 → linear sRGB (via XYZ D50)
+lchToLinearSrgb(54.29, 106.84, 40.86); // LCH D50 → Lab → linear sRGB
+
+// Gamma-encoded sRGB in one call:
+labToRgbChannels(54.29, 80.8, 69.89); // → [r, g, b] gamma sRGB in [0, 1]
+lchToRgbChannels(54.29, 106.84, 40.86);
+
+// Both linear (for gamut check) and gamma (for display) in a single pass:
+const [lin, srgb] = labToLinearAndSrgb(54.29, 80.8, 69.89); // or lchToLinearAndSrgb
+
+// Hex/RGB input? Parse once, then divide by 255:
+const { r, g, b } = colordx('#ff0000').toRgb();
+rgbToLinear(r / 255, g / 255, b / 255); // [1, 0, 0]
+
+// P3/Rec.2020 channel functions live in their plugins:
+import { labToP3Channels, lchToP3Channels, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
+import {
+  labToRec2020Channels,
+  lchToRec2020Channels,
+  linearToRec2020Channels,
+  oklchToRec2020Channels,
+} from '@colordx/core/plugins/rec2020';
+
+oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3, unclamped
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020, unclamped (2.4 gamma)
+
+// CIE Lab/LCH → P3 / Rec.2020 (hot path for LCH renderers without OKLCH detour):
+labToP3Channels(54.29, 80.8, 69.89);      // [r, g, b] gamma P3
+lchToP3Channels(54.29, 106.84, 40.86);
+labToRec2020Channels(54.29, 80.8, 69.89); // [r, g, b] gamma Rec.2020
+lchToRec2020Channels(54.29, 106.84, 40.86);
+
+// Split-step API: compute the shared expensive OKLCH→linear sRGB step once,
+// then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
+linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
+linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (2.4 gamma)
+
+// sRGB ↔ HSL / HSV on the same scale toHsl() / toHsv() report: h in degrees, s and l/v in 0–100.
+// RGB is 0–1 gamma sRGB, like rgbToLinear. This is the per-pixel path for pickers, hue wheels
+// and vectorscopes — no parsing, no object, no rounding.
+import { hslToRgbChannels, rgbToHslChannels } from '@colordx/core';
+import { hsvToRgbChannels, rgbToHsvChannels } from '@colordx/core/plugins/hsv';
+
+rgbToHslChannels(1, 0, 0);       // [0, 100, 50]
+rgbToHsvChannels(0, 0, 1);       // [240, 100, 100]
+hslToRgbChannels(120, 100, 50);  // [0, 1, 0]
+hsvToRgbChannels(-30, 50, 50);   // hue wraps: same as hsvToRgbChannels(330, 50, 50)
+// Greys report h = 0, s = 0 (same ACHROMATIC_EPS threshold as toHsl()). Nothing is clipped:
+// HSL/HSV live on the sRGB cube, so clip a wide-gamut color first — for bytes, pass r/255, g/255, b/255.
+```
+
+### Zero-allocation variants
+
+Every channel function has an `*Into` sibling that writes into a caller-provided `Float64Array | number[]` instead of allocating a new tuple, for loops that run once per pixel. Output is bit-for-bit identical to the allocating version.
+
+```ts
+import {
+  oklchToLinearInto,
+  oklchToRgbChannelsInto,
+  oklchToLinearAndSrgbInto,
+} from '@colordx/core';
+import { linearToP3ChannelsInto, oklchToP3ChannelsInto } from '@colordx/core/plugins/p3';
+import { linearToRec2020ChannelsInto, oklchToRec2020ChannelsInto } from '@colordx/core/plugins/rec2020';
+
+// Pixel-renderer pattern: allocate one buffer, reuse for every pixel.
+const buf = new Float64Array(3);
+for (let y = 0; y < height; y++) {
+  for (let x = 0; x < width; x++) {
+    const [l, c, h] = getOklch(x, y);
+    oklchToP3ChannelsInto(buf, l, c, h);
+    imageData[i++] = Math.floor(buf[0] * 255);
+    imageData[i++] = Math.floor(buf[1] * 255);
+    imageData[i++] = Math.floor(buf[2] * 255);
+    imageData[i++] = 255;
+  }
+}
+```
+
+<details>
+<summary>Full <code>*Into</code> list (all tree-shakable)</summary>
+
+```ts
+// from '@colordx/core' — OKLCH → linear / sRGB
+oklchToLinearInto(out, l, c, h);           // → [lr, lg, lb] linear sRGB
+oklchToRgbChannelsInto(out, l, c, h);      // → [r, g, b] gamma-encoded sRGB
+oklchToLinearAndSrgbInto(linOut, srgbOut, l, c, h); // both at once (distinct buffers)
+
+// from '@colordx/core' — non-OKLCH inputs → linear / gamma sRGB (complements oklchToLinear)
+rgbToLinearInto(out, r, g, b);             // 0–1 gamma sRGB → linear sRGB
+labToLinearSrgbInto(out, l, a, b);         // CIE Lab (D50) → linear sRGB (via XYZ D50)
+labToRgbChannelsInto(out, l, a, b);        // CIE Lab (D50) → gamma sRGB
+labToLinearAndSrgbInto(linOut, srgbOut, l, a, b); // both (distinct buffers)
+lchToLinearSrgbInto(out, l, c, h);         // CIE LCH (D50) → linear sRGB
+lchToRgbChannelsInto(out, l, c, h);        // CIE LCH (D50) → gamma sRGB
+lchToLinearAndSrgbInto(linOut, srgbOut, l, c, h);
+
+// from '@colordx/core' — sRGB ↔ HSL (h degrees, s/l 0–100; RGB 0–1)
+rgbToHslChannelsInto(out, r, g, b);        // → [h, s, l]
+hslToRgbChannelsInto(out, h, s, l);        // → [r, g, b] gamma sRGB
+
+// from '@colordx/core/plugins/hsv' — sRGB ↔ HSV (h degrees, s/v 0–100; RGB 0–1)
+rgbToHsvChannelsInto(out, r, g, b);        // → [h, s, v]
+hsvToRgbChannelsInto(out, h, s, v);        // → [r, g, b] gamma sRGB
+
+// from '@colordx/core/plugins/p3'
+linearToP3ChannelsInto(out, lr, lg, lb);
+oklchToP3ChannelsInto(out, l, c, h);
+labToP3ChannelsInto(out, l, a, b);
+lchToP3ChannelsInto(out, l, c, h);
+
+// from '@colordx/core/plugins/rec2020'
+linearToRec2020ChannelsInto(out, lr, lg, lb);
+oklchToRec2020ChannelsInto(out, l, c, h);
+labToRec2020ChannelsInto(out, l, a, b);
+lchToRec2020ChannelsInto(out, l, c, h);
+```
+
+</details>
+
+Guidance:
+- Use `Float64Array(3)` for the buffer when you can — it's the convention and keeps the V8 call site monomorphic. `number[]` also works.
+- One buffer per loop is plenty; don't allocate per iteration.
+- `linOut` and `srgbOut` in `oklchToLinearAndSrgbInto` **must be distinct buffers** (the function writes to both).
+- If you're outside a hot loop, the regular allocating versions are more ergonomic — reach for `*Into` only when you've profiled and GC is the bottleneck.
+
+## Functional API
+
+`@colordx/core/fn` exports the parsers and converters behind `colordx()` as plain functions. Nothing is shared with the `Colordx` class, so a bundle only carries what it imports — parsing a hex string and printing it back is about 0.7 KB gzipped.
+
+```ts
+import { parse, parseHex, rgbToHex, rgbToOklch } from '@colordx/core/fn';
+
+parse('oklch(0.6279 0.2577 29.23)'); // { r, g, b, alpha } or null — every format colordx() accepts, plugins included
+parseHex('#ff0000');                 // { r: 255, g: 0, b: 0, alpha: 1 }
+rgbToHex({ r: 255, g: 0, b: 0, alpha: 0.5 }); // '#ff000080'
+rgbToOklch(parseHex('#ff0000')!);    // { l: 0.6279…, c: 0.2576…, h: 29.23…, alpha: 1 } — unrounded
+```
+
+`RgbColor` here is the library's storage form: `r`, `g`, `b` on the 0–255 scale, unrounded and unclamped, so a wide-gamut color keeps its out-of-range channels.
+
+To accept only some formats, compose the single-format parsers instead of calling `parse()`. Order them by how often each format shows up, and keep `parseNameString` last: every other parser rejects a foreign input on its first character or key, while the name lookup lowercases the string first.
+
+```ts
+import { parseHex, parseHsvObject, parseNameString, parseRgbObject } from '@colordx/core/fn';
+
+const parsers = [parseHex, parseRgbObject, parseHsvObject, parseNameString];
+const parseColor = (input: unknown) => {
+  for (const p of parsers) {
+    const rgb = p(input);
+    if (rgb) return rgb;
+  }
+  return null;
+};
+```
+
+Available: `parse`, `parseHex`, `parseRgbString`, `parseRgbObject`, `parseSrgbColorString`, `parseHslString`, `parseHslObject`, `parseHsvString`, `parseHsvObject`, `parseHwbString`, `parseHwbObject`, `parseOklabString`, `parseOklabObject`, `parseOklchString`, `parseOklchObject`, `parseNameString`, `NAMES`, `rgbToHex`, `rgbToHex8`, `rgbToHsl` / `hslToRgb`, `rgbToHsv` / `hsvToRgb`, `rgbToHwb` / `hwbToRgb`, `rgbToOklab` / `oklabToRgb`, `rgbToOklch` / `oklchToRgb`, `rgbToOkhsl` / `okhslToRgb`, `rgbToOkhsv` / `okhsvToRgb`, `parseOkhslString`, `parseOkhslObject`, `parseOkhsvString`, `parseOkhsvObject`.
+
 ## Migrating from tinycolor2
 
 `@colordx/core/tinycolor` is a drop-in replacement for [tinycolor2](https://github.com/bgrins/TinyColor). Swap the import (or the `require`) and keep the code:
@@ -1054,59 +1145,33 @@ What is different:
 - **`analogous()` / `monochromatic()`** always terminate. tinycolor2 loops forever on a negative or fractional count ([#280](https://github.com/bgrins/TinyColor/issues/280)); here it is floored, with anything below 1 treated as 1.
 - **`.toColordx()`** is new: the immutable `Colordx` underneath, for oklch, gamut mapping and plugins.
 
-## Notes
+## Performance
 
-### `mix()` uses sRGB; use `mixLab()` or `mixOklab()` for perceptual blending
+Apple M5 Pro, Node 24, using [mitata](https://github.com/evanwashere/mitata). Operations per
+second — higher is better. Versions: colord 2.10.0, culori 4.0.2, chroma-js 3.2.0, color 5.0.3,
+tinycolor2 1.6.0, @texel/color 1.1.11.
 
-`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Like `color-mix()`, it keeps the exact result rather than rounding it to bytes, and a wide-gamut input stays wide-gamut. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab. All three premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
+| Benchmark | **colordx** | @texel/color | colord | culori | chroma-js | color | tinycolor2 |
+|---|---|---|---|---|---|---|---|
+| Parse HEX → toHex | **38M** | 8.0M | 7.5M | 7.1M | 3.7M | 1.6M | 2.9M |
+| Parse HEX → toHsl | **35M** | — | 29M | 7.7M | 3.8M | 3.4M | 2.8M |
+| Parse RGB object → toHex | **50M** | — | 35M | 49M | 5.2M | 1.6M | 5.8M |
+| Parse rgb() string → toHex | **12M** | — | 7.4M | 3.1M | 227K | 1.5M | 3.0M |
+| Parse hsl() string → toHex | **11M** | — | 4.9M | 3.1M | 219K | 1.4M | 2.0M |
+| Parse named color → toHex | **14M** | — | 4.5M | 3.9M | 4.5M | 1.3M | 2.6M |
+| Parse HEX → lighten → toHex | **18M** | — | 13M | 5.2M | 1.9M | 1.2M | 1.1M |
+| Mix two colors | **19M** | 6.0M | 2.5M | 1.3M | 1.3M | 678K | 1.3M |
+| WCAG contrast ratio | **21M** | — | 3.6M | 3.3M | 2.0M | — | 1.5M |
+| Parse HEX → toOklch | **14M** | 6.6M | — | 4.7M | 1.3M | 2.6M | — |
+| inGamutP3 | **8.9M** | 3.9M | — | 1.5M | — | — | — |
+| inGamutRec2020 | **8.7M** | 3.9M | — | 1.5M | — | — | — |
+| CIEDE2000 delta | **6.0M** | — | — | 2.0M | 1.3M | — | — |
+| OKLCH string → HEX | **6.3M** | 2.8M | — | 1.7M | 191K | — | — |
+| Gamut map → sRGB | **1.7M** | — | — | 509K | — | — | — |
 
-```ts
-colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
-colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform)
+In the RGB object row culori gets its own `{ mode, r, g, b }` format, so it skips parsing.
 
-import lab from '@colordx/core/plugins/lab';
-extend([lab]);
-colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab
-```
-
-The same applies to `tints()`, `shades()`, and `tones()` from the mix plugin, which all call `.mix()` internally.
-
-### Precision
-
-Every `toX()` / `toXString()` method accepts an optional `precision` (decimal places), applied uniformly to every channel of that format. Alpha is fixed at 3 dp globally. Hues are wrapped after rounding, so a hue never prints as `360` at any precision. Format-specific defaults (scale-appropriate):
-
-| format | default |
-|---|---|
-| `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
-| `toP3`, `toA98` | `4` |
-| `toOklab`, `toOklch`, `toOkhsl`, `toOkhsv`, `toSrgbLinear`, `toRec2020`, `toProphoto`, `toXyzString`, `toXyzD65String` | `5` |
-
-Each string default is the fewest decimals at which every 8-bit sRGB color parses back to the same bytes. A precision above 20 reads as 20 (past double precision anyway), and NaN or a negative as 0.
-
-```ts
-colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }
-colordx('#3d7a9f').toHsl(4);     // { h: 202.6531, s: 44.5455, l: 43.1373, alpha: 1 }
-colordx('#3d7a9f').toHsl(0);     // { h: 203, s: 45, l: 43, alpha: 1 }
-
-colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
-colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
-```
-
-The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. One exception: a color with a channel on an *inexact* half byte (`hsl(220, 80%, 50%)` has a green of 93.50000000000013) stays `hsl()` as written, even with `hsl: false`, because engines round such a channel either way — Chrome paints that color as `rgb(26 93 230)`, exact rounding gives `rgb(26 94 230)` — and hex, `rgb()` or a name would commit to one side. When no `hsl()` reproduces the channels exactly (most `hwb()` sources), they are printed as fractional legacy `rgb()` instead, the tie left for the engine. An exact tie (`rgb(50% 50% 50%)`, `hsl(270 100% 50%)`) comes from exact arithmetic, rounds up in every engine per WPT, and minifies to bytes as usual. Colors outside sRGB are never clipped to hex; they stay `oklch()`, or `color(srgb …)` when brighter than white or darker than black, since `oklch()` clamps its lightness at parse time. With every format option turned off, a visible alpha that hex would round to `00` falls back to `rgba()`.
-
-## Relative lighten/darken
-
-By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points. Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
-
-```ts
-colordx('hsl(0 100% 10%)').lighten(0.1); // l = 10 + 10 = 20%  (absolute)
-colordx('hsl(0 100% 10%)').lighten(0.1, { relative: true }); // l = 10 * 1.1 = 11% (relative)
-
-colordx('hsl(0 40% 50%)').saturate(0.1); // s = 40 + 10 = 50%  (absolute)
-colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 44% (relative)
-```
-
-The same flag works on `.darken()` and `.desaturate()`.
+Mean of two runs. Run `pnpm bench` to check.
 
 ## Roadmap
 
