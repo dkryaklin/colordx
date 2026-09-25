@@ -55,7 +55,7 @@ const p3FromLinear = (r: number, g: number, b: number): [number, number, number]
 
 // WCAG relative luminance of the sRGB-mapped color (WCAG has no other form).
 const wcagY = (c: Colordx): number => {
-  const { r, g, b } = c.mapSrgb()._rawRgb();
+  const { r, g, b } = c._mapSrgb(false)._rawRgb();
   return 0.2126 * byteToLinear(r) + 0.7152 * byteToLinear(g) + 0.0722 * byteToLinear(b);
 };
 
@@ -68,7 +68,7 @@ const wcagRatio = (fg: Colordx, bg: Colordx): number => {
 // Gamma-encoded channels in [0, 1] of the color mapped into `space`.
 const apcaChannels = (c: Colordx, space: ApcaSpace): [number, number, number] => {
   if (space === 'srgb') {
-    const { r, g, b } = c.mapSrgb()._rawRgb();
+    const { r, g, b } = c._mapSrgb(false)._rawRgb();
     return [r / 255, g / 255, b / 255];
   }
   const { r, g, b, alpha } = c._rawRgb();

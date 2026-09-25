@@ -382,6 +382,10 @@ export class Colordx {
    * Returns `this` when already in gamut.
    */
   mapSrgb(): Colordx {
+    return this._mapSrgb(true);
+  }
+
+  _mapSrgb(snap: boolean): Colordx {
     const { r, g, b, alpha } = this._rgb;
     if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
     const [lRaw, a, bv] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
@@ -391,7 +395,7 @@ export class Colordx {
     const mapped = toGamutSrgbRaw({ l, a, b: bv, alpha });
     if (mapped === null || mapped.inGamut) return this;
     const [mr, mg, mb] = mapped.linear;
-    return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha);
+    return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha, snap);
   }
 
   /**

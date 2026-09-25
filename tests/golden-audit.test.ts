@@ -1257,15 +1257,14 @@ describe('apcaContrast p3 reads an exact OKLab L = 1 as white', () => {
   });
 });
 
-describe('suspected bugs (asserting correct behavior; expected to fail until fixed)', () => {
-  // BUG: _makeFromLinearSrgb's half-byte snap (meant to be byte-invisible) moves a gamut-mapped channel 254.63 → 255, shifting luminance()/contrast()/apcaContrast() at their printed precision
-  it.fails('luminance() of a gamut-mapped color is the luminance of the CSS gamut-mapped channels', () => {
+describe('luminance and APCA of a gamut-mapped color use the CSS gamut-mapped channels', () => {
+  it('luminance() of a gamut-mapped color is the luminance of the CSS gamut-mapped channels', () => {
     const css = 'lab(97.2902 -130 -105.4177)';
     const m = gamutMap(linToOklab(linOf(raw(css))), 'srgb');
     const Y = 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
     expect(colordx(css).luminance()).toBe(rnd(Y, 4)); // colordx: 0.8614, reference: 0.859
   });
-  it.fails('apcaContrast() against a gamut-mapped background uses the CSS gamut-mapped channels', () => {
+  it('apcaContrast() against a gamut-mapped background uses the CSS gamut-mapped channels', () => {
     const bg = 'lch(99.8177 0.597187 355.342153)';
     const m = gamutMap(linToOklab(linOf(raw(bg))), 'srgb').map((x) => srgbGam(x) * 255);
     const lc = APCAcontrast(sRGBtoY([119, 51, 255]), sRGBtoY(m)) as number;
