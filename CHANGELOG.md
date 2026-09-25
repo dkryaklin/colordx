@@ -1,5 +1,15 @@
 # @colordx/core
 
+## 7.2.0
+
+### Minor Changes
+
+- Keep a color with an inexact half-byte channel as hsl() in minify(), since engines round it either way and hex would commit to one side ([8feca45](https://github.com/dkryaklin/colordx/commit/8feca45bbac9729c13b6ac4f0fe4c673aa67d5c4))
+- Floor a fractional palette count so the last stop is the target, name an infinite count, and clamp a NaN or huge precision instead of printing black ([f6d2e64](https://github.com/dkryaklin/colordx/commit/f6d2e64ea617193e73908f030c5c165e67ac0162))
+- Measure luminance and APCA on the unsnapped gamut-mapped channels, so a mapped 254.63 is not read as 255 ([1c27273](https://github.com/dkryaklin/colordx/commit/1c272732f9bf6244a0d0157c46e53e5e15cd9c4a))
+- Throw a RangeError from mix(), delta(), the palette methods and nearest() on an invalid color instead of reading it as black ([a806872](https://github.com/dkryaklin/colordx/commit/a80687260de5865fff7d3856797575f258d85f44))
+- Derive release notes from commit subjects instead of an AI summary ([e629616](https://github.com/dkryaklin/colordx/commit/e6296164bd7579a469415e78372acebcfa76abfe))
+
 ## 7.1.0
 
 ### Minor Changes
