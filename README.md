@@ -14,7 +14,7 @@
 
 **[Try it on colordx.dev](https://colordx.dev)**
 
-A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.5 KB gzipped (6.5 KB for `colordx()` alone). 0 Dependencies.**
+A modern color manipulation library built for the CSS Color 4 era, with first-class support for **OKLCH** and **OKLab**. **8.8 KB gzipped (6.7 KB for `colordx()` alone). 0 Dependencies.**
 
 ## Performance
 
@@ -97,7 +97,7 @@ colordx({ h: 0, s: 100, l: 50 });
 colordx({ l: 0.6279, a: 0.2249, b: 0.1257 }); // OKLab
 colordx({ l: 0.6279, c: 0.2577, h: 29.23 }); // OKLch
 // With p3 plugin loaded:
-colordx('color(display-p3 0.9176 0.2003 0.1386)'); // Display-P3 string
+colordx('color(display-p3 0.9175 0.2003 0.1386)'); // Display-P3 string
 // With rec2020 plugin loaded:
 colordx('color(rec2020 0.82346 0.32843 0.18034)'); // Rec.2020 string
 // With a98rgb plugin loaded:
@@ -227,8 +227,8 @@ nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
 random(); // random Colordx instance
 
 // Low-level functional converters — no object allocation, for hot paths (canvas gradients, etc.)
-oklchToRgbChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded sRGB in [0, 1]
-// Out-of-gamut channels may exceed [0, 1] — callers clamp before byte encoding
+oklchToRgbChannels(0.5, 0.2, 240); // [-0.29354, 0.41025, 0.78055] — gamma-encoded sRGB, unclamped
+// Out-of-gamut channels leave [0, 1] (this one is outside sRGB) — callers clamp before byte encoding
 
 const linear = oklchToLinear(0.5, 0.2, 240); // unclamped linear sRGB — also a free sRGB gamut check
 
@@ -244,11 +244,11 @@ import {
   rgbToLinear,
 } from '@colordx/core';
 
-rgbToLinear(1, 0, 0);          // [1, 0, 0]           — vector sibling of srgbToLinear (0–1 input)
+rgbToLinear(1, 0, 0);          // [1, 0, 0]           — 0–1 gamma sRGB in
 labToLinearSrgb(54.29, 80.8, 69.89); // Lab D50 → linear sRGB (via XYZ D50)
 lchToLinearSrgb(54.29, 106.84, 40.86); // LCH D50 → Lab → linear sRGB
 
-// Gamma-encoded sRGB in one call (skips the manual srgbFromLinear step):
+// Gamma-encoded sRGB in one call:
 labToRgbChannels(54.29, 80.8, 69.89); // → [r, g, b] gamma sRGB in [0, 1]
 lchToRgbChannels(54.29, 106.84, 40.86);
 
@@ -268,8 +268,8 @@ import {
   oklchToRec2020Channels,
 } from '@colordx/core/plugins/rec2020';
 
-oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3 in [0, 1]
-oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1] (2.4 gamma)
+oklchToP3Channels(0.5, 0.2, 240);      // [r, g, b] gamma-encoded Display-P3, unclamped
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020, unclamped (2.4 gamma)
 
 // CIE Lab/LCH → P3 / Rec.2020 (hot path for LCH renderers without OKLCH detour):
 labToP3Channels(54.29, 80.8, 69.89);      // [r, g, b] gamma P3
@@ -378,8 +378,8 @@ const input = 'oklch(0.5 0.4 180)';  // out of sRGB gamut
 colordx(input).toOklchString();          // 'oklch(0.5 0.4 180)'
 colordx(input).toRgbString();            // 'rgb(0 152 108)' — naive clip, matches browser
 
-// 2. Map — CSS Color 4 gamut mapping (preserves lightness + hue, reduces chroma)
-colordx(input).mapSrgb().toOklchString();   // 'oklch(0.50907 0.09379 177.84892)'
+// 2. Map — CSS Color 4 gamut mapping (reduces chroma; lightness + hue kept within JND)
+colordx(input).mapSrgb().toOklchString();   // 'oklch(0.50903 0.09378 177.85846)'
 colordx(input).mapSrgb().toRgbString();     // 'rgb(0 119 102)'
 
 // 3. Clamp — naive-clip into sRGB as a Colordx (matches browser, but hue drifts)
@@ -387,7 +387,7 @@ colordx(input).clampSrgb().toOklchString(); // 'oklch(0.60125 0.1276 164.29893)'
 colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes as (1)
 ```
 
-- **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Preserves lightness and hue; sacrifices chroma. Use when hue stability matters — design tokens, palettes, programmatic harmonies, OKLCH pickers.
+- **`.mapSrgb()`** — CSS Color 4 chroma-reduction binary search. Keeps lightness and hue close; sacrifices chroma. Per the spec, the search stops at the first clipped color within a just-noticeable difference (deltaEOK 0.02) of its chroma-reduced candidate, so L and h can drift slightly — most visibly on colors far outside sRGB (the example above lands at hue 177.9°, not 180°; a pale or dark saturated red can move several degrees of hue, or land on pure `#xx0000`). Use when perceptual closeness matters — CSS output, OKLCH pickers, programmatic harmonies. When a palette needs exact L and h per step, bisect chroma with `inGamutSrgb()` instead.
 - **`.clampSrgb()`** — naive clip in linear sRGB. Hue and lightness may drift. Use when you want a `Colordx` whose `.toOklchString()` describes what browsers actually render.
 
 Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`) read the unclamped color, and the three mixers keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
@@ -410,7 +410,7 @@ inGamutSrgb('oklch(0.5 0.1 30)'); // true  — clearly in sRGB
 inGamutSrgb('oklch(0.5 0.4 180)'); // false — too much cyan chroma
 inGamutSrgb('not-a-color'); // false — not a color, so in no gamut
 
-// Map: reduce chroma until in-gamut (preserves lightness and hue)
+// Map: reduce chroma until in-gamut (lightness and hue kept within JND)
 Colordx.toGamutSrgb('oklch(0.5 0.4 180)'); // → Colordx at the sRGB boundary
 Colordx.toGamutSrgb('#ff0000'); // → unchanged, already in sRGB
 
@@ -504,7 +504,7 @@ import lch from '@colordx/core/plugins/lch';
 import minify from '@colordx/core/plugins/minify';
 // minify() — shortest CSS string
 import mix from '@colordx/core/plugins/mix';
-// tints(), shades(), tones(), palette()
+// mix(), mixOklab(), tints(), shades(), tones(), palette()
 import names from '@colordx/core/plugins/names';
 // toName(), parses CSS color names
 import p3 from '@colordx/core/plugins/p3';
@@ -667,7 +667,7 @@ colordx('#3d7a9f').toOkhsl(2);      // { h: 237.66, s: 57.92, l: 48.38, alpha: 1
 colordx('#3d7a9f').toOkhsl().h === colordx('#3d7a9f').toOklch().h; // true
 ```
 
-Both spaces are defined for sRGB only; a wide-gamut input reads as its sRGB clip, like `toHsl()`. The default precision is 5 dp rather than the 2 of `toHsl()`: the OKLCH hue is sensitive around the edges of the sRGB cube, and at 2 dp `rgb(0, 42, 204)` comes back as `rgb(7, 53, 190)`. Two edge behaviours are inherent to the spaces and shared with every implementation of the reference code: pure blues (`r = g = 0`) do not round-trip at any printed precision (`#0000ff` → `okhsl(264.05202 100% 36.65653%)` → `#0134e2` — at that hue and lightness the most chromatic sRGB color really is that one; the hue would need ~8 dp), and the reference approximates the gamut cusp with a polynomial, so ~0.1% of colors report a raw `s` a little above 100 (`toOkhsl()` clamps, the channel functions do not) and come back a few bytes inside the gamut.
+Both spaces are defined for sRGB only; a wide-gamut input reads as its sRGB clip, like `toHsl()`. The default precision is 5 dp rather than the 2 of `toHsl()`: the OKLCH hue is sensitive around the edges of the sRGB cube, and at 2 dp `rgb(0, 42, 204)` comes back as `rgb(7, 53, 190)`. Two edge behaviours are inherent to the spaces and shared with every implementation of the reference code: pure blues (`r = g = 0`) do not round-trip at any printed precision (`#0000ff` → `okhsl(264.05202 100% 36.65653%)` → `#0134e2` — at that hue and lightness the most chromatic sRGB color really is that one; the hue would need ~8 dp), and the reference approximates the gamut cusp with a polynomial, so ~0.7% of 8-bit colors report a raw `s` a little above 100 (at most ~101.2). `toOkhsl()` / `toOkhsv()` clamp it, the channel functions do not, and about 1 in 16 of the clamped colors comes back up to 5 bytes off.
 
 The plugin entries also export channel functions — `rgbToOkhslChannels`, `okhslToRgbChannels`, `rgbToOkhsvChannels`, `okhsvToRgbChannels` and their `*Into` siblings — for per-pixel work. Same shape as the HSV ones (RGB in 0–1), so a picker plane is a drop-in:
 
@@ -879,7 +879,7 @@ extend([p3]);
 inGamutP3('oklch(0.64 0.27 29)');        // true — inside P3 but outside sRGB
 Colordx.toGamutP3('oklch(0.5 0.4 180)'); // → Colordx at the P3 boundary
 
-oklchToP3Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded P3 in [0, 1]
+oklchToP3Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded P3, unclamped
 ```
 
 Object parsing is also supported using the `colorSpace` discriminant:
@@ -916,7 +916,7 @@ extend([rec2020]);
 inGamutRec2020('oklch(0.5 0.4 180)');        // false — outside Rec.2020
 Colordx.toGamutRec2020('oklch(0.5 0.4 180)'); // → Colordx at the Rec.2020 boundary
 
-oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020 in [0, 1]
+oklchToRec2020Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded Rec.2020, unclamped
 ```
 
 Object parsing is also supported using the `colorSpace` discriminant:
@@ -953,7 +953,7 @@ extend([a98rgb]);
 inGamutA98('oklch(0.7 0.25 150)');        // true — inside A98 but outside sRGB
 Colordx.toGamutA98('oklch(0.5 0.4 180)'); // → Colordx at the A98 boundary
 
-oklchToA98Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded A98 in [0, 1]
+oklchToA98Channels(0.5, 0.2, 240); // [r, g, b] gamma-encoded A98, unclamped
 ```
 
 Object parsing is also supported using the `colorSpace` discriminant:
@@ -990,7 +990,7 @@ extend([prophoto]);
 inGamutProphoto('oklch(0.5 0.4 180)');       // false — outside even ProPhoto
 Colordx.toGamutProphoto('oklch(0.5 0.4 180)'); // → Colordx at the ProPhoto boundary
 
-oklchToProphotoChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded ProPhoto in [0, 1]
+oklchToProphotoChannels(0.5, 0.2, 240); // [r, g, b] gamma-encoded ProPhoto, unclamped
 ```
 
 Object parsing is also supported using the `colorSpace` discriminant:
@@ -1079,7 +1079,7 @@ Every `toX()` / `toXString()` method accepts an optional `precision` (decimal pl
 |---|---|
 | `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toLab`, `toLch`, `toXyz`, `toXyzD65` | `2` |
 | `toP3`, `toA98` | `4` |
-| `toOklab`, `toOklch`, `toSrgbLinear`, `toRec2020`, `toProphoto`, `toXyzString`, `toXyzD65String` | `5` |
+| `toOklab`, `toOklch`, `toOkhsl`, `toOkhsv`, `toSrgbLinear`, `toRec2020`, `toProphoto`, `toXyzString`, `toXyzD65String` | `5` |
 
 Each string default is the fewest decimals at which every 8-bit sRGB color parses back to the same bytes. A precision above 20 reads as 20 (past double precision anyway), and NaN or a negative as 0.
 
@@ -1099,13 +1099,11 @@ The `minify()` plugin preserves full HSL precision when building candidates, so 
 By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points. Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
 
 ```ts
-// Color with l=10%
-colordx('#1a0000').lighten(0.1); // l = 10 + 10 = 20%  (absolute)
-colordx('#1a0000').lighten(0.1, { relative: true }); // l = 10 * 1.1 = 11% (relative)
+colordx('hsl(0 100% 10%)').lighten(0.1); // l = 10 + 10 = 20%  (absolute)
+colordx('hsl(0 100% 10%)').lighten(0.1, { relative: true }); // l = 10 * 1.1 = 11% (relative)
 
-// Color with s=40%
-colordx('#a35050').saturate(0.1); // s = 40 + 10 = 50%  (absolute)
-colordx('#a35050').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 44% (relative)
+colordx('hsl(0 40% 50%)').saturate(0.1); // s = 40 + 10 = 50%  (absolute)
+colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 44% (relative)
 ```
 
 The same flag works on `.darken()` and `.desaturate()`.
@@ -1116,10 +1114,6 @@ The same flag works on `.darken()` and `.desaturate()`.
 
 - **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`)
 - **Relative color syntax** — `oklch(from red l c h)` and channel arithmetic like `oklch(from red l calc(c + 0.1) h)`
-
-### Internals
-
-- Deduplicate the sRGB→XYZ D65 matrix shared between `xyz.ts` and `lab.ts`
 
 ## Ecosystem
 

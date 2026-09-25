@@ -113,7 +113,7 @@ describe('README — Parsing (core)', () => {
 });
 
 describe('README — Parsing (plugins)', () => {
-  it('display-p3 string', () => expect(colordx('color(display-p3 0.9176 0.2003 0.1386)').isValid()).toBe(true));
+  it('display-p3 string', () => expect(colordx('color(display-p3 0.9175 0.2003 0.1386)').isValid()).toBe(true));
   it('rec2020 string', () => expect(colordx('color(rec2020 0.82346 0.32843 0.18034)').isValid()).toBe(true));
   it('a98-rgb string', () => expect(colordx('color(a98-rgb 0.8586 0 0)').isValid()).toBe(true));
   it('prophoto-rgb string', () => expect(colordx('color(prophoto-rgb 0.70225 0.27572 0.10355)').isValid()).toBe(true));
@@ -208,11 +208,11 @@ describe('README — nearest', () => {
 });
 
 describe('README — oklchToRgbChannels / oklchToLinear', () => {
-  it('oklchToRgbChannels returns array of 3 numbers in [0,1]', () => {
+  it('oklchToRgbChannels(0.5, 0.2, 240) → unclamped [-0.29354, 0.41025, 0.78055]', () => {
     const [r, g, b] = oklchToRgbChannels(0.5, 0.2, 240);
-    expect(typeof r).toBe('number');
-    expect(typeof g).toBe('number');
-    expect(typeof b).toBe('number');
+    expect(r).toBeCloseTo(-0.29354, 5);
+    expect(g).toBeCloseTo(0.41025, 5);
+    expect(b).toBeCloseTo(0.78055, 5);
   });
   it('oklchToLinear returns array of 3 numbers', () => {
     const linear = oklchToLinear(0.5, 0.2, 240);
@@ -402,6 +402,33 @@ describe('README — Zero-allocation *Into variants', () => {
     expect(Number.isFinite(buf[0])).toBe(true);
     expect(Number.isFinite(buf[1])).toBe(true);
     expect(Number.isFinite(buf[2])).toBe(true);
+  });
+});
+
+describe('README — Gamut (preserve / map / clamp)', () => {
+  const input = 'oklch(0.5 0.4 180)';
+  it('preserve', () => {
+    expect(colordx(input).toOklchString()).toBe('oklch(0.5 0.4 180)');
+    expect(colordx(input).toRgbString()).toBe('rgb(0 152 108)');
+  });
+  it('map', () => {
+    expect(colordx(input).mapSrgb().toOklchString()).toBe('oklch(0.50903 0.09378 177.85846)');
+    expect(colordx(input).mapSrgb().toRgbString()).toBe('rgb(0 119 102)');
+  });
+  it('clamp', () => {
+    expect(colordx(input).clampSrgb().toOklchString()).toBe('oklch(0.60125 0.1276 164.29893)');
+    expect(colordx(input).clampSrgb().toRgbString()).toBe('rgb(0 152 108)');
+  });
+});
+
+describe('README — Relative lighten/darken', () => {
+  it('lighten absolute vs relative', () => {
+    expect(colordx('hsl(0 100% 10%)').lighten(0.1).toHsl().l).toBe(20);
+    expect(colordx('hsl(0 100% 10%)').lighten(0.1, { relative: true }).toHsl().l).toBe(11);
+  });
+  it('saturate absolute vs relative', () => {
+    expect(colordx('hsl(0 40% 50%)').saturate(0.1).toHsl().s).toBe(50);
+    expect(colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }).toHsl().s).toBe(44);
   });
 });
 
