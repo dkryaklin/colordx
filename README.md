@@ -812,7 +812,7 @@ colordx('rgba(255, 255, 255, 0.6)').over(surface).contrast('#000');
 
 Colors outside sRGB are gamut-mapped (not clipped) before the check. WCAG always runs on the sRGB-mapped color; APCA can run on the Display-P3-mapped color with its own coefficients via `{ space: 'p3' }`.
 
-An invalid color on either side is a mistake, not black: `contrast()`, `apcaContrast()`, the `isReadable*` gates, `readableScore()`, `fixContrast()`, `minReadable()` and `over()` throw a `RangeError` naming the method and the input. Check `isValid()` first when the input is untrusted.
+An invalid color on either side is a mistake, not black: every method that needs two real colors — `contrast()`, `apcaContrast()`, the `isReadable*` gates, `readableScore()`, `fixContrast()`, `minReadable()`, `over()`, `mix()`, `mixOklab()`, `mixLab()`, `delta()`, `tints()` / `shades()` / `tones()` / `palette()` and the `nearest()` function — throws a `RangeError` naming the method and the input. Single-color conversions and queries on an invalid instance (`toHex()`, `luminance()`, `brightness()`, …) keep reading it as black, as colord does; `isValid()` is the gate. Check it first when the input is untrusted.
 
 APCA (Accessible Perceptual Contrast Algorithm) — the projected replacement for WCAG 2.x in WCAG 3.0:
 

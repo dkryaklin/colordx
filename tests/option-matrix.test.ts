@@ -17,7 +17,7 @@
  * Bugs are pinned at the bottom with `it.fails` and a `// BUG:` line.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Colordx, colordx, extend, inGamutSrgb } from '../src/index.js';
+import { Colordx, colordx, extend, inGamutSrgb, nearest } from '../src/index.js';
 import a11y from '../src/plugins/a11y.js';
 import a98rgb, { inGamutA98 } from '../src/plugins/a98rgb.js';
 import cmyk from '../src/plugins/cmyk.js';
@@ -694,10 +694,32 @@ describe('option matrix — mix(), invalid input and unknown options', () => {
       ['minReadable', () => black.minReadable(bad as never)],
       ['over', () => colordx('rgb(0 0 0 / 0.5)').over(bad as never)],
       ['over', () => black.over(bad as never)],
+      ['mix', () => black.mix(bad as never)],
+      ['mixOklab', () => black.mixOklab(bad as never)],
+      ['mixLab', () => black.mixLab(bad as never)],
+      ['delta', () => black.delta(bad as never)],
+      ['palette', () => black.palette(3, bad as never)],
+      ['palette', () => black.palette(0, bad as never)],
+      ['nearest', () => nearest(bad as never, ['#fff'])],
+      ['nearest', () => nearest('#000', ['#fff', bad as never])],
     ] as const)
       expect(call, name).toThrow(new RangeError(`${name}: ${JSON.stringify(bad)} is not a valid color`));
-    expect(() => inv.contrast('#fff')).toThrow(new RangeError('contrast: this color is invalid'));
-    expect(() => inv.over('#fff')).toThrow(new RangeError('over: this color is invalid'));
+    for (const [name, call] of [
+      ['contrast', () => inv.contrast('#fff')],
+      ['over', () => inv.over('#fff')],
+      ['mix', () => inv.mix('#fff')],
+      ['mixOklab', () => inv.mixOklab('#fff')],
+      ['mixLab', () => inv.mixLab('#fff')],
+      ['delta', () => inv.delta('#fff')],
+      ['tints', () => inv.tints(3)],
+      ['shades', () => inv.shades(3)],
+      ['tones', () => inv.tones(3)],
+      ['palette', () => inv.palette(3, '#fff')],
+    ] as const)
+      expect(call, name).toThrow(new RangeError(`${name}: this color is invalid`));
+    expect(inv.toHex()).toBe('#000000');
+    expect(inv.luminance()).toBe(0);
+    expect(inv.brightness()).toBe(0);
   });
 
   it.each(['nope', 'toString', 'constructor'])('harmonies(%j) throws a RangeError naming the type', (t) => {
@@ -708,7 +730,9 @@ describe('option matrix — mix(), invalid input and unknown options', () => {
 describe('option matrix — count and precision are caller input', () => {
   it('palette(2.5) is palette(2) and ends on the target', () => {
     const out = colordx('#f00').palette(2.5, '#00f');
-    expect(out[out.length - 1]!.toHex()).toBe('#0000ff');
+    expect(out.map((c) => c.toHex())).toEqual(['#ff0000', '#0000ff']);
+    expect(colordx('#f00').tints(3.9).map((c) => c.toHex())).toEqual(colordx('#f00').tints(3).map((c) => c.toHex()));
+    expect(colordx('#f00').shades(0.5)).toEqual([]);
   });
 
   it.each(['tints', 'shades', 'tones', 'palette'] as const)('%s(Infinity) throws a RangeError naming the method', (m) => {
@@ -721,6 +745,11 @@ describe('option matrix — count and precision are caller input', () => {
 
   it.each([NaN, Infinity, 400, -1])('toOklch(%s) does not silently become black', (p) => {
     expect(colordx('#3d7a9f').toOklch(p).l).toBeGreaterThan(0.5);
+    expect(colordx('#3d7a9f').toHslString(p)).not.toBe('hsl(0 0% 0%)');
+  });
+  it('a precision above 20 is 20, and NaN is 0', () => {
+    expect(colordx('#3d7a9f').toOklch(400)).toEqual(colordx('#3d7a9f').toOklch(20));
+    expect(colordx('#3d7a9f').toOklch(NaN)).toEqual(colordx('#3d7a9f').toOklch(0));
   });
 });
 
@@ -740,8 +769,3 @@ describe('option matrix — divergences (pinned as current behaviour)', () => {
     expect(colordx(x.toHex()).contrast('#000')).toBeLessThan(7);
   });
 });
-    expect(colordx('#3d7a9f').toHslString(p)).not.toBe('hsl(0 0% 0%)');
-  });
-  it('a precision above 20 is 20, and NaN is 0', () => {
-    expect(colordx('#3d7a9f').toOklch(400)).toEqual(colordx('#3d7a9f').toOklch(20));
-    expect(colordx('#3d7a9f').toOklch(NaN)).toEqual(colordx('#3d7a9f').toOklch(0));

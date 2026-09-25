@@ -432,11 +432,15 @@ export const extend = (plugins: Plugin[]): void => {
  */
 export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {
   if (candidates.length === 0) throw new Error('nearest: candidates array must not be empty');
-  const { l: l1, a: a1, b: b1 } = new Colordx(color).toOklab();
+  const from = new Colordx(color);
+  if (!from.isValid()) throw invalidColorError('nearest', color);
+  const { l: l1, a: a1, b: b1 } = from.toOklab();
   let minDist = Infinity;
   let result = candidates[0] as T;
   for (const candidate of candidates) {
-    const { l: l2, a: a2, b: b2 } = new Colordx(candidate).toOklab();
+    const c = new Colordx(candidate);
+    if (!c.isValid()) throw invalidColorError('nearest', candidate);
+    const { l: l2, a: a2, b: b2 } = c.toOklab();
     const dist = (l2 - l1) ** 2 + (a2 - a1) ** 2 + (b2 - b1) ** 2;
     if (dist < minDist) {
       minDist = dist;

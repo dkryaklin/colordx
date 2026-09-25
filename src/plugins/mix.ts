@@ -1,6 +1,6 @@
 import { oklabToLinear, rgbToOklab } from '../colorModels/oklab.js';
 import type { Colordx, Plugin } from '../colordx.js';
-import { clamp, mixWeight, round } from '../helpers.js';
+import { clamp, invalidColorError, mixWeight, round } from '../helpers.js';
 import type { AnyColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -15,10 +15,17 @@ declare module '@colordx/core' {
 }
 
 const mix: Plugin = (ColordxClass) => {
+  const pair = (method: string, self: Colordx, input: AnyColor | Colordx): Colordx => {
+    if (!self.isValid()) throw invalidColorError(method, self, true);
+    const other = new ColordxClass(input);
+    if (!other.isValid()) throw invalidColorError(method, input);
+    return other;
+  };
+
   ColordxClass.prototype.mix = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
     // Both sides unrounded so a.mix(b, t) and b.mix(a, 1 - t) are the same color, and the result
     // unclamped like color-mix(in srgb): a wide-gamut input stays wide-gamut.
-    const other = new ColordxClass(color)._rawRgb();
+    const other = pair('mix', this, color)._rawRgb();
     const self = this._rawRgb();
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(self.alpha, other.alpha, w);
@@ -31,8 +38,8 @@ const mix: Plugin = (ColordxClass) => {
   };
 
   ColordxClass.prototype.mixOklab = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
+    const oklab2 = rgbToOklab(pair('mixOklab', this, color)._rawRgb());
     const oklab1 = rgbToOklab(this._rawRgb());
-    const oklab2 = rgbToOklab(new ColordxClass(color)._rawRgb());
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(oklab1.alpha, oklab2.alpha, w);
     // Unclamped, like color-mix(in oklab): a wide-gamut input stays wide-gamut.
@@ -45,11 +52,12 @@ const mix: Plugin = (ColordxClass) => {
   };
 
   const scale = (method: string, self: Colordx, count: number, target: AnyColor): Colordx[] => {
+    const to = pair(method, self, target);
     if (count === Infinity) throw new RangeError(`${method}: count must be finite, got Infinity`);
     const n = Math.floor(count);
     if (!(n >= 1)) return [];
     if (n === 1) return [self];
-    return Array.from({ length: n }, (_, i) => self.mix(target, i / (n - 1)));
+    return Array.from({ length: n }, (_, i) => self.mix(to, i / (n - 1)));
   };
 
   ColordxClass.prototype.tints = function (this: Colordx, count = 5): Colordx[] {

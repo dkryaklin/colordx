@@ -16,7 +16,7 @@ import {
   xyzD50ToLinearSrgb,
 } from '../colorModels/xyz.js';
 import type { Colordx, Plugin } from '../colordx.js';
-import { clamp, fixedNotation, mixWeight, round } from '../helpers.js';
+import { clamp, fixedNotation, invalidColorError, mixWeight, round } from '../helpers.js';
 import type { AnyColor, ColorParser, LabColor, XyzColor, XyzD65Color } from '../types.js';
 
 declare module '@colordx/core' {
@@ -82,9 +82,15 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
       precision
     );
   };
-  ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor, ratio = 0.5): Colordx {
+  const pair = (method: string, self: Colordx, input: AnyColor | Colordx): Colordx => {
+    if (!self.isValid()) throw invalidColorError(method, self, true);
+    const other = new ColordxClass(input);
+    if (!other.isValid()) throw invalidColorError(method, input);
+    return other;
+  };
+  ColordxClass.prototype.mixLab = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
+    const lab2 = rgbToLab(pair('mixLab', this, color)._rawRgb());
     const lab1 = rgbToLab(this._rawRgb());
-    const lab2 = rgbToLab(new ColordxClass(color)._rawRgb());
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(lab1.alpha, lab2.alpha, w);
     // Unclamped, like color-mix(in lab): a wide-gamut input stays wide-gamut.
@@ -98,10 +104,8 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   /** Returns ΔE2000 color difference normalized to [0, 1] (divide by 100). 0 = identical, 1 = maximally different. */
   ColordxClass.prototype.delta = function (color: AnyColor | Colordx = '#fff', precision = 3) {
-    return round(
-      deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(new ColordxClass(color)._rawRgb())) / 100,
-      precision
-    );
+    const other = pair('delta', this, color);
+    return round(deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(other._rawRgb())) / 100, precision);
   };
   (parseLabString as ColorParser).inputKind = 'string';
   (parseLabObject as ColorParser).inputKind = 'object';
