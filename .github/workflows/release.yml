@@ -72,10 +72,9 @@ jobs:
           echo "ref=$TAG" >> "$GITHUB_OUTPUT"
           echo "Diffing against: $TAG"
 
-      - name: Generate changeset via AI
+      - name: Generate changesets from commits
         if: steps.pending.outputs.version == ''
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BUMP: ${{ inputs.bump }}
           BASE_REF: ${{ steps.last.outputs.ref }}
         run: pnpm exec tsx scripts/changeset.ts

@@ -110,7 +110,7 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "changeset": "changeset",
-    "changeset:ai": "tsx scripts/changeset.ts",
+    "changeset:commits": "tsx scripts/changeset.ts",
     "version": "changeset version",
     "release": "pnpm build && publint && changeset publish",
     "check": "tsc --noEmit && pnpm test:types && echo 'tsc ok' && pnpm lint && pnpm format",
@@ -125,7 +125,6 @@
     ]
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "@changesets/cli": "^2.30.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
