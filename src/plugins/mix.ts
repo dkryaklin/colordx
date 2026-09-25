@@ -44,26 +44,28 @@ const mix: Plugin = (ColordxClass) => {
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, round(oklab1.alpha * (1 - w) + oklab2.alpha * w, 3), false);
   };
 
-  const scale = (self: Colordx, count: number, target: AnyColor): Colordx[] => {
-    if (count <= 0) return [];
-    if (count === 1) return [self];
-    return Array.from({ length: count }, (_, i) => self.mix(target, i / (count - 1)));
+  const scale = (method: string, self: Colordx, count: number, target: AnyColor): Colordx[] => {
+    if (count === Infinity) throw new RangeError(`${method}: count must be finite, got Infinity`);
+    const n = Math.floor(count);
+    if (!(n >= 1)) return [];
+    if (n === 1) return [self];
+    return Array.from({ length: n }, (_, i) => self.mix(target, i / (n - 1)));
   };
 
   ColordxClass.prototype.tints = function (this: Colordx, count = 5): Colordx[] {
-    return scale(this, count, '#ffffff');
+    return scale('tints', this, count, '#ffffff');
   };
 
   ColordxClass.prototype.shades = function (this: Colordx, count = 5): Colordx[] {
-    return scale(this, count, '#000000');
+    return scale('shades', this, count, '#000000');
   };
 
   ColordxClass.prototype.tones = function (this: Colordx, count = 5): Colordx[] {
-    return scale(this, count, '#808080');
+    return scale('tones', this, count, '#808080');
   };
 
   ColordxClass.prototype.palette = function (this: Colordx, count: number, target: AnyColor = '#ffffff'): Colordx[] {
-    return scale(this, count, target);
+    return scale('palette', this, count, target);
   };
 };
 

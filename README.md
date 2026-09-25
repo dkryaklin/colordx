@@ -746,6 +746,7 @@ colordx('#ff0000').tones(3);  // [#ff0000, #c04040, #808080]
 
 // palette: N evenly-spaced stops toward any target (default: white)
 colordx('#ff0000').palette(3, '#0000ff'); // [#ff0000, #800080, #0000ff]
+// A fractional count is floored; 0, a negative count or NaN give []; Infinity throws a RangeError.
 ```
 
 ### minify plugin
@@ -1080,7 +1081,7 @@ Every `toX()` / `toXString()` method accepts an optional `precision` (decimal pl
 | `toP3`, `toA98` | `4` |
 | `toOklab`, `toOklch`, `toSrgbLinear`, `toRec2020`, `toProphoto`, `toXyzString`, `toXyzD65String` | `5` |
 
-Each string default is the fewest decimals at which every 8-bit sRGB color parses back to the same bytes.
+Each string default is the fewest decimals at which every 8-bit sRGB color parses back to the same bytes. A precision above 20 reads as 20 (past double precision anyway), and NaN or a negative as 0.
 
 ```ts
 colordx('#3d7a9f').toHsl();      // { h: 202.65, s: 44.55, l: 43.14, alpha: 1 }

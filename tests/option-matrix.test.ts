@@ -705,23 +705,21 @@ describe('option matrix — mix(), invalid input and unknown options', () => {
   });
 });
 
-describe('option matrix — known bugs (it.fails until fixed)', () => {
-  // BUG: a fractional count is truncated by Array.from but still used as the divisor, so the last
-  // stop is not the target: palette(2.5, '#00f') → ['#ff0000', '#5500aa'] (t = 1/1.5).
-  it.fails('palette(2.5) ends on the target', () => {
+describe('option matrix — count and precision are caller input', () => {
+  it('palette(2.5) is palette(2) and ends on the target', () => {
     const out = colordx('#f00').palette(2.5, '#00f');
     expect(out[out.length - 1]!.toHex()).toBe('#0000ff');
   });
 
-  // BUG: tints/shades/tones/palette(Infinity) throw RangeError: Invalid array length (from Array.from).
-  it.fails('tints(Infinity) does not throw', () => {
-    expect(() => colordx('#f00').tints(Infinity)).not.toThrow();
+  it.each(['tints', 'shades', 'tones', 'palette'] as const)('%s(Infinity) throws a RangeError naming the method', (m) => {
+    expect(() => (colordx('#f00') as any)[m](Infinity, '#00f')).toThrow(
+      new RangeError(`${m}: count must be finite, got Infinity`)
+    );
+    expect((colordx('#f00') as any)[m](-Infinity, '#00f')).toEqual([]);
+    expect((colordx('#f00') as any)[m](NaN, '#00f')).toEqual([]);
   });
 
-  // BUG: round() computes 10 ** precision, so a precision of NaN, Infinity or >= 309 turns every
-  // channel into NaN, which `|| 0` then folds to 0: toOklch(NaN) of #3d7a9f is { l: 0, c: 0, h: 0 }
-  // and toHslString(Infinity) is 'hsl(0 0% 0%)' — black, silently. (Precision is caller input.)
-  it.fails.each([NaN, Infinity, 400])('toOklch(%s) does not silently become black', (p) => {
+  it.each([NaN, Infinity, 400, -1])('toOklch(%s) does not silently become black', (p) => {
     expect(colordx('#3d7a9f').toOklch(p).l).toBeGreaterThan(0.5);
   });
 });
@@ -742,3 +740,8 @@ describe('option matrix — divergences (pinned as current behaviour)', () => {
     expect(colordx(x.toHex()).contrast('#000')).toBeLessThan(7);
   });
 });
+    expect(colordx('#3d7a9f').toHslString(p)).not.toBe('hsl(0 0% 0%)');
+  });
+  it('a precision above 20 is 20, and NaN is 0', () => {
+    expect(colordx('#3d7a9f').toOklch(400)).toEqual(colordx('#3d7a9f').toOklch(20));
+    expect(colordx('#3d7a9f').toOklch(NaN)).toEqual(colordx('#3d7a9f').toOklch(0));

@@ -6,7 +6,7 @@ export const clamp = (n: number, min: number, max: number): number => (n > min ?
 // `|| 0` folds the -0 that Math.round leaves on a tiny negative (a grey's OKLab a/b, the L of a
 // black with chroma) so formatted objects never carry a signed zero.
 export const round = (n: number, d = 0): number => {
-  const p = 10 ** d;
+  const p = d > 0 ? 10 ** (d < 20 ? d : 20) : 1;
   return Math.round(p * n) / p || 0;
 };
 
