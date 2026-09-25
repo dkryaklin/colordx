@@ -3,25 +3,22 @@ import type { RgbColor } from '../types.js';
 
 const HEX_BYTE = /* #__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
 
-/** Convert a number in [0, 255] to a 2-char lowercase hex byte. Clamps and rounds out-of-range inputs; NaN reads as 0. */
+/** Number in [0, 255] → 2-char lowercase hex byte. Clamps and rounds; NaN reads as 0. */
 export const toHexByte = (n: number): string => HEX_BYTE[toByte(n)]!;
-/** Hex digit value, or -1. Avoids a regex validation pass over the string. */
 const hexDigit = (c: number): number => {
   const d = c - 48;
   if (d >= 0 && d <= 9) return d;
-  const l = (c | 32) - 87; // 'a' (97) -> 10
+  const l = (c | 32) - 87;
   return l >= 10 && l <= 15 ? l : -1;
 };
 
 export const parseHex = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string') return null;
-  // trim() allocates; only pay for it when there is actually padding to strip
   const s = isWs(input.charCodeAt(0)) || isWs(input.charCodeAt(input.length - 1)) ? trimWs(input) : input;
   const n = s.length;
-  if (s.charCodeAt(0) !== 35) return null; // '#'
+  if (s.charCodeAt(0) !== 35) return null;
   if (n !== 4 && n !== 5 && n !== 7 && n !== 9) return null;
 
-  // Validate and extract in one pass.
   const d1 = hexDigit(s.charCodeAt(1));
   const d2 = hexDigit(s.charCodeAt(2));
   const d3 = hexDigit(s.charCodeAt(3));

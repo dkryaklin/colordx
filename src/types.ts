@@ -1,10 +1,3 @@
-// Each color space exposes two types:
-//   - XxxColor:      output shape. `alpha` is always present, so consumers of
-//                    toRgb() / toOklch() / etc. never need `?? 1` fallbacks.
-//   - XxxColorInput: input shape. `alpha` is optional and defaults to 1.
-// AnyColor is the union of the *Input* types — it's the input contract for
-// colordx(), parse(), mix(), etc.
-
 /** sRGB color. r, g, b in [0, 255]; alpha in [0, 1]. */
 export interface RgbColor {
   r: number;
@@ -40,17 +33,13 @@ export interface HwbColor {
   h: number;
   /** Whiteness [0, 100]. */
   w: number;
-  /** Blackness [0, 100]. */
   b: number;
   alpha: number;
 }
 /** Input shape of `HwbColor` — `alpha` is optional and defaults to 1. */
 export type HwbColorInput = Omit<HwbColor, 'alpha'> & { alpha?: number; a?: number };
 
-/**
- * Okhsl color (Björn Ottosson). h in [0, 360) — the OKLCH hue; s, l in [0, 100]; alpha in [0, 1].
- * The `colorSpace` brand tells it apart from an HSL object.
- */
+/** Okhsl color. h in [0, 360); s, l in [0, 100]; alpha in [0, 1]. */
 export interface OkhslColor {
   h: number;
   s: number;
@@ -61,10 +50,7 @@ export interface OkhslColor {
 /** Input shape of `OkhslColor` — `alpha` is optional and defaults to 1. */
 export type OkhslColorInput = Omit<OkhslColor, 'alpha'> & { alpha?: number; a?: number };
 
-/**
- * Okhsv color (Björn Ottosson). h in [0, 360) — the OKLCH hue; s, v in [0, 100]; alpha in [0, 1].
- * The `colorSpace` brand tells it apart from an HSV object.
- */
+/** Okhsv color. h in [0, 360); s, v in [0, 100]; alpha in [0, 1]. */
 export interface OkhsvColor {
   h: number;
   s: number;
@@ -78,9 +64,7 @@ export type OkhsvColorInput = Omit<OkhsvColor, 'alpha'> & { alpha?: number; a?: 
 /** CIE Lab (D50). L in [0, 100]; a, b roughly in [-128, 128]. */
 export interface LabColor {
   l: number;
-  /** Green–red axis. */
   a: number;
-  /** Blue–yellow axis. */
   b: number;
   alpha: number;
   readonly colorSpace: 'lab';
@@ -109,7 +93,6 @@ export interface XyzColor {
 /** Input shape of `XyzColor` — `alpha` is optional and defaults to 1. */
 export type XyzColorInput = Omit<XyzColor, 'alpha'> & { alpha?: number; a?: number };
 
-/** CIE XYZ (D65). x, y, z on the library's 0–100 scale. */
 export interface XyzD65Color {
   x: number;
   y: number;
@@ -133,9 +116,7 @@ export type CmykColorInput = Omit<CmykColor, 'alpha'> & { alpha?: number; a?: nu
 /** OKLab. Perceptually uniform (D65). L in [0, 1]; a, b roughly in [-0.4, 0.4]. */
 export interface OklabColor {
   l: number;
-  /** Green–red axis. */
   a: number;
-  /** Blue–yellow axis. */
   b: number;
   alpha: number;
 }
@@ -231,7 +212,6 @@ export type AnyColor =
 
 /** A parser registered by a plugin. Returns the sRGB equivalent or `null` if the input doesn't match. */
 export type ColorParser<T = AnyColor> = ((input: T) => RgbColor | null) & {
-  /** Which input kind this parser can match. Untagged parsers are tried for both. */
   inputKind?: 'string' | 'object';
 };
 

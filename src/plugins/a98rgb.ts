@@ -29,10 +29,7 @@ declare module '@colordx/core' {
   }
 }
 
-/**
- * Convert linear sRGB channels (from oklchToLinear) to gamma-encoded A98 channels.
- * This is the cheap step — only a matrix multiply + the A98 power curve, no cbrt.
- */
+/** Linear sRGB → gamma A98 `[r, g, b]`. Pair with `oklchToLinear` to convert to several spaces. */
 export const linearToA98Channels = (lr: number, lg: number, lb: number): [number, number, number] => {
   const [r, g, b] = srgbLinearToA98Linear(lr, lg, lb);
   return [a98FromLinear(r), a98FromLinear(g), a98FromLinear(b)];
@@ -46,11 +43,7 @@ export const linearToA98ChannelsInto = (out: Float64Array | number[], lr: number
   out[2] = a98FromLinear(out[2]!);
 };
 
-/**
- * Convert OKLCH to gamma-encoded A98 channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
- * exceed this range — callers are responsible for clamping before byte encoding.
- */
+/** OKLCh → gamma A98 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const oklchToA98Channels = (l: number, c: number, h: number): [number, number, number] =>
   linearToA98Channels(...oklchToLinear(l, c, h));
 
@@ -62,11 +55,7 @@ export const oklchToA98ChannelsInto = (out: Float64Array | number[], l: number, 
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/**
- * Convert CIE Lab (D50) to gamma-encoded A98 channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors; out-of-gamut channels may exceed [0, 1].
- * Goes Lab → XYZ D50 → linear sRGB → linear A98 → A98 gamma.
- */
+/** CIE Lab (D50) → gamma A98 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const labToA98Channels = (l: number, a: number, b: number): [number, number, number] =>
   linearToA98Channels(...labToLinearSrgb(l, a, b));
 
@@ -76,10 +65,7 @@ export const labToA98ChannelsInto = (out: Float64Array | number[], l: number, a:
   linearToA98ChannelsInto(out, out[0]!, out[1]!, out[2]!);
 };
 
-/**
- * Convert CIE LCH (D50) to gamma-encoded A98 channels without object allocation.
- * Polar-to-rectangular to Lab, then Lab → gamma A98.
- */
+/** CIE LCh (D50) → gamma A98 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const lchToA98Channels = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return labToA98Channels(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -93,18 +79,13 @@ export const lchToA98ChannelsInto = (out: Float64Array | number[], l: number, c:
 
 const parseA98: ColorParser = (input) => parseA98String(input) ?? parseA98Object(input);
 
-/**
- * Returns true if the color is within the A98 (Adobe RGB 1998) gamut.
- * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ A98).
- */
+/** True when the color is inside the A98 gamut. sRGB inputs always are. */
 export const inGamutA98 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearA98, parseA98);
 
 const a98: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutA98 = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearA98, a98FromLinearConverter, parseA98);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
-    // Clipped linear-A98 → linear-sRGB (wide-gamut when the A98 color is outside sRGB),
-    // then gamma-encode for storage. No round-trip through OKLab.
     const [lrR, lrG, lrB] = mapped.linear;
     const [lr, lg, lb] = linearA98ToSrgb(lrR, lrG, lrB);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha, false);

@@ -4,11 +4,6 @@ import { byteToLinear, linearToStoredRgb, prophotoFromLinear, prophotoToLinear }
 import type { ProPhotoColor, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 
-// Linear sRGB ↔ Linear ProPhoto (ROMM RGB, D50). Derived by composing the CSS Color 4
-// prophoto↔XYZ-D50 matrices with the library's Bradford D65↔D50 and sRGB↔XYZ-D65 matrices,
-// so the chromatic adaptation matches the existing Lab/XYZ pipeline. Verified against culori
-// to <1.3e-7. Provenance / re-derivation: scripts/derive-wide-gamut-matrices.ts.
-// Shared between the allocating and *Into variants.
 const SPP_RR = 0.52927697762261172,
   SPP_RG = 0.330154501978493,
   SPP_RB = 0.14056852039889559;
@@ -28,7 +23,6 @@ const PPS_BR = -0.008558828783917425,
   PPS_BG = -0.15326670213803723,
   PPS_BB = 1.1618255309219545;
 
-/** Zero-allocation sibling of srgbLinearToProphotoLinear — writes into `out`. */
 export const srgbLinearToProphotoLinearInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   out[0] = SPP_RR * r + SPP_RG * g + SPP_RB * b;
   out[1] = SPP_GR * r + SPP_GG * g + SPP_GB * b;
@@ -58,7 +52,6 @@ export const rgbToProphotoRaw = ({ r, g, b, alpha }: RgbColor): ProPhotoColor =>
   };
 };
 
-/** Unclamped ProPhoto → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const prophotoToRgbUnclamped = ({ r, g, b, alpha }: ProPhotoColor): RgbColor => {
   const [sr, sg, sb] = linearProphotoToSrgb(prophotoToLinear(r), prophotoToLinear(g), prophotoToLinear(b));
   return linearToStoredRgb(sr, sg, sb, alpha);
@@ -79,12 +72,10 @@ export const parseProphotoObject = (input: unknown): RgbColor | null => {
   });
 };
 
-// CSS Color 4: color(prophoto-rgb r g b / alpha). Channels accept number|percentage|none; 100% = 1.
 export const parseProphotoString = (input: unknown): RgbColor | null =>
   scanColorRgb(input, 'color(prophoto-rgb ')
     ? prophotoToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'prophoto-rgb' })
     : null;
 
-/** Unclamped linear ProPhoto channels from OKLab values. */
 export const oklabToLinearProphoto = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToProphotoLinear(...oklabToLinear(l, a, b));

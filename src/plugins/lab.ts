@@ -51,7 +51,6 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     const { x, y, z, alpha } = rgbToXyz(this._rawRgb());
     return { x: round(x, precision), y: round(y, precision), z: round(z, precision), alpha };
   };
-  // CSS Color 4 color(xyz-*) channels are 0–1 (1 = reference-white Y); the object API is 0–100.
   ColordxClass.prototype.toXyzString = function (this: Colordx, precision = 5) {
     const { x, y, z, alpha } = rgbToXyz(this._rawRgb());
     const cx = round(x / 100, precision),
@@ -93,7 +92,6 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     const lab1 = rgbToLab(this._rawRgb());
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(lab1.alpha, lab2.alpha, w);
-    // Unclamped, like color-mix(in lab): a wide-gamut input stays wide-gamut.
     const [x, y, z] = labToXyzValues(
       lab1.l * (1 - k) + lab2.l * k,
       lab1.a * (1 - k) + lab2.a * k,
@@ -102,7 +100,6 @@ const lab: Plugin = (ColordxClass, parsers, formatParsers) => {
     const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, round(lab1.alpha * (1 - w) + lab2.alpha * w, 3), false);
   };
-  /** Returns ΔE2000 color difference normalized to [0, 1] (divide by 100). 0 = identical, 1 = maximally different. */
   ColordxClass.prototype.delta = function (color: AnyColor | Colordx = '#fff', precision = 3) {
     const other = pair('delta', this, color);
     return round(deltaE2000(rgbToLabD65(this._rawRgb()), rgbToLabD65(other._rawRgb())) / 100, precision);

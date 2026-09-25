@@ -11,15 +11,11 @@ declare module '@colordx/core' {
 
 type Matrix = readonly [number, number, number, number, number, number, number, number, number];
 
-// Machado, Oliveira & Fernandes 2009, severity 1.0, on linear sRGB. Same matrices as Chrome and Firefox DevTools.
 const MACHADO: Record<'protanopia' | 'deuteranopia', Matrix> = {
   protanopia: [0.152286, 1.052583, -0.204868, 0.114503, 0.786281, 0.099216, -0.003882, -0.048116, 1.051998],
   deuteranopia: [0.367322, 0.860646, -0.227968, 0.280085, 0.672501, 0.047413, -0.01182, 0.04294, 0.968881],
 };
 
-// Brettel, Viénot & Mollon 1997 for tritan (Machado is weak there): one projection per half-plane,
-// split by a plane through the achromatic axis. RGB form of daltonlens 0.1 (Python) with its
-// LMSModel_sRGB_SmithPokorny75: rgb_from_lms · H · lms_from_rgb, and the plane normal · lms_from_rgb.
 const BRETTEL_TRITAN = {
   a: [
     1.0135416153, 0.1426823107, -0.156223926, -0.0118053648, 0.8756118317, 0.1361935331, 0.0770725345, 0.8120809125,

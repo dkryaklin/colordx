@@ -29,10 +29,7 @@ declare module '@colordx/core' {
   }
 }
 
-/**
- * Convert linear sRGB channels (from oklchToLinear) to gamma-encoded ProPhoto channels.
- * This is the cheap step — only a matrix multiply + the ProPhoto gamma 1.8 curve, no cbrt.
- */
+/** Linear sRGB → gamma ProPhoto `[r, g, b]`. Pair with `oklchToLinear` to convert to several spaces. */
 export const linearToProphotoChannels = (lr: number, lg: number, lb: number): [number, number, number] => {
   const [r, g, b] = srgbLinearToProphotoLinear(lr, lg, lb);
   return [prophotoFromLinear(r), prophotoFromLinear(g), prophotoFromLinear(b)];
@@ -51,11 +48,7 @@ export const linearToProphotoChannelsInto = (
   out[2] = prophotoFromLinear(out[2]!);
 };
 
-/**
- * Convert OKLCH to gamma-encoded ProPhoto channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
- * exceed this range — callers are responsible for clamping before byte encoding.
- */
+/** OKLCh → gamma ProPhoto `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const oklchToProphotoChannels = (l: number, c: number, h: number): [number, number, number] =>
   linearToProphotoChannels(...oklchToLinear(l, c, h));
 
@@ -67,11 +60,7 @@ export const oklchToProphotoChannelsInto = (out: Float64Array | number[], l: num
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/**
- * Convert CIE Lab (D50) to gamma-encoded ProPhoto channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors; out-of-gamut channels may exceed [0, 1].
- * Goes Lab → XYZ D50 → linear sRGB → linear ProPhoto → ProPhoto gamma.
- */
+/** CIE Lab (D50) → gamma ProPhoto `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const labToProphotoChannels = (l: number, a: number, b: number): [number, number, number] =>
   linearToProphotoChannels(...labToLinearSrgb(l, a, b));
 
@@ -81,10 +70,7 @@ export const labToProphotoChannelsInto = (out: Float64Array | number[], l: numbe
   linearToProphotoChannelsInto(out, out[0]!, out[1]!, out[2]!);
 };
 
-/**
- * Convert CIE LCH (D50) to gamma-encoded ProPhoto channels without object allocation.
- * Polar-to-rectangular to Lab, then Lab → gamma ProPhoto.
- */
+/** CIE LCh (D50) → gamma ProPhoto `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const lchToProphotoChannels = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return labToProphotoChannels(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -98,18 +84,13 @@ export const lchToProphotoChannelsInto = (out: Float64Array | number[], l: numbe
 
 const parseProphoto: ColorParser = (input) => parseProphotoString(input) ?? parseProphotoObject(input);
 
-/**
- * Returns true if the color is within the ProPhoto (ROMM RGB) gamut.
- * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ ProPhoto).
- */
+/** True when the color is inside the ProPhoto gamut. sRGB inputs always are. */
 export const inGamutProphoto = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearProphoto, parseProphoto);
 
 const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutProphoto = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearProphoto, prophotoFromLinearConverter, parseProphoto);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
-    // Clipped linear-ProPhoto → linear-sRGB (wide-gamut when the ProPhoto color is outside
-    // sRGB), then gamma-encode for storage. No round-trip through OKLab.
     const [lrR, lrG, lrB] = mapped.linear;
     const [lr, lg, lb] = linearProphotoToSrgb(lrR, lrG, lrB);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha, false);

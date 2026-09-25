@@ -1,17 +1,3 @@
-/**
- * Drop-in replacement for tinycolor2.
- *
- *   import tinycolor from 'tinycolor2';              // before
- *   import tinycolor from '@colordx/core/tinycolor'; // after
- *
- * Same API, same input quirks, same output strings, colordx math underneath. Instances are
- * mutable exactly like tinycolor2 (`lighten()` changes the instance and returns it).
- * `toColordx()` hands back the immutable Colordx for everything tinycolor2 never had.
- *
- * Results can differ from tinycolor2 by at most 1/255 per channel: tinycolor2 truncates
- * percentages to two decimals when it re-parses HSL between operations, colordx keeps full
- * precision. tinycolor2's `names` map holds shortened hex (`f00`); this one holds full hex (`ff0000`).
- */
 import { parseHex, toHexByte } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { hsvToRgb, rgbToHsvRaw } from './colorModels/hsv.js';
@@ -87,7 +73,6 @@ export interface MostReadableArgs extends WCAG2Options {
 }
 export type StringFormat = 'rgb' | 'prgb' | 'hex' | 'hex6' | 'hex3' | 'hex4' | 'hex8' | 'name' | 'hsl' | 'hsv';
 
-// name → 'rrggbb' and the reverse. Later names win on shared hex (cyan over aqua), like tinycolor2.
 const names: Record<string, string> = {};
 const hexNames: Record<string, string> = {};
 for (const name of Object.keys(NAMES).sort()) {
@@ -95,22 +80,16 @@ for (const name of Object.keys(NAMES).sort()) {
   names[name] = hex;
   hexNames[hex] = name;
 }
-names.burntsienna = 'ea7e5d'; // tinycolor2 extra, not a CSS name
+names.burntsienna = 'ea7e5d';
 hexNames.ea7e5d = 'burntsienna';
 
 const UNIT_RE = /[-+]?(?:\d*\.\d+|\d+)%?/;
 const ANGLE_RE = /^([-+]?(?:\d*\.\d+|\d+))(deg|grad|rad|turn)$/;
-// tinycolor2's CSS_UNIT as a prefix. Its string matcher is unanchored at the end, so every token
-// must be a whole number except the last, where tinycolor2 takes the numeric prefix and ignores the
-// rest. UNIT_RE stays unanchored for object input, where tinycolor2 lets parseFloat read `180foo`.
 const TOKEN_RE = /^[-+]?(?:\d*\.\d+|\d+)%?/;
 const HEX_RE = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
 const FN_NAME_RE = /^(rgba?|hsla?|hsva?)/;
 const SPACE_RE = /\s/;
 
-// tinycolor2's `^(rgba?|hsla?|hsva?)[\s(]+([^)]*)\)?$`, scanned once: as a regex, `[\s(]+` and
-// `[^)]*` both match a run of spaces or `(`, so a failing input backtracks over every split of it.
-// Returns [name, body] or null.
 const matchFn = (s: string): [string, string] | null => {
   const m = FN_NAME_RE.exec(s);
   if (!m) return null;
@@ -126,42 +105,33 @@ const matchFn = (s: string): [string, string] | null => {
 const isUnit = (v: unknown): v is Unit =>
   typeof v === 'number' ? Number.isFinite(v) : typeof v === 'string' && UNIT_RE.test(v);
 
-// tinycolor2's bound01 without its two-decimal truncation. Returns [0, max].
 const chan = (n: Unit, max: number): number => {
   if (typeof n !== 'string') return clamp(n, 0, max);
   const v = parseFloat(n);
-  if (v === 1 && n.includes('.')) return max; // isOnePointZero: "1.0" (even "1.0%") means 100%
+  if (v === 1 && n.includes('.')) return max;
   if (n.includes('%')) return (clamp(v, 0, 100) / 100) * max;
   return clamp(v, 0, max);
 };
 
-// CSS angle units on a hue. tinycolor2 rejects `hsl(0.5turn 100% 50%)`; parseFloat would read
-// it as 0.5deg, so convert to degrees instead of returning a plausible wrong colour.
 const hue = (n: Unit): Unit => {
   const m = typeof n === 'string' ? ANGLE_RE.exec(n) : null;
   return m ? parseFloat(m[1]!) * ANGLE_UNITS[m[2]!]! : n;
 };
 
-// tinycolor2's convertToPercentage: s/l/v at or below 1 are fractions. Returns [0, 100].
 const pct = (n: Unit): number => {
   const v = typeof n === 'string' ? parseFloat(n) : n;
-  if (typeof n === 'string' && v === 1 && n.includes('.')) return 100; // isOnePointZero, as in chan
+  if (typeof n === 'string' && v === 1 && n.includes('.')) return 100;
   const isPct = typeof n === 'string' && n.includes('%');
   return clamp(!isPct && v <= 1 ? v * 100 : v, 0, 100);
 };
 
-// tinycolor2's boundAlpha: anything outside [0, 1] (or unparseable) becomes 1, not clamped.
 const boundAlpha = (a: unknown): number => {
   const v = parseFloat(String(a));
   return Number.isNaN(v) || v < 0 || v > 1 ? 1 : v;
 };
 
-// tinycolor2's `amount === 0 ? 0 : amount || default`.
 const amt = (n: number | undefined, d: number): number => (n === 0 ? 0 : n || d);
 
-// tinycolor2's `results || 6`, then coerced to a positive integer: tinycolor2's `--results` /
-// `results--` loops never reach 0 for a negative or fractional count and run out of memory
-// (bgrins/TinyColor#280). A non-finite count falls back to the default.
 const count = (n: number | undefined, d: number): number => {
   const v = n || d;
   return Number.isFinite(v) ? (v >= 1 ? Math.floor(v) : 1) : d;
@@ -185,7 +155,6 @@ const parseInput = (input: unknown): Parsed => {
     if (hm) {
       const hex = hm[1]!;
       const rgb = parseHex(`#${hex}`)!;
-      // parseHex snaps alpha to 3 decimals; tinycolor2 keeps the raw byte fraction (0x80 → 128/255).
       if (hex.length === 8) rgb.alpha = parseInt(hex.slice(6), 16) / 255;
       else if (hex.length === 4) rgb.alpha = parseInt(hex[3]! + hex[3]!, 16) / 255;
       return { rgb, ok: true, format: named ? 'name' : hex.length % 4 === 0 ? 'hex8' : 'hex' };
@@ -195,7 +164,6 @@ const parseInput = (input: unknown): Parsed => {
     const p = fm[1].split(/[\s,/]+/).filter(Boolean);
     if (p.length < 3 || p.length > 4) return invalid;
     const k = fm[0].slice(0, 3);
-    // tinycolor2's matcher rejects `1e2`, `180foo`, `0x10`; parseFloat would read them as 100, 180, 0.
     const last = p.length - 1;
     for (let i = 0; i <= last; i++) {
       const t = p[i]!;
@@ -232,7 +200,6 @@ const parseInput = (input: unknown): Parsed => {
     return invalid;
   }
   rgb.alpha = boundAlpha(obj.a);
-  // tinycolor2 rounds channels below 1 so a fraction is never read as a ratio later.
   if (rgb.r < 1) rgb.r = Math.round(rgb.r);
   if (rgb.g < 1) rgb.g = Math.round(rgb.g);
   if (rgb.b < 1) rgb.b = Math.round(rgb.b);
@@ -246,7 +213,7 @@ const argbHex = (c: TinyColor): string => {
 
 class TinyColor {
   private _c: Colordx;
-  private _a: number; // raw alpha, unrounded like tinycolor2 (Colordx snaps to 3 decimals)
+  private _a: number;
   private readonly _ok: boolean;
   private readonly _format: string | false;
   private readonly _originalInput: ColorInput;
@@ -309,7 +276,6 @@ class TinyColor {
     return this;
   }
 
-  // Alpha as tinycolor2 prints it in strings.
   private get _a2(): number {
     return Math.round(this._a * 100) / 100;
   }
@@ -400,7 +366,6 @@ class TinyColor {
     const a = this._a;
     const hexLike = f === 'hex' || f === 'hex6' || f === 'hex3' || f === 'hex4' || f === 'hex8' || f === 'name';
     if (!formatSet && a < 1 && hexLike) {
-      // Alpha does not fit these formats: tinycolor2 falls back to rgba(), except for `transparent`.
       if (f === 'name' && a === 0) return 'transparent';
       return this.toRgbString();
     }
@@ -434,7 +399,6 @@ class TinyColor {
     return new TinyColor(this.toString());
   }
 
-  // Mutators: change this instance and return it, like tinycolor2. Amounts are 0–100.
   private _set(c: Colordx): this {
     this._c = c;
     return this;
@@ -456,7 +420,7 @@ class TinyColor {
   }
   /** Adds `amount`% of 255 to each RGB channel. */
   brighten(amount?: number): this {
-    const d = -Math.round(255 * -(amt(amount, 10) / 100)); // tinycolor2's exact rounding, .5 included
+    const d = -Math.round(255 * -(amt(amount, 10) / 100));
     const { r, g, b, a } = this.toRgb();
     return this._set(
       new Colordx({ r: clamp(r + d, 0, 255), g: clamp(g + d, 0, 255), b: clamp(b + d, 0, 255), alpha: a })
@@ -466,8 +430,6 @@ class TinyColor {
     return this._set(this._c.rotate(amount));
   }
 
-  // Combinations: new instances built from HSL/HSV objects, like tinycolor2. Where tinycolor2
-  // builds from `{ h, s, l }` without `a`, alpha is dropped here too.
   complement(): TinyColor {
     const { h, s, l, a } = this.toHsl();
     return new TinyColor({ h: (h + 180) % 360, s, l, a });
@@ -504,7 +466,6 @@ class TinyColor {
     let n = count(results, 6);
     const { h, s } = this.toHsv();
     const { r, g, b } = this._c._rawRgb();
-    // Exact max/255 (toHsv() goes through ×100) so the `% 1` wrap lands on 1 exactly like tinycolor2.
     let v = Math.max(r, g, b) / 255;
     const out: TinyColor[] = [];
     const step = 1 / n;
@@ -531,13 +492,12 @@ declare namespace tinycolor {
 }
 /* eslint-enable @typescript-eslint/no-namespace */
 
-/** Treats every value at or below 1 as a fraction of its range. */
 tinycolor.fromRatio = (color?: ColorInputWithoutInstance, opts?: ConstructorOptions): TinyColor => {
   if (!isObject(color)) return tinycolor(color, opts);
   const scaled: Record<string, unknown> = {};
   for (const k of Object.keys(color)) {
     const v = color[k];
-    const n = Number(v); // "50%" → NaN → kept as-is, like tinycolor2
+    const n = Number(v);
     scaled[k] = k !== 'a' && n <= 1 ? `${n * 100}%` : v;
   }
   return tinycolor(scaled as unknown as ColorInputWithoutInstance, opts);
@@ -548,7 +508,6 @@ tinycolor.equals = (color1?: ColorInput, color2?: ColorInput): boolean =>
 
 tinycolor.random = (): TinyColor => tinycolor.fromRatio({ r: Math.random(), g: Math.random(), b: Math.random() });
 
-/** `amount` is 0–100, default 50. */
 tinycolor.mix = (color1: ColorInput, color2: ColorInput, amount?: number): TinyColor => {
   const p = amt(amount, 50) / 100;
   const a = tinycolor(color1).toRgb();
@@ -561,7 +520,6 @@ tinycolor.mix = (color1: ColorInput, color2: ColorInput, amount?: number): TinyC
   });
 };
 
-/** WCAG 2 contrast ratio, 1–21. */
 tinycolor.readability = (color1: ColorInput, color2: ColorInput): number => {
   const l1 = tinycolor(color1).getLuminance();
   const l2 = tinycolor(color2).getLuminance();
@@ -592,12 +550,8 @@ tinycolor.mostReadable = (baseColor: ColorInput, colorList: ColorInput[], args: 
   return tinycolor.mostReadable(baseColor, ['#fff', '#000'], { ...args, includeFallbackColors: false });
 };
 
-/** name → `rrggbb` */
 tinycolor.names = names;
-/** `rrggbb` → name */
 tinycolor.hexNames = hexNames;
 
-// Default export only, so the CJS build is `module.exports = tinycolor` and `require()` returns the
-// function, like tinycolor2. The class is reachable as a type (`tinycolor.Instance`).
 export type { TinyColor };
 export default tinycolor;

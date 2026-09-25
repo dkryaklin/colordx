@@ -4,13 +4,6 @@ import { a98FromLinear, a98ToLinear, byteToLinear, linearToStoredRgb } from '../
 import type { A98Color, RgbColor } from '../types.js';
 import { oklabToLinear } from './oklab.js';
 
-// Linear sRGB ↔ Linear A98 (Adobe RGB 1998, D65). Derived by composing the CSS Color 4
-// a98↔XYZ matrices with the library's sRGB↔XYZ-D65 matrix; verified against culori to <1e-7.
-// Provenance / re-derivation: scripts/derive-wide-gamut-matrices.ts.
-// Adobe RGB shares sRGB's red and blue primaries and white point, which makes the matrix sparse:
-// the green channel passes through unchanged (g row is identity) and there are no red↔blue
-// cross-terms (r depends on r/g, b depends on g/b). The zeros are structural, not a bug.
-// Shared between the allocating and *Into variants.
 const SA9_RR = 0.71512560685562476,
   SA9_RG = 0.2848743931443754;
 const SA9_BG = 0.04116194845011846,
@@ -20,7 +13,6 @@ const A9S_RR = 1.3983557439607788,
 const A9S_BG = -0.042928989294473266,
   A9S_BB = 1.0429289892944733;
 
-/** Zero-allocation sibling of srgbLinearToA98Linear — writes into `out`. Safe when out === input arg. */
 export const srgbLinearToA98LinearInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   out[0] = SA9_RR * r + SA9_RG * g;
   out[1] = g;
@@ -39,8 +31,6 @@ export const linearA98ToSrgb = (r: number, g: number, b: number): [number, numbe
   A9S_BG * g + A9S_BB * b,
 ];
 
-// No clamping on output: A98 is wide-gamut, sRGB values can legitimately sit outside [0,1] in A98 space.
-// a98ToRgbUnclamped converts back on the way out; callers clip to sRGB gamut.
 export const rgbToA98Raw = ({ r, g, b, alpha }: RgbColor): A98Color => {
   const [ar, ag, ab] = srgbLinearToA98Linear(byteToLinear(r), byteToLinear(g), byteToLinear(b));
   return {
@@ -52,7 +42,6 @@ export const rgbToA98Raw = ({ r, g, b, alpha }: RgbColor): A98Color => {
   };
 };
 
-/** Unclamped A98 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const a98ToRgbUnclamped = ({ r, g, b, alpha }: A98Color): RgbColor => {
   const [sr, sg, sb] = linearA98ToSrgb(a98ToLinear(r), a98ToLinear(g), a98ToLinear(b));
   return linearToStoredRgb(sr, sg, sb, alpha);
@@ -73,12 +62,10 @@ export const parseA98Object = (input: unknown): RgbColor | null => {
   });
 };
 
-// CSS Color 4: color(a98-rgb r g b / alpha). Channels accept number|percentage|none; 100% = 1.
 export const parseA98String = (input: unknown): RgbColor | null =>
   scanColorRgb(input, 'color(a98-rgb ')
     ? a98ToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'a98-rgb' })
     : null;
 
-/** Unclamped linear A98 channels from OKLab values. */
 export const oklabToLinearA98 = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToA98Linear(...oklabToLinear(l, a, b));

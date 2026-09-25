@@ -10,8 +10,6 @@ declare module '@colordx/core' {
   }
 }
 
-// Gamut is sRGB itself, so inGamutSrgb / Colordx.toGamutSrgb already cover it.
-// Channel math is oklchToLinear / rgbToLinear from core.
 const srgbLinear: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toSrgbLinear = function (precision = 5) {
     const { r, g, b, alpha } = rgbToSrgbLinearRaw(this._rawRgb());

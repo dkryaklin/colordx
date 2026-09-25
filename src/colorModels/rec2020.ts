@@ -5,9 +5,6 @@ import type { Rec2020Color, RgbColor } from '../types.js';
 import { oklabToLinear, oklabToLinearInto } from './oklab.js';
 import { clampRgb } from './rgb.js';
 
-// Linear sRGB ↔ Linear Rec.2020 (D65 via XYZ, CSS Color 4): XYZ_to_lin_2020 · lin_sRGB_to_XYZ at
-// full float64 precision.
-// Shared between the allocating and *Into variants.
 const SR2_RR = 0.627403895934699,
   SR2_RG = 0.3292830383778836,
   SR2_RB = 0.043313065687417246;
@@ -27,7 +24,6 @@ const R2S_BR = -0.018150763354905303,
   R2S_BG = -0.10057889800800739,
   R2S_BB = 1.1187296613629127;
 
-/** Zero-allocation sibling of srgbLinearToRec2020Linear — writes into `out`. */
 export const srgbLinearToRec2020LinearInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   out[0] = SR2_RR * r + SR2_RG * g + SR2_RB * b;
   out[1] = SR2_GR * r + SR2_GG * g + SR2_GB * b;
@@ -40,7 +36,6 @@ export const srgbLinearToRec2020Linear = (r: number, g: number, b: number): [num
   SR2_BR * r + SR2_BG * g + SR2_BB * b,
 ];
 
-/** Zero-allocation sibling of linearRec2020ToSrgb — writes into `out`. */
 export const linearRec2020ToSrgbInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   out[0] = R2S_RR * r + R2S_RG * g + R2S_RB * b;
   out[1] = R2S_GR * r + R2S_GG * g + R2S_GB * b;
@@ -66,7 +61,6 @@ export const rgbToRec2020Raw = ({ r, g, b, alpha }: RgbColor): Rec2020Color => {
 
 export const rgbToRec2020 = (rgb: RgbColor): Rec2020Color => {
   const { r, g, b, alpha } = rgbToRec2020Raw(rgb);
-  // 5 dp, like toRec2020(): the 2.4 gamma is steep near black, and 4 dp loses a byte there.
   return { r: round(r, 5), g: round(g, 5), b: round(b, 5), alpha, colorSpace: 'rec2020' };
 };
 
@@ -80,7 +74,6 @@ export const rec2020ToRgb = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
   });
 };
 
-/** Unclamped Rec.2020 → gamma-encoded sRGB. Channels may exceed [0, 255] for out-of-sRGB-gamut colors. */
 const rec2020ToRgbUnclamped = ({ r, g, b, alpha }: Rec2020Color): RgbColor => {
   const [sr, sg, sb] = linearRec2020ToSrgb(rec2020ToLinear(r), rec2020ToLinear(g), rec2020ToLinear(b));
   return linearToStoredRgb(sr, sg, sb, alpha);
@@ -101,17 +94,14 @@ export const parseRec2020Object = (input: unknown): RgbColor | null => {
   });
 };
 
-// CSS Color 4: color(rec2020 r g b / alpha). Channels accept number|percentage|none; 100% = 1.
 export const parseRec2020String = (input: unknown): RgbColor | null =>
   scanColorRgb(input, 'color(rec2020 ')
     ? rec2020ToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'rec2020' })
     : null;
 
-/** Unclamped linear Rec.2020 channels from OKLab values. */
 export const oklabToLinearRec2020 = (l: number, a: number, b: number): [number, number, number] =>
   srgbLinearToRec2020Linear(...oklabToLinear(l, a, b));
 
-/** Zero-allocation sibling of oklabToLinearRec2020 — writes [rr, rg, rb] into `out`. */
 export const oklabToLinearRec2020Into = (out: Float64Array | number[], l: number, a: number, b: number): void => {
   oklabToLinearInto(out, l, a, b);
   srgbLinearToRec2020LinearInto(out, out[0]!, out[1]!, out[2]!);

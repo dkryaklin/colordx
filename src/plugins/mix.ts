@@ -23,8 +23,6 @@ const mix: Plugin = (ColordxClass) => {
   };
 
   ColordxClass.prototype.mix = function (this: Colordx, color: AnyColor | Colordx, ratio = 0.5): Colordx {
-    // Both sides unrounded so a.mix(b, t) and b.mix(a, 1 - t) are the same color, and the result
-    // unclamped like color-mix(in srgb): a wide-gamut input stays wide-gamut.
     const other = pair('mix', this, color)._rawRgb();
     const self = this._rawRgb();
     const w = clamp(ratio, 0, 1);
@@ -42,7 +40,6 @@ const mix: Plugin = (ColordxClass) => {
     const oklab1 = rgbToOklab(this._rawRgb());
     const w = clamp(ratio, 0, 1);
     const k = mixWeight(oklab1.alpha, oklab2.alpha, w);
-    // Unclamped, like color-mix(in oklab): a wide-gamut input stays wide-gamut.
     const [lr, lg, lb] = oklabToLinear(
       oklab1.l * (1 - k) + oklab2.l * k,
       oklab1.a * (1 - k) + oklab2.a * k,

@@ -5,30 +5,12 @@ import type { OkhslColor, RgbColor } from '../types.js';
 import { CS, LAB, LIN, findCs, linearToOklabScratch, oklabToLinearScratch, toe, toeInv } from './okgamut.js';
 import { clampRgb } from './rgb.js';
 
-// Okhsl (Björn Ottosson, https://bottosson.github.io/posts/colorpicker/). Hue is the OKLCH hue;
-// lightness is the L_r toe of OKLab L; saturation remaps OKLCH chroma onto [0, 1] through three
-// scales (C_0 / C_mid / C_max, see okgamut.ts) so the sRGB gamut becomes a cylinder while the
-// interior stays smooth. Defined for sRGB only. Scale here matches toHsl(): h in degrees, s / l
-// in 0–100. The reference uses h in turns and s / l in 0–1.
-//
-// Same rule as hsv.ts: the channel functions, their allocating siblings and the object
-// converters keep separate bodies so each `*Into` only ever sees the caller's buffer.
-
-// Below this OKLCH chroma the hue is noise (rgbToOklch uses the same threshold), so the color is
-// reported achromatic: h = 0, s = 0. Between here and the gamut edge s is computed as the
-// reference does, including the near-white corner where a tiny chroma is still fully saturated.
 const ACHROMATIC_C = 0.000004;
 
 const MID = 0.8;
 const MID_INV = 1.25;
 
-/**
- * Gamma-encoded sRGB (0–1) → Okhsl channels. Writes `[h, s, l]` into `out`: h in degrees
- * [0, 360), s and l in 0–100 — the scale `toOkhsl()` reports. Achromatic input reports h = 0,
- * s = 0. No clipping: Okhsl is defined on the sRGB cube, so clip wide-gamut input first —
- * outside it s runs past 100. Inside it s can still overshoot 100 by up to ~1%, because the
- * gamut cusp the reference algorithm uses is a polynomial fit; `toOkhsl()` clamps, this does not.
- */
+/** Gamma sRGB in 0–1 → Okhsl (h in [0, 360), s and l in 0–100), written into `out`. Unclamped: s can pass 100. */
 export const rgbToOkhslChannelsInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   linearToOklabScratch(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
   const L = LAB[0]!,
@@ -46,7 +28,6 @@ export const rgbToOkhslChannelsInto = (out: Float64Array | number[], r: number, 
     C_mid = CS[1]!,
     C_max = CS[2]!;
 
-  // Inverse of the interpolation in okhslToRgbChannelsInto.
   let s: number;
   if (C < C_mid) {
     const k_1 = MID * C_0;
@@ -64,7 +45,7 @@ export const rgbToOkhslChannelsInto = (out: Float64Array | number[], r: number, 
   out[2] = toe(L) * 100;
 };
 
-/** Allocating sibling of `rgbToOkhslChannelsInto` — returns `[h, s, l]`. Own body: see the note above. */
+/** Allocating sibling of `rgbToOkhslChannelsInto` — returns `[h, s, l]`. */
 export const rgbToOkhslChannels = (r: number, g: number, b: number): [number, number, number] => {
   linearToOklabScratch(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
   const L = LAB[0]!,
@@ -92,16 +73,13 @@ export const rgbToOkhslChannels = (r: number, g: number, b: number): [number, nu
   return [normalizeHue((Math.atan2(bb, a) * 180) / Math.PI), s * 100, toe(L) * 100];
 };
 
-// Shared write buffer for rgbToOkhslRaw — callers must destructure immediately, never store the reference.
 const _buf: OkhslColor = { h: 0, s: 0, l: 0, alpha: 0, colorSpace: 'okhsl' };
 
-/** Unrounded Okhsl of a stored RGB. Clips to the sRGB cube first; s and l are clamped to [0, 100]. */
 export const rgbToOkhslRaw = ({ r, g, b, alpha }: RgbColor): OkhslColor => {
   let rn = r / 255,
     gn = g / 255,
     bn = b / 255;
   if (rn > 1 || rn < 0 || gn > 1 || gn < 0 || bn > 1 || bn < 0) {
-    // Same rule as rgbToHsvRaw: Okhsl lives on the sRGB cube, so clip a wide-gamut color first.
     rn = clamp(rn, 0, 1);
     gn = clamp(gn, 0, 1);
     bn = clamp(bn, 0, 1);
@@ -137,23 +115,14 @@ export const rgbToOkhslRaw = ({ r, g, b, alpha }: RgbColor): OkhslColor => {
   return _buf;
 };
 
-/** Okhsl rounded to 5 dp — the plugin's default, see the note in plugins/okhsl.ts. */
+/** sRGB → Okhsl, rounded to 5 decimals. */
 export const rgbToOkhsl = (rgb: RgbColor): OkhslColor => {
   const { h, s, l, alpha } = rgbToOkhslRaw(rgb);
   const hr = round(h, 5);
-  // round() can push a value just below 360 to 360 due to floating-point; clamp back to 0.
   return { h: hr >= 360 ? 0 : hr, s: round(s, 5), l: round(l, 5), alpha, colorSpace: 'okhsl' };
 };
 
-/**
- * Okhsl channels → gamma-encoded sRGB (0–1). Writes `[r, g, b]` into `out`. h in degrees (any
- * value), s and l in 0–100. l ≥ 100 is white and l ≤ 0 is black (the reference's guards, which
- * are also where the chroma scales stop being defined). s is not clamped: a few percent above 100
- * walks out of the gamut (channels leave [0, 1]), further out the chroma interpolation has no
- * meaning and folds back, so clamp untrusted input. Even s = 100 exactly can land a hair outside
- * (down to about −0.005) because the reference's gamut cusp is a polynomial fit — a
- * `Uint8ClampedArray` store absorbs it; clamp yourself if you need exact [0, 1].
- */
+/** Okhsl (h in degrees, s and l in 0–100) → unclamped gamma sRGB in 0–1, written into `out`. */
 export const okhslToRgbChannelsInto = (out: Float64Array | number[], h: number, s: number, l: number): void => {
   const ln = l / 100;
   if (ln >= 1) {
@@ -175,8 +144,6 @@ export const okhslToRgbChannelsInto = (out: Float64Array | number[], h: number, 
     C_mid = CS[1]!,
     C_max = CS[2]!;
 
-  // Interpolate the three chroma scales so that dC/ds = C_0 at s = 0, C = C_mid at s = 0.8 and
-  // C = C_max at s = 1.
   let C: number;
   if (sn < MID) {
     const t = MID_INV * sn;
@@ -196,7 +163,7 @@ export const okhslToRgbChannelsInto = (out: Float64Array | number[], h: number, 
   out[2] = srgbFromLinear(LIN[2]!);
 };
 
-/** Allocating sibling of `okhslToRgbChannelsInto` — returns `[r, g, b]`. Own body: see the note above. */
+/** Allocating sibling of `okhslToRgbChannelsInto` — returns `[r, g, b]`. */
 export const okhslToRgbChannels = (h: number, s: number, l: number): [number, number, number] => {
   const ln = l / 100;
   if (ln >= 1) return [1, 1, 1];
@@ -267,8 +234,6 @@ export const okhslToRgb = ({ h, s, l, alpha }: OkhslColor): RgbColor => {
   });
 };
 
-// okhsl() is a library-defined syntax (no CSS spec defines one). Modern space form only, in the
-// shape of hsl(): optional `%` on s / l, angle units on h, the CSS Color 4 `none` keyword.
 export const parseOkhslString = (input: unknown): RgbColor | null =>
   typeof input === 'string' && scanFunc(input, 'okhsl(', 0)
     ? okhslToRgb({
@@ -280,14 +245,12 @@ export const parseOkhslString = (input: unknown): RgbColor | null =>
       })
     : null;
 
-// `{ h, s, l }` alone is HSL; the brand is what selects Okhsl (parseHslBody rejects it in turn).
 export const parseOkhslObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'okhsl') return null;
   if (!('h' in input && 's' in input && 'l' in input)) return null;
   const { h, s, l, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; l: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof l !== 'number' || typeof alpha !== 'number') return null;
-  // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()
   return okhslToRgb({
     h: normalizeHue(h === h ? h : 0),
     s: s > 100 ? 100 : s > 0 ? s : 0,

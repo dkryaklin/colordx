@@ -12,7 +12,6 @@ import {
   xyzToRgb,
 } from './xyz.js';
 
-// D65 white point derived from CIE chromaticity (x=0.3127, y=0.329)
 const D65_WX = (0.3127 / 0.329) * 100;
 const D65_WY = 100;
 const D65_WZ = ((1 - 0.3127 - 0.329) / 0.329) * 100;
@@ -26,14 +25,13 @@ export const xyzToLab = ({ x, y, z, alpha }: XyzColor): LabColor => {
   const fy = f(y / WY);
   return {
     l: 116 * fy - 16,
-    a: 500 * (f(x / WX) - fy) || 0, // || 0 suppresses −0; NaN is impossible since WX/WZ are non-zero constants
+    a: 500 * (f(x / WX) - fy) || 0,
     b: 200 * (fy - f(z / WZ)) || 0,
     alpha: round(alpha, 3),
     colorSpace: 'lab' as const,
   };
 };
 
-/** Primitives-only Lab → XYZ D50. x/y/z in 0–100 scale. Shared with channels.ts hot paths. */
 export const labToXyzValues = (l: number, a: number, b: number): [number, number, number] => {
   const fy = (l + 16) / 116;
   const fx = a / 500 + fy;
@@ -45,7 +43,6 @@ export const labToXyzValues = (l: number, a: number, b: number): [number, number
   ];
 };
 
-/** Zero-allocation sibling of labToXyzValues — writes [x, y, z] into `out`. */
 export const labToXyzValuesInto = (out: Float64Array | number[], l: number, a: number, b: number): void => {
   const fy = (l + 16) / 116;
   const fx = a / 500 + fy;
@@ -62,7 +59,6 @@ export const labToXyz = ({ l, a, b, alpha }: LabColor): XyzColor => {
 
 export const rgbToLab = (rgb: RgbColor): LabColor => xyzToLab(rgbToXyz(rgb));
 
-/** RGB → CIE Lab using D65 white point (screen-native; used for perceptual difference). */
 export const rgbToLabD65 = (rgb: RgbColor): LabColor => {
   const { x, y, z } = rgbToXyzD65(rgb);
   const fy = f(y / D65_WY);
@@ -85,7 +81,7 @@ export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
   const C2 = Math.sqrt(a2 ** 2 + b2 ** 2);
   const Cm = (C1 + C2) / 2,
     Cm3 = Cm * Cm * Cm;
-  const Cab = Cm3 * Cm3 * Cm; // Cm ** 7 without the pow() call
+  const Cab = Cm3 * Cm3 * Cm;
   const G = 0.5 * (1 - Math.sqrt(Cab / (Cab + 25 ** 7)));
   const a1p = a1 * (1 + G);
   const a2p = a2 * (1 + G);
@@ -134,24 +130,17 @@ export const deltaE2000 = (lab1: LabColor, lab2: LabColor): number => {
 
 export const labToRgb = (lab: LabColor): RgbColor => xyzToRgb(labToXyz(lab));
 
-/**
- * Unclamped Lab (D50) → gamma-encoded sRGB (0–255). Channels may exceed [0, 255] or go
- * negative for colors outside the sRGB gamut. Preserves out-of-gamut information so callers
- * (mapSrgb, inGamut*) can detect and map the color; sRGB output methods clamp at the edge.
- */
 export const labToRgbUnclamped = ({ l, a, b, alpha }: LabColor): RgbColor => {
   const [x, y, z] = labToXyzValues(l, a, b);
   const [lr, lg, lb] = xyzD50ToLinearSrgb(x, y, z);
   return linearToStoredRgb(lr, lg, lb, alpha);
 };
 
-// CSS Color 4: lab(L a b / alpha). L: number|percentage|none (100% = 100).
-// a/b: number|percentage|none (100% = 125).
 export const parseLabString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string' || !scanFunc(input, 'lab(', -1)) return null;
   const m = scanPctMask();
   return labToRgbUnclamped({
-    l: clamp(SC[0]!, 0, 100), // 100% = 100, so value is unchanged whether `%` present
+    l: clamp(SC[0]!, 0, 100),
     a: m & 2 ? SC[1]! * 1.25 : SC[1]!,
     b: m & 4 ? SC[2]! * 1.25 : SC[2]!,
     alpha: clamp(SC[3]!, 0, 1),

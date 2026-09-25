@@ -18,8 +18,6 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
     return {
       l: round(l, precision),
       c: cR,
-      // Achromatic threshold on LCH scale (0–~150): below this chroma the hue is numerically unstable.
-      // round() can push a hue just below 360 to 360; wrap back to 0 so H stays in [0, 360).
       h: c < 0.0015 || hR >= 360 ? 0 : hR,
       alpha,
       colorSpace: 'lch' as const,
@@ -27,7 +25,6 @@ const lch: Plugin = (ColordxClass, parsers, formatParsers) => {
   };
   ColordxClass.prototype.toLchString = function (precision = 2) {
     const { l, c, h, alpha } = this.toLch(precision);
-    // `none` when the unrounded chroma is achromatic — the same test toLch() uses to zero the hue.
     const H = c === 0 || (h === 0 && rgbToLchRaw(this._rawRgb()).c < 0.0015) ? 'none' : h;
     return fixedNotation(alpha < 1 ? `lch(${l} ${c} ${H} / ${alpha})` : `lch(${l} ${c} ${H})`, precision);
   };

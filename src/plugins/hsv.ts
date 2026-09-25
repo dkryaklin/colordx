@@ -3,11 +3,8 @@ import type { Colordx, Plugin } from '../colordx.js';
 import { fixedNotation, round } from '../helpers.js';
 import type { ColorParser, HsvColor } from '../types.js';
 
-// Channel functions (allocation-free `*Into` siblings included) for per-pixel HSV work — pickers,
-// vectorscopes, hue wheels. Same scale as toHsv(): h in degrees, s/v in 0–100; RGB in 0–1.
 export { hsvToRgbChannels, hsvToRgbChannelsInto, rgbToHsvChannels, rgbToHsvChannelsInto } from '../colorModels/hsv.js';
 
-// HSV/HSVA is a non-standard, library-defined format (not part of any CSS spec).
 declare module '@colordx/core' {
   interface Colordx {
     toHsv(precision?: number): HsvColor;
@@ -17,7 +14,7 @@ declare module '@colordx/core' {
 
 const hsv: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toHsv = function (this: Colordx, precision = 2): HsvColor {
-    const { h, s, v, alpha } = rgbToHsvRaw(this._rawRgb()); // rgbToHsvRaw clips to sRGB itself
+    const { h, s, v, alpha } = rgbToHsvRaw(this._rawRgb());
     const hr = round(h, precision);
     return { h: hr >= 360 ? 0 : hr, s: round(s, precision), v: round(v, precision), alpha };
   };

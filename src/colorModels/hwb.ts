@@ -5,10 +5,8 @@ import { hslChannel } from './hsl.js';
 import { rgbToHsvRaw } from './hsv.js';
 
 export const clampHwb = (hwb: HwbColor): HwbColor => {
-  // Infinity upper bound = reject negatives only; proportional normalization handles w+b > 100 below.
   let w = clamp(hwb.w, 0, Infinity);
   let b = clamp(hwb.b, 0, Infinity);
-  // An infinite channel dominates the ratio; normalizing ∞/∞ directly would give NaN.
   if (w === Infinity || b === Infinity) {
     w = w === Infinity ? 100 : 0;
     b = b === Infinity ? 100 : 0;
@@ -32,9 +30,6 @@ export const rgbToHwb = (rgb: RgbColor): HwbColor => {
   });
 };
 
-// CSS Color 4 hwbToRgb, in percent like hslChannel: the pure hue at hsl(h 100% 50%), scaled by
-// 100 − w − b and lifted by w. hwb(120 30% 50%) has green = 50% exactly, so it prints 128, not 127.
-// Precondition: w + b must be ≤ 100. Call clampHwb first, which normalizes a larger sum to 100.
 export const hwbToRgb = ({ h, w, b, alpha }: HwbColor): RgbColor => {
   const scale = 100 - w - b;
   const hue = normalizeHue(h);

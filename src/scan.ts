@@ -1,13 +1,5 @@
 import { ANGLE_UNITS, isWs } from './helpers.js';
 
-// Hand-written single-pass scanners for the hot CSS string formats.
-// They replace regex + parseNum + group-indexing with one charCode walk that
-// produces final numeric channels directly. Grammar is byte-for-byte the same
-// as the regexes they replace (NUM = [+-]?(\d*\.\d+|\d+)([eE][+-]?\d+)?, plus the
-// `none` keyword).
-
-// Scanner cursor + per-channel flags. Parsing is synchronous and non-reentrant,
-// so module-level scratch is safe and avoids an allocation per channel.
 let _p = 0;
 let _pct = false;
 let _none = false;
@@ -17,7 +9,6 @@ export const skipWs = (s: string, i: number, n: number): number => {
   return i;
 };
 
-/** Scans NUM or the `none` keyword. Returns NaN on failure; sets _p / _none. */
 const scanNum = (s: string, i: number, n: number): number => {
   _none = false;
   const c = s.charCodeAt(i);
@@ -41,9 +32,6 @@ const scanNum = (s: string, i: number, n: number): number => {
     sign = -1;
     i++;
   }
-  // Accumulate one integer mantissa across the decimal point and divide once.
-  // Splitting into integer + fractional parts and adding them rounds twice and
-  // drifts from Number() (e.g. 13.64365 -> 13.643650000000001).
   let v = 0,
     digits = 0,
     scale = 1;
@@ -67,10 +55,8 @@ const scanNum = (s: string, i: number, n: number): number => {
       after++;
       i++;
     }
-    if (after === 0) return NaN; // "5." is not a valid NUM
+    if (after === 0) return NaN;
   } else if (before === 0) return NaN;
-  // CSS Syntax 3 <number-token> exponent: e/E, optional sign, one or more digits. A bare `e`
-  // (`1e`, `1e+`) is not consumed — the number ends before it and the caller rejects the `e`.
   if (i < n && (s.charCodeAt(i) | 32) === 101) {
     let j = i + 1;
     if (j < n && (s.charCodeAt(j) === 43 || s.charCodeAt(j) === 45)) j++;
@@ -86,12 +72,10 @@ const scanNum = (s: string, i: number, n: number): number => {
     }
   }
   _p = i;
-  // Beyond 2^53 the integer mantissa is no longer exact; defer to Number().
   if (digits > 15) return Number(s.slice(start, i));
   return sign * (v / scale);
 };
 
-/** NUM followed by an optional `%`, or `none` (an ident, so no `%`). Sets _p / _pct / _none. */
 const scanChannel = (s: string, i: number, n: number): number => {
   const v = scanNum(s, i, n);
   if (v !== v) return NaN;
@@ -111,23 +95,13 @@ export const scanPct = (): boolean => _pct;
 export const scanNone = (): boolean => _none;
 export { scanChannel };
 
-/** Channel values from the last successful scanFunc: [c1, c2, c3, alpha]. Alpha defaults to 1. */
 export const SC = [0, 0, 0, 1, 1];
 let _pctMask = 0;
-/** Bit c set when channel c carried a `%`. */
 export const scanPctMask = (): number => _pctMask;
 
-/**
- * Scans the modern space-separated form `name( c1 c2 c3 [/ a] )` with optional surrounding
- * whitespace. `name` is lower-case ASCII letters and matched case-insensitively. Channel
- * `hueAt` takes an optional angle unit (folded into its value) and rejects `%`.
- * Same grammar as the per-format regexes it replaced: NUM or `none` (which takes no `%` or unit).
- */
 export const scanFunc = (s: string, name: string, hueAt: number, nch = 3): boolean => {
   const n = s.length;
   let i = skipWs(s, 0, n);
-  // Prefix: `(` matches itself then optional whitespace, a space matches 1+ whitespace,
-  // letters match case-insensitively, anything else exactly.
   for (let j = 0; j < name.length; j++) {
     const p = name.charCodeAt(j);
     const c = s.charCodeAt(i);
@@ -158,7 +132,7 @@ export const scanFunc = (s: string, name: string, hueAt: number, nch = 3): boole
       let u = i;
       while (u < n && (s.charCodeAt(u) | 32) >= 97 && (s.charCodeAt(u) | 32) <= 122) u++;
       if (u > i) {
-        if (_none) return false; // `nonedeg`: none is an ident and takes no unit
+        if (_none) return false;
         const f = ANGLE_UNITS[s.slice(i, u).toLowerCase()];
         if (typeof f !== 'number') return false;
         v *= f;
@@ -179,10 +153,6 @@ export const scanFunc = (s: string, name: string, hueAt: number, nch = 3): boole
   return s.charCodeAt(j) === 41 && skipWs(s, j + 1, n) === n;
 };
 
-/**
- * `color(<space> r g b [/ a])` with 0–1 channels (100% = 1). On success SC holds the channels
- * with percentages resolved and alpha clamped to [0, 1].
- */
 export const scanColorRgb = (s: unknown, prefix: string): boolean => {
   if (typeof s !== 'string' || !scanFunc(s, prefix, -1)) return false;
   for (let c = 0; c < 3; c++) if (_pctMask & (1 << c)) SC[c]! /= 100;
@@ -191,7 +161,6 @@ export const scanColorRgb = (s: unknown, prefix: string): boolean => {
   return true;
 };
 
-/** `hsl()` / `hsv()` (c3 = 'l' / 'v' char code), legacy comma or modern space form. Writes SC. */
 export const scanHsx = (str: string, c3: number): boolean => {
   const n = str.length;
   let i = skipWs(str, 0, n);
@@ -211,7 +180,7 @@ export const scanHsx = (str: string, c3: number): boolean => {
   let u = i;
   while (u < n && (str.charCodeAt(u) | 32) >= 97 && (str.charCodeAt(u) | 32) <= 122) u++;
   if (u > i) {
-    if (hNone) return false; // `nonedeg`: none is an ident and takes no unit
+    if (hNone) return false;
     const factor = ANGLE_UNITS[str.slice(i, u).toLowerCase()];
     if (typeof factor !== 'number') return false;
     h *= factor;

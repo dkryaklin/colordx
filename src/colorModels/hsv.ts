@@ -10,19 +10,7 @@ const clampHsv = (hsv: HsvColor): HsvColor => ({
   alpha: clamp(round(hsv.alpha, 3), 0, 1),
 });
 
-// The channel functions below, their allocating siblings and the object converters (rgbToHsvRaw /
-// hsvToRgb) deliberately keep separate bodies. Routing either through a `*Into` call costs a buffer
-// hop (~2 ns) and, worse, feeds the *Into function a second `out` map from inside the library: once
-// V8 has seen both a plain array and a caller's Float64Array, a user's render loop over that function
-// measured 8× slower (3.3 → 25 ms per 1024² frame). So each *Into only ever sees the caller's buffer.
-// tests/channels-polar.test.ts and tests/channels-into.test.ts pin the bodies to each other bit-for-bit.
-
-/**
- * Gamma-encoded sRGB (0–1) → HSV channels. Writes `[h, s, v]` into `out`: h in degrees [0, 360),
- * s and v in 0–100 — the scale `toHsv()` reports. Achromatic input (channels within ACHROMATIC_EPS)
- * reports h = 0, s = 0. No clipping or validation: HSV is defined on the sRGB cube, so clip
- * wide-gamut input first. For byte-scale RGB pass `r / 255, g / 255, b / 255`.
- */
+/** Gamma sRGB in 0–1 → HSV (h in [0, 360), s and v in 0–100), written into `out`. Clip wide-gamut input first. */
 export const rgbToHsvChannelsInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   const max = Math.max(r, g, b),
     min = Math.min(r, g, b);
@@ -37,14 +25,13 @@ export const rgbToHsvChannelsInto = (out: Float64Array | number[], r: number, g:
     else h = ((r - g) / d + 4) / 6;
   }
 
-  // With g a hair below b, (g - b) / d + 6 rounds to exactly 6 and h * 360 lands on 360; wrap to 0.
   const hDeg = h * 360;
   out[0] = hDeg >= 0 && hDeg < 360 ? hDeg : ((hDeg % 360) + 360) % 360;
   out[1] = s * 100;
   out[2] = max * 100;
 };
 
-/** Allocating sibling of `rgbToHsvChannelsInto` — returns `[h, s, v]`. Own body: see the note above. */
+/** Allocating sibling of `rgbToHsvChannelsInto` — returns `[h, s, v]`. */
 export const rgbToHsvChannels = (r: number, g: number, b: number): [number, number, number] => {
   const max = Math.max(r, g, b),
     min = Math.min(r, g, b);
@@ -63,7 +50,6 @@ export const rgbToHsvChannels = (r: number, g: number, b: number): [number, numb
   return [hDeg >= 0 && hDeg < 360 ? hDeg : ((hDeg % 360) + 360) % 360, s * 100, max * 100];
 };
 
-// Shared write buffer for rgbToHsvRaw — callers must destructure immediately, never store the reference.
 const _hsvBuf: HsvColor = { h: 0, s: 0, v: 0, alpha: 0 };
 
 export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
@@ -73,7 +59,6 @@ export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
   let max = Math.max(rn, gn, bn),
     min = Math.min(rn, gn, bn);
   if (max > 1 || min < 0) {
-    // Same rule as rgbToHslRaw: HSV lives on the sRGB cube, so clip a wide-gamut color first.
     rn = clamp(rn, 0, 1);
     gn = clamp(gn, 0, 1);
     bn = clamp(bn, 0, 1);
@@ -110,15 +95,10 @@ export const rgbToHsvRaw = ({ r, g, b, alpha }: RgbColor): HsvColor => {
 export const rgbToHsv = (rgb: RgbColor): HsvColor => {
   const { h, s, v, alpha } = rgbToHsvRaw(rgb);
   const hr = round(h, 2);
-  // round() can push a value just below 360 to 360.00 due to floating-point; clamp back to 0.
   return { h: hr >= 360 ? 0 : hr, s: round(s, 2), v: round(v, 2), alpha };
 };
 
-/**
- * HSV channels → gamma-encoded sRGB (0–1). Writes `[r, g, b]` into `out`.
- * h in degrees (any value — wrapped into [0, 360)), s and v in 0–100. Output is in [0, 1] for
- * in-range s/v; nothing is clamped, so out-of-range s/v propagate like every other channel function.
- */
+/** HSV (h in degrees, s and v in 0–100) → unclamped gamma sRGB in 0–1, written into `out`. */
 export const hsvToRgbChannelsInto = (out: Float64Array | number[], h: number, s: number, v: number): void => {
   const sn = s / 100,
     vn = v / 100;
@@ -155,7 +135,7 @@ export const hsvToRgbChannelsInto = (out: Float64Array | number[], h: number, s:
       out[1] = p;
       out[2] = vn;
       break;
-    default: // case 5 — not an error handler; i is always 0–5 for a normalized hue
+    default:
       out[0] = vn;
       out[1] = p;
       out[2] = q;
@@ -163,7 +143,7 @@ export const hsvToRgbChannelsInto = (out: Float64Array | number[], h: number, s:
   }
 };
 
-/** Allocating sibling of `hsvToRgbChannelsInto` — returns `[r, g, b]`. Own body: see the note above. */
+/** Allocating sibling of `hsvToRgbChannelsInto` — returns `[r, g, b]`. */
 export const hsvToRgbChannels = (h: number, s: number, v: number): [number, number, number] => {
   const sn = s / 100,
     vn = v / 100;
@@ -185,7 +165,7 @@ export const hsvToRgbChannels = (h: number, s: number, v: number): [number, numb
       return [p, q, vn];
     case 4:
       return [t, p, vn];
-    default: // case 5 — not an error handler; i is always 0–5 for a normalized hue
+    default:
       return [vn, p, q];
   }
 };
@@ -227,7 +207,7 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
       _RGB[1] = p;
       _RGB[2] = vn;
       break;
-    default: // case 5 — not an error handler; i is always 0–5 for h in [0, 360)
+    default:
       _RGB[0] = vn;
       _RGB[1] = p;
       _RGB[2] = q;
@@ -237,22 +217,15 @@ export const hsvToRgb = ({ h, s, v, alpha }: HsvColor): RgbColor => {
   return clampRgb({ r: _RGB[0] * 255, g: _RGB[1] * 255, b: _RGB[2] * 255, alpha });
 };
 
-// HSV/HSVA is a non-standard, library-defined syntax (not part of any CSS spec).
-// Format mirrors HSL for consistency. Legacy comma form kept for back-compat input;
-// modern space form supports optional `%` and the CSS Color 4 `none` keyword.
-// Named groups: `_c` = comma/legacy branch, `_s` = space/modern branch.
 export const parseHsvString = (input: unknown): RgbColor | null =>
   typeof input === 'string' && scanHsx(input, 118)
     ? hsvToRgb(clampHsv({ h: SC[0]!, s: SC[1]!, v: SC[2]!, alpha: SC[3]! }))
     : null;
 
 const parseHsvBody = (input: unknown): RgbColor | null => {
-  // `{ colorSpace: 'okhsv', h, s, v }` is Okhsv (the okhsv plugin), not HSV, and any other brand is
-  // a different space too.
   if (hasBrand(input)) return null;
   const { h, s, v, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof v !== 'number' || typeof alpha !== 'number') return null;
-  // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()
   return hsvToRgb({
     h: normalizeHue(h === h ? h : 0),
     s: s > 100 ? 100 : s > 0 ? s : 0,

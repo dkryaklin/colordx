@@ -10,15 +10,6 @@ export const clampRgb = (rgb: RgbColor): RgbColor => ({
   alpha: clamp(round(rgb.alpha, 3), 0, 1),
 });
 
-/**
- * Object body. Assumes the caller already established that `input` is a non-null
- * object carrying r/g/b — the dispatcher proves that with one key probe, so
- * re-checking here would duplicate it on every parse.
- *
- * Clamps with comparisons rather than Math.min/Math.max: `NaN > x` is always
- * false, so NaN falls through to the low bound. That is exactly what
- * sanitize()-then-clamp produced, for free and without four extra calls.
- */
 export const parseRgbBody = (input: unknown): RgbColor | null => {
   if (hasBrand(input)) return null;
   const { r, g, b, alpha = alphaAlias(input) } = input as { r: unknown; g: unknown; b: unknown; alpha?: unknown };
@@ -44,7 +35,6 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
   const n = s.length;
   let i = skipWs(s, 0, n);
 
-  // rgb | rgba
   if ((s.charCodeAt(i) | 32) !== 114) return null;
   if ((s.charCodeAt(i + 1) | 32) !== 103) return null;
   if ((s.charCodeAt(i + 2) | 32) !== 98) return null;
@@ -62,9 +52,9 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
   let j = skipWs(s, i, n);
   const comma = s.charCodeAt(j) === 44;
   if (comma) {
-    if (rNone) return null; // legacy syntax has no `none`
+    if (rNone) return null;
     j = skipWs(s, j + 1, n);
-  } else if (j === i) return null; // modern syntax needs whitespace between channels
+  } else if (j === i) return null;
 
   const g = scanChannel(s, j, n);
   if (g !== g) return null;
@@ -84,7 +74,6 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
     bNone = scanNone();
   k = scanPos();
 
-  // Legacy: channels must agree on percent-vs-number and forbid `none`.
   if (comma && (rPct !== gPct || gPct !== bPct || bNone)) return null;
 
   let m = skipWs(s, k, n);
@@ -99,7 +88,7 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
     m = skipWs(s, scanPos(), n);
   }
   if (s.charCodeAt(m) !== 41) return null;
-  if (skipWs(s, m + 1, n) !== n) return null; // allow trailing whitespace, nothing else
+  if (skipWs(s, m + 1, n) !== n) return null;
 
   return clampRgb({
     r: rPct ? (r / 100) * 255 : r,
@@ -109,8 +98,6 @@ export const parseRgbString = (input: unknown): RgbColor | null => {
   });
 };
 
-// CSS Color 4: color(srgb r g b / alpha). Channels are 0–1, percent or none; 100% = 1.
-// Not clamped: out-of-range channels are valid out-of-gamut colors.
 export const parseSrgbColorString = (input: unknown): RgbColor | null =>
   scanColorRgb(input, 'color(srgb ')
     ? { r: boundChannel(SC[0]! * 255), g: boundChannel(SC[1]! * 255), b: boundChannel(SC[2]! * 255), alpha: SC[3]! }

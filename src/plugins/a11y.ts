@@ -30,7 +30,6 @@ declare module '@colordx/core' {
   }
 }
 
-// APCA 0.0.98G-4g-W3 constants, as in apca-w3 0.1.9 (sRGBtoY / displayP3toY)
 const APCA_COEF: Record<ApcaSpace, readonly [number, number, number]> = {
   srgb: [0.2126729, 0.7151522, 0.072175],
   p3: [0.228982959480578, 0.691749262585238, 0.0792677779341829],
@@ -53,7 +52,6 @@ const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 const p3FromLinear = (r: number, g: number, b: number): [number, number, number] =>
   linearSrgbToOklab(...linearP3ToSrgb(r, g, b));
 
-// WCAG relative luminance of the sRGB-mapped color (WCAG has no other form).
 const wcagY = (c: Colordx): number => {
   const { r, g, b } = c._mapSrgb(false)._rawRgb();
   return 0.2126 * byteToLinear(r) + 0.7152 * byteToLinear(g) + 0.0722 * byteToLinear(b);
@@ -65,7 +63,6 @@ const wcagRatio = (fg: Colordx, bg: Colordx): number => {
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 };
 
-// Gamma-encoded channels in [0, 1] of the color mapped into `space`.
 const apcaChannels = (c: Colordx, space: ApcaSpace): [number, number, number] => {
   if (space === 'srgb') {
     const { r, g, b } = c._mapSrgb(false)._rawRgb();
@@ -78,9 +75,6 @@ const apcaChannels = (c: Colordx, space: ApcaSpace): [number, number, number] =>
   let p3 = srgbLinearToP3Linear(lr, lg, lb);
   if (p3.some((v) => v < 0 || v > 1)) {
     const [l, a, bb] = linearSrgbToOklab(lr, lg, lb);
-    // Clamp and snap L like mapSrgb does: a brighter-than-white input has L > 1, which the OKLab
-    // object parser rejects as an unbranded CIE Lab value, and toGamutCustom would return null. The
-    // stored round-trip drifts an exact L = 1 to 0.9999999999999998, which must still map to white.
     const lc = l > 1 - 1e-7 ? 1 : l < 1e-7 ? 0 : l;
     p3 = toGamutCustom({ l: lc, a, b: bb, alpha }, oklabToLinearP3, p3FromLinear)!.linear as [number, number, number];
   }
@@ -90,7 +84,6 @@ const apcaChannels = (c: Colordx, space: ApcaSpace): [number, number, number] =>
 const apcaY = (c: Colordx, space: ApcaSpace): number => {
   const [r, g, b] = apcaChannels(c, space);
   const [kr, kg, kb] = APCA_COEF[space];
-  // APCA intentionally uses a straight 2.4 power curve, not the piecewise sRGB function.
   const Y = kr * clamp01(r) ** 2.4 + kg * clamp01(g) ** 2.4 + kb * clamp01(b) ** 2.4;
   return Y > APCA.blkThrs ? Y : Y + (APCA.blkThrs - Y) ** APCA.blkClmp;
 };
@@ -107,8 +100,6 @@ const apcaLc = (fg: Colordx, bg: Colordx, space: ApcaSpace): number => {
   return c > -APCA.loClip ? 0 : (c + APCA.offset) * 100;
 };
 
-// oklch(l c h) gamut-mapped into `space` and quantized to its output format (bytes, or 4-decimal P3),
-// so the fix passes as written, not just as a float.
 const quantized = (C: typeof Colordx, l: number, c: number, h: number, alpha: number, space: ApcaSpace): Colordx => {
   if (space === 'srgb') {
     const { r, g, b } = C.toGamutSrgb({ l, c, h, alpha })._rawRgb();
@@ -121,8 +112,6 @@ const quantized = (C: typeof Colordx, l: number, c: number, h: number, alpha: nu
   return C._makeFromLinearSrgb(...linearP3ToSrgb(pr!, pg!, pb!), alpha, false);
 };
 
-// Spec rule 10: keep hue, move lightness, let the gamut map reduce chroma only when it must,
-// smallest move that passes. Same-polarity side first (APCA sign is kept), other side only if needed.
 const fixContrast = (
   C: typeof Colordx,
   fg: Colordx,
@@ -159,7 +148,6 @@ const a11y: Plugin = (ColordxClass) => {
     return round(wcagY(this), precision);
   };
 
-  // Both colors of a contrast check must parse: an invalid one is a caller error, not black.
   const pair = (method: string, fg: Colordx, input: AnyColor | Colordx): Colordx => {
     if (!fg.isValid()) throw invalidColorError(method, fg, true);
     const bg = new ColordxClass(input);
@@ -191,7 +179,6 @@ const a11y: Plugin = (ColordxClass) => {
   ): boolean {
     const { size = 'normal', space = 'srgb' } = options;
     const lc = Math.abs(apcaLc(this, pair('isReadableApca', this, background), space));
-    // Lc 75 for normal body text, Lc 60 for large/bold — simplified defaults, not the full APCA lookup table.
     return size === 'large' ? lc >= 60 : lc >= 75;
   };
 

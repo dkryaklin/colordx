@@ -29,12 +29,7 @@ declare module '@colordx/core' {
   }
 }
 
-/**
- * Convert linear sRGB channels (from oklchToLinear) to gamma-encoded Display-P3 channels.
- * This is the cheap step — only a matrix multiply + gamma encoding, no cbrt.
- * Pair with oklchToLinear to convert one OKLCH color to multiple spaces without
- * repeating the expensive OKLab pipeline.
- */
+/** Linear sRGB → gamma Display-P3 `[r, g, b]`. Pair with `oklchToLinear` to convert to several spaces. */
 export const linearToP3Channels = (lr: number, lg: number, lb: number): [number, number, number] => {
   const [r, g, b] = srgbLinearToP3Linear(lr, lg, lb);
   return [srgbFromLinear(r), srgbFromLinear(g), srgbFromLinear(b)];
@@ -48,12 +43,7 @@ export const linearToP3ChannelsInto = (out: Float64Array | number[], lr: number,
   out[2] = srgbFromLinear(out[2]!);
 };
 
-/**
- * Convert OKLCH to gamma-encoded Display-P3 channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
- * exceed this range — callers are responsible for clamping before byte encoding.
- * Uses the sRGB transfer function (P3 does not use DCI-P3 gamma 2.6).
- */
+/** OKLCh → gamma Display-P3 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const oklchToP3Channels = (l: number, c: number, h: number): [number, number, number] =>
   linearToP3Channels(...oklchToLinear(l, c, h));
 
@@ -65,11 +55,7 @@ export const oklchToP3ChannelsInto = (out: Float64Array | number[], l: number, c
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/**
- * Convert CIE Lab (D50) to gamma-encoded Display-P3 channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may exceed [0, 1].
- * Goes Lab → XYZ D50 → linear sRGB → linear P3 → gamma P3.
- */
+/** CIE Lab (D50) → gamma Display-P3 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const labToP3Channels = (l: number, a: number, b: number): [number, number, number] =>
   linearToP3Channels(...labToLinearSrgb(l, a, b));
 
@@ -79,10 +65,7 @@ export const labToP3ChannelsInto = (out: Float64Array | number[], l: number, a: 
   linearToP3ChannelsInto(out, out[0]!, out[1]!, out[2]!);
 };
 
-/**
- * Convert CIE LCH (D50) to gamma-encoded Display-P3 channels without object allocation.
- * Polar-to-rectangular to Lab, then Lab → gamma P3. Out-of-gamut channels may exceed [0, 1].
- */
+/** CIE LCh (D50) → gamma Display-P3 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const lchToP3Channels = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return labToP3Channels(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -96,18 +79,13 @@ export const lchToP3ChannelsInto = (out: Float64Array | number[], l: number, c: 
 
 const parseP3: ColorParser = (input) => parseP3String(input) ?? parseP3Object(input);
 
-/**
- * Returns true if the color is within the Display-P3 gamut.
- * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ P3).
- */
+/** True when the color is inside the Display-P3 gamut. sRGB inputs always are. */
 export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearP3, parseP3);
 
 const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutP3 = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearP3, p3FromLinear, parseP3);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
-    // Clipped linear-P3 → linear-sRGB (wide-gamut when the P3 color is outside sRGB),
-    // then gamma-encode for storage. No round-trip through OKLab.
     const [lpR, lpG, lpB] = mapped.linear;
     const [lr, lg, lb] = linearP3ToSrgb(lpR, lpG, lpB);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha, false);

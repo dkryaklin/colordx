@@ -5,32 +5,11 @@ import type { OkhsvColor, RgbColor } from '../types.js';
 import { CUSP, LAB, LIN, findCusp, linearToOklabScratch, oklabToLinearScratch, toe, toeInv } from './okgamut.js';
 import { clampRgb } from './rgb.js';
 
-// Okhsv (Björn Ottosson, https://bottosson.github.io/posts/colorpicker/). Hue is the OKLCH hue.
-// The sRGB gamut slice at a hue is roughly a triangle (black – cusp – white) in (C·L_r/L, L_r);
-// s and v map that triangle onto the unit square with the cusp at s = v = 1, then a per-hue
-// scale (scale_L) flattens the curved top edge so the fit to the sRGB gamut is exact. Defined for
-// sRGB only. Scale here matches toHsv(): h in degrees, s / v in 0–100. The reference uses h in
-// turns and s / v in 0–1.
-//
-// Same rule as hsv.ts: the channel functions, their allocating siblings and the object
-// converters keep separate bodies so each `*Into` only ever sees the caller's buffer.
-
-// Below this OKLCH chroma the hue is noise (rgbToOklch uses the same threshold), so the color is
-// reported achromatic: h = 0, s = 0, v = toe(L).
 const ACHROMATIC_C = 0.000004;
 
-// Saturation is remapped so low saturations compare across hues: s = 1 sits at the cusp
-// (S_max), while S_0 = 0.5 is the slope near s = 0.
 const S_0 = 0.5;
 
-/**
- * Gamma-encoded sRGB (0–1) → Okhsv channels. Writes `[h, s, v]` into `out`: h in degrees
- * [0, 360), s and v in 0–100 — the scale `toOkhsv()` reports. Achromatic input reports h = 0,
- * s = 0. No clipping: Okhsv is defined on the sRGB cube, so clip wide-gamut input first —
- * outside it s and v run past 100. Inside it s can still overshoot 100 by up to ~1%, because
- * the gamut cusp the reference algorithm uses is a polynomial fit; `toOkhsv()` clamps, this
- * does not.
- */
+/** Gamma sRGB in 0–1 → Okhsv (h in [0, 360), s and v in 0–100), written into `out`. Unclamped: s can pass 100. */
 export const rgbToOkhsvChannelsInto = (out: Float64Array | number[], r: number, g: number, b: number): void => {
   linearToOklabScratch(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
   let L = LAB[0]!;
@@ -51,7 +30,6 @@ export const rgbToOkhsvChannelsInto = (out: Float64Array | number[], r: number, 
   const T_max = CUSP[1]! / (1 - CUSP[0]!);
   const k = 1 - S_0 / S_max;
 
-  // Project onto the v = 1 edge: (L_v, C_v) is where the ray from black through (L, C) meets it.
   const t = T_max / (C + L * T_max);
   const L_v = t * L;
   const C_v = t * C;
@@ -59,8 +37,6 @@ export const rgbToOkhsvChannelsInto = (out: Float64Array | number[], r: number, 
   const L_vt = toeInv(L_v);
   const C_vt = (C_v * L_vt) / L_v;
 
-  // Undo the per-hue scale that flattens the curved top of the triangle, then the toe. The
-  // reference rescales C alongside L, but s is read off C_v, so only L is needed from here on.
   oklabToLinearScratch(L_vt, a_ * C_vt, b_ * C_vt);
   const scale_L = Math.cbrt(1 / Math.max(LIN[0]!, LIN[1]!, LIN[2]!, 0));
   L = toe(L / scale_L);
@@ -70,7 +46,7 @@ export const rgbToOkhsvChannelsInto = (out: Float64Array | number[], r: number, 
   out[2] = (L / L_v) * 100;
 };
 
-/** Allocating sibling of `rgbToOkhsvChannelsInto` — returns `[h, s, v]`. Own body: see the note above. */
+/** Allocating sibling of `rgbToOkhsvChannelsInto` — returns `[h, s, v]`. */
 export const rgbToOkhsvChannels = (r: number, g: number, b: number): [number, number, number] => {
   linearToOklabScratch(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
   let L = LAB[0]!;
@@ -104,16 +80,13 @@ export const rgbToOkhsvChannels = (r: number, g: number, b: number): [number, nu
   ];
 };
 
-// Shared write buffer for rgbToOkhsvRaw — callers must destructure immediately, never store the reference.
 const _buf: OkhsvColor = { h: 0, s: 0, v: 0, alpha: 0, colorSpace: 'okhsv' };
 
-/** Unrounded Okhsv of a stored RGB. Clips to the sRGB cube first; s and v are clamped to [0, 100]. */
 export const rgbToOkhsvRaw = ({ r, g, b, alpha }: RgbColor): OkhsvColor => {
   let rn = r / 255,
     gn = g / 255,
     bn = b / 255;
   if (rn > 1 || rn < 0 || gn > 1 || gn < 0 || bn > 1 || bn < 0) {
-    // Same rule as rgbToHsvRaw: Okhsv lives on the sRGB cube, so clip a wide-gamut color first.
     rn = clamp(rn, 0, 1);
     gn = clamp(gn, 0, 1);
     bn = clamp(bn, 0, 1);
@@ -157,22 +130,14 @@ export const rgbToOkhsvRaw = ({ r, g, b, alpha }: RgbColor): OkhsvColor => {
   return _buf;
 };
 
-/** Okhsv rounded to 5 dp — the plugin's default, see the note in plugins/okhsv.ts. */
+/** sRGB → Okhsv, rounded to 5 decimals. */
 export const rgbToOkhsv = (rgb: RgbColor): OkhsvColor => {
   const { h, s, v, alpha } = rgbToOkhsvRaw(rgb);
   const hr = round(h, 5);
-  // round() can push a value just below 360 to 360 due to floating-point; clamp back to 0.
   return { h: hr >= 360 ? 0 : hr, s: round(s, 5), v: round(v, 5), alpha, colorSpace: 'okhsv' };
 };
 
-/**
- * Okhsv channels → gamma-encoded sRGB (0–1). Writes `[r, g, b]` into `out`. h in degrees (any
- * value), s and v in 0–100. Nothing is clamped: v above 100 extrapolates past white, and s a
- * few percent above 100 walks out of the gamut (channels leave [0, 1]) — further out the
- * triangle remap has no meaning, so clamp untrusted input. Even s = 100 exactly can land a hair
- * outside (down to about −0.003) because the reference's gamut cusp is a polynomial fit — a
- * `Uint8ClampedArray` store absorbs it; clamp yourself if you need exact [0, 1].
- */
+/** Okhsv (h in degrees, s and v in 0–100) → unclamped gamma sRGB in 0–1, written into `out`. */
 export const okhsvToRgbChannelsInto = (out: Float64Array | number[], h: number, s: number, v: number): void => {
   const sn = s / 100,
     vn = v / 100;
@@ -185,13 +150,10 @@ export const okhsvToRgbChannelsInto = (out: Float64Array | number[], h: number, 
   const T_max = CUSP[1]! / (1 - CUSP[0]!);
   const k = 1 - S_0 / S_max;
 
-  // (L, C) as if the gamut were a perfect triangle: first the v = 1 edge, then scale by v.
   const denom = S_0 + T_max - T_max * k * sn;
   const L_v = 1 - (sn * S_0) / denom;
   const C_v = (sn * T_max * S_0) / denom;
 
-  // Compensate for the toe and the curved top of the triangle. The reference computes
-  // C = v·C_v · toe_inv(v·L_v) / (v·L_v), which is 0 / 0 at v = 0; this is the same quantity.
   const L_vt = toeInv(L_v);
   const C_vt = (C_v * L_vt) / L_v;
 
@@ -210,7 +172,7 @@ export const okhsvToRgbChannelsInto = (out: Float64Array | number[], h: number, 
   out[2] = srgbFromLinear(LIN[2]!);
 };
 
-/** Allocating sibling of `okhsvToRgbChannelsInto` — returns `[r, g, b]`. Own body: see the note above. */
+/** Allocating sibling of `okhsvToRgbChannelsInto` — returns `[r, g, b]`. */
 export const okhsvToRgbChannels = (h: number, s: number, v: number): [number, number, number] => {
   const sn = s / 100,
     vn = v / 100;
@@ -281,8 +243,6 @@ export const okhsvToRgb = ({ h, s, v, alpha }: OkhsvColor): RgbColor => {
   });
 };
 
-// okhsv() is a library-defined syntax (no CSS spec defines one). Modern space form only, in the
-// shape of hsv(): optional `%` on s / v, angle units on h, the CSS Color 4 `none` keyword.
 export const parseOkhsvString = (input: unknown): RgbColor | null =>
   typeof input === 'string' && scanFunc(input, 'okhsv(', 0)
     ? okhsvToRgb({
@@ -294,14 +254,12 @@ export const parseOkhsvString = (input: unknown): RgbColor | null =>
       })
     : null;
 
-// `{ h, s, v }` alone is HSV (the hsv plugin); the brand is what selects Okhsv.
 export const parseOkhsvObject = (input: unknown): RgbColor | null => {
   if (!isObject(input)) return null;
   if ((input as { colorSpace?: unknown }).colorSpace !== 'okhsv') return null;
   if (!('h' in input && 's' in input && 'v' in input)) return null;
   const { h, s, v, alpha = alphaAlias(input) } = input as { h: unknown; s: unknown; v: unknown; alpha?: unknown };
   if (typeof h !== 'number' || typeof s !== 'number' || typeof v !== 'number' || typeof alpha !== 'number') return null;
-  // comparison clamps: NaN falls to the low bound, matching sanitize()+clamp()
   return okhsvToRgb({
     h: normalizeHue(h === h ? h : 0),
     s: s > 100 ? 100 : s > 0 ? s : 0,

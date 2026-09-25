@@ -3,7 +3,6 @@ import { SC, scanColorRgb } from '../scan.js';
 import { byteToLinear, linearToStoredRgb } from '../transfer.js';
 import type { RgbColor, SrgbLinearColor } from '../types.js';
 
-// No clamping: srgb-linear may hold values outside [0, 1]. Callers clip on sRGB output.
 export const rgbToSrgbLinearRaw = ({ r, g, b, alpha }: RgbColor): SrgbLinearColor => ({
   r: byteToLinear(r),
   g: byteToLinear(g),
@@ -29,7 +28,6 @@ export const parseSrgbLinearObject = (input: unknown): RgbColor | null => {
   });
 };
 
-// CSS Color 4: color(srgb-linear r g b / alpha). Channels accept number|percentage|none; 100% = 1.
 export const parseSrgbLinearString = (input: unknown): RgbColor | null =>
   scanColorRgb(input, 'color(srgb-linear ')
     ? srgbLinearToRgbUnclamped({ r: SC[0]!, g: SC[1]!, b: SC[2]!, alpha: SC[3]!, colorSpace: 'srgb-linear' })

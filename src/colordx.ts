@@ -10,11 +10,7 @@ import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchCol
 
 const _SENTINEL: unique symbol = Symbol();
 
-/**
- * Color value with parse, format, and manipulation methods.
- * Construct via the `colordx()` helper or `new Colordx(input)`. Instances are immutable —
- * mutators return a new `Colordx`.
- */
+/** Immutable color value. Manipulation methods return a new `Colordx`. */
 export class Colordx {
   private readonly _rgb: RgbColor;
   private readonly _valid: boolean;
@@ -32,10 +28,6 @@ export class Colordx {
       this._valid = parsed !== null;
       this._rgb = parsed ?? { r: 0, g: 0, b: 0, alpha: 1 };
     }
-    // Single chokepoint for alpha precision: parsers and _make() callers may hand us
-    // raw floats (e.g. 1/255, 0.1+0.2). Snapping here keeps every formatter consistent.
-    // Channel sanity (NaN, ±Infinity, absurd magnitudes) is not checked here: the sRGB-bounded
-    // parsers clamp, and every wide-gamut parser ends in linearToStoredRgb(), which bounds.
     this._rgb.alpha = round3(this._rgb.alpha);
   }
 
@@ -43,38 +35,10 @@ export class Colordx {
     return new Colordx(_SENTINEL, rgb);
   }
 
-  /**
-   * Construct a Colordx from gamma-encoded ×255 channels as they are, unclamped and unrounded, for
-   * plugins that compute in the stored encoding (mix interpolates it, like color-mix(in srgb)).
-   */
   static _makeFromStoredRgb(rgb: RgbColor): Colordx {
     return Colordx._make(rgb);
   }
 
-  /**
-   * Construct a Colordx from linear-sRGB channels, gamma-encoding to the internal ×255 storage.
-   * Channels may exceed [0, 1] — wide-gamut inputs (toGamutP3 / toGamutRec2020 applied to a
-   * color outside sRGB) land here after the target-space → linear-sRGB matrix, and the stored
-   * _rgb holds unclamped gamma-encoded ×255 so toP3() / toRec2020() can recover the wide-gamut
-   * channels. sRGB output methods (toRgb, toHex, etc.) clamp to [0, 255] before returning.
-   *
-   * Replaces the prior _makeFromOklab: cssGamutMap hands back clipped linear-target channels
-   * directly, so callers skip the OKLab → linear round-trip that used to reintroduce 1-ULP
-   * asymmetries on gamut-boundary colors.
-   *
-   * A residual source of asymmetry remains — the clip itself. cssGamutMap's clip puts one
-   * channel exactly on 0 or 1 while the others sit where the input's hue landed, so an
-   * extreme-dark or extreme-light color ends up with genuinely asymmetric sub-byte channels
-   * (e.g. clipped linear (3e-6, 0, 8e-10) from oklch(0.001 0.001 0)). Math.round collapses all
-   * three to the same byte, but rgbToHslRaw / rgbToOklab read the raw floats and report
-   * phantom hue/saturation. Snap values within half a byte of 0 or 255 to the exact boundary;
-   * the band matches Math.round's own behavior so byte output is unchanged, while HSL / OKLab
-   * see a consistent pure white / black / primary. Values outside [0, 255] are wide-gamut
-   * (P3 / Rec.2020 targets) and pass through untouched.
-   *
-   * Pass `snap = false` when the channels are not an sRGB clip: a color mapped into P3 or
-   * Rec.2020 is exact in that space, and nudging its sRGB encoding would move it there.
-   */
   static _makeFromLinearSrgb(lr: number, lg: number, lb: number, alpha: number, snap = true): Colordx {
     const rb = srgbFromLinear(lr) * 255;
     const gb = srgbFromLinear(lg) * 255;
@@ -93,10 +57,7 @@ export class Colordx {
     return this._valid;
   }
 
-  /**
-   * Returns sRGB channels in [0, 255], plus alpha in [0, 1]. Channels are rounded to integers
-   * by default; pass `precision` to keep that many decimals instead.
-   */
+  /** sRGB channels in [0, 255] and alpha in [0, 1], rounded to integers or to `precision` decimals. */
   toRgb(precision?: number): RgbColor {
     if (precision === undefined) {
       const { r, g, b, alpha } = this._rgb;
@@ -106,19 +67,10 @@ export class Colordx {
     return { r: round(r, precision), g: round(g, precision), b: round(b, precision), alpha };
   }
 
-  /** Returns the internal unrounded RGB. Intended for plugin use where deferred rounding matters. */
   _rawRgb(): RgbColor {
     return this._rgb;
   }
 
-  /**
-   * Unrounded RGB clipped to [0, 255] — the color `toHex()` prints. sRGB-bounded consumers that
-   * read channels directly (brightness, invert, HWB, CMYK) take this rather than `_rawRgb()`:
-   * a wide-gamut input stored as (-172, 303, -21) has no meaning on the sRGB cube. The HSL/HSV
-   * converters clip on their own (rgbToHslRaw / rgbToHsvRaw), so toHsl() and the HSL-based
-   * manipulators pass `_rgb` straight through and pay only the max/min they compute anyway.
-   * Returns the internal object itself when already in range, so nothing is allocated.
-   */
   _srgbRgb(): RgbColor {
     const rgb = this._rgb;
     const { r, g, b } = rgb;
@@ -126,11 +78,7 @@ export class Colordx {
     return { r: clamp(r, 0, 255), g: clamp(g, 0, 255), b: clamp(b, 0, 255), alpha: rgb.alpha };
   }
 
-  /**
-   * Formats as a CSS `rgb()` / `rgba()` string.
-   * Default is CSS Color 4 modern syntax — `rgb(255 0 0 / 0.5)`.
-   * Pass `{ legacy: true }` for CSS Color 3 comma syntax (switches to `rgba()` when alpha < 1).
-   */
+  /** CSS `rgb()` string in modern syntax. `{ legacy: true }` gives comma syntax, `rgba()` when alpha < 1. */
   toRgbString(options?: { legacy?: boolean }): string {
     const { r, g, b, alpha } = this._rgb;
     const ri = toByte(r),
@@ -158,12 +106,7 @@ export class Colordx {
     return (toByte(r) << 16) | (toByte(g) << 8) | toByte(b);
   }
 
-  /**
-   * Returns a 32-bit unsigned RGBA integer (`0xrrggbbaa`), alpha included as a byte.
-   * The packing image libraries want — equivalent to `parseInt(toHex8().slice(1), 16)`
-   * without the string. Kept separate from `toNumber()` rather than made an option so
-   * the 24-bit path stays a straight-line shift.
-   */
+  /** 32-bit unsigned `0xrrggbbaa` integer, alpha included as a byte. */
   toNumber32(): number {
     const { r, g, b, alpha } = this._rgb;
     return ((toByte(r) << 24) | (toByte(g) << 16) | (toByte(b) << 8) | toByte(alpha * 255)) >>> 0;
@@ -198,14 +141,10 @@ export class Colordx {
   toOklch(precision = 5): OklchColor {
     const { l, c, h, alpha } = rgbToOklch(this._rgb);
     const hr = round(h, precision);
-    // round() can push a hue just below 360 to 360; wrap back to 0 so H stays in [0, 360).
     return { l: round(l, precision), c: round(c, precision), h: hr >= 360 ? 0 : hr, alpha };
   }
 
-  /**
-   * Formats as a CSS `oklch()` string. Hue is `none` when the unrounded chroma is below the
-   * achromatic threshold rgbToOklch() uses, so a high precision never prints a meaningless hue 0.
-   */
+  /** Formats as a CSS `oklch()` string. Hue is `none` for achromatic colors. */
   toOklchString(precision = 5): string {
     const { l, c, h, alpha } = rgbToOklch(this._rgb);
     const hr = round(h, precision);
@@ -251,10 +190,7 @@ export class Colordx {
     return Colordx._make(hslToRgb({ h: value, s, l, alpha }));
   }
 
-  /**
-   * Source-over composite of this color onto `background`, in gamma sRGB (as browsers blend).
-   * Throws a RangeError when either color is invalid.
-   */
+  /** Composites this color over `background` in gamma sRGB, as browsers do. Throws a RangeError on an invalid color. */
   over(background: AnyColor | Colordx): Colordx {
     if (!this._valid) throw invalidColorError('over', this, true);
     const back = new Colordx(background);
@@ -291,10 +227,7 @@ export class Colordx {
     return Colordx._make(oklchToRgb({ ...oklch, c: clamp(value, 0, 0.4) }));
   }
 
-  /**
-   * Lightens by `amount` (default 0.1) in HSL. Absolute by default — adds `amount * 100` to L.
-   * Pass `{ relative: true }` to multiply L by `1 + amount` instead.
-   */
+  /** Adds `amount * 100` to HSL lightness, or multiplies it by `1 + amount` with `{ relative: true }`. */
   lighten(amount = 0.1, options?: { relative?: boolean }): Colordx {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newL = options?.relative ? l * (1 + amount) : l + amount * 100;
@@ -306,10 +239,7 @@ export class Colordx {
     return this.lighten(-amount, options);
   }
 
-  /**
-   * Saturates by `amount` (default 0.1) in HSL. Absolute by default — adds `amount * 100` to S.
-   * Pass `{ relative: true }` to multiply S by `1 + amount` instead.
-   */
+  /** Adds `amount * 100` to HSL saturation, or multiplies it by `1 + amount` with `{ relative: true }`. */
   saturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newS = options?.relative ? s * (1 + amount) : s + amount * 100;
@@ -334,12 +264,7 @@ export class Colordx {
 
   /** Shifts the HSL hue by `amount` degrees (default 15). */
   rotate(amount = 15): Colordx {
-    // A whole-turn shift is the identity. Returning `this` (instances are immutable, so sharing is
-    // safe) skips an HSL round trip, which would otherwise clip a wide-gamut color into sRGB —
-    // `harmonies` includes a zero shift, so its output has to carry the input color unchanged.
     if (amount % 360 === 0) return this;
-    // Shift the unrounded hue. Going through the `hue()` getter would quantize it to 2 decimals
-    // first, perturbing a color whose hue is not representable there.
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     return Colordx._make(hslToRgb({ h: h + amount, s, l, alpha }));
   }
@@ -353,17 +278,12 @@ export class Colordx {
     return self.r === other.r && self.g === other.g && self.b === other.b && self.alpha === other.alpha;
   }
 
-  /** Returns the hex form (alias for `toHex()`). */
+  /** function toString() { [native code] } */
   toString(): string {
     return this.toHex();
   }
 
-  /**
-   * Clips this color into the sRGB gamut by clamping out-of-range channels to [0, 255].
-   * Matches the naive-clip strategy browsers use when rendering out-of-gamut `oklch()` / `oklab()`.
-   * Hue and lightness may shift noticeably for colors far outside sRGB.
-   * Returns `this` when already in gamut.
-   */
+  /** Clamps channels into sRGB, as browsers render. Hue and lightness may shift. Returns `this` when in gamut. */
   clampSrgb(): Colordx {
     const { r, g, b, alpha } = this._rgb;
     if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
@@ -375,12 +295,7 @@ export class Colordx {
     });
   }
 
-  /**
-   * Maps this color into the sRGB gamut using the CSS Color 4 gamut mapping algorithm
-   * (chroma-reduction binary search). Preserves lightness and hue; sacrifices chroma.
-   * Useful when hue stability matters — design tokens, palettes, color pickers.
-   * Returns `this` when already in gamut.
-   */
+  /** Maps into sRGB with CSS Color 4 gamut mapping, keeping lightness and hue. Returns `this` when in gamut. */
   mapSrgb(): Colordx {
     return this._mapSrgb(true);
   }
@@ -389,8 +304,6 @@ export class Colordx {
     const { r, g, b, alpha } = this._rgb;
     if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
     const [lRaw, a, bv] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
-    // The gamma-encoded round-trip drifts L by ~1e-9 at boundaries; snap so that inputs with
-    // exact L=0 or L=1 hit the same white/black shortcut the static gamut map uses.
     const l = lRaw > 1 - 1e-7 ? 1 : lRaw < 1e-7 ? 0 : lRaw;
     const mapped = toGamutSrgbRaw({ l, a, b: bv, alpha });
     if (mapped === null || mapped.inGamut) return this;
@@ -398,17 +311,11 @@ export class Colordx {
     return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha, snap);
   }
 
-  /**
-   * Maps an out-of-sRGB-gamut color into sRGB using the CSS Color 4 gamut mapping algorithm.
-   * Colors already in gamut are returned as-is. sRGB inputs (hex, rgb, hsl, etc.) are passed through.
-   */
+  /** Maps a color into sRGB with CSS Color 4 gamut mapping. In-gamut colors pass through. */
   static toGamutSrgb: (input: AnyColor) => Colordx;
 }
 
-/**
- * Plugin signature. Receives the `Colordx` class plus the parser arrays so a plugin
- * can register conversions (by adding instance methods) and parsers (by pushing onto the arrays).
- */
+/** Plugin function. Receives the `Colordx` class and parser arrays to add methods and parsers. */
 export type Plugin = (
   ColordxClass: typeof Colordx,
   parsers: ColorParser[],
@@ -426,10 +333,7 @@ export const extend = (plugins: Plugin[]): void => {
   plugins.forEach((plugin) => plugin(Colordx, parsers, pluginFormatParsers));
 };
 
-/**
- * Picks the candidate closest to `color` by Euclidean distance in OKLab.
- * Throws when `candidates` is empty.
- */
+/** Returns the candidate closest to `color` in OKLab. Throws when `candidates` is empty or a color is invalid. */
 export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {
   if (candidates.length === 0) throw new Error('nearest: candidates array must not be empty');
   const from = new Colordx(color);

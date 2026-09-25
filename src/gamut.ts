@@ -7,18 +7,6 @@ import type { AnyColor, ColorParser } from './types.js';
 
 type RawOklab = { l: number; a: number; b: number; alpha: number };
 
-/**
- * Extract raw OKLab {l, a, b, alpha} without clamping.
- * Returns `null` for inputs that are already sRGB-bounded (hex, rgb, hsl, hsv, hwb, etc.) and
- * `undefined` for input that is not a color at all, so callers can tell "always in gamut" from
- * "nothing to check".
- * OKLab / OKLCH inputs are read directly, under the same rules as the parsers: L is clamped to
- * [0, 1] (CSS Color 4 parsed-value clamping), C to ≥ 0, alpha defaults to 1, and an object with
- * L > 1 is not OKLab (it is CIE Lab/LCH missing its colorSpace brand) so it falls through to the
- * shared parser and is rejected there. Everything else goes through `own` (a plugin's parser for
- * its own format, so its gamut helpers work without `extend()`) and then the regular parser;
- * channels outside [0, 255] carry the out-of-gamut information.
- */
 const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | undefined => {
   if (typeof input === 'object' && input !== null) {
     const raw = parseOklchObjectRaw(input) ?? parseOklabObjectRaw(input);
@@ -38,14 +26,6 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | unde
   return { l, a, b: bb, alpha };
 };
 
-// Tolerance for inGamut* checks — NOT used in gamut mapping, which uses strict bounds.
-// Covers two sources of error:
-//   1. Matrix floating-point noise: accumulated cbrt + matrix error is ~3e-10
-//   2. Value rounding: OKLCH stored at 4 dp (L, C) / 2 dp (H) produces linear-sRGB
-//      deviations up to 4.4e-4 on sRGB boundary colors (exhaustive scan of all 256^3 sRGB
-//      values confirms this). EPS = 5e-4 absorbs all rounding artifacts while staying below
-//      ~1.6 gamma-encoded steps (imperceptible), and correctly rejects genuine out-of-gamut
-//      colors (typically 1e-3 and above).
 const EPS = 5e-4;
 
 export const isLinearInGamut = (r: number, g: number, b: number): boolean =>
@@ -54,12 +34,7 @@ export const isLinearInGamut = (r: number, g: number, b: number): boolean =>
 const strictInGamut = (r: number, g: number, b: number): boolean =>
   r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
 
-/**
- * True when the color falls inside the sRGB gamut.
- * sRGB-bounded inputs (hex, rgb, hsl, hsv, hwb) are always in gamut.
- * Wide-gamut inputs (oklch, oklab, lab, lch, p3, rec2020, xyz) are checked against [0, 1] in linear sRGB.
- * Input that does not parse as a color is not in any gamut and returns false.
- */
+/** True when the color is inside sRGB. sRGB-bounded inputs always are; invalid input is not. */
 export const inGamutSrgb = (input: AnyColor): boolean => {
   const raw = getRawOklab(input);
   if (raw === undefined) return false;
@@ -68,12 +43,9 @@ export const inGamutSrgb = (input: AnyColor): boolean => {
   return isLinearInGamut(r, g, b);
 };
 
-// CSS Color 4 gamut mapping constants
-// https://www.w3.org/TR/css-color-4/#css-gamut-mapping
 const JND = 0.02;
 const GAMUT_EPSILON = 0.0001;
 
-/** Euclidean distance in OKLab — the CSS Color 4 deltaEOK metric. */
 const deltaEOK = (lab1: readonly [number, number, number], l: number, a: number, b: number): number => {
   const dl = lab1[0] - l;
   const da = lab1[1] - a;
@@ -84,23 +56,8 @@ const deltaEOK = (lab1: readonly [number, number, number], l: number, a: number,
 type LinearConverter = (l: number, a: number, b: number) => [number, number, number];
 type FromLinearConverter = (r: number, g: number, b: number) => [number, number, number];
 
-/**
- * Clipped linear target-space channels plus alpha. Channels are in [0, 1] on the gamut boundary.
- * `inGamut` is true when the input was already inside the target gamut and `linear` is its own
- * channels, unmapped: callers return the input as-is rather than re-encoding it.
- */
 type GamutMapResult = { linear: readonly [number, number, number]; alpha: number; inGamut: boolean };
 
-/**
- * CSS Color 4 gamut mapping algorithm.
- * Binary-searches for the highest chroma where clip(color) is within JND (0.02 deltaEOK)
- * of the chroma-reduced color. Returns the clipped linear target-space channels directly
- * (already in [0, 1]); callers re-encode to their storage format without a round-trip
- * through OKLab, which would reintroduce 1-ULP asymmetries at the gamut surface.
- *
- * toLinear: OKLab → unclamped linear target-space channels
- * fromLinear: linear target-space channels → OKLab (used to measure deltaEOK of clipped color)
- */
 const cssGamutMap = (
   raw: { l: number; a: number; b: number; alpha: number },
   toLinear: LinearConverter,
@@ -115,7 +72,6 @@ const cssGamutMap = (
   return { linear: bisectChroma(l, a, b, r0, g0, b0, toLinear, fromLinear), alpha, inGamut: false };
 };
 
-// The chroma-reduction search for an input outside the gamut; returns clipped linear channels.
 const bisectChroma = (
   l: number,
   a: number,
@@ -126,17 +82,12 @@ const bisectChroma = (
   toLinear: LinearConverter,
   fromLinear: FromLinearConverter
 ): [number, number, number] => {
-  // Early exit: if the simple clip is already within JND, use it directly
   const c0r = clamp(r0, 0, 1),
     c0g = clamp(g0, 0, 1),
     c0b = clamp(b0, 0, 1);
   if (deltaEOK(fromLinear(c0r, c0g, c0b), l, a, b) <= JND) return [c0r, c0g, c0b];
 
   const hRad = Math.atan2(b, a);
-  // hypot rather than sqrt(a² + b²): a finite a of 1e308 squares to Infinity. An infinite or NaN
-  // chroma (from `oklab(0.5 1e400 0)` or `{ a: Infinity }`) has nothing to bisect — `hi - lo >
-  // GAMUT_EPSILON` would never turn false — so naive clip is the only answer such an input has,
-  // the same one toHex() gives it. clamp() has already read any NaN channel as 0.
   const C = Math.hypot(a, b);
   if (!Number.isFinite(C)) return [c0r, c0g, c0b];
   let lo = 0;
@@ -168,7 +119,6 @@ const bisectChroma = (
     const E = deltaEOK(fromLinear(cr, cg, cb), l, ma, mb);
 
     if (E <= JND) {
-      // CSS Color 4: once the clipped color is within epsilon of the JND, it is the answer.
       if (JND - E < GAMUT_EPSILON) return [cr, cg, cb];
       lo = mid;
       minInGamut = false;
@@ -180,11 +130,6 @@ const bisectChroma = (
   return [lastR, lastG, lastB];
 };
 
-/**
- * Maps an out-of-sRGB-gamut color using the CSS Color 4 algorithm.
- * Returns null for sRGB-bounded inputs (hex, rgb, hsl, etc.) — pass through unchanged.
- * Otherwise returns the clipped linear-sRGB channels (in [0, 1]) plus alpha.
- */
 export const toGamutSrgbRaw = (input: AnyColor): GamutMapResult | null => {
   const raw = getRawOklab(input);
   if (raw == null) return null;
@@ -193,21 +138,12 @@ export const toGamutSrgbRaw = (input: AnyColor): GamutMapResult | null => {
 
 export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter, own?: ColorParser): boolean => {
   const raw = getRawOklab(input, own);
-  if (raw === undefined) return false; // not a color
-  // sRGB-bounded inputs (hex, rgb, hsl, etc.) are always inside the wider P3/Rec.2020 gamut
+  if (raw === undefined) return false;
   if (raw === null) return true;
   const [r, g, b] = toLinear(raw.l, raw.a, raw.b);
   return isLinearInGamut(r, g, b);
 };
 
-/**
- * Maps an out-of-gamut color into a custom gamut using the CSS Color 4 gamut mapping algorithm.
- * Returns null for sRGB-bounded inputs (hex, rgb, hsl, etc.) — pass through unchanged.
- * Otherwise returns the clipped linear target-space channels (in [0, 1]) plus alpha.
- * toLinear: OKLab → unclamped linear target-space channels
- * fromLinear: linear target-space channels → OKLab (for deltaEOK of clipped colors)
- * own: the plugin's parser for its own format, tried before the shared parser
- */
 export const toGamutCustom = (
   input: AnyColor,
   toLinear: LinearConverter,

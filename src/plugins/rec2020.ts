@@ -29,10 +29,7 @@ declare module '@colordx/core' {
   }
 }
 
-/**
- * Convert linear sRGB channels (from oklchToLinear) to gamma-encoded Rec.2020 channels.
- * This is the cheap step — only a matrix multiply + the Rec.2020 2.4 gamma, no cbrt.
- */
+/** Linear sRGB → gamma Rec.2020 `[r, g, b]`. Pair with `oklchToLinear` to convert to several spaces. */
 export const linearToRec2020Channels = (lr: number, lg: number, lb: number): [number, number, number] => {
   const [r, g, b] = srgbLinearToRec2020Linear(lr, lg, lb);
   return [rec2020FromLinear(r), rec2020FromLinear(g), rec2020FromLinear(b)];
@@ -46,12 +43,7 @@ export const linearToRec2020ChannelsInto = (out: Float64Array | number[], lr: nu
   out[2] = rec2020FromLinear(out[2]!);
 };
 
-/**
- * Convert OKLCH to gamma-encoded Rec.2020 channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors. Out-of-gamut channels may
- * exceed this range — callers are responsible for clamping before byte encoding.
- * Uses the CSS Color 4 Rec.2020 transfer function: a pure 2.4 power (BT.1886), no linear segment.
- */
+/** OKLCh → gamma Rec.2020 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const oklchToRec2020Channels = (l: number, c: number, h: number): [number, number, number] =>
   linearToRec2020Channels(...oklchToLinear(l, c, h));
 
@@ -63,11 +55,7 @@ export const oklchToRec2020ChannelsInto = (out: Float64Array | number[], l: numb
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/**
- * Convert CIE Lab (D50) to gamma-encoded Rec.2020 channels without object allocation.
- * Returns [r, g, b] in [0, 1] for in-gamut colors; out-of-gamut channels may exceed [0, 1].
- * Goes Lab → XYZ D50 → linear sRGB → linear Rec.2020 → Rec.2020 2.4 gamma.
- */
+/** CIE Lab (D50) → gamma Rec.2020 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const labToRec2020Channels = (l: number, a: number, b: number): [number, number, number] =>
   linearToRec2020Channels(...labToLinearSrgb(l, a, b));
 
@@ -77,10 +65,7 @@ export const labToRec2020ChannelsInto = (out: Float64Array | number[], l: number
   linearToRec2020ChannelsInto(out, out[0]!, out[1]!, out[2]!);
 };
 
-/**
- * Convert CIE LCH (D50) to gamma-encoded Rec.2020 channels without object allocation.
- * Polar-to-rectangular to Lab, then Lab → gamma Rec.2020.
- */
+/** CIE LCh (D50) → gamma Rec.2020 `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const lchToRec2020Channels = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return labToRec2020Channels(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -94,18 +79,13 @@ export const lchToRec2020ChannelsInto = (out: Float64Array | number[], l: number
 
 const parseRec2020: ColorParser = (input) => parseRec2020String(input) ?? parseRec2020Object(input);
 
-/**
- * Returns true if the color is within the Rec.2020 gamut.
- * sRGB inputs (hex, rgb, hsl, etc.) always return true (sRGB ⊂ Rec.2020).
- */
+/** True when the color is inside the Rec.2020 gamut. sRGB inputs always are. */
 export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020, parseRec2020);
 
 const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.toGamutRec2020 = (input: AnyColor) => {
     const mapped = toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter, parseRec2020);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
-    // Clipped linear-Rec.2020 → linear-sRGB (wide-gamut when the Rec.2020 color is outside
-    // sRGB), then gamma-encode for storage. No round-trip through OKLab.
     const [lrR, lrG, lrB] = mapped.linear;
     const [lr, lg, lb] = linearRec2020ToSrgb(lrR, lrG, lrB);
     return ColordxClass._makeFromLinearSrgb(lr, lg, lb, mapped.alpha, false);

@@ -27,7 +27,6 @@ const HARMONIES: Record<HarmonyType, number[]> = {
 
 const harmonies: Plugin = (ColordxClass) => {
   ColordxClass.prototype.harmonies = function (this: Colordx, type: HarmonyType = 'complementary'): Colordx[] {
-    // Own keys only: `toString` or `constructor` would otherwise read an Object.prototype function.
     const angles = Object.prototype.hasOwnProperty.call(HARMONIES, type) ? HARMONIES[type] : undefined;
     if (!angles) throw new RangeError(`harmonies: unknown type "${String(type)}"`);
     return angles.map((degrees) => this.rotate(degrees));

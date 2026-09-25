@@ -5,10 +5,7 @@ import { srgbFromLinear, srgbToLinear } from './transfer.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/**
- * OKLCh → unclamped linear sRGB. Returns `[r, g, b]`.
- * Channels in [0, 1] mean the color is in-gamut sRGB; outside means out-of-gamut.
- */
+/** OKLCh → unclamped linear sRGB `[r, g, b]`. Channels outside [0, 1] are out of gamut. */
 export const oklchToLinear = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return oklabToLinear(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -20,10 +17,7 @@ export const oklchToLinearInto = (out: Float64Array | number[], l: number, c: nu
   oklabToLinearInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
-/**
- * OKLCh → gamma-encoded sRGB (0–1). Returns `[r, g, b]`.
- * Out-of-gamut channels may exceed [0, 1]; clamp before byte encoding.
- */
+/** OKLCh → gamma sRGB `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const oklchToRgbChannels = (l: number, c: number, h: number): [number, number, number] => {
   const [r, g, b] = oklchToLinear(l, c, h);
   return [srgbFromLinear(r), srgbFromLinear(g), srgbFromLinear(b)];
@@ -37,10 +31,7 @@ export const oklchToRgbChannelsInto = (out: Float64Array | number[], l: number, 
   out[2] = srgbFromLinear(out[2]!);
 };
 
-/**
- * OKLCh → both linear and gamma-encoded sRGB in one pass. Returns `[[lr, lg, lb], [sr, sg, sb]]`.
- * Use when you need both — saves a duplicate OKLCh → OKLab → linear step.
- */
+/** OKLCh → `[[lr, lg, lb], [r, g, b]]`, linear and gamma sRGB in one pass. */
 export const oklchToLinearAndSrgb = (
   l: number,
   c: number,
@@ -53,10 +44,7 @@ export const oklchToLinearAndSrgb = (
   ];
 };
 
-/**
- * Zero-allocation sibling of `oklchToLinearAndSrgb`.
- * Writes linear channels into `linOut`, gamma-encoded into `srgbOut`. Buffers must be distinct.
- */
+/** Zero-allocation sibling of `oklchToLinearAndSrgb`. `linOut` and `srgbOut` must be distinct. */
 export const oklchToLinearAndSrgbInto = (
   linOut: Float64Array | number[],
   srgbOut: Float64Array | number[],
@@ -70,10 +58,7 @@ export const oklchToLinearAndSrgbInto = (
   srgbOut[2] = srgbFromLinear(linOut[2]!);
 };
 
-/**
- * Gamma-encoded sRGB (0–1) → linear sRGB. Returns `[lr, lg, lb]`.
- * For byte-scale RGB, pass `r/255, g/255, b/255`.
- */
+/** Gamma sRGB in 0–1 → linear sRGB `[r, g, b]`. */
 export const rgbToLinear = (r: number, g: number, b: number): [number, number, number] => [
   srgbToLinear(r),
   srgbToLinear(g),
@@ -87,10 +72,7 @@ export const rgbToLinearInto = (out: Float64Array | number[], r: number, g: numb
   out[2] = srgbToLinear(b);
 };
 
-/**
- * CIE Lab (D50) → unclamped linear sRGB. Returns `[lr, lg, lb]`.
- * L in [0, 100]; a/b roughly in [-128, 128]. Out-of-gamut channels fall outside [0, 1].
- */
+/** CIE Lab (D50) → unclamped linear sRGB `[r, g, b]`. Channels outside [0, 1] are out of gamut. */
 export const labToLinearSrgb = (l: number, a: number, b: number): [number, number, number] => {
   const [x, y, z] = labToXyzValues(l, a, b);
   return xyzD50ToLinearSrgb(x, y, z);
@@ -102,10 +84,7 @@ export const labToLinearSrgbInto = (out: Float64Array | number[], l: number, a: 
   xyzD50ToLinearSrgbInto(out, out[0]!, out[1]!, out[2]!);
 };
 
-/**
- * CIE LCh (D50) → unclamped linear sRGB. Returns `[lr, lg, lb]`.
- * L in [0, 100]; C in [0, ~150]; H in degrees. Out-of-gamut channels fall outside [0, 1].
- */
+/** CIE LCh (D50) → unclamped linear sRGB `[r, g, b]`. Channels outside [0, 1] are out of gamut. */
 export const lchToLinearSrgb = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return labToLinearSrgb(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -117,10 +96,7 @@ export const lchToLinearSrgbInto = (out: Float64Array | number[], l: number, c: 
   labToLinearSrgbInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
-/**
- * CIE Lab (D50) → gamma-encoded sRGB (0–1). Returns `[r, g, b]`.
- * Out-of-gamut channels may exceed [0, 1]; clamp before byte encoding.
- */
+/** CIE Lab (D50) → gamma sRGB `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const labToRgbChannels = (l: number, a: number, b: number): [number, number, number] => {
   const [lr, lg, lb] = labToLinearSrgb(l, a, b);
   return [srgbFromLinear(lr), srgbFromLinear(lg), srgbFromLinear(lb)];
@@ -134,10 +110,7 @@ export const labToRgbChannelsInto = (out: Float64Array | number[], l: number, a:
   out[2] = srgbFromLinear(out[2]!);
 };
 
-/**
- * CIE LCh (D50) → gamma-encoded sRGB (0–1). Returns `[r, g, b]`.
- * Out-of-gamut channels may exceed [0, 1]; clamp before byte encoding.
- */
+/** CIE LCh (D50) → gamma sRGB `[r, g, b]` in 0–1. Out-of-gamut channels exceed it. */
 export const lchToRgbChannels = (l: number, c: number, h: number): [number, number, number] => {
   const hRad = h * DEG_TO_RAD;
   return labToRgbChannels(l, c * Math.cos(hRad), c * Math.sin(hRad));
@@ -149,10 +122,7 @@ export const lchToRgbChannelsInto = (out: Float64Array | number[], l: number, c:
   labToRgbChannelsInto(out, l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
-/**
- * CIE Lab (D50) → both linear and gamma-encoded sRGB in one pass.
- * Returns `[[lr, lg, lb], [sr, sg, sb]]`.
- */
+/** CIE Lab (D50) → `[[lr, lg, lb], [r, g, b]]`, linear and gamma sRGB in one pass. */
 export const labToLinearAndSrgb = (
   l: number,
   a: number,
@@ -165,10 +135,7 @@ export const labToLinearAndSrgb = (
   ];
 };
 
-/**
- * Zero-allocation sibling of `labToLinearAndSrgb`.
- * Writes linear channels into `linOut`, gamma-encoded into `srgbOut`. Buffers must be distinct.
- */
+/** Zero-allocation sibling of `labToLinearAndSrgb`. `linOut` and `srgbOut` must be distinct. */
 export const labToLinearAndSrgbInto = (
   linOut: Float64Array | number[],
   srgbOut: Float64Array | number[],
@@ -182,10 +149,7 @@ export const labToLinearAndSrgbInto = (
   srgbOut[2] = srgbFromLinear(linOut[2]!);
 };
 
-/**
- * CIE LCh (D50) → both linear and gamma-encoded sRGB in one pass.
- * Returns `[[lr, lg, lb], [sr, sg, sb]]`.
- */
+/** CIE LCh (D50) → `[[lr, lg, lb], [r, g, b]]`, linear and gamma sRGB in one pass. */
 export const lchToLinearAndSrgb = (
   l: number,
   c: number,
@@ -195,10 +159,7 @@ export const lchToLinearAndSrgb = (
   return labToLinearAndSrgb(l, c * Math.cos(hRad), c * Math.sin(hRad));
 };
 
-/**
- * Zero-allocation sibling of `lchToLinearAndSrgb`.
- * Writes linear channels into `linOut`, gamma-encoded into `srgbOut`. Buffers must be distinct.
- */
+/** Zero-allocation sibling of `lchToLinearAndSrgb`. `linOut` and `srgbOut` must be distinct. */
 export const lchToLinearAndSrgbInto = (
   linOut: Float64Array | number[],
   srgbOut: Float64Array | number[],

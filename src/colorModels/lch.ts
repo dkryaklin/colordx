@@ -18,7 +18,6 @@ export const rgbToLchRaw = (rgb: RgbColor): LchColor => {
   return {
     l: lab.l,
     c,
-    // Achromatic threshold on LCH scale (0–~150): below this chroma the hue is numerically unstable.
     h: c < 0.0015 ? 0 : h < 0 ? h + 360 : h,
     alpha: lab.alpha,
     colorSpace: 'lch',
@@ -29,7 +28,6 @@ export const rgbToLch = (rgb: RgbColor): LchColor => {
   const { l, c, h, alpha } = rgbToLchRaw(rgb);
   const cR = round(c, 2);
   const hR = round(h, 2);
-  // round() can push a hue just below 360 to 360.00; wrap back to 0 so H stays in [0, 360).
   return { l, c: cR, h: cR < 0.0015 || hR >= 360 ? 0 : hR, alpha, colorSpace: 'lch' };
 };
 
@@ -42,7 +40,6 @@ export const lchToRgb = ({ l, c, h, alpha }: LchColor): RgbColor =>
     colorSpace: 'lab',
   });
 
-/** Unclamped LCH → gamma sRGB. Mirrors lchToRgb but preserves out-of-gamut channels. */
 const lchToRgbUnclamped = ({ l, c, h, alpha }: LchColor): RgbColor =>
   labToRgbUnclamped({
     l,
@@ -68,9 +65,8 @@ export const parseLchObject = (input: unknown): RgbColor | null => {
   );
 };
 
-// CSS Color 4: lch(L C H / alpha). L: 100%=100. C: 100%=150. H: number|angle|none.
 export const parseLchString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string' || !scanFunc(input, 'lch(', 2)) return null;
-  const c = scanPctMask() & 2 ? SC[1]! * 1.5 : SC[1]!; // 100% = 150
+  const c = scanPctMask() & 2 ? SC[1]! * 1.5 : SC[1]!;
   return lchToRgbUnclamped(clampLch({ l: SC[0]!, c, h: SC[2]!, alpha: SC[3]! }));
 };

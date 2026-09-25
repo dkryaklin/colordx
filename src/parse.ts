@@ -36,10 +36,6 @@ export const parsers: ColorParser[] = [
 ];
 export const pluginFormatParsers: [ColorParser, ColorFormat][] = [];
 
-// Plugin parsers share one flat array (the public `parsers` contract), but a string
-// input never needs the object parsers and vice versa. Built-in plugin parsers tag
-// themselves via `inputKind`; untagged third-party parsers stay in both lists so their
-// behaviour is unchanged. Rebuilt only when `parsers` grows.
 let _partitionedAt = -1;
 let _strPlugins: ColorParser[] = [];
 let _objPlugins: ColorParser[] = [];
@@ -66,24 +62,19 @@ const runPlugins = (input: AnyColor, isString: boolean): RgbColor | null => {
   return null;
 };
 
-// The first character identifies the only builtin that can match; a conclusive miss
-// skips the builtin scan and goes straight to plugins.
-// CSS keywords are ASCII case-insensitive, and named colors already accept surrounding whitespace.
-// Tried only once every parser has declined, so the hex / rgb() paths never pay for the trim; it
-// lives here rather than in parse() to keep parse() small enough for V8 to inline.
 const isTransparent = (s: string): boolean => trimWs(s).toLowerCase() === 'transparent';
 const parseTransparentLoose = (s: string): RgbColor | null =>
   isTransparent(s) ? { r: 0, g: 0, b: 0, alpha: 0 } : null;
 
 const parseString = (input: string): RgbColor | null => {
   const c0 = input.charCodeAt(0);
-  const c = c0 | 32; // lowercase-fold for letters; '#' (35) is unaffected
+  const c = c0 | 32;
   let r: RgbColor | null = null;
-  if (c === 35 /* # */) r = parseHex(input);
-  else if (c === 114 /* r */) r = parseRgbString(input);
-  else if (c === 99 /* c */) r = parseSrgbColorString(input);
-  else if (c === 104 /* h */) r = parseHslString(input);
-  else if (c === 111 /* o */) {
+  if (c === 35) r = parseHex(input);
+  else if (c === 114) r = parseRgbString(input);
+  else if (c === 99) r = parseSrgbColorString(input);
+  else if (c === 104) r = parseHslString(input);
+  else if (c === 111) {
     r = (input.charCodeAt(3) | 32) === 99 ? parseOklchString(input) : parseOklabString(input);
   } else if (c0 === 32 || c0 === 9 || c0 === 10 || c0 === 13 || c0 === 12) {
     for (const [p] of stringFormatParsers) {
@@ -94,8 +85,6 @@ const parseString = (input: string): RgbColor | null => {
   return r ?? runPlugins(input, true) ?? parseTransparentLoose(input);
 };
 
-// The key probe is the membership test the parsers would otherwise repeat, so route
-// to the *Body functions, which trust it. Any other key signature is plugin-only.
 const parseObject = (input: AnyColor & object): RgbColor | null => {
   let r: RgbColor | null = null;
   if ('r' in input) r = parseRgbBody(input);
@@ -116,10 +105,7 @@ export const parse = (input: AnyColor): RgbColor | null => {
   return null;
 };
 
-/**
- * Detects the input format (`'hex'`, `'rgb'`, `'hsl'`, `'oklch'`, etc.).
- * Returns `undefined` for unrecognised input. Plugin-registered formats are detected too.
- */
+/** Input format tag such as `'hex'` or `'oklch'`, or `undefined` when unrecognised. */
 export const getFormat = (input: AnyColor): ColorFormat | undefined => {
   if (input === 'transparent') return 'name';
   const typed = typeof input === 'string' ? stringFormatParsers : objectFormatParsers;

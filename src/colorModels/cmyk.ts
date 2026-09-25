@@ -61,7 +61,6 @@ export const parseCmykObject = (input: unknown): RgbColor | null => {
 
 export const parseCmykString = (input: unknown): RgbColor | null => {
   if (typeof input !== 'string' || !scanFunc(input, 'device-cmyk(', -1, 4)) return null;
-  // Numbers are treated as 0-1 fractions, percentages as 0-100; normalize both to the internal 0-100 range.
   const m = scanPctMask();
   const p = (c: number) => SC[c]! * (m & (1 << c) ? 1 : 100);
   return cmykToRgb(clampCmyk({ c: p(0), m: p(1), y: p(2), k: p(3), alpha: SC[4]! }));
