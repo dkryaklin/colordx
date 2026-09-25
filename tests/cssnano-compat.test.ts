@@ -10,7 +10,6 @@
  *
  * Each test is annotated with the cssnano file it covers.
  */
-
 import { describe, expect, it } from 'vitest';
 import { colordx, extend } from '../src/index.js';
 import hwb from '../src/plugins/hwb.js';
@@ -176,16 +175,61 @@ describe('cssnano — HSL decimal precision', () => {
   });
 });
 
-// hsl() values whose exact RGB is a half byte round up, like CSS and browsers do (WPT
-// color-computed-hsl.html: hsl(270, 100%, 50%) → rgb(128, 0, 255)). The float drift that used to
-// round some of them down is gone.
 
-describe('cssnano — hsl() float-to-hex exact conversion', () => {
-  // hsl(220,80%,50%) = rgb(25.5, 93.5, 229.5) exactly → rgb(26, 94, 230) → #1a5ee6
-  it('hsl(220,80%,50%) → #1a5ee6', () => expect(min('hsl(220, 80%, 50%)')).toBe('#1a5ee6'));
-  it('hsl(20,100%,55%) → #ff661a', () => expect(min('hsl(20, 100%, 55%)')).toBe('#ff661a'));
-  it('hsl(270,80%,50%) → #801ae6', () => expect(min('hsl(270, 80%, 50%)')).toBe('#801ae6'));
-  it('hsl(320,80%,50%) → #e61aa2', () => expect(min('hsl(320, 80%, 50%)')).toBe('#e61aa2'));
+describe('cssnano — hsl() with an inexact half-byte channel stays hsl()', () => {
+  it('hsl(220,80%,50%) → hsl(220,80%,50%) (green 93.50000000000013)', () =>
+    expect(min('hsl(220, 80%, 50%)')).toBe('hsl(220,80%,50%)'));
+  it('hsl(320,80%,50%) → hsl(320,80%,50%) (blue 161.50000000000006)', () =>
+    expect(min('hsl(320, 80%, 50%)')).toBe('hsl(320,80%,50%)'));
+  it('hsl(134,50%,50%) → hsl(134,50%,50%) (blue 93.50000000000001)', () =>
+    expect(min('hsl(134, 50%, 50%)')).toBe('hsl(134,50%,50%)'));
+  it('hsla keeps its alpha', () => expect(min('hsla(220, 80%, 50%, 0.5)')).toBe('hsla(220,80%,50%,.5)'));
+  it('the gate wins over hsl: false, since hex would already have picked a side', () =>
+    expect(min('hsl(220, 80%, 50%)', { hsl: false })).toBe('hsl(220,80%,50%)'));
+  it('an exact tie still minifies to bytes: WPT pins it to round half up in every engine', () => {
+    expect(min('hsl(270, 100%, 50%)')).toBe('#8000ff');
+    expect(min('hsl(20, 100%, 55%)')).toBe('#ff661a');
+    expect(min('hsl(270, 80%, 50%)')).toBe('#801ae6');
+    expect(min('hsl(0, 0%, 50%)')).toBe('gray');
+    expect(min('rgba(50%, 50%, 50%, 0.5)', { hsl: false })).toBe('rgba(128,128,128,.5)');
+    expect(min('hwb(120 30% 50%)')).toBe('#4d804d');
+    expect(min('hwb(120 33% 50%)')).toBe('#548054');
+  });
+  it('a color whose channels are not ties still minifies to hex / name', () => {
+    expect(min('hsl(0, 100%, 50%)')).toBe('red');
+    expect(min('hsl(210, 100%, 40%)')).toBe('#06c');
+    expect(min('hsl(0, 0%, 50.2%)')).toBe('gray');
+  });
+  it('hwb(2 8% 32%) → rgb(173.4,25.5,20.4) when no hsl() is exact', () => {
+    expect(min('hwb(2 8% 32%)')).toBe('rgb(173.4,25.5,20.4)');
+    expect(min('hwb(2 8% 32% / 0.5)')).toBe('rgba(173.4,25.5,20.4,.5)');
+    expect(min('hwb(2 0% 0%)')).toBe('hsl(2,100%,50%)');
+  });
+  it('the kept hsl() or rgb() parses back to the very same channels', () => {
+    for (const s of ['hsl(220, 80%, 50%)', 'hsl(320, 80%, 50%)', 'hsla(220, 80%, 50%, 0.5)'])
+      expect(colordx(min(s))._rawRgb()).toEqual(colordx(s)._rawRgb());
+    for (const s of ['hwb(2 8% 32%)', 'hwb(2 8% 32% / 0.5)', 'hwb(2 0% 0%)']) {
+      const a = colordx(min(s))._rawRgb(), b = colordx(s)._rawRgb();
+      for (const k of ['r', 'g', 'b', 'alpha'] as const) expect(Math.abs(a[k] - b[k]), `${s} ${k}`).toBeLessThan(5e-5);
+    }
+  });
+  it('every inexact-tie hwb() on a grid minifies to an hsl() or rgb() that is exact to 5e-5', () => {
+    let gated = 0;
+    for (let h = 0; h < 360; h += 8)
+      for (let w = 0; w <= 100; w += 6)
+        for (let b = 0; b + w <= 100; b += 6) {
+          const c = colordx(`hwb(${h} ${w}% ${b}%)`);
+          const { r, g, b: bb } = c._rawRgb();
+          const inexact = (v: number) => { const d = Math.abs(v - Math.floor(v) - 0.5); return d > 0 && d < 1e-3; };
+          if (![r, g, bb].some(inexact)) continue;
+          gated++;
+          const out = min(c.toHwbString());
+          expect(out).toMatch(/^(hsl|rgb)\(/);
+          const o = colordx(out)._rawRgb();
+          expect(Math.max(Math.abs(o.r - r), Math.abs(o.g - g), Math.abs(o.b - bb)), out).toBeLessThan(5e-5);
+        }
+    expect(gated).toBeGreaterThan(50);
+  });
 });
 
 // IE11 / pre-2019 browser safety: minify() must never emit CSS Color 4 modern

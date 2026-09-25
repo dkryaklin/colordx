@@ -414,8 +414,14 @@ describe.each(CLASS_ENTRIES)('option matrix — %s', (_cls, inputs) => {
             opts?.alphaHex || fallback ? 0.005 : 0
           );
           // Never longer than the hex the user would otherwise write, when hex is a candidate.
-          if (!wide && a.alpha() === 1 && (opts?.hex ?? true))
+          const { r, g, b } = a._rawRgb();
+          const half = [r, g, b].some((v) => {
+            const d = Math.abs(v - Math.floor(v) - 0.5);
+            return d > 0 && d < 1e-3;
+          });
+          if (!wide && !half && a.alpha() === 1 && (opts?.hex ?? true))
             expect(out.length, label).toBeLessThanOrEqual(a.toHex().length);
+          if (!wide && half) expect(out, label).toMatch(/^(hsla?|rgba?)\(/);
         }
       }
     },

@@ -766,7 +766,7 @@ colordx({ r: 0, g: 0, b: 0, alpha: 0 }).minify({ transparent: true }); // 'trans
 colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).minify({ alphaHex: true }); // '#ff000080'
 
 // Disable specific formats to exclude them from candidates:
-colordx('#ff0000').minify({ hsl: false }); // skips HSL, picks from hex/RGB
+colordx('#ff0000').minify({ hsl: false }); // skips HSL, picks from hex/RGB (a preference: see the half-byte note under Precision)
 ```
 
 ### a11y plugin
@@ -1091,7 +1091,7 @@ colordx('#ff0000').toOklchString();   // 'oklch(0.62796 0.25768 29.23388)'
 colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 ```
 
-The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. Colors outside sRGB are never clipped to hex; they stay `oklch()`, or `color(srgb …)` when brighter than white or darker than black, since `oklch()` clamps its lightness at parse time. With every format option turned off, a visible alpha that hex would round to `00` falls back to `rgba()`.
+The `minify()` plugin preserves full HSL precision when building candidates, so minification is lossless — it only picks HSL when the string is genuinely shorter than hex/rgb. One exception: a color with a channel on an *inexact* half byte (`hsl(220, 80%, 50%)` has a green of 93.50000000000013) stays `hsl()` as written, even with `hsl: false`, because engines round such a channel either way — Chrome paints that color as `rgb(26 93 230)`, exact rounding gives `rgb(26 94 230)` — and hex, `rgb()` or a name would commit to one side. When no `hsl()` reproduces the channels exactly (most `hwb()` sources), they are printed as fractional legacy `rgb()` instead, the tie left for the engine. An exact tie (`rgb(50% 50% 50%)`, `hsl(270 100% 50%)`) comes from exact arithmetic, rounds up in every engine per WPT, and minifies to bytes as usual. Colors outside sRGB are never clipped to hex; they stay `oklch()`, or `color(srgb …)` when brighter than white or darker than black, since `oklch()` clamps its lightness at parse time. With every format option turned off, a visible alpha that hex would round to `00` falls back to `rgba()`.
 
 ## Relative lighten/darken
 

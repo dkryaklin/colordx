@@ -50,6 +50,15 @@ const outsideSrgb = (c: Colordx): boolean => {
   return !isLinearInGamut(byteToLinear(r), byteToLinear(g), byteToLinear(b));
 };
 
+const HALF_BYTE_EPS = 1e-3;
+const inexactTie = (c: Colordx): boolean => {
+  const { r, g, b } = c._rawRgb();
+  return [r, g, b].some((v) => {
+    const d = Math.abs(v - Math.floor(v) - 0.5);
+    return d > 0 && d < HALF_BYTE_EPS;
+  });
+};
+
 // A color brighter than white or darker than black has OKLab L outside [0, 1], which oklch()
 // clamps at parse time, so it would read back as white or black. color(srgb) is not clamped.
 const toSrgbFunction = (c: Colordx): string => {
@@ -69,9 +78,10 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     const { r, g, b } = this.toRgb();
     const alpha = this.alpha();
     const targetHex = this.toHex();
+    const bytes = !inexactTie(this);
     const candidates: string[] = [];
 
-    if (opts.hex && (alpha === 1 || (opts.alphaHex && isAlphaHexLossless(alpha)))) {
+    if (bytes && opts.hex && (alpha === 1 || (opts.alphaHex && isAlphaHexLossless(alpha)))) {
       // An alpha whose byte is ff (0.999) is opaque in hex, so drop the byte: #808080, not #808080ff.
       const opaque = alpha === 1 || Math.round(alpha * 255) === 255;
       const hex = opaque ? targetHex.slice(0, 7) : targetHex;
@@ -81,23 +91,38 @@ const minifyPlugin: Plugin = (ColordxClass) => {
     // Legacy comma syntax below is intentional — byte-optimal AND IE11-safe for the
     // cssnano pipeline. Do NOT delegate to toRgbString() / toHslString(); those emit
     // modern CSS Color 4 space syntax which pre-2019 browsers can't parse.
-    if (opts.rgb) {
+    if (bytes && opts.rgb) {
       const aa = shortenLeadingZero(alpha);
       candidates.push(alpha === 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${aa})`);
     }
 
-    if (opts.hsl) {
+    if (opts.hsl || !bytes) {
       const aa = shortenLeadingZero(alpha);
-      for (let p = 0; p <= 2; p++) {
+      const raw = this._rawRgb();
+      const same = (str: string): boolean => {
+        const c = new ColordxClass(str);
+        if (bytes) return c.toHex() === targetHex;
+        const o = c._rawRgb();
+        return Math.abs(o.r - raw.r) < 1e-6 && Math.abs(o.g - raw.g) < 1e-6 && Math.abs(o.b - raw.b) < 1e-6;
+      };
+      for (let p = 0; p <= (bytes ? 2 : 4); p++) {
         const { h, s, l } = this.toHsl(p);
         const ha = shortenLeadingZero(h),
           sa = shortenLeadingZero(s),
           la = shortenLeadingZero(l);
         const str = alpha === 1 ? `hsl(${ha},${sa}%,${la}%)` : `hsla(${ha},${sa}%,${la}%,${aa})`;
-        if (new ColordxClass(str).toHex() === targetHex) {
+        if (same(str)) {
           candidates.push(str);
           break;
         }
+      }
+      if (!bytes && candidates.length === 0) {
+        const ch = (v: number) => shortenLeadingZero(round(v, 4));
+        candidates.push(
+          alpha === 1
+            ? `rgb(${ch(raw.r)},${ch(raw.g)},${ch(raw.b)})`
+            : `rgba(${ch(raw.r)},${ch(raw.g)},${ch(raw.b)},${aa})`
+        );
       }
     }
 
@@ -105,6 +130,7 @@ const minifyPlugin: Plugin = (ColordxClass) => {
       candidates.push('transparent');
     } else if (
       // else if: transparent takes priority over name even though it is also a CSS named color
+      bytes &&
       alpha === 1 &&
       opts.name &&
       typeof (this as { toName?: () => string | undefined }).toName === 'function'
