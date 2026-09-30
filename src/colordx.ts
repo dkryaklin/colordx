@@ -278,7 +278,7 @@ export class Colordx {
     return self.r === other.r && self.g === other.g && self.b === other.b && self.alpha === other.alpha;
   }
 
-  /** function toString() { [native code] } */
+  /** Returns the hex form (alias for `toHex()`). */
   toString(): string {
     return this.toHex();
   }
