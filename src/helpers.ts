@@ -1,3 +1,5 @@
+import type { Colordx } from './colordx.js';
+
 export const clamp = (n: number, min: number, max: number): number => (n > min ? (n < max ? n : max) : min);
 
 export const round = (n: number, d = 0): number => {
@@ -53,8 +55,12 @@ export const mixWeight = (a1: number, a2: number, w: number): number => {
   return alpha > 0 ? p2 / alpha : w;
 };
 
+export const isColordx = (input: unknown): input is Colordx =>
+  typeof (input as Colordx | null | undefined)?._rawRgb === 'function';
+
 export const invalidColorError = (method: string, input: unknown, self = false): RangeError => {
   if (self) return new RangeError(`${method}: this color is invalid`);
+  if (isColordx(input)) return new RangeError(`${method}: the Colordx passed in is invalid`);
   let shown: string;
   try {
     shown = typeof input === 'string' ? JSON.stringify(input) : (JSON.stringify(input) ?? String(input));

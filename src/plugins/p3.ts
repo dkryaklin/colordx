@@ -9,7 +9,7 @@ import {
   srgbLinearToP3Linear,
   srgbLinearToP3LinearInto,
 } from '../colorModels/p3.js';
-import type { Plugin } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { fixedNotation, round } from '../helpers.js';
 import { srgbFromLinear } from '../transfer.js';
@@ -25,7 +25,7 @@ declare module '@colordx/core' {
   }
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Colordx {
-    function toGamutP3(input: AnyColor): Colordx;
+    function toGamutP3(input: AnyColor | Colordx): Colordx;
   }
 }
 
@@ -80,10 +80,10 @@ export const lchToP3ChannelsInto = (out: Float64Array | number[], l: number, c: 
 const parseP3: ColorParser = (input) => parseP3String(input) ?? parseP3Object(input);
 
 /** True when the color is inside the Display-P3 gamut. sRGB inputs always are. */
-export const inGamutP3 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearP3, parseP3);
+export const inGamutP3 = (input: AnyColor | Colordx): boolean => inGamutCustom(input, oklabToLinearP3, parseP3);
 
 const p3: Plugin = (ColordxClass, parsers, formatParsers) => {
-  ColordxClass.toGamutP3 = (input: AnyColor) => {
+  ColordxClass.toGamutP3 = (input: AnyColor | Colordx) => {
     const mapped = toGamutCustom(input, oklabToLinearP3, p3FromLinear, parseP3);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
     const [lpR, lpG, lpB] = mapped.linear;

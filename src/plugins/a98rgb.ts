@@ -9,7 +9,7 @@ import {
   srgbLinearToA98LinearInto,
 } from '../colorModels/a98rgb.js';
 import { linearSrgbToOklab } from '../colorModels/oklab.js';
-import type { Plugin } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { fixedNotation, round } from '../helpers.js';
 import { a98FromLinear } from '../transfer.js';
@@ -25,7 +25,7 @@ declare module '@colordx/core' {
   }
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Colordx {
-    function toGamutA98(input: AnyColor): Colordx;
+    function toGamutA98(input: AnyColor | Colordx): Colordx;
   }
 }
 
@@ -80,10 +80,10 @@ export const lchToA98ChannelsInto = (out: Float64Array | number[], l: number, c:
 const parseA98: ColorParser = (input) => parseA98String(input) ?? parseA98Object(input);
 
 /** True when the color is inside the A98 gamut. sRGB inputs always are. */
-export const inGamutA98 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearA98, parseA98);
+export const inGamutA98 = (input: AnyColor | Colordx): boolean => inGamutCustom(input, oklabToLinearA98, parseA98);
 
 const a98: Plugin = (ColordxClass, parsers, formatParsers) => {
-  ColordxClass.toGamutA98 = (input: AnyColor) => {
+  ColordxClass.toGamutA98 = (input: AnyColor | Colordx) => {
     const mapped = toGamutCustom(input, oklabToLinearA98, a98FromLinearConverter, parseA98);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
     const [lrR, lrG, lrB] = mapped.linear;

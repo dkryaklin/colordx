@@ -27,7 +27,7 @@ declare module '@colordx/core' {
     toXyzString(precision?: number): string;
     toXyzD65(precision?: number): XyzD65Color;
     toXyzD65String(precision?: number): string;
-    mixLab(color: AnyColor, ratio?: number): Colordx;
+    mixLab(color: AnyColor | Colordx, ratio?: number): Colordx;
     delta(color?: AnyColor | Colordx, precision?: number): number;
   }
 }

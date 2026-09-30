@@ -9,7 +9,7 @@ import {
   srgbLinearToRec2020Linear,
   srgbLinearToRec2020LinearInto,
 } from '../colorModels/rec2020.js';
-import type { Plugin } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { fixedNotation, round } from '../helpers.js';
 import { rec2020FromLinear } from '../transfer.js';
@@ -25,7 +25,7 @@ declare module '@colordx/core' {
   }
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Colordx {
-    function toGamutRec2020(input: AnyColor): Colordx;
+    function toGamutRec2020(input: AnyColor | Colordx): Colordx;
   }
 }
 
@@ -80,10 +80,11 @@ export const lchToRec2020ChannelsInto = (out: Float64Array | number[], l: number
 const parseRec2020: ColorParser = (input) => parseRec2020String(input) ?? parseRec2020Object(input);
 
 /** True when the color is inside the Rec.2020 gamut. sRGB inputs always are. */
-export const inGamutRec2020 = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearRec2020, parseRec2020);
+export const inGamutRec2020 = (input: AnyColor | Colordx): boolean =>
+  inGamutCustom(input, oklabToLinearRec2020, parseRec2020);
 
 const rec2020: Plugin = (ColordxClass, parsers, formatParsers) => {
-  ColordxClass.toGamutRec2020 = (input: AnyColor) => {
+  ColordxClass.toGamutRec2020 = (input: AnyColor | Colordx) => {
     const mapped = toGamutCustom(input, oklabToLinearRec2020, rec2020FromLinearConverter, parseRec2020);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
     const [lrR, lrG, lrB] = mapped.linear;

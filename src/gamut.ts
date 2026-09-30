@@ -1,13 +1,21 @@
 import { linearSrgbToOklab, oklabToLinear, parseOklabObjectRaw, parseOklabStringRaw } from './colorModels/oklab.js';
 import { parseOklchObjectRaw, parseOklchStringRaw } from './colorModels/oklch.js';
-import { clamp } from './helpers.js';
+import type { Colordx } from './colordx.js';
+import { clamp, isColordx } from './helpers.js';
 import { parse } from './parse.js';
 import { byteToLinear } from './transfer.js';
-import type { AnyColor, ColorParser } from './types.js';
+import type { AnyColor, ColorParser, RgbColor } from './types.js';
 
 type RawOklab = { l: number; a: number; b: number; alpha: number };
 
-const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | undefined => {
+const rgbToRawOklab = ({ r, g, b, alpha }: RgbColor): RawOklab | null => {
+  if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return null;
+  const [l, a, bb] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
+  return { l, a, b: bb, alpha };
+};
+
+const getRawOklab = (input: AnyColor | Colordx, own?: ColorParser): RawOklab | null | undefined => {
+  if (isColordx(input)) return input.isValid() ? rgbToRawOklab(input._rawRgb()) : undefined;
   if (typeof input === 'object' && input !== null) {
     const raw = parseOklchObjectRaw(input) ?? parseOklabObjectRaw(input);
     if (raw) return raw;
@@ -19,11 +27,7 @@ const getRawOklab = (input: AnyColor, own?: ColorParser): RawOklab | null | unde
   }
 
   const rgb = own?.(input) ?? parse(input);
-  if (rgb === null) return undefined;
-  const { r, g, b, alpha } = rgb;
-  if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return null;
-  const [l, a, bb] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
-  return { l, a, b: bb, alpha };
+  return rgb === null ? undefined : rgbToRawOklab(rgb);
 };
 
 const EPS = 5e-4;
@@ -35,7 +39,7 @@ const strictInGamut = (r: number, g: number, b: number): boolean =>
   r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
 
 /** True when the color is inside sRGB. sRGB-bounded inputs always are; invalid input is not. */
-export const inGamutSrgb = (input: AnyColor): boolean => {
+export const inGamutSrgb = (input: AnyColor | Colordx): boolean => {
   const raw = getRawOklab(input);
   if (raw === undefined) return false;
   if (raw === null) return true;
@@ -64,8 +68,8 @@ const cssGamutMap = (
   fromLinear: FromLinearConverter
 ): GamutMapResult => {
   const { l, a, b, alpha } = raw;
-  if (l >= 1) return { linear: [1, 1, 1], alpha, inGamut: false };
-  if (l <= 0) return { linear: [0, 0, 0], alpha, inGamut: false };
+  if (l > 1 - 1e-7) return { linear: [1, 1, 1], alpha, inGamut: false };
+  if (l < 1e-7) return { linear: [0, 0, 0], alpha, inGamut: false };
 
   const [r0, g0, b0] = toLinear(l, a, b);
   if (strictInGamut(r0, g0, b0)) return { linear: [r0, g0, b0], alpha, inGamut: true };
@@ -130,13 +134,13 @@ const bisectChroma = (
   return [lastR, lastG, lastB];
 };
 
-export const toGamutSrgbRaw = (input: AnyColor): GamutMapResult | null => {
+export const toGamutSrgbRaw = (input: AnyColor | Colordx): GamutMapResult | null => {
   const raw = getRawOklab(input);
   if (raw == null) return null;
   return cssGamutMap(raw, oklabToLinear, linearSrgbToOklab);
 };
 
-export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter, own?: ColorParser): boolean => {
+export const inGamutCustom = (input: AnyColor | Colordx, toLinear: LinearConverter, own?: ColorParser): boolean => {
   const raw = getRawOklab(input, own);
   if (raw === undefined) return false;
   if (raw === null) return true;
@@ -145,7 +149,7 @@ export const inGamutCustom = (input: AnyColor, toLinear: LinearConverter, own?: 
 };
 
 export const toGamutCustom = (
-  input: AnyColor,
+  input: AnyColor | Colordx,
   toLinear: LinearConverter,
   fromLinear: FromLinearConverter,
   own?: ColorParser

@@ -9,7 +9,7 @@ import {
   srgbLinearToProphotoLinear,
   srgbLinearToProphotoLinearInto,
 } from '../colorModels/prophoto.js';
-import type { Plugin } from '../colordx.js';
+import type { Colordx, Plugin } from '../colordx.js';
 import { inGamutCustom, toGamutCustom } from '../gamut.js';
 import { fixedNotation, round } from '../helpers.js';
 import { prophotoFromLinear } from '../transfer.js';
@@ -25,7 +25,7 @@ declare module '@colordx/core' {
   }
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Colordx {
-    function toGamutProphoto(input: AnyColor): Colordx;
+    function toGamutProphoto(input: AnyColor | Colordx): Colordx;
   }
 }
 
@@ -85,10 +85,11 @@ export const lchToProphotoChannelsInto = (out: Float64Array | number[], l: numbe
 const parseProphoto: ColorParser = (input) => parseProphotoString(input) ?? parseProphotoObject(input);
 
 /** True when the color is inside the ProPhoto gamut. sRGB inputs always are. */
-export const inGamutProphoto = (input: AnyColor): boolean => inGamutCustom(input, oklabToLinearProphoto, parseProphoto);
+export const inGamutProphoto = (input: AnyColor | Colordx): boolean =>
+  inGamutCustom(input, oklabToLinearProphoto, parseProphoto);
 
 const prophoto: Plugin = (ColordxClass, parsers, formatParsers) => {
-  ColordxClass.toGamutProphoto = (input: AnyColor) => {
+  ColordxClass.toGamutProphoto = (input: AnyColor | Colordx) => {
     const mapped = toGamutCustom(input, oklabToLinearProphoto, prophotoFromLinearConverter, parseProphoto);
     if (mapped === null || mapped.inGamut) return new ColordxClass(input);
     const [lrR, lrG, lrB] = mapped.linear;

@@ -1,11 +1,11 @@
 import { rgbToHex, rgbToHex8 } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { linearSrgbToOklab, rgbToOklab } from './colorModels/oklab.js';
+import { rgbToOklab } from './colorModels/oklab.js';
 import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, fixedNotation, invalidColorError, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
-import { byteToLinear, srgbFromLinear } from './transfer.js';
+import { srgbFromLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
@@ -270,7 +270,7 @@ export class Colordx {
   }
 
   /** True when both colors are valid and round to the same RGBA tuple. */
-  isEqual(color: AnyColor): boolean {
+  isEqual(color: AnyColor | Colordx): boolean {
     const o = new Colordx(color);
     if (!this._valid || !o._valid) return false;
     const other = o.toRgb();
@@ -301,18 +301,14 @@ export class Colordx {
   }
 
   _mapSrgb(snap: boolean): Colordx {
-    const { r, g, b, alpha } = this._rgb;
-    if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) return this;
-    const [lRaw, a, bv] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
-    const l = lRaw > 1 - 1e-7 ? 1 : lRaw < 1e-7 ? 0 : lRaw;
-    const mapped = toGamutSrgbRaw({ l, a, b: bv, alpha });
+    const mapped = toGamutSrgbRaw(this);
     if (mapped === null || mapped.inGamut) return this;
     const [mr, mg, mb] = mapped.linear;
     return Colordx._makeFromLinearSrgb(mr, mg, mb, mapped.alpha, snap);
   }
 
   /** Maps a color into sRGB with CSS Color 4 gamut mapping. In-gamut colors pass through. */
-  static toGamutSrgb: (input: AnyColor) => Colordx;
+  static toGamutSrgb: (input: AnyColor | Colordx) => Colordx;
 }
 
 /** Plugin function. Receives the `Colordx` class and parser arrays to add methods and parsers. */
@@ -334,7 +330,7 @@ export const extend = (plugins: Plugin[]): void => {
 };
 
 /** Returns the candidate closest to `color` in OKLab. Throws when `candidates` is empty or a color is invalid. */
-export const nearest = <T extends AnyColor>(color: AnyColor, candidates: T[]): T => {
+export const nearest = <T extends AnyColor | Colordx>(color: AnyColor | Colordx, candidates: T[]): T => {
   if (candidates.length === 0) throw new Error('nearest: candidates array must not be empty');
   const from = new Colordx(color);
   if (!from.isValid()) throw invalidColorError('nearest', color);
@@ -363,7 +359,7 @@ export const random = (): Colordx =>
     alpha: 1,
   });
 
-Colordx.toGamutSrgb = (input: AnyColor): Colordx => {
+Colordx.toGamutSrgb = (input: AnyColor | Colordx): Colordx => {
   const mapped = toGamutSrgbRaw(input);
   if (mapped === null || mapped.inGamut) return new Colordx(input);
   const [mr, mg, mb] = mapped.linear;
