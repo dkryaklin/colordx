@@ -513,6 +513,29 @@ describe('tinycolor compat — construction', () => {
     expect(tinycolor(c)).toBe(c);
   });
 
+  it('reads a Colordx, the reverse of toColordx()', () => {
+    const c = tinycolor(new Colordx('rgba(255, 0, 0, 0.5)'));
+    expect(c.isValid()).toBe(true);
+    expect(c.toRgbString()).toBe('rgba(255, 0, 0, 0.5)');
+    expect(c.getFormat()).toBe('rgb');
+    expect(tinycolor(tinycolor('#3b82f6').toColordx()).toHexString()).toBe('#3b82f6');
+    expect(tinycolor.equals(new Colordx('#f00'), '#f00')).toBe(true);
+  });
+
+  it('reads a Colordx without rounding its channels', () => {
+    const t = tinycolor('hsl(123.4, 55.5%, 44.4%)');
+    const back = tinycolor(t.toColordx());
+    expect(back.toHsl()).toEqual(t.toHsl());
+    expect(back.toColordx()._rawRgb()).toEqual(t.toColordx()._rawRgb());
+  });
+
+  it('reads a wide-gamut Colordx as its sRGB clip, and an invalid one as invalid', () => {
+    expect(tinycolor(new Colordx('oklch(0.5 0.4 180)')).toHexString()).toBe('#00986c');
+    const bad = tinycolor(new Colordx('nope'));
+    expect(bad.isValid()).toBe(false);
+    expect(bad.getFormat()).toBe(false);
+  });
+
   it('works with `new` too', () => {
     const c = new (tinycolor as unknown as new (i: string) => TinyColor)('#f00');
     expect(Object.getPrototypeOf(c)).toBe(Object.getPrototypeOf(tinycolor('#000')));

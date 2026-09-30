@@ -1143,7 +1143,7 @@ What is different:
 - **`tinycolor.names`** holds full hex (`ff0000`); tinycolor2 holds shortened hex (`f00`).
 - **CSS angle units** on a hue (`hsl(0.5turn 100% 50%)`, `200grad`, `3.14rad`) convert to degrees. tinycolor2 rejects them as invalid.
 - **`analogous()` / `monochromatic()`** always terminate. tinycolor2 loops forever on a negative or fractional count ([#280](https://github.com/bgrins/TinyColor/issues/280)); here it is floored, with anything below 1 treated as 1.
-- **`.toColordx()`** is new: the immutable `Colordx` underneath, for oklch, gamut mapping and plugins.
+- **`.toColordx()`** is new: the immutable `Colordx` underneath, for oklch, gamut mapping and plugins. `tinycolor()` reads a `Colordx` back, as its sRGB clip.
 
 ## Performance
 

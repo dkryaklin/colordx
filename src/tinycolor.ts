@@ -59,7 +59,7 @@ interface HsvInput {
   a?: Unit;
 }
 export type ColorInputWithoutInstance = string | RgbInput | HslInput | HsvInput;
-export type ColorInput = ColorInputWithoutInstance | TinyColor;
+export type ColorInput = ColorInputWithoutInstance | TinyColor | Colordx;
 export interface ConstructorOptions {
   format?: string;
   gradientType?: boolean;
@@ -206,6 +206,12 @@ const parseInput = (input: unknown): Parsed => {
   return { rgb, ok: true, format: typeof obj.format === 'string' ? obj.format : format };
 };
 
+const fromColordx = (c: Colordx): Parsed => {
+  if (!c.isValid()) return { rgb: { r: 0, g: 0, b: 0, alpha: 1 }, ok: false, format: false };
+  const { r, g, b, alpha } = c._srgbRgb();
+  return { rgb: { r, g, b, alpha }, ok: true, format: 'rgb' };
+};
+
 const argbHex = (c: TinyColor): string => {
   const { r, g, b, a } = c.toRgb();
   return `#${toHexByte(a * 255)}${toHexByte(r)}${toHexByte(g)}${toHexByte(b)}`;
@@ -229,7 +235,7 @@ class TinyColor {
       this._gradientType = color._gradientType;
       return;
     }
-    const p = parseInput(color);
+    const p = color instanceof Colordx ? fromColordx(color) : parseInput(color);
     this._c = new Colordx(p.rgb);
     this._a = p.rgb.alpha;
     this._ok = p.ok;
