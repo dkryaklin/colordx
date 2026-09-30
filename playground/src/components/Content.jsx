@@ -57,7 +57,7 @@ rgbToOklch(parseHex('#ff0000'))              // unrounded { l, c, h, alpha }`;
         icon={<Terminal size={13} />}
         eyebrow="Library"
         title="Use it in code"
-        desc="8.5 KB gzipped. Zero dependencies. Typed. Tree-shakeable. Plugins add what you need and nothing else."
+        desc="8.8 KB gzipped. Zero dependencies. Typed. Tree-shakeable. Plugins add what you need and nothing else."
       />
       <div className="gs-steps">
         <div className="gs-step">
