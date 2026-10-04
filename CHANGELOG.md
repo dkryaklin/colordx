@@ -1,5 +1,16 @@
 # @colordx/core
 
+## 7.3.0
+
+### Minor Changes
+
+- Remove comments from src, keeping one-line docs on the public API ([0712ce6](https://github.com/dkryaklin/colordx/commit/0712ce61cfbe1b0edc822de5339589459867cef6))
+- Fix README values that drifted from the code ([78b2dd7](https://github.com/dkryaklin/colordx/commit/78b2dd7c80fee64ecb099e4142ea076fd8bf250d))
+- Restructure README with contents, plugin index and collapsible details ([74f5b30](https://github.com/dkryaklin/colordx/commit/74f5b301f4e3c1557bcc3458ccba9a74cf99b37f))
+- Accept a Colordx instance in the gamut helpers, isEqual(), nearest(), mixLab() and palette() ([7501f79](https://github.com/dkryaklin/colordx/commit/7501f79736bc6cea9e5f9eaec52a8b1842a9de3f))
+- Read a Colordx in tinycolor() ([0ae2843](https://github.com/dkryaklin/colordx/commit/0ae28433d47603ceeab1904163fb88555d31499b))
+- Restore the toString() doc comment ([d161c16](https://github.com/dkryaklin/colordx/commit/d161c16d76289133d991ba76ba316f38db391c2e))
+
 ## 7.2.0
 
 ### Minor Changes
