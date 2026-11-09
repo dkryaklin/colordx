@@ -22,6 +22,17 @@ RUN pnpm install --frozen-lockfile
 COPY playground/ ./
 RUN pnpm build
 
+# Caddy runs as an unprivileged user and listens on 8080.
 FROM caddy:2-alpine
+# Caddy keeps state in $XDG_DATA_HOME (/data) and $XDG_CONFIG_HOME (/config);
+# hand both to the runtime user so it can write there.
+RUN addgroup -S -g 1001 caddy && adduser -S -u 1001 -G caddy caddy \
+  && chown -R caddy:caddy /data /config
 COPY --from=playground /app/playground/dist /usr/share/caddy
 COPY playground/Caddyfile /etc/caddy/Caddyfile
+USER caddy
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

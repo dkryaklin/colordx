@@ -1,4 +1,4 @@
-:80 {
+:8080 {
     root * /usr/share/caddy
     try_files {path} {path}.html
     file_server
