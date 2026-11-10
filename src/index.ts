@@ -13,6 +13,8 @@ export {
   oklchToLinearAndSrgbInto,
   rgbToLinear,
   rgbToLinearInto,
+  linearToRgbChannels,
+  linearToRgbChannelsInto,
   labToLinearSrgb,
   labToLinearSrgbInto,
   lchToLinearSrgb,

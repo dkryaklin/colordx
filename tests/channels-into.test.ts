@@ -12,6 +12,8 @@ import {
   lchToLinearSrgbInto,
   lchToRgbChannels,
   lchToRgbChannelsInto,
+  linearToRgbChannels,
+  linearToRgbChannelsInto,
   oklchToLinear,
   oklchToLinearAndSrgb,
   oklchToLinearAndSrgbInto,
@@ -273,6 +275,14 @@ describe('oklab *Into parity', () => {
     for (const [r, g, b] of cases) {
       const want = rgbToLinear(r, g, b);
       rgbToLinearInto(out, r, g, b);
+      expectTripleEqual(out, want);
+    }
+  });
+
+  it('linearToRgbChannelsInto matches linearToRgbChannels', () => {
+    for (const [lr, lg, lb] of LINEAR_CASES) {
+      const want = linearToRgbChannels(lr, lg, lb);
+      linearToRgbChannelsInto(out, lr, lg, lb);
       expectTripleEqual(out, want);
     }
   });

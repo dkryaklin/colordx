@@ -13,6 +13,7 @@ import {
   inGamutSrgb,
   labToLinearSrgb,
   lchToLinearSrgb,
+  linearToRgbChannels,
   nearest,
   oklchToLinear,
   oklchToLinearAndSrgbInto,
@@ -220,12 +221,19 @@ describe('README — oklchToRgbChannels / oklchToLinear', () => {
   });
 });
 
-describe('README — rgbToLinear / labToLinearSrgb / lchToLinearSrgb', () => {
+describe('README — rgbToLinear / linearToRgbChannels / labToLinearSrgb / lchToLinearSrgb', () => {
   it('rgbToLinear(1, 0, 0) → [1, 0, 0]', () => {
     const [lr, lg, lb] = rgbToLinear(1, 0, 0);
     expect(lr).toBeCloseTo(1, 6);
     expect(lg).toBeCloseTo(0, 6);
     expect(lb).toBeCloseTo(0, 6);
+  });
+  it('linearToRgbChannels(0.5, 0, 0) → [0.73536, 0, 0], the #bc0000 the srgb-linear plugin parses', () => {
+    const [r, g, b] = linearToRgbChannels(0.5, 0, 0);
+    expect(r).toBeCloseTo(0.73536, 5);
+    expect(g).toBe(0);
+    expect(b).toBe(0);
+    expect(Math.round(r * 255)).toBe(0xbc);
   });
   it('labToLinearSrgb reconstructs red', () => {
     const [lr, lg, lb] = labToLinearSrgb(54.29, 80.8, 69.89);
