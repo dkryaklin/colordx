@@ -72,6 +72,20 @@ export const rgbToLinearInto = (out: Float64Array | number[], r: number, g: numb
   out[2] = srgbToLinear(b);
 };
 
+/** Linear sRGB → gamma sRGB `[r, g, b]` in 0–1, the inverse of `rgbToLinear`. Out-of-gamut channels exceed it. */
+export const linearToRgbChannels = (lr: number, lg: number, lb: number): [number, number, number] => [
+  srgbFromLinear(lr),
+  srgbFromLinear(lg),
+  srgbFromLinear(lb),
+];
+
+/** Zero-allocation sibling of `linearToRgbChannels` — writes `[r, g, b]` into `out`. */
+export const linearToRgbChannelsInto = (out: Float64Array | number[], lr: number, lg: number, lb: number): void => {
+  out[0] = srgbFromLinear(lr);
+  out[1] = srgbFromLinear(lg);
+  out[2] = srgbFromLinear(lb);
+};
+
 /** CIE Lab (D50) → unclamped linear sRGB `[r, g, b]`. Channels outside [0, 1] are out of gamut. */
 export const labToLinearSrgb = (l: number, a: number, b: number): [number, number, number] => {
   const [x, y, z] = labToXyzValues(l, a, b);

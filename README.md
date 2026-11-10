@@ -753,7 +753,7 @@ Object parsing is also supported using the `colorSpace` discriminant:
 colordx({ r: 0.5, g: 0, b: 0, colorSpace: 'srgb-linear' }).toHex(); // '#bc0000'
 ```
 
-For per-pixel work use the core channel helpers instead: `rgbToLinear()` and `oklchToLinear()` return the same linear channels without a `Colordx` instance.
+For per-pixel work use the core channel helpers instead: `rgbToLinear()` and `oklchToLinear()` return the same linear channels without a `Colordx` instance, and `linearToRgbChannels()` encodes them back.
 
 ### a11y plugin
 
@@ -959,10 +959,12 @@ import {
   lchToLinearAndSrgb,
   lchToLinearSrgb,
   lchToRgbChannels,
+  linearToRgbChannels,
   rgbToLinear,
 } from '@colordx/core';
 
 rgbToLinear(1, 0, 0);          // [1, 0, 0]           — 0–1 gamma sRGB in
+linearToRgbChannels(0.5, 0, 0); // [0.73536, 0, 0]   — the inverse: linear sRGB in, 0–1 gamma sRGB out
 labToLinearSrgb(54.29, 80.8, 69.89); // Lab D50 → linear sRGB (via XYZ D50)
 lchToLinearSrgb(54.29, 106.84, 40.86); // LCH D50 → Lab → linear sRGB
 
@@ -997,6 +999,7 @@ lchToRec2020Channels(54.29, 106.84, 40.86);
 
 // Split-step API: compute the shared expensive OKLCH→linear sRGB step once,
 // then apply cheap per-space steps to avoid repeating 3× Math.cbrt + OKLab matrix.
+linearToRgbChannels(...linear);     // linear sRGB → gamma-encoded sRGB
 linearToP3Channels(...linear);      // linear sRGB → gamma-encoded P3
 linearToRec2020Channels(...linear); // linear sRGB → gamma-encoded Rec.2020 (2.4 gamma)
 
@@ -1052,6 +1055,7 @@ oklchToLinearAndSrgbInto(linOut, srgbOut, l, c, h); // both at once (distinct bu
 
 // from '@colordx/core' — non-OKLCH inputs → linear / gamma sRGB (complements oklchToLinear)
 rgbToLinearInto(out, r, g, b);             // 0–1 gamma sRGB → linear sRGB
+linearToRgbChannelsInto(out, lr, lg, lb);  // linear sRGB → 0–1 gamma sRGB
 labToLinearSrgbInto(out, l, a, b);         // CIE Lab (D50) → linear sRGB (via XYZ D50)
 labToRgbChannelsInto(out, l, a, b);        // CIE Lab (D50) → gamma sRGB
 labToLinearAndSrgbInto(linOut, srgbOut, l, a, b); // both (distinct buffers)

@@ -4,6 +4,7 @@ import {
   labToRgbChannels,
   lchToLinearSrgb,
   lchToRgbChannels,
+  linearToRgbChannels,
   oklchToLinear,
   rgbToLinear,
 } from '../src/channels.js';
@@ -47,6 +48,30 @@ describe('rgbToLinear', () => {
   it('black → 0, white → 1', () => {
     expect(rgbToLinear(0, 0, 0)).toEqual([0, 0, 0]);
     expect(rgbToLinear(1, 1, 1)).toEqual([1, 1, 1]);
+  });
+});
+
+describe('linearToRgbChannels', () => {
+  it('is the vector extension of srgbFromLinear', () => {
+    for (const [lr, lg, lb] of [
+      [0, 0, 0],
+      [1, 1, 1],
+      [0.5, 0.25, 0.75],
+      [0.003, 0.0032, 0.1], // linear/power-curve crossover
+      [-0.3, 0.5, 1.2], // out-of-gamut (sign-preserving transfer)
+    ] as const) {
+      const [r, g, b] = linearToRgbChannels(lr, lg, lb);
+      expect(r).toBe(srgbFromLinear(lr));
+      expect(g).toBe(srgbFromLinear(lg));
+      expect(b).toBe(srgbFromLinear(lb));
+    }
+  });
+
+  it('inverts rgbToLinear for every byte', () => {
+    for (let byte = 0; byte < 256; byte++) {
+      const [r] = linearToRgbChannels(...rgbToLinear(byte / 255, 0, 0));
+      expect(Math.round(r * 255)).toBe(byte);
+    }
   });
 });
 
