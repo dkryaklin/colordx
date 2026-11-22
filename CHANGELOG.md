@@ -1,5 +1,11 @@
 # @colordx/core
 
+## 7.4.0
+
+### Minor Changes
+
+- Add linearToRgbChannels and linearToRgbChannelsInto, the inverse of rgbToLinear ([8fbe225](https://github.com/dkryaklin/colordx/commit/8fbe22574a73500230abbbcd6cbea4fa4423191a))
+
 ## 7.3.0
 
 ### Minor Changes
