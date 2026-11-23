@@ -164,10 +164,23 @@ export const NAMES: Record<string, string> = {
 
 const ASCII_RE = /^[\x00-\x7f]*$/;
 
+let packed: Map<string, number> | undefined;
+const buildPacked = (): Map<string, number> => {
+  const map = new Map<string, number>();
+  for (const name of Object.keys(NAMES)) map.set(name, parseInt(NAMES[name]!.slice(1), 16));
+  return map;
+};
+
 export const parseNameString = (input: unknown): RgbColor | null => {
-  if (typeof input !== 'string' || !ASCII_RE.test(input)) return null;
-  const hex = NAMES[trimWs(input).toLowerCase()];
-  return hex ? parseHex(hex) : null;
+  if (typeof input !== 'string') return null;
+  const map = (packed ??= buildPacked());
+  let rgb = map.get(input);
+  if (rgb === undefined) {
+    if (!ASCII_RE.test(input)) return null;
+    rgb = map.get(trimWs(input).toLowerCase());
+    if (rgb === undefined) return null;
+  }
+  return { r: rgb >> 16, g: (rgb >> 8) & 255, b: rgb & 255, alpha: 1 };
 };
 
 let byHex: Map<string, string> | undefined;
