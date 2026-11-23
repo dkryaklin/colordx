@@ -33,6 +33,9 @@
     "tinycolor2"
   ],
   "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "exports": {
     ".": {
