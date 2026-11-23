@@ -1,5 +1,24 @@
 # @colordx/core
 
+## 7.5.0
+
+### Minor Changes
+
+- Look a color's name up in a hex map built once instead of scanning all 148 names on every toName() ([373ec1a](https://github.com/dkryaklin/colordx/commit/373ec1a9f7ad966909ce1e6ec9457b189dbef533))
+- Run a plugin once, so a repeated extend() no longer registers its parsers again ([f315fd6](https://github.com/dkryaklin/colordx/commit/f315fd69f67d71630c59f6bca594be12b5085910))
+- Give 0 and 255 the same chance as every other byte in random() ([7459ca3](https://github.com/dkryaklin/colordx/commit/7459ca3bd6318a6610565e9a237dbc030a6305b9))
+- Declare Node 18 as the minimum in engines, matching the ES2022 build target ([53cfc46](https://github.com/dkryaklin/colordx/commit/53cfc464c5c62a73c54ff8efbddf466fc19d66c7))
+- Add createNearest(), which converts a palette to OKLab once for repeated lookups, and compare nearest() on unrounded OKLab ([fc179b3](https://github.com/dkryaklin/colordx/commit/fc179b3080d6eef1c96e39f1b3a8aefd15d16d1e))
+- Keep lightness() and chroma() results unclamped and unrounded, so a wide-gamut color survives the setter instead of being clipped, and drop the 0.4 chroma cap ([192539d](https://github.com/dkryaklin/colordx/commit/192539da419e5aa0762cc8e26b2770420582a160))
+- Say that contrast checks read a translucent background as opaque, with the over() flattening that gives the real ratio ([f57c5d5](https://github.com/dkryaklin/colordx/commit/f57c5d51a9c9520aabf58f80523eecf8bb001e79))
+- Find toName({ closest: true }) by OKLab distance from a table built once, so it agrees with nearest() ([1c366ce](https://github.com/dkryaklin/colordx/commit/1c366ced9866d2471d98ef7a5c105420aebe07c8))
+- Add { space: 'oklch' } to lighten(), darken(), saturate(), desaturate(), grayscale(), rotate() and harmonies() for perceptually even steps ([ea1896b](https://github.com/dkryaklin/colordx/commit/ea1896b2d9cc0767aa9b77812420a865029168dd))
+- Add mixOklch() to the mix plugin, matching color-mix(in oklch) with the shorter, longer, increasing and decreasing hue methods ([cd5598f](https://github.com/dkryaklin/colordx/commit/cd5598fb09ffa529a318a6c3b1e3ca7da8a51e89))
+- Add a severity argument and achromatopsia to simulate(), with Machado's per-severity matrices for protan and deutan ([979fa03](https://github.com/dkryaklin/colordx/commit/979fa030a4cbab76c7f6df80a8fec4afad680b9a))
+- Parse a named color from a packed map built once instead of re-parsing its hex string, about 40% faster ([1fc1487](https://github.com/dkryaklin/colordx/commit/1fc1487f1d23c4cd029c62003f1399ec73ebef1c))
+- Update the bundle size to 9.2 KB ([40374ac](https://github.com/dkryaklin/colordx/commit/40374ac5a3e870a3de9451454d33e143b2eb5e57))
+- Align the README with the new APIs, split manipulation into HSL and OKLCH, list toHex8(), toString() and toHexByte(), and refresh the named color benchmark ([3783b39](https://github.com/dkryaklin/colordx/commit/3783b39a20da60fa2c5bb44507002b901dba2531))
+
 ## 7.4.0
 
 ### Minor Changes
