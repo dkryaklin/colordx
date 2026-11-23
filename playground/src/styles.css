@@ -1424,6 +1424,10 @@ code {
   align-items: end;
 }
 
+.mix-hue .seg {
+  align-self: flex-start;
+}
+
 .mix-strip {
   display: flex;
   gap: 6px;
@@ -1639,9 +1643,24 @@ code {
   color: var(--t2);
 }
 
+.cvd-sev {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--t2);
+}
+
+.cvd-sev input {
+  width: 96px;
+}
+
 .cvd-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
