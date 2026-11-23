@@ -1,7 +1,7 @@
 import { rgbToHex, rgbToHex8 } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
 import { linearSrgbToOklabInto, rgbToOklab } from './colorModels/oklab.js';
-import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
+import { OKLCH_ACHROMATIC, oklchToRgbUnclamped, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, fixedNotation, invalidColorError, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
@@ -210,22 +210,22 @@ export class Colordx {
     });
   }
 
-  /** Get or set the OKLCh lightness in [0, 1]. Setter returns a new `Colordx`. */
+  /** Get or set the OKLCh lightness in [0, 1]. The setter keeps chroma and hue, so the result may leave sRGB. */
   lightness(): number;
   lightness(value: number): Colordx;
   lightness(value?: number): number | Colordx {
-    const oklch = this.toOklch();
-    if (value === undefined) return oklch.l;
-    return Colordx._make(oklchToRgb({ ...oklch, l: clamp(value, 0, 1) }));
+    if (value === undefined) return this.toOklch().l;
+    const { c, h, alpha } = rgbToOklch(this._rgb);
+    return Colordx._make(oklchToRgbUnclamped({ l: clamp(value, 0, 1), c, h, alpha }));
   }
 
-  /** Get or set the OKLCh chroma in [0, 0.4]. Setter returns a new `Colordx`. */
+  /** Get or set the OKLCh chroma, 0 or more. The setter keeps lightness and hue, so the result may leave sRGB. */
   chroma(): number;
   chroma(value: number): Colordx;
   chroma(value?: number): number | Colordx {
-    const oklch = this.toOklch();
-    if (value === undefined) return oklch.c;
-    return Colordx._make(oklchToRgb({ ...oklch, c: clamp(value, 0, 0.4) }));
+    if (value === undefined) return this.toOklch().c;
+    const { l, h, alpha } = rgbToOklch(this._rgb);
+    return Colordx._make(oklchToRgbUnclamped({ l, c: value > 0 ? value : 0, h, alpha }));
   }
 
   /** Adds `amount * 100` to HSL lightness, or multiplies it by `1 + amount` with `{ relative: true }`. */
