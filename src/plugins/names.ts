@@ -1,6 +1,8 @@
 import { parseHex } from '../colorModels/hex.js';
+import { linearSrgbToOklab } from '../colorModels/oklab.js';
 import type { Colordx, Plugin } from '../colordx.js';
 import { trimWs } from '../helpers.js';
+import { byteToLinear } from '../transfer.js';
 import type { ColorParser, RgbColor } from '../types.js';
 
 declare module '@colordx/core' {
@@ -178,6 +180,17 @@ const buildByHex = (): Map<string, string> => {
   return map;
 };
 
+let labByName: Float64Array | undefined;
+const buildLabByName = (): Float64Array => {
+  const keys = Object.keys(NAMES);
+  const table = new Float64Array(keys.length * 3);
+  keys.forEach((name, i) => {
+    const { r, g, b } = parseHex(NAMES[name])!;
+    table.set(linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b)), i * 3);
+  });
+  return table;
+};
+
 const names: Plugin = (ColordxClass, parsers, formatParsers) => {
   (parseNameString as ColorParser).inputKind = 'string';
   parsers.push(parseNameString);
@@ -188,17 +201,21 @@ const names: Plugin = (ColordxClass, parsers, formatParsers) => {
     if (alpha === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
     const exact = (byHex ??= buildByHex()).get(this.toHex());
     if (exact || !options?.closest) return exact;
+    const table = (labByName ??= buildLabByName());
+    const [l, a, bb] = linearSrgbToOklab(byteToLinear(r), byteToLinear(g), byteToLinear(b));
     let minDist = Infinity;
-    let closest: string | undefined;
-    for (const name of Object.keys(NAMES)) {
-      const c = parseHex(NAMES[name])!;
-      const d = (c.r - r) ** 2 + (c.g - g) ** 2 + (c.b - b) ** 2;
+    let index = 0;
+    for (let i = 0; i < table.length; i += 3) {
+      const dl = table[i]! - l,
+        da = table[i + 1]! - a,
+        db = table[i + 2]! - bb;
+      const d = dl * dl + da * da + db * db;
       if (d < minDist) {
         minDist = d;
-        closest = name;
+        index = i;
       }
     }
-    return closest;
+    return Object.keys(NAMES)[index / 3];
   };
 };
 

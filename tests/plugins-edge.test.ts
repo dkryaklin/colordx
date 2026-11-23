@@ -3,13 +3,13 @@
  * not captured in plugins.test.ts.
  */
 import { describe, expect, it, beforeAll } from 'vitest';
-import { colordx, extend, Colordx } from '../src/index.js';
+import { colordx, extend, nearest, Colordx } from '../src/index.js';
 import a11y from '../src/plugins/a11y.js';
 import harmonies from '../src/plugins/harmonies.js';
 import lab from '../src/plugins/lab.js';
 import mix from '../src/plugins/mix.js';
 import minify from '../src/plugins/minify.js';
-import names from '../src/plugins/names.js';
+import names, { NAMES } from '../src/plugins/names.js';
 import rec2020 from '../src/plugins/rec2020.js';
 import { rgbToRec2020, rec2020ToRgb } from '../src/colorModels/rec2020.js';
 
@@ -441,6 +441,30 @@ describe('names: closest is actually closest', () => {
 
   it('#ffffff → "white" (exact hex match)', () => {
     expect((colordx('#ffffff') as any).toName({ closest: true })).toBe('white');
+  });
+
+  it('measures distance in OKLab, so it agrees with nearest()', () => {
+    const hexes = Object.values(NAMES);
+    for (let i = 0; i < 500; i++) {
+      const hex = '#' + (((i * 2654435761) >>> 8) & 0xffffff).toString(16).padStart(6, '0');
+      const name = (colordx(hex) as any).toName({ closest: true });
+      expect(NAMES[name], hex).toBe(nearest(hex, hexes));
+    }
+  });
+
+  it('picks the perceptually nearer name where RGB distance picked another', () => {
+    expect((colordx('#f1bbcd') as any).toName({ closest: true })).toBe('lightpink');
+    expect((colordx('#2e2ac0') as any).toName({ closest: true })).toBe('mediumblue');
+  });
+
+  it('ignores alpha, while the exact lookup does not', () => {
+    expect((colordx('rgba(255, 0, 0, 0.5)') as any).toName()).toBeUndefined();
+    expect((colordx('rgba(255, 0, 0, 0.5)') as any).toName({ closest: true })).toBe('red');
+  });
+
+  it('reads a wide-gamut color as its sRGB-clipped color', () => {
+    const wide = colordx('oklch(0.7 0.3 150)');
+    expect((wide as any).toName({ closest: true })).toBe((colordx(wide.toHex()) as any).toName({ closest: true }));
   });
 
   it('no exact match without closest: true → undefined', () => {
