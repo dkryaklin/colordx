@@ -359,9 +359,9 @@ export const nearest = <T extends AnyColor | Colordx>(color: AnyColor | Colordx,
 /** Returns a random opaque sRGB color. */
 export const random = (): Colordx =>
   new Colordx({
-    r: Math.round(Math.random() * 255),
-    g: Math.round(Math.random() * 255),
-    b: Math.round(Math.random() * 255),
+    r: Math.floor(Math.random() * 256),
+    g: Math.floor(Math.random() * 256),
+    b: Math.floor(Math.random() * 256),
     alpha: 1,
   });
 
