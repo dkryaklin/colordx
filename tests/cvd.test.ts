@@ -1,3 +1,4 @@
+import { filterDeficiencyDeuter, filterDeficiencyProt } from 'culori';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { colordx, extend } from '../src/index.js';
 import a11y from '../src/plugins/a11y.js';
@@ -130,6 +131,29 @@ describe('cvd plugin: severity', () => {
     }
   });
 
+  // culori ships the same published table. Its filter multiplies the channels it is given by the matrix as is,
+  // so the three unit vectors read the matrix back column by column.
+  it('matches every row of the published Machado table, as shipped by culori', () => {
+    const filters = { protanopia: filterDeficiencyProt, deuteranopia: filterDeficiencyDeuter } as const;
+    const grid: string[] = [];
+    for (let r = 0; r <= 255; r += 51)
+      for (let g = 0; g <= 255; g += 51) for (let b = 0; b <= 255; b += 51) grid.push(colordx({ r, g, b }).toHex());
+    for (const type of ['protanopia', 'deuteranopia'] as const) {
+      for (let step = 1; step <= 10; step++) {
+        const f = filters[type](step / 10);
+        const cols = [
+          f({ mode: 'rgb', r: 1, g: 0, b: 0 }),
+          f({ mode: 'rgb', r: 0, g: 1, b: 0 }),
+          f({ mode: 'rgb', r: 0, g: 0, b: 1 }),
+        ];
+        const m = (['r', 'g', 'b'] as const).flatMap((ch) => cols.map((c) => c[ch]));
+        expect(Math.abs(m[0]! + m[1]! + m[2]! - 1)).toBeLessThan(1e-5);
+        for (const hex of grid)
+          expect(bytes(colordx(hex).simulate(type, step / 10)), `${type} ${step / 10} ${hex}`).toEqual(apply(m, hex));
+      }
+    }
+  });
+
   it('interpolates between the tabulated Machado matrices', () => {
     const PROT_04 = [0.539009, 0.579343, -0.118352, 0.082546, 0.866121, 0.051332, -0.007136, -0.011959, 1.019095];
     const mid = PROT_04.map((v, i) => (v + PROT_05[i]!) / 2);
@@ -202,6 +226,8 @@ describe('cvd plugin: achromatopsia', () => {
   it('keeps alpha and maps wide-gamut input first', () => {
     expect(colordx('rgba(255, 0, 0, 0.5)').simulate('achromatopsia', 0.5).alpha()).toBe(0.5);
     const wide = 'oklch(0.8 0.3 145)';
-    expect(colordx(wide).simulate('achromatopsia').toHex()).toBe(colordx(wide).mapSrgb().simulate('achromatopsia').toHex());
+    expect(colordx(wide).simulate('achromatopsia').toHex()).toBe(
+      colordx(wide).mapSrgb().simulate('achromatopsia').toHex()
+    );
   });
 });
