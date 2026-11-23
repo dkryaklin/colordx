@@ -543,3 +543,24 @@ describe('rec2020: string format', () => {
     expect(str).toContain('/ 0.5');
   });
 });
+
+describe('extend: a plugin registers once', () => {
+  it('a repeated extend() adds no parsers', async () => {
+    const { parsers, pluginFormatParsers } = await import('../src/parse.js');
+    extend([names, lab]);
+    const before = [parsers.length, pluginFormatParsers.length];
+    extend([names, lab]);
+    extend([names]);
+    expect([parsers.length, pluginFormatParsers.length]).toEqual(before);
+  });
+
+  it('runs a new plugin exactly once across calls', () => {
+    let calls = 0;
+    const plugin = () => {
+      calls++;
+    };
+    extend([plugin, plugin]);
+    extend([plugin]);
+    expect(calls).toBe(1);
+  });
+});
