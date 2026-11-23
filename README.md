@@ -922,7 +922,9 @@ colordx('red').toHex(); // '#ff0000'
 colordx('rebeccapurple').toHex(); // '#663399'
 colordx('#ff0000').toName(); // 'red'
 colordx('#c06060').toName(); // undefined — no CSS name for this color
-colordx('#c06060').toName({ closest: true }); // nearest named color by RGB distance
+colordx('#c06060').toName({ closest: true }); // 'indianred' — nearest named color in OKLab, like nearest()
+colordx('rgba(255, 0, 0, 0.5)').toName(); // undefined — a translucent color has no name
+colordx('rgba(255, 0, 0, 0.5)').toName({ closest: true }); // 'red' — closest compares the color and ignores alpha
 ```
 
 ### minify plugin
