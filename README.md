@@ -236,7 +236,7 @@ The same flag works on `.darken()` and `.desaturate()`.
 ### Utilities
 
 ```ts
-import { getFormat, nearest, random } from '@colordx/core';
+import { createNearest, getFormat, nearest, random } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255 0 0)'); // 'rgb'
@@ -251,6 +251,11 @@ getFormat('notacolor'); // undefined
 
 nearest('#800', ['#f00', '#ff0', '#00f']); // '#f00' — perceptual distance via OKLab
 nearest('#ffe', ['#f00', '#ff0', '#00f']); // '#ff0'
+
+// Many lookups against one palette: convert it once, then each lookup only reads the table
+const toPalette = createNearest(['#f00', '#ff0', '#00f']);
+toPalette('#800'); // '#f00'
+toPalette('#ffe'); // '#ff0'
 
 random(); // random Colordx instance
 ```
