@@ -253,6 +253,7 @@ colordx('#3498db').chroma(0.3).mapSrgb().toHex(); // '#0098f6'
 // With mix plugin loaded:
 .mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
 .mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
+.mixOklch('#0000ff', 0.5)  // mix in OKLCH space (keeps chroma, shorter hue arc)
 ```
 
 ### Utilities
@@ -310,7 +311,7 @@ colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes a
 
 Per the spec, the search stops at the first clipped color within a just-noticeable difference (deltaEOK 0.02) of its chroma-reduced candidate, so L and h can drift slightly — most visibly on colors far outside sRGB (the example above lands at hue 177.9°, not 180°; a pale or dark saturated red can move several degrees of hue, or land on pure `#xx0000`). When a palette needs exact L and h per step, bisect chroma with `inGamutSrgb()` instead.
 
-Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`, the `lightness()` / `chroma()` setters, and the manipulators called with `{ space: 'oklch' }`) read the unclamped color, and the three mixers, the two setters and the OKLCH manipulators keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
+Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixOklch`, `mixLab`, `delta`, the `lightness()` / `chroma()` setters, and the manipulators called with `{ space: 'oklch' }`) read the unclamped color, and the four mixers, the two setters and the OKLCH manipulators keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
 </details>
 
@@ -890,15 +891,27 @@ colordx('#ff0000').palette(3, '#0000ff'); // [#ff0000, #800080, #0000ff]
 // A fractional count is floored; 0, a negative count or NaN give []; Infinity throws a RangeError.
 ```
 
-`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Like `color-mix()`, it keeps the exact result rather than rounding it to bytes, and a wide-gamut input stays wide-gamut. Use `mixOklab()` for perceptually uniform blending, or `mixLab()` (lab plugin) for CIE Lab. All three premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
+`mix()` interpolates in **sRGB**, matching CSS `color-mix(in srgb, ...)` and how browsers composite layers. Like `color-mix()`, it keeps the exact result rather than rounding it to bytes, and a wide-gamut input stays wide-gamut. Use `mixOklab()` for perceptually uniform blending, `mixOklch()` to blend along the hue circle and keep chroma, or `mixLab()` (lab plugin) for CIE Lab. All four premultiply by alpha as `color-mix()` does, so a transparent color contributes no hue: `colordx('rgba(255,0,0,0)').mix('#0000ff').toRgbString()` is `'rgb(0 0 255 / 0.5)'`.
 
 ```ts
 colordx('#000000').mix('#ffffff').toHex();       // '#808080' — sRGB (CSS spec)
 colordx('#000000').mixOklab('#ffffff').toHex();  // '#636363' — Oklab (perceptually uniform)
+colordx('#ff0000').mixOklab('#0000ff').toHex();  // '#8c53a2' — the straight line through Oklab loses chroma
+colordx('#ff0000').mixOklch('#0000ff').mapSrgb().toHex(); // '#b700be' — the arc through OKLCH keeps it
 
 import lab from '@colordx/core/plugins/lab';
 extend([lab]);
 colordx('#000000').mixLab('#ffffff').toHex();    // '#777777' — CIE Lab
+```
+
+`mixOklch()` matches CSS `color-mix(in oklch, …)`. Its hue takes the shorter arc by default; pass `{ hue }` for one of the other CSS hue interpolation methods. An achromatic color has no hue of its own and takes the other color's. The result is not clipped, so it can leave sRGB even when both inputs are inside it:
+
+```ts
+colordx('#ff0000').mixOklch('#0000ff').toOklchString(3); // 'oklch(0.54 0.285 326.643)'
+colordx('#ff0000').mixOklch('#0000ff', 0.5, { hue: 'longer' }).toOklchString(3); // 'oklch(0.54 0.285 146.643)'
+colordx('#ff0000').mixOklch('#0000ff', 0.5, { hue: 'increasing' }); // hue only ever goes up
+colordx('#ff0000').mixOklch('#0000ff', 0.5, { hue: 'decreasing' }); // hue only ever goes down
+colordx('#808080').mixOklch('#0000ff').toOklchString(3); // 'oklch(0.526 0.157 264.052)' — grey takes blue's hue
 ```
 
 `tints()`, `shades()`, `tones()` and `palette()` are built on `mix()`, so they blend in sRGB too.
