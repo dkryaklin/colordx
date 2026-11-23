@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { Blend } from 'lucide-react';
 import { colordx } from '../lib.js';
 import { f } from '../utils.js';
-import { SectionHead, Segmented, useCopied } from './ui.jsx';
+import { SectionHead, Segmented, CodeBlock, useCopied } from './ui.jsx';
 
 const MODES = [
-  { key: 'complementary', label: 'Complementary', deg: [0, 180] },
-  { key: 'analogous', label: 'Analogous', deg: [-30, 0, 30] },
-  { key: 'triadic', label: 'Triadic', deg: [0, 120, 240] },
-  { key: 'tetradic', label: 'Tetradic', deg: [0, 90, 180, 270] },
-  { key: 'split', label: 'Split', deg: [0, 150, 210] },
-  { key: 'rectangle', label: 'Rectangle', deg: [0, 60, 180, 240] },
-  { key: 'double', label: 'Double split', deg: [-30, 0, 30, 150, 210] },
+  { key: 'complementary', label: 'Complementary' },
+  { key: 'analogous', label: 'Analogous' },
+  { key: 'triadic', label: 'Triadic' },
+  { key: 'tetradic', label: 'Tetradic' },
+  { key: 'split-complementary', label: 'Split' },
+  { key: 'rectangle', label: 'Rectangle' },
+  { key: 'double-split-complementary', label: 'Double split' },
 ];
+const SPACES = [{ key: 'oklch', label: 'OKLCH' }, { key: 'hsl', label: 'HSL' }];
 
 function Swatch({ color, onUse }) {
   const [copied, copy] = useCopied();
@@ -30,8 +31,14 @@ function Swatch({ color, onUse }) {
 
 export default function Harmonies({ S, setColor }) {
   const [mode, setMode] = useState('complementary');
-  const m = MODES.find((x) => x.key === mode);
-  const colors = m.deg.map((d) => colordx({ l: S.l, c: S.c, h: (S.h + d + 360) % 360, alpha: 1 }));
+  const [space, setSpace] = useState('oklch');
+  // the HSL wheel lives on the sRGB cube, so it starts from the mapped color
+  const seed = colordx({ l: S.l, c: S.c, h: S.h, alpha: 1 });
+  const base = space === 'oklch' ? seed : seed.mapSrgb();
+  const colors = base.harmonies(mode, { space });
+  const hex = seed.mapSrgb().toHex();
+  const call = space === 'oklch' ? `harmonies('${mode}', { space: 'oklch' })` : `harmonies('${mode}')`;
+  const out = colors.map((c) => `'${c.mapSrgb().toHex()}'`).join(', ');
 
   return (
     <>
@@ -39,7 +46,8 @@ export default function Harmonies({ S, setColor }) {
         icon={<Blend size={13} />}
         eyebrow="Harmonies"
         title="Rotate the hue"
-        desc="Seven classic schemes. Lightness and chroma stay put, so every color has the same weight."
+        desc="Seven classic schemes. In OKLCH, lightness and chroma stay put, so every color has the same weight. HSL is the classic wheel, where the same rotation can land much lighter or darker."
+        right={<Segmented small options={SPACES} value={space} onChange={setSpace} />}
       />
       <div className="card harm-wrap">
         <Segmented options={MODES} value={mode} onChange={setMode} />
@@ -48,6 +56,7 @@ export default function Harmonies({ S, setColor }) {
             <Swatch key={i} color={c} onUse={(hex) => setColor(hex, true)} />
           ))}
         </div>
+        <CodeBlock code={`colordx('${hex}').${call}.map((c) => c.mapSrgb().toHex());\n// [${out}]`} />
       </div>
     </>
   );

@@ -3,6 +3,8 @@ import { colordx } from '../lib.js';
 import { clamp, f } from '../utils.js';
 import { SectionHead } from './ui.jsx';
 
+const OKLCH = { space: 'oklch' };
+
 function item(color, label, current = false) {
   const ok = color.toOklch();
   return {
@@ -39,23 +41,22 @@ function Row({ label, items, onSelect }) {
 
 export default function Adjust({ S, setColor }) {
   const c = colordx({ l: S.l, c: S.c, h: S.h, alpha: 1 });
-  const at = (p) => colordx({ ...{ l: S.l, c: S.c, h: S.h, alpha: 1 }, ...p });
   const onSelect = (hex) => setColor(hex, true);
 
   const light = [-0.2, -0.1, 0, 0.1, 0.2].map((d) =>
-    d === 0 ? item(c, 'base', true) : item(at({ l: clamp(S.l + d, 0, 1) }), `L ${d > 0 ? '+' : '−'}${Math.abs(d)}`)
+    d === 0 ? item(c, 'base', true) : item(c.lighten(d, OKLCH), `L ${d > 0 ? '+' : '−'}${Math.abs(d)}`)
   );
   const chroma = [-0.1, -0.05, 0, 0.05, 0.1].map((d) =>
-    d === 0 ? item(c, 'base', true) : item(at({ c: clamp(S.c + d, 0, 0.4) }), `C ${d > 0 ? '+' : '−'}${Math.abs(d)}`)
+    d === 0 ? item(c, 'base', true) : item(c.chroma(clamp(S.c + d, 0, 0.4)), `C ${d > 0 ? '+' : '−'}${Math.abs(d)}`)
   );
   const hue = [-60, -30, 0, 30, 60].map((d) =>
-    d === 0 ? item(c, 'base', true) : item(at({ h: (S.h + d + 360) % 360 }), `H ${d > 0 ? '+' : '−'}${Math.abs(d)}°`)
+    d === 0 ? item(c, 'base', true) : item(c.rotate(d, OKLCH), `H ${d > 0 ? '+' : '−'}${Math.abs(d)}°`)
   );
   const mixes = [
     item(c.mixOklab('#000000', 0.3), 'mix black'),
     item(c.mixOklab('#ffffff', 0.3), 'mix white'),
     item(c.mixOklab('#808080', 0.5), 'mix gray'),
-    item(c.grayscale(), 'grayscale'),
+    item(c.grayscale(OKLCH), 'grayscale'),
     item(c.invert(), 'invert'),
   ];
 
@@ -65,7 +66,7 @@ export default function Adjust({ S, setColor }) {
         icon={<SlidersHorizontal size={13} />}
         eyebrow="Adjust"
         title="Shift one channel"
-        desc="Steps in OKLCH. Equal steps look equal. Mixes run in OKLab. Click a swatch to use it."
+        desc="Steps in OKLCH. Equal steps look equal, and grayscale keeps the lightness. Mixes run in OKLab. Click a swatch to use it."
       />
       <div className="manip-grid">
         <Row label="Lightness" items={light} onSelect={onSelect} />

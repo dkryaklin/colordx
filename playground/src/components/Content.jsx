@@ -31,7 +31,8 @@ color.toHex()           // '#ff6b35'
 color.toRgbString()     // 'rgb(255 107 53)'
 color.toHslString()     // 'hsl(16.04 100% 60.39%)'
 color.toOklchString()   // 'oklch(0.70452 0.19259 39.23078)'
-color.lighten(0.1).toHex()   // '#ff9068'`;
+color.lighten(0.1).toHex()   // '#ff9068'  HSL
+color.lighten(0.1, { space: 'oklch' }).toHex()   // '#ff8c58'  OKLCH, an even step`;
   const gamut = `import { colordx, inGamutSrgb } from '@colordx/core';
 
 inGamutSrgb('oklch(0.5 0.4 180)')   // false
@@ -39,13 +40,17 @@ colordx('oklch(0.5 0.4 180)').toHex()                     // '#00986c'  clipped,
 colordx('oklch(0.5 0.4 180)').mapSrgb().toOklchString()   // 'oklch(0.50903 0.09378 177.85846)'  CSS Color 4`;
   const plugins = `import { colordx, extend } from '@colordx/core';
 import a11y from '@colordx/core/plugins/a11y';
+import cvd from '@colordx/core/plugins/cvd';
+import mix from '@colordx/core/plugins/mix';
 import p3 from '@colordx/core/plugins/p3';
 
-extend([a11y, p3]);
+extend([a11y, cvd, mix, p3]);
 
 colordx('#777').contrast('#fff')          // 4.48
 colordx('#777').fixContrast('#fff')       // Colordx at 4.5, same hue
-colordx('#ff0000').toP3String()           // 'color(display-p3 0.9175 0.2003 0.1386)'`;
+colordx('#ff0000').toP3String()           // 'color(display-p3 0.9175 0.2003 0.1386)'
+colordx('#ff0000').mixOklch('#0000ff').mapSrgb().toHex()   // '#b700be'  like color-mix(in oklch)
+colordx('#ff0000').simulate('deuteranopia', 0.5).toHex()   // '#c37600'  half severity`;
   const fn = `import { parseHex, rgbToHex, rgbToOklch } from '@colordx/core/fn';
 
 parseHex('#ff0000')                          // { r: 255, g: 0, b: 0, alpha: 1 }
@@ -57,7 +62,7 @@ rgbToOklch(parseHex('#ff0000'))              // unrounded { l, c, h, alpha }`;
         icon={<Terminal size={13} />}
         eyebrow="Library"
         title="Use it in code"
-        desc="8.8 KB gzipped. Zero dependencies. Typed. Tree-shakeable. Plugins add what you need and nothing else."
+        desc="9.2 KB gzipped. Zero dependencies. Typed. Tree-shakeable. Plugins add what you need and nothing else."
       />
       <div className="gs-steps">
         <div className="gs-step">

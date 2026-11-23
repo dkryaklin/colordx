@@ -6,6 +6,8 @@ import { SectionHead, Segmented, ColorField, Badge, CodeBlock } from './ui.jsx';
 
 const USE_OPTS = [{ key: 'body', label: 'Body text' }, { key: 'large', label: 'Large text' }, { key: 'ui', label: 'UI' }];
 const LEVEL_OPTS = [{ key: 'AA', label: 'AA' }, { key: 'AAA', label: 'AAA' }];
+// the three dichromacies the gates use, plus full color blindness to look at
+const VIEW_TYPES = [...CVD_TYPES, 'achromatopsia'];
 
 function Result({ r }) {
   if (!r) return <p className="empty">Both fields need a color.</p>;
@@ -39,6 +41,7 @@ export default function ContrastChecker({ hex }) {
   const [use, setUse] = useState('body');
   const [level, setLevel] = useState('AA');
   const [touched, setTouched] = useState(false);
+  const [severity, setSeverity] = useState(1);
 
   // follow the active color until the user edits the pair
   useEffect(() => {
@@ -64,9 +67,9 @@ export default function ContrastChecker({ hex }) {
   const bgCss = valid ? b.toHex() : '#fff';
 
   const cvd = valid
-    ? CVD_TYPES.map((t) => {
-        const sf = a.simulate(t).toHex();
-        const sb = b.simulate(t).toHex();
+    ? VIEW_TYPES.map((t) => {
+        const sf = a.simulate(t, severity).toHex();
+        const sb = b.simulate(t, severity).toHex();
         return { t, fg: sf, bg: sb, r: check(sf, sb, use, level) };
       })
     : [];
@@ -146,10 +149,23 @@ export default function ContrastChecker({ hex }) {
             <div className="cvd-head">
               <Eye size={14} />
               <span>With color blindness</span>
+              <label className="cvd-sev">
+                <span>Severity {Math.round(severity * 100)}%</span>
+                <input
+                  type="range"
+                  className="rng-plain"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={severity}
+                  onChange={(e) => setSeverity(+e.target.value)}
+                  aria-label="Severity"
+                />
+              </label>
             </div>
             <div className="cvd-grid">
               {cvd.map((x) => {
-                const hit = collapses(fg, bg).includes(x.t);
+                const hit = severity === 1 && collapses(fg, bg).includes(x.t);
                 return (
                   <div key={x.t} className="cvd-item" style={{ background: x.bg, color: x.fg }}>
                     <span className="cvd-type">{x.t}</span>
@@ -168,7 +184,8 @@ export default function ContrastChecker({ hex }) {
           code={`colordx('${a.toHex()}').contrast('${b.toHex()}');      // ${r.ratio.toFixed(2)}
 colordx('${a.toHex()}').apcaContrast('${b.toHex()}');  // ${a.apcaContrast(b).toFixed(1)}
 colordx('${a.toHex()}').isReadable('${b.toHex()}', { level: '${level}'${use === 'large' ? ", size: 'large'" : ''} });  // ${r.wcag}
-colordx('${a.toHex()}').fixContrast('${b.toHex()}', { wcag: ${r.min.wcag}, apca: ${r.min.apca} });  // ${fixed ? `'${fixed}'` : r.result === 'pass' ? 'unchanged' : 'null'}`}
+colordx('${a.toHex()}').fixContrast('${b.toHex()}', { wcag: ${r.min.wcag}, apca: ${r.min.apca} });  // ${fixed ? `'${fixed}'` : r.result === 'pass' ? 'unchanged' : 'null'}
+colordx('${b.toHex()}').simulate('deuteranopia'${severity === 1 ? '' : `, ${severity}`}).toHex();  // '${b.simulate('deuteranopia', severity).toHex()}'`}
         />
       )}
     </>
