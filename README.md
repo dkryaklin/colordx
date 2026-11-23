@@ -131,7 +131,9 @@ const output: RgbColor = colordx(input).toRgb();           // alpha guaranteed
 .toRgbString({ legacy: true })    // 'rgb(255, 0, 0)'              — CSS Color 3 comma syntax
 // Legacy form also switches to `rgba()` when alpha < 1:
 colordx({ r: 255, g: 0, b: 0, alpha: 0.5 }).toRgbString({ legacy: true }); // 'rgba(255, 0, 0, 0.5)'
-.toHex()           // '#ff0000'
+.toHex()           // '#ff0000'  ('#ff000080' when alpha < 1)
+.toHex8()          // '#ff0000ff' — always 8 digits
+.toString()        // '#ff0000'  — same as toHex(), so a Colordx works in a template string
 .toNumber()        // 16711680  (0xff0000 — PixiJS / Discord integer format)
 .toNumber32()      // 4278190335 (0xff0000ff — 32-bit RGBA, alpha as the low byte)
 .toHsl()           // { h: 0, s: 100, l: 50, alpha: 1 }
@@ -142,13 +144,13 @@ colordx('#3d7a9f').toHsl(4)        // { h: 202.6531, s: 44.5455, l: 43.1373, alp
 colordx('#3d7a9f').toHsl(0)        // { h: 203, s: 45, l: 43, alpha: 1 }               — integers
 colordx('#3d7a9f').toHslString()   // 'hsl(202.65 44.55% 43.14%)'
 colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
-// With hwb plugin loaded:
-.toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
-.toHwbString()     // 'hwb(0 0% 0%)'
 .toOklab()         // { l: 0.62796, a: 0.22486, b: 0.12585, alpha: 1 }
 .toOklabString()   // 'oklab(0.62796 0.22486 0.12585)'
 .toOklch()         // { l: 0.62796, c: 0.25768, h: 29.23388, alpha: 1 }
 .toOklchString()   // 'oklch(0.62796 0.25768 29.23388)'
+// With hwb plugin loaded:
+.toHwb()           // { h: 0, w: 0, b: 0, alpha: 1 }
+.toHwbString()     // 'hwb(0 0% 0%)'
 // With p3 plugin loaded:
 .toP3()            // { r: 0.9175, g: 0.2003, b: 0.1386, alpha: 1, colorSpace: 'display-p3' }
 .toP3String()      // 'color(display-p3 0.9175 0.2003 0.1386)'
@@ -156,6 +158,8 @@ colordx('#3d7a9f').toHslString(4)  // 'hsl(202.6531 44.5455% 43.1373%)'
 .toSrgbLinear()    // { r: 1, g: 0, b: 0, alpha: 1, colorSpace: 'srgb-linear' }
 .toSrgbLinearString() // 'color(srgb-linear 1 0 0)'
 ```
+
+Every other plugin adds its own `toX()` / `toXString()` pair the same way; see [Plugins](#plugins).
 
 ### Precision
 
@@ -181,24 +185,32 @@ colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 ### Manipulation
 
 ```ts
-.lighten(0.1)                        // increase lightness by 10 percentage points
-.lighten(0.1, { relative: true })    // increase lightness by 10% of current value
-.darken(0.1)                         // decrease lightness by 10 percentage points
-.darken(0.1, { relative: true })     // decrease lightness by 10% of current value
-.saturate(0.1)                       // increase saturation by 10 percentage points
-.saturate(0.1, { relative: true })   // increase saturation by 10% of current value
-.desaturate(0.1)                     // decrease saturation by 10 percentage points
-.desaturate(0.1, { relative: true }) // decrease saturation by 10% of current value
-.grayscale()       // fully desaturate
+.lighten(0.1)                        // increase HSL lightness by 10 percentage points
+.lighten(0.1, { relative: true })    // increase HSL lightness by 10% of current value
+.darken(0.1)                         // decrease HSL lightness by 10 percentage points
+.darken(0.1, { relative: true })     // decrease HSL lightness by 10% of current value
+.saturate(0.1)                       // increase HSL saturation by 10 percentage points
+.saturate(0.1, { relative: true })   // increase HSL saturation by 10% of current value
+.desaturate(0.1)                     // decrease HSL saturation by 10 percentage points
+.desaturate(0.1, { relative: true }) // decrease HSL saturation by 10% of current value
+.grayscale()       // fully desaturate (HSL)
+.rotate(30)        // rotate hue by 30° (HSL)
+.lighten(0.1, { space: 'oklch' })    // any of the six above in OKLCH instead, see below
 .invert()          // invert RGB channels
-.rotate(30)        // rotate hue by 30°
 .alpha(0.5)        // set alpha
 .hue(120)          // set hue (HSL)
 .lightness(0.5)    // set lightness (OKLCH, 0–1)
 .chroma(0.1)       // set chroma (OKLCH, 0 or more; sRGB tops out near 0.32)
+.over('#fff')      // source-over composite of a translucent color onto a bg
+// With mix plugin loaded:
+.mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
+.mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
+.mixOklch('#0000ff', 0.5)  // mix in OKLCH space (keeps chroma, shorter hue arc)
 ```
 
-The HSL-based methods and `invert` work on the sRGB-clipped color, the one `.toHex()` prints. `lightness()` and `chroma()` work in OKLCH on the unclamped color and keep the other two channels exactly, so a wide-gamut color stays wide-gamut and a large value can leave sRGB. `.toHex()` then prints the clipped color as usual; call `.mapSrgb()` first to gamut-map it instead. A whole-turn `rotate` (`0`, `±360`, …) returns the color untouched.
+The HSL-based methods and `invert` work on the sRGB-clipped color, the one `.toHex()` prints. A whole-turn `rotate` (`0`, `±360`, …) returns the color untouched.
+
+#### Absolute and relative amounts
 
 By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points. Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
 
@@ -211,6 +223,8 @@ colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 4
 ```
 
 The same flag works on `.darken()` and `.desaturate()`.
+
+#### Working in OKLCH
 
 `lighten`, `darken`, `saturate`, `desaturate`, `grayscale` and `rotate` are HSL-based by default. Pass `{ space: 'oklch' }` to work in OKLCH instead, where equal steps look equal and a hue rotation keeps perceived lightness:
 
@@ -225,7 +239,9 @@ colordx('#3498db').grayscale({ space: 'oklch' }).toHex(); // '#909090' — keeps
 colordx('#3498db').grayscale().toHex(); // '#888888'
 ```
 
-Like the `lightness()` and `chroma()` setters, the OKLCH variants keep the other channels exactly and do not clip, so a result can leave sRGB. Call `.mapSrgb()` to bring it back with the hue intact.
+The `lightness()` and `chroma()` setters are OKLCH too: they set one channel to a value where `lighten` and `saturate` shift it.
+
+Unlike the HSL methods, everything in OKLCH reads the unclamped color, keeps the other channels exactly and does not clip the result. A wide-gamut color stays wide-gamut, and a large step can take an sRGB color outside sRGB. `.toHex()` prints the clipped color as usual; call `.mapSrgb()` first to gamut-map it instead, which keeps the hue.
 
 ```ts
 colordx('oklch(0.7 0.3 150)').lightness(0.5).toOklchString(); // 'oklch(0.5 0.3 150)'
@@ -246,20 +262,15 @@ colordx('#3498db').chroma(0.3).mapSrgb().toHex(); // '#0098f6'
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
 .isEqual('#f00')   // same RGBA bytes after rounding; false if either is invalid
-.over('#fff')      // source-over composite of a translucent color onto a bg
 // With a11y plugin loaded:
 .luminance()       // relative luminance (0–1, WCAG), optional precision
 .contrast('#fff')  // WCAG 2.x contrast ratio (1–21), optional precision
-// With mix plugin loaded:
-.mix('#0000ff', 0.5)       // mix in sRGB space (CSS spec)
-.mixOklab('#0000ff', 0.5)  // mix in Oklab space (perceptually uniform)
-.mixOklch('#0000ff', 0.5)  // mix in OKLCH space (keeps chroma, shorter hue arc)
 ```
 
 ### Utilities
 
 ```ts
-import { createNearest, getFormat, nearest, random } from '@colordx/core';
+import { createNearest, getFormat, nearest, random, toHex8, toHexByte } from '@colordx/core';
 
 getFormat('#ff0000'); // 'hex'
 getFormat('rgb(255 0 0)'); // 'rgb'
@@ -281,7 +292,12 @@ toPalette('#800'); // '#f00'
 toPalette('#ffe'); // '#ff0'
 
 random(); // random Colordx instance
+
+toHex8('rgb(255 0 0 / 0.5)'); // '#ff000080' — shortcut for colordx(input).toHex8()
+toHexByte(255); // 'ff' — one channel as two hex digits, rounded and clamped to 0–255
 ```
+
+`nearest()` and `createNearest()` return the candidate you passed in (the same string, object or `Colordx`), and the first one on a tie. `createNearest()` reads the palette once, so later changes to the array are not seen.
 
 ## Gamut
 
@@ -320,7 +336,7 @@ Which color a method sees follows from its model. Wide-gamut models (`toOklab`, 
 colordx also includes standalone utilities for checking and mapping into wider gamuts (Display-P3 / Rec.2020, via plugins):
 
 ```ts
-import { Colordx, inGamutSrgb } from '@colordx/core';
+import { Colordx, extend, inGamutSrgb } from '@colordx/core';
 import { inGamutP3 } from '@colordx/core/plugins/p3';
 import { inGamutRec2020 } from '@colordx/core/plugins/rec2020';
 import p3 from '@colordx/core/plugins/p3';
@@ -375,7 +391,7 @@ Colordx.toGamutSrgb('lab(50 100 0)'); // → Colordx at the sRGB boundary
 
 ## Plugins
 
-Opt-in plugins for less common color spaces and utilities. Each is imported from `@colordx/core/plugins/<name>` and registered once with `extend()`:
+Opt-in plugins for less common color spaces and utilities. Each is imported from `@colordx/core/plugins/<name>` and registered with `extend()`. A plugin runs once: calling `extend()` again with one already registered does nothing, so every module can extend what it needs.
 
 | Plugin | Adds |
 |---|---|
@@ -393,10 +409,10 @@ Opt-in plugins for less common color spaces and utilities. Each is imported from
 | [`srgb-linear`](#srgb-linear-plugin) | `color(srgb-linear …)` |
 | **Tools** | |
 | [`a11y`](#a11y-plugin) | WCAG and APCA contrast, readability gates, `fixContrast()` |
-| [`cvd`](#cvd-plugin) | Colour vision deficiency simulation |
-| [`mix`](#mix-plugin) | `mix()`, `mixOklab()`, tints, shades, tones, palettes |
-| [`harmonies`](#harmonies-plugin) | Color harmonies |
-| [`names`](#names-plugin) | CSS color names |
+| [`cvd`](#cvd-plugin) | Colour vision deficiency simulation, with severity |
+| [`mix`](#mix-plugin) | `mix()`, `mixOklab()`, `mixOklch()`, tints, shades, tones, palettes |
+| [`harmonies`](#harmonies-plugin) | Color harmonies, in HSL or OKLCH |
+| [`names`](#names-plugin) | CSS color names, `toName()` |
 | [`minify`](#minify-plugin) | Shortest CSS string |
 
 All of them at once:
@@ -883,7 +899,7 @@ For protanopia and deuteranopia a partial severity uses Machado's own matrices, 
 
 ### mix plugin
 
-Color mixing helpers built on top of `.mix()`.
+Color mixing in sRGB, Oklab and OKLCH, plus the tint, shade, tone and palette scales built on `.mix()`.
 
 ```ts
 import mix from '@colordx/core/plugins/mix';
@@ -926,7 +942,7 @@ colordx('#808080').mixOklch('#0000ff').toOklchString(3); // 'oklch(0.526 0.157 2
 
 ### harmonies plugin
 
-Color harmony generation using hue rotation. Every harmony includes a 0° entry, which is the input color itself — returned unchanged, so a wide-gamut input survives in its own harmony set.
+Color harmony generation using hue rotation, in HSL by default. Every harmony includes a 0° entry, which is the input color itself — returned unchanged, so a wide-gamut input survives in its own harmony set.
 
 ```ts
 import harmonies from '@colordx/core/plugins/harmonies';
@@ -954,7 +970,7 @@ colordx('#ff0000').harmonies('triadic', { space: 'oklch' }).map((c) => c.mapSrgb
 
 ### names plugin
 
-CSS named color support (all 148 names from the CSS spec). `toName()` returns `undefined` for colors with no CSS name.
+CSS named color support (all 148 names from the CSS spec). Names parse case-insensitively. `toName()` returns `undefined` for colors with no CSS name, the first spelling when two names share a color (`aqua`, not `cyan`), and `'transparent'` for fully transparent black.
 
 ```ts
 import names from '@colordx/core/plugins/names';
@@ -1039,7 +1055,7 @@ const [lin, srgb] = labToLinearAndSrgb(54.29, 80.8, 69.89); // or lchToLinearAnd
 const { r, g, b } = colordx('#ff0000').toRgb();
 rgbToLinear(r / 255, g / 255, b / 255); // [1, 0, 0]
 
-// P3/Rec.2020 channel functions live in their plugins:
+// P3 / Rec.2020 channel functions live in their plugins (a98rgb and prophoto export the same set):
 import { labToP3Channels, lchToP3Channels, linearToP3Channels, oklchToP3Channels } from '@colordx/core/plugins/p3';
 import {
   labToRec2020Channels,
@@ -1142,6 +1158,9 @@ linearToRec2020ChannelsInto(out, lr, lg, lb);
 oklchToRec2020ChannelsInto(out, l, c, h);
 labToRec2020ChannelsInto(out, l, a, b);
 lchToRec2020ChannelsInto(out, l, c, h);
+
+// from '@colordx/core/plugins/a98rgb' and '@colordx/core/plugins/prophoto': the same four,
+// named …ToA98Channels… and …ToProphotoChannels…
 ```
 
 </details>
@@ -1167,7 +1186,7 @@ rgbToOklch(parseHex('#ff0000')!);    // { l: 0.6279…, c: 0.2576…, h: 29.23�
 
 `RgbColor` here is the library's storage form: `r`, `g`, `b` on the 0–255 scale, unrounded and unclamped, so a wide-gamut color keeps its out-of-range channels.
 
-To accept only some formats, compose the single-format parsers instead of calling `parse()`. Order them by how often each format shows up, and keep `parseNameString` last: every other parser rejects a foreign input on its first character or key, while the name lookup lowercases the string first.
+To accept only some formats, compose the single-format parsers instead of calling `parse()`. Order them by how often each format shows up, and keep `parseNameString` last: every other parser rejects a foreign input on its first character or key, while a name lookup that misses has to trim and lowercase the string before it can say no.
 
 ```ts
 import { parseHex, parseHsvObject, parseNameString, parseRgbObject } from '@colordx/core/fn';
@@ -1222,7 +1241,7 @@ tinycolor2 1.6.0, @texel/color 1.1.11.
 | Parse RGB object → toHex | **50M** | — | 35M | 49M | 5.2M | 1.6M | 5.8M |
 | Parse rgb() string → toHex | **12M** | — | 7.4M | 3.1M | 227K | 1.5M | 3.0M |
 | Parse hsl() string → toHex | **11M** | — | 4.9M | 3.1M | 219K | 1.4M | 2.0M |
-| Parse named color → toHex | **14M** | — | 4.5M | 3.9M | 4.5M | 1.3M | 2.6M |
+| Parse named color → toHex | **19M** | — | 4.5M | 3.9M | 4.5M | 1.3M | 2.6M |
 | Parse HEX → lighten → toHex | **18M** | — | 13M | 5.2M | 1.9M | 1.2M | 1.1M |
 | Mix two colors | **19M** | 6.0M | 2.5M | 1.3M | 1.3M | 678K | 1.3M |
 | WCAG contrast ratio | **21M** | — | 3.6M | 3.3M | 2.0M | — | 1.5M |
@@ -1241,7 +1260,7 @@ Mean of two runs. Run `pnpm bench` to check.
 
 ### CSS Color 4/5 completeness
 
-- **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`)
+- **`color-mix()`** — parse and evaluate `color-mix(in oklch, red 30%, blue)` strings, with support for all interpolation spaces and polar hue methods (`shorter`, `longer`, `increasing`, `decreasing`). The math is already here as `mix()`, `mixOklab()`, `mixLab()` and `mixOklch()`; what is missing is the string syntax
 - **Relative color syntax** — `oklch(from red l c h)` and channel arithmetic like `oklch(from red l calc(c + 0.1) h)`
 
 ## Ecosystem
