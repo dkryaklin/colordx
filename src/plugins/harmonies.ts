@@ -1,4 +1,4 @@
-import type { Colordx, Plugin } from '../colordx.js';
+import type { Colordx, Plugin, SpaceOption } from '../colordx.js';
 
 type HarmonyType =
   | 'complementary'
@@ -11,7 +11,7 @@ type HarmonyType =
 
 declare module '@colordx/core' {
   interface Colordx {
-    harmonies(type?: HarmonyType): Colordx[];
+    harmonies(type?: HarmonyType, options?: SpaceOption): Colordx[];
   }
 }
 
@@ -26,10 +26,14 @@ const HARMONIES: Record<HarmonyType, number[]> = {
 };
 
 const harmonies: Plugin = (ColordxClass) => {
-  ColordxClass.prototype.harmonies = function (this: Colordx, type: HarmonyType = 'complementary'): Colordx[] {
+  ColordxClass.prototype.harmonies = function (
+    this: Colordx,
+    type: HarmonyType = 'complementary',
+    options?: SpaceOption
+  ): Colordx[] {
     const angles = Object.prototype.hasOwnProperty.call(HARMONIES, type) ? HARMONIES[type] : undefined;
     if (!angles) throw new RangeError(`harmonies: unknown type "${String(type)}"`);
-    return angles.map((degrees) => this.rotate(degrees));
+    return angles.map((degrees) => this.rotate(degrees, options));
   };
 };
 

@@ -9,6 +9,17 @@ import { byteToLinear, srgbFromLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
+const OKLCH_CHROMA_REF = 0.4;
+
+/** Which model a manipulation works in. `'hsl'` is the default; `'oklch'` is perceptually even and may leave sRGB. */
+export interface SpaceOption {
+  space?: 'hsl' | 'oklch';
+}
+
+/** Options of `lighten`, `darken`, `saturate` and `desaturate`. */
+export interface AdjustOptions extends SpaceOption {
+  relative?: boolean;
+}
 const LAB3 = /* #__PURE__ */ new Float64Array(3);
 
 /** Immutable color value. Manipulation methods return a new `Colordx`. */
@@ -228,33 +239,43 @@ export class Colordx {
     return Colordx._make(oklchToRgbUnclamped({ l, c: value > 0 ? value : 0, h, alpha }));
   }
 
-  /** Adds `amount * 100` to HSL lightness, or multiplies it by `1 + amount` with `{ relative: true }`. */
-  lighten(amount = 0.1, options?: { relative?: boolean }): Colordx {
+  /** Adds `amount * 100` to HSL lightness, or multiplies it by `1 + amount` with `{ relative: true }`. `{ space: 'oklch' }` adds `amount` to OKLCh lightness instead. */
+  lighten(amount = 0.1, options?: AdjustOptions): Colordx {
+    if (options?.space === 'oklch') {
+      const { l, c, h, alpha } = rgbToOklch(this._rgb);
+      const newL = options.relative ? l * (1 + amount) : l + amount;
+      return Colordx._make(oklchToRgbUnclamped({ l: clamp(newL, 0, 1), c, h, alpha }));
+    }
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newL = options?.relative ? l * (1 + amount) : l + amount * 100;
     return Colordx._make(hslToRgb({ h, s, l: clamp(newL, 0, 100), alpha }));
   }
 
   /** Inverse of `lighten`. */
-  darken(amount = 0.1, options?: { relative?: boolean }): Colordx {
+  darken(amount = 0.1, options?: AdjustOptions): Colordx {
     return this.lighten(-amount, options);
   }
 
-  /** Adds `amount * 100` to HSL saturation, or multiplies it by `1 + amount` with `{ relative: true }`. */
-  saturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
+  /** Adds `amount * 100` to HSL saturation, or multiplies it by `1 + amount` with `{ relative: true }`. `{ space: 'oklch' }` adds `amount * 0.4` to OKLCh chroma instead. */
+  saturate(amount = 0.1, options?: AdjustOptions): Colordx {
+    if (options?.space === 'oklch') {
+      const { l, c, h, alpha } = rgbToOklch(this._rgb);
+      const newC = options.relative ? c * (1 + amount) : c + amount * OKLCH_CHROMA_REF;
+      return Colordx._make(oklchToRgbUnclamped({ l, c: newC > 0 ? newC : 0, h, alpha }));
+    }
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     const newS = options?.relative ? s * (1 + amount) : s + amount * 100;
     return Colordx._make(hslToRgb({ h, s: clamp(newS, 0, 100), l, alpha }));
   }
 
   /** Inverse of `saturate`. */
-  desaturate(amount = 0.1, options?: { relative?: boolean }): Colordx {
+  desaturate(amount = 0.1, options?: AdjustOptions): Colordx {
     return this.saturate(-amount, options);
   }
 
-  /** Drops saturation to zero. */
-  grayscale(): Colordx {
-    return this.desaturate(1);
+  /** Drops HSL saturation to zero, or OKLCh chroma with `{ space: 'oklch' }`, which keeps perceived lightness. */
+  grayscale(options?: SpaceOption): Colordx {
+    return options?.space === 'oklch' ? this.chroma(0) : this.desaturate(1);
   }
 
   /** Inverts each RGB channel (255 − channel) of the sRGB-clipped color. */
@@ -263,9 +284,13 @@ export class Colordx {
     return Colordx._make({ r: 255 - r, g: 255 - g, b: 255 - b, alpha });
   }
 
-  /** Shifts the HSL hue by `amount` degrees (default 15). */
-  rotate(amount = 15): Colordx {
+  /** Shifts the HSL hue by `amount` degrees (default 15), or the OKLCh hue with `{ space: 'oklch' }`. */
+  rotate(amount = 15, options?: SpaceOption): Colordx {
     if (amount % 360 === 0) return this;
+    if (options?.space === 'oklch') {
+      const { l, c, h, alpha } = rgbToOklch(this._rgb);
+      return Colordx._make(oklchToRgbUnclamped({ l, c, h: h + amount, alpha }));
+    }
     const { h, s, l, alpha } = rgbToHslRaw(this._rgb);
     return Colordx._make(hslToRgb({ h: h + amount, s, l, alpha }));
   }

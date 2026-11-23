@@ -1,7 +1,7 @@
 export { Colordx, colordx, createNearest, extend, nearest, random, toHex8 } from './colordx.js';
 export { toHexByte } from './colorModels/hex.js';
 export { hslToRgbChannels, hslToRgbChannelsInto, rgbToHslChannels, rgbToHslChannelsInto } from './colorModels/hsl.js';
-export type { Plugin } from './colordx.js';
+export type { AdjustOptions, Plugin, SpaceOption } from './colordx.js';
 export { getFormat } from './parse.js';
 export { inGamutSrgb } from './gamut.js';
 export {
