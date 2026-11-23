@@ -324,9 +324,15 @@ export const colordx = (input: AnyColor | Colordx): Colordx => new Colordx(input
 /** Emits an 8-digit `#rrggbbaa` hex for any color input. Shortcut for `colordx(c).toHex8()`. */
 export const toHex8 = (input: AnyColor | Colordx): string => new Colordx(input).toHex8();
 
-/** Registers plugins. Each plugin is called once with the `Colordx` class and parser arrays. */
+const registered = /* #__PURE__ */ new WeakSet<Plugin>();
+
+/** Registers plugins. Each plugin runs once, so a repeated `extend()` with the same plugin is a no-op. */
 export const extend = (plugins: Plugin[]): void => {
-  plugins.forEach((plugin) => plugin(Colordx, parsers, pluginFormatParsers));
+  plugins.forEach((plugin) => {
+    if (registered.has(plugin)) return;
+    registered.add(plugin);
+    plugin(Colordx, parsers, pluginFormatParsers);
+  });
 };
 
 /** Returns the candidate closest to `color` in OKLab. Throws when `candidates` is empty or a color is invalid. */
