@@ -168,6 +168,16 @@ export const parseNameString = (input: unknown): RgbColor | null => {
   return hex ? parseHex(hex) : null;
 };
 
+let byHex: Map<string, string> | undefined;
+const buildByHex = (): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const name of Object.keys(NAMES)) {
+    const hex = NAMES[name]!;
+    if (!map.has(hex)) map.set(hex, name);
+  }
+  return map;
+};
+
 const names: Plugin = (ColordxClass, parsers, formatParsers) => {
   (parseNameString as ColorParser).inputKind = 'string';
   parsers.push(parseNameString);
@@ -176,8 +186,7 @@ const names: Plugin = (ColordxClass, parsers, formatParsers) => {
   ColordxClass.prototype.toName = function (this: Colordx, options?: { closest?: boolean }): string | undefined {
     const { r, g, b, alpha } = this.toRgb();
     if (alpha === 0 && r === 0 && g === 0 && b === 0) return 'transparent';
-    const hex = this.toHex().toLowerCase();
-    const exact = Object.keys(NAMES).find((name) => NAMES[name] === hex);
+    const exact = (byHex ??= buildByHex()).get(this.toHex());
     if (exact || !options?.closest) return exact;
     let minDist = Infinity;
     let closest: string | undefined;
