@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { colordx, nearest, random, Colordx, getFormat, extend } from "../src/index.js";
 import a11y from "../src/plugins/a11y.js";
 import hsv from "../src/plugins/hsv.js";
@@ -360,6 +360,26 @@ describe("random", () => {
     const c = random();
     expect(c).toBeInstanceOf(Colordx);
     expect(c.isValid()).toBe(true);
+  });
+
+  it("gives every byte the same chance, 0 and 255 included", () => {
+    const spy = vi.spyOn(Math, "random");
+    try {
+      spy.mockReturnValue(0.999999);
+      expect(random().toHex()).toBe("#ffffff");
+      spy.mockReturnValue(0);
+      expect(random().toHex()).toBe("#000000");
+      spy.mockReturnValue(1 / 256 - 1e-9);
+      expect(random().toHex()).toBe("#000000");
+      spy.mockReturnValue(1 / 256);
+      expect(random().toHex()).toBe("#010101");
+      spy.mockReturnValue(255 / 256 - 1e-9);
+      expect(random().toHex()).toBe("#fefefe");
+      spy.mockReturnValue(255 / 256);
+      expect(random().toHex()).toBe("#ffffff");
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
