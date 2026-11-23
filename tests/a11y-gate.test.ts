@@ -127,3 +127,18 @@ describe('gamut: map, do not clip', () => {
     expect(Math.abs(p3 - srgb)).toBeLessThan(0.2);
   });
 });
+
+describe('a translucent background', () => {
+  it('is measured as opaque: only the foreground alpha is composited', () => {
+    const fg = colordx('#000');
+    expect(fg.contrast('rgba(255, 255, 255, 0.1)')).toBe(fg.contrast('#fff'));
+    expect(fg.apcaContrast('rgba(255, 255, 255, 0.1)')).toBe(fg.apcaContrast('#fff'));
+    expect(fg.isReadable('rgba(255, 255, 255, 0.1)')).toBe(true);
+  });
+
+  it('gives the real ratio once flattened with over()', () => {
+    const flat = colordx('rgba(255, 255, 255, 0.1)').over('#000');
+    expect(colordx('#000').contrast(flat)).toBe(1.2);
+    expect(colordx('#000').isReadable(flat)).toBe(false);
+  });
+});

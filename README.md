@@ -804,11 +804,14 @@ colordx('#d200d2').contrast('#fff', 4); // 4.4959
 colordx('#d200d2').isReadable('#fff'); // false
 ```
 
-A translucent fg is composited over the bg first. To check a stack (fg over a translucent surface over the page), flatten it bottom up with `over()`:
+A translucent fg is composited over the bg first. The bg's own alpha is not read, because contrast is undefined without knowing what is behind it: a translucent bg is measured as if it were opaque. To check a stack (fg over a translucent surface over the page), flatten it bottom up with `over()`:
 
 ```ts
 const surface = colordx('rgba(255, 255, 255, 0.2)').over('#000');
 colordx('rgba(255, 255, 255, 0.6)').over(surface).contrast('#000');
+
+colordx('#000').contrast('rgba(255, 255, 255, 0.1)'); // 21 — the bg's alpha is ignored
+colordx('#000').contrast(colordx('rgba(255, 255, 255, 0.1)').over('#000')); // 1.2 — flattened first
 ```
 
 Colors outside sRGB are gamut-mapped (not clipped) before the check. WCAG always runs on the sRGB-mapped color; APCA can run on the Display-P3-mapped color with its own coefficients via `{ space: 'p3' }`.
