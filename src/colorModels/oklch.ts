@@ -21,6 +21,8 @@ export const rgbToOklch = (rgb: RgbColor): OklchColor => {
 
 export const oklchToRgb = (oklch: OklchColor): RgbColor => oklabToRgb(oklchToOklab(oklch));
 
+export const oklchToRgbUnclamped = (oklch: OklchColor): RgbColor => oklabToRgbUnclamped(oklchToOklab(oklch));
+
 export const parseOklchObjectRaw = (input: unknown): OklabColor | null => {
   if (!isObject(input)) return null;
   if (hasBrand(input)) return null;

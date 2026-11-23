@@ -195,10 +195,10 @@ colordx('#ff0000').toOklchString(2);  // 'oklch(0.63 0.26 29.23)'
 .alpha(0.5)        // set alpha
 .hue(120)          // set hue (HSL)
 .lightness(0.5)    // set lightness (OKLCH, 0–1)
-.chroma(0.1)       // set chroma (OKLCH, 0–0.4)
+.chroma(0.1)       // set chroma (OKLCH, 0 or more; sRGB tops out near 0.32)
 ```
 
-The HSL-based methods and `invert` work on the sRGB-clipped color, the one `.toHex()` prints. `lightness()` and `chroma()` work in OKLCH and clip the result. A whole-turn `rotate` (`0`, `±360`, …) returns the color untouched.
+The HSL-based methods and `invert` work on the sRGB-clipped color, the one `.toHex()` prints. `lightness()` and `chroma()` work in OKLCH on the unclamped color and keep the other two channels exactly, so a wide-gamut color stays wide-gamut and a large value can leave sRGB. `.toHex()` then prints the clipped color as usual; call `.mapSrgb()` first to gamut-map it instead. A whole-turn `rotate` (`0`, `±360`, …) returns the color untouched.
 
 By default, `.lighten(0.1)` shifts lightness by an **absolute** 10 percentage points. Pass `{ relative: true }` to shift by a fraction of the **current** value instead — useful when migrating from Qix's `color` library or when you want proportional adjustments:
 
@@ -212,6 +212,13 @@ colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 4
 
 The same flag works on `.darken()` and `.desaturate()`.
 
+```ts
+colordx('oklch(0.7 0.3 150)').lightness(0.5).toOklchString(); // 'oklch(0.5 0.3 150)'
+colordx('#3498db').chroma(0.3).toOklchString(); // 'oklch(0.65309 0.3 242.68667)'
+colordx('#3498db').chroma(0.3).toHex(); // '#0092ff'
+colordx('#3498db').chroma(0.3).mapSrgb().toHex(); // '#0098f6'
+```
+
 ### Getters
 
 ```ts
@@ -219,7 +226,7 @@ The same flag works on `.darken()` and `.desaturate()`.
 .alpha()           // get alpha (0–1)
 .hue()             // get HSL hue, [0, 360)
 .lightness()       // get OKLCH lightness (0–1)
-.chroma()          // get OKLCH chroma (0–0.4)
+.chroma()          // get OKLCH chroma (0 or more)
 .brightness()      // perceived brightness (0–1), of the sRGB-clipped color
 .isDark()          // brightness < 0.5
 .isLight()         // brightness >= 0.5
@@ -288,7 +295,7 @@ colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes a
 
 Per the spec, the search stops at the first clipped color within a just-noticeable difference (deltaEOK 0.02) of its chroma-reduced candidate, so L and h can drift slightly — most visibly on colors far outside sRGB (the example above lands at hue 177.9°, not 180°; a pale or dark saturated red can move several degrees of hue, or land on pure `#xx0000`). When a palette needs exact L and h per step, bisect chroma with `inGamutSrgb()` instead.
 
-Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`) read the unclamped color, and the three mixers keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
+Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`, and the `lightness()` / `chroma()` setters) read the unclamped color, and the three mixers and the two setters keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
 </details>
 

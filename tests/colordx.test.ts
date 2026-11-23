@@ -324,6 +324,43 @@ describe("getters", () => {
     expect(c.chroma(0).chroma()).toBeCloseTo(0, 2);
   });
 
+  it("lightness() and chroma() setters keep a wide-gamut color wide-gamut", () => {
+    const wide = colordx("oklch(0.7 0.3 150)");
+    expect(wide.lightness(0.7).toOklchString()).toBe("oklch(0.7 0.3 150)");
+    expect(wide.chroma(0.3).toOklchString()).toBe("oklch(0.7 0.3 150)");
+    expect(wide.lightness(0.5).toOklchString()).toBe("oklch(0.5 0.3 150)");
+    expect(wide.chroma(0.45).toOklchString()).toBe("oklch(0.7 0.45 150)");
+    expect(colordx("oklch(0.7 0.1 150 / 0.4)").lightness(0.3).toOklchString()).toBe("oklch(0.3 0.1 150 / 0.4)");
+  });
+
+  it("lightness() and chroma() setters can leave sRGB, and print the clipped color", () => {
+    const c = colordx("#3498db").chroma(0.3);
+    expect(c.toOklchString()).toBe("oklch(0.65309 0.3 242.68667)");
+    expect(c.toHex()).toBe("#0092ff");
+    expect(c.toHex()).toBe(c.clampSrgb().toHex());
+    expect(c.mapSrgb().toHex()).toBe("#0098f6");
+  });
+
+  it("lightness() and chroma() setters do not round the channels they keep", () => {
+    for (const hex of ["#3498db", "#c0ffee", "#123456", "#fedcba"]) {
+      const c = colordx(hex);
+      const before = c.toOklch(12);
+      const l = c.lightness(0.4).toOklch(12);
+      expect([l.c, l.h]).toEqual([before.c, before.h]);
+      const k = c.chroma(0.05).toOklch(12);
+      expect(k.l).toBe(before.l);
+      expect(k.h).toBeCloseTo(before.h, 9);
+    }
+  });
+
+  it("lightness() and chroma() setters clamp out-of-range and NaN values", () => {
+    expect(colordx("#777777").lightness(2).toHex()).toBe("#ffffff");
+    expect(colordx("#777777").lightness(-1).toHex()).toBe("#000000");
+    expect(colordx("#777777").lightness(NaN).toHex()).toBe("#000000");
+    expect(colordx("#ff0000").chroma(-1).toHex()).toBe(colordx("#ff0000").chroma(0).toHex());
+    expect(colordx("#ff0000").chroma(NaN).toHex()).toBe(colordx("#ff0000").chroma(0).toHex());
+  });
+
   it("checks equality", () => {
     expect(colordx("#ff0000").isEqual("#ff0000")).toBe(true);
     expect(colordx("#ff0000").isEqual("rgb(255, 0, 0)")).toBe(true);
