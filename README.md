@@ -856,7 +856,7 @@ APCA is better suited than WCAG 2.x for dark color pairs and more accurately ref
 
 ### cvd plugin
 
-Simulates colour vision deficiency. Machado 2009 (severity 1.0) for protanopia and deuteranopia, the same matrices Chrome and Firefox DevTools use; Brettel 1997 for tritanopia, where Machado is weak. Runs on linear sRGB; wide-gamut input is gamut-mapped first. Reference values are checked against DaltonLens in the test suite.
+Simulates colour vision deficiency. Machado 2009 for protanopia and deuteranopia, the same matrices Chrome and Firefox DevTools use; Brettel 1997 for tritanopia, where Machado is weak; relative luminance for achromatopsia. Runs on linear sRGB; wide-gamut input is gamut-mapped first. Full-severity values are checked against DaltonLens in the test suite.
 
 ```ts
 import cvd from '@colordx/core/plugins/cvd';
@@ -866,12 +866,20 @@ extend([cvd]);
 colordx('#ff0000').simulate('protanopia'); // #6d5f00
 colordx('#ff0000').simulate('deuteranopia'); // #a39000
 colordx('#0000ff').simulate('tritanopia'); // #006087
+colordx('#ff0000').simulate('achromatopsia'); // #7f7f7f — no colour vision, luminance only
+
+// A second argument sets the severity, 0 (unchanged) to 1 (the default): 0.5 is protanomaly, not protanopia
+colordx('#ff0000').simulate('protanopia', 0.5); // #b45600
+colordx('#ff0000').simulate('deuteranopia', 0.5); // #c37600
+colordx('#0000ff').simulate('tritanopia', 0.5); // #0044ce
 
 // Do two status colours collapse? Compare ΔE2000 before and after (lab plugin).
 const [a, b] = [colordx('#ef4444'), colordx('#10b981')];
 a.delta(b, 5); // 0.71465 — clearly distinct
 a.simulate('deuteranopia').delta(b.simulate('deuteranopia'), 5); // ~0.14 — nearly the same colour
 ```
+
+For protanopia and deuteranopia a partial severity uses Machado's own matrices, published in steps of 0.1 and interpolated between; for tritanopia and achromatopsia it blends the colour with its full simulation in linear light. An unknown type throws a `RangeError` naming it.
 
 ### mix plugin
 
