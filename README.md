@@ -212,6 +212,21 @@ colordx('hsl(0 40% 50%)').saturate(0.1, { relative: true }); // s = 40 * 1.1 = 4
 
 The same flag works on `.darken()` and `.desaturate()`.
 
+`lighten`, `darken`, `saturate`, `desaturate`, `grayscale` and `rotate` are HSL-based by default. Pass `{ space: 'oklch' }` to work in OKLCH instead, where equal steps look equal and a hue rotation keeps perceived lightness:
+
+```ts
+colordx('#3498db').lighten(0.1, { space: 'oklch' }).toHex(); // '#58b8fd' — OKLCH L + 0.1
+colordx('#3498db').lighten(0.1, { space: 'oklch', relative: true }); // OKLCH L × 1.1
+colordx('#3498db').saturate(0.1, { space: 'oklch' }); // OKLCH C + 0.04 (0.1 of 0.4, the chroma CSS calls 100%)
+colordx('#3498db').saturate(0.1, { space: 'oklch', relative: true }); // OKLCH C × 1.1
+colordx('#3498db').rotate(120, { space: 'oklch' }).toHex(); // '#d26a89' — same lightness and chroma
+colordx('#3498db').rotate(120).toHex(); // '#db3498' — the HSL rotation
+colordx('#3498db').grayscale({ space: 'oklch' }).toHex(); // '#909090' — keeps perceived lightness
+colordx('#3498db').grayscale().toHex(); // '#888888'
+```
+
+Like the `lightness()` and `chroma()` setters, the OKLCH variants keep the other channels exactly and do not clip, so a result can leave sRGB. Call `.mapSrgb()` to bring it back with the hue intact.
+
 ```ts
 colordx('oklch(0.7 0.3 150)').lightness(0.5).toOklchString(); // 'oklch(0.5 0.3 150)'
 colordx('#3498db').chroma(0.3).toOklchString(); // 'oklch(0.65309 0.3 242.68667)'
@@ -295,7 +310,7 @@ colordx(input).clampSrgb().toRgbString();   // 'rgb(0 152 108)' — same bytes a
 
 Per the spec, the search stops at the first clipped color within a just-noticeable difference (deltaEOK 0.02) of its chroma-reduced candidate, so L and h can drift slightly — most visibly on colors far outside sRGB (the example above lands at hue 177.9°, not 180°; a pale or dark saturated red can move several degrees of hue, or land on pure `#xx0000`). When a palette needs exact L and h per step, bisect chroma with `inGamutSrgb()` instead.
 
-Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`, and the `lightness()` / `chroma()` setters) read the unclamped color, and the three mixers and the two setters keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
+Which color a method sees follows from its model. Wide-gamut models (`toOklab`, `toOklch`, `toLab`, `toLch`, `toXyz*`, `toP3`, `toRec2020`, `toA98`, `toProphoto`, `toSrgbLinear`, `mix`, `mixOklab`, `mixLab`, `delta`, the `lightness()` / `chroma()` setters, and the manipulators called with `{ space: 'oklch' }`) read the unclamped color, and the three mixers, the two setters and the OKLCH manipulators keep their result unclamped too, like `color-mix()`. sRGB-bounded models (`toRgb`, `toHex`, `toHsl`, `toHsv`, `toHwb`, `toCmyk`, `toName`, `brightness`) and the HSL-based manipulators read the naive-clipped color, so `.toHslString()` always names the same color as `.toHex()`. The a11y and cvd plugins gamut-map (not clip) first.
 
 </details>
 
@@ -908,6 +923,13 @@ colordx('#ff0000').harmonies('double-split-complementary');  // [−30°, 0°, 3
 ```
 
 An unknown type throws a `RangeError` naming it.
+
+Harmonies rotate the HSL hue by default. Pass `{ space: 'oklch' }` to rotate in OKLCH, which gives every member the lightness and chroma of the base color. The members can leave sRGB, so map them when you need hex:
+
+```ts
+colordx('#ff0000').harmonies('triadic').map((c) => c.toHex()); // ['#ff0000', '#00ff00', '#0000ff']
+colordx('#ff0000').harmonies('triadic', { space: 'oklch' }).map((c) => c.mapSrgb().toHex()); // ['#ff0000', '#00a836', '#5577ff']
+```
 
 ### names plugin
 
