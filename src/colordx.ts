@@ -1,14 +1,15 @@
 import { rgbToHex, rgbToHex8 } from './colorModels/hex.js';
 import { hslToRgb, rgbToHslRaw } from './colorModels/hsl.js';
-import { rgbToOklab } from './colorModels/oklab.js';
+import { linearSrgbToOklabInto, rgbToOklab } from './colorModels/oklab.js';
 import { OKLCH_ACHROMATIC, oklchToRgb, rgbToOklch } from './colorModels/oklch.js';
 import { toGamutSrgbRaw } from './gamut.js';
 import { clamp, fixedNotation, invalidColorError, round, round3, toByte } from './helpers.js';
 import { parse, parsers, pluginFormatParsers } from './parse.js';
-import { srgbFromLinear } from './transfer.js';
+import { byteToLinear, srgbFromLinear } from './transfer.js';
 import type { AnyColor, ColorFormat, ColorParser, HslColor, OklabColor, OklchColor, RgbColor } from './types.js';
 
 const _SENTINEL: unique symbol = Symbol();
+const LAB3 = /* #__PURE__ */ new Float64Array(3);
 
 /** Immutable color value. Manipulation methods return a new `Colordx`. */
 export class Colordx {
@@ -335,25 +336,56 @@ export const extend = (plugins: Plugin[]): void => {
   });
 };
 
+const validColor = (method: string, input: AnyColor | Colordx): Colordx => {
+  const c = new Colordx(input);
+  if (!c.isValid()) throw invalidColorError(method, input);
+  return c;
+};
+
+const oklabTable = (method: string, candidates: readonly (AnyColor | Colordx)[]): Float64Array => {
+  const table = new Float64Array(candidates.length * 3);
+  for (let i = 0; i < candidates.length; i++) {
+    const { r, g, b } = validColor(method, candidates[i]!)._rawRgb();
+    linearSrgbToOklabInto(LAB3, byteToLinear(r), byteToLinear(g), byteToLinear(b));
+    table.set(LAB3, i * 3);
+  }
+  return table;
+};
+
+const closestIndex = (method: string, table: Float64Array, color: AnyColor | Colordx): number => {
+  const { r, g, b } = validColor(method, color)._rawRgb();
+  linearSrgbToOklabInto(LAB3, byteToLinear(r), byteToLinear(g), byteToLinear(b));
+  const l = LAB3[0]!,
+    a = LAB3[1]!,
+    bb = LAB3[2]!;
+  let minDist = Infinity;
+  let index = 0;
+  for (let i = 0; i < table.length; i += 3) {
+    const dl = table[i]! - l,
+      da = table[i + 1]! - a,
+      db = table[i + 2]! - bb;
+    const dist = dl * dl + da * da + db * db;
+    if (dist < minDist) {
+      minDist = dist;
+      index = i;
+    }
+  }
+  return index / 3;
+};
+
 /** Returns the candidate closest to `color` in OKLab. Throws when `candidates` is empty or a color is invalid. */
 export const nearest = <T extends AnyColor | Colordx>(color: AnyColor | Colordx, candidates: T[]): T => {
   if (candidates.length === 0) throw new Error('nearest: candidates array must not be empty');
-  const from = new Colordx(color);
-  if (!from.isValid()) throw invalidColorError('nearest', color);
-  const { l: l1, a: a1, b: b1 } = from.toOklab();
-  let minDist = Infinity;
-  let result = candidates[0] as T;
-  for (const candidate of candidates) {
-    const c = new Colordx(candidate);
-    if (!c.isValid()) throw invalidColorError('nearest', candidate);
-    const { l: l2, a: a2, b: b2 } = c.toOklab();
-    const dist = (l2 - l1) ** 2 + (a2 - a1) ** 2 + (b2 - b1) ** 2;
-    if (dist < minDist) {
-      minDist = dist;
-      result = candidate;
-    }
-  }
-  return result;
+  const from = validColor('nearest', color);
+  return candidates[closestIndex('nearest', oklabTable('nearest', candidates), from)] as T;
+};
+
+/** Converts `candidates` to OKLab once and returns a `nearest()` bound to them, for many lookups against one palette. */
+export const createNearest = <T extends AnyColor | Colordx>(candidates: T[]): ((color: AnyColor | Colordx) => T) => {
+  if (candidates.length === 0) throw new Error('createNearest: candidates array must not be empty');
+  const items = candidates.slice();
+  const table = oklabTable('createNearest', items);
+  return (color) => items[closestIndex('createNearest', table, color)] as T;
 };
 
 /** Returns a random opaque sRGB color. */

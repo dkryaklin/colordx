@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { colordx, nearest, random, Colordx, getFormat, extend } from "../src/index.js";
+import { colordx, createNearest, nearest, random, Colordx, getFormat, extend } from "../src/index.js";
 import a11y from "../src/plugins/a11y.js";
 import hsv from "../src/plugins/hsv.js";
 import hwb from "../src/plugins/hwb.js";
@@ -352,6 +352,51 @@ describe("nearest", () => {
   it("preserves candidate type", () => {
     const objects = [{ r: 255, g: 0, b: 0, alpha: 1 }, { r: 0, g: 0, b: 255, alpha: 1 }];
     expect(nearest('#800', objects)).toEqual({ r: 255, g: 0, b: 0, alpha: 1 });
+  });
+});
+
+describe("createNearest", () => {
+  const palette = ['#f00', '#ff0', '#00f'];
+
+  it("answers like nearest() for the same palette", () => {
+    const find = createNearest(palette);
+    for (const c of ['#800', '#ffe', '#0000cc', 'rgb(200, 0, 0)', 'oklch(0.7 0.3 150)']) {
+      expect(find(c)).toBe(nearest(c, palette));
+    }
+    expect(find({ r: 0, g: 0, b: 200 })).toBe('#00f');
+    expect(find(colordx('#800'))).toBe('#f00');
+  });
+
+  it("returns the original candidate, object or instance", () => {
+    const objects = [{ r: 255, g: 0, b: 0 }, colordx('#00f')];
+    const find = createNearest(objects);
+    expect(find('#800')).toBe(objects[0]);
+    expect(find('#008')).toBe(objects[1]);
+  });
+
+  it("keeps the first of two equally near candidates", () => {
+    expect(createNearest(['#ff0000', 'rgb(255 0 0)', '#f00'])('#fe0000')).toBe('#ff0000');
+    expect(nearest('#fe0000', ['#ff0000', 'rgb(255 0 0)'])).toBe('#ff0000');
+  });
+
+  it("reads the palette once, so later edits to the array are ignored", () => {
+    const list = ['#f00', '#00f'];
+    const find = createNearest(list);
+    list[0] = '#0f0';
+    list.push('#800');
+    expect(find('#800')).toBe('#f00');
+  });
+
+  it("throws on an empty palette and on an invalid color", () => {
+    expect(() => createNearest([])).toThrow('createNearest: candidates array must not be empty');
+    expect(() => createNearest(['#f00', 'nope'])).toThrow(new RangeError('createNearest: "nope" is not a valid color'));
+    expect(() => createNearest(palette)('nope')).toThrow(new RangeError('createNearest: "nope" is not a valid color'));
+  });
+
+  it("tells apart colors that differ past five OKLab decimals", () => {
+    const a = { l: 0.5, a: 0.1, b: 0.000001 };
+    const b = { l: 0.5, a: 0.1, b: 0.000004 };
+    expect(nearest({ l: 0.5, a: 0.1, b: 0.0000038 }, [a, b])).toBe(b);
   });
 });
 
